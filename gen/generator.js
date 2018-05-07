@@ -29,8 +29,9 @@ const SearchIndex = db.define('searchIndex', {
     path: {
         type: Sequelize.STRING
     },
+}, {
     freezeTableName: true,
-    timestmaps: false
+    timestamps: false
 })
 
 const baseUrl = new URL('https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/')
