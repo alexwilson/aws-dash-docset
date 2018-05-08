@@ -34,51 +34,55 @@ const SearchIndex = db.define('searchIndex', {
     timestamps: false
 })
 
-const baseUrl = new URL('https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/')
+const baseUrl = new URL('https://docs.aws.amazon.com/')
 const documentRoot = path.resolve(root, 'Contents/Resources/Documents')
 const downloadedFiles = new Set()
 
-const withImages = document => new Promise(resolve => {
-    const resolver = resolve.bind({}, document)
-    Promise.all(document('img').map((index, imgTag) => {
-        const img = document(imgTag)
-        if (!img.attr('src')) return
+function withImages(document) {
+    return new Promise(resolve => {
+        const resolver = resolve.bind({}, document)
+        Promise.all(document('img').map((index, imgTag) => {
+            const img = document(imgTag)
+            if (!img.attr('src')) return
 
-        const imageUrl = new URL(img.attr('src'), baseUrl.origin)
-        const imageFilename = path.basename(imageUrl.pathname)
-        const imagePath = path.resolve(documentRoot, 'img', imageFilename)
+            const imageUrl = new URL(img.attr('src'), baseUrl.origin)
+            const imageFilename = path.basename(imageUrl.pathname)
+            const imagePath = path.resolve(documentRoot, 'img', imageFilename)
 
-        img.attr('src', `./img/${imageFilename}`)
-        if (downloadedFiles.has(imagePath)) return
+            img.attr('src', `${path.relative(path.dirname(this.url.pathname), path.dirname(imageUrl.pathname)).replace(path.dirname(img.attr('src')), '')}${imagePath.replace(documentRoot, '')}`)
+            if (downloadedFiles.has(imagePath)) return
 
-        return fetch(imageUrl.toString())
-            .then(res => res.arrayBuffer())
-            .then(res => writeFilePromise(imagePath, new Buffer(res)))
-            .then(_ => downloadedFiles.add(imagePath))
-            .catch(console.error)
-    }).get()).then(resolver).catch(console.error)
-})
+            return fetch(imageUrl.toString())
+                .then(res => res.arrayBuffer())
+                .then(res => writeFilePromise(imagePath, new Buffer(res)))
+                .then(_ => downloadedFiles.add(imagePath))
+                .catch(console.error)
+        }).get()).then(resolver).catch(console.error)
+    })
+}
 
-const withStylesheets = document => new Promise(resolve => {
-    const resolver = resolve.bind({}, document)
-    Promise.all(document('link[rel="stylesheet"]').map((index, linkTag) => {
-        const link = document(linkTag)
-        if (!link.attr('href')) return
+function withStylesheets(document) {
+    return new Promise(resolve => {
+        const resolver = resolve.bind({}, document)
+        Promise.all(document('link[rel="stylesheet"]').map((index, linkTag) => {
+            const link = document(linkTag)
+            if (!link.attr('href')) return
 
-        const linkUrl = new URL(link.attr('href'), baseUrl.origin)
-        const linkFilename = path.basename(linkUrl.pathname)
-        const linkPath = path.resolve(documentRoot, 'css', linkFilename)
+            const linkUrl = new URL(link.attr('href'), baseUrl.origin)
+            const linkFilename = path.basename(linkUrl.pathname)
+            const linkPath = path.resolve(documentRoot, 'css', linkFilename)
 
-        link.attr('href', `./css/${linkFilename}`)
-        if (downloadedFiles.has(linkPath)) return
+            link.attr('href', `${path.relative(path.dirname(this.url.pathname), path.dirname(linkUrl.pathname)).replace(path.dirname(link.attr('href')), '')}${linkPath.replace(documentRoot, '')}`)
+            if (downloadedFiles.has(linkPath)) return
 
-        return fetch(linkUrl.toString())
-            .then(res => res.arrayBuffer())
-            .then(res => writeFilePromise(linkPath, new Buffer(res)))
-            .then(_ => downloadedFiles.add(linkPath))
-            .catch(console.error)
-    }).get()).then(resolver).catch(console.error)
-})
+            return fetch(linkUrl.toString())
+                .then(res => res.arrayBuffer())
+                .then(res => writeFilePromise(linkPath, new Buffer(res)))
+                .then(_ => downloadedFiles.add(linkPath))
+                .catch(console.error)
+        }).get()).then(resolver).catch(console.error)
+    })
+}
 
 const withRelativeLinks = document => new Promise(resolve => {
     document('a').each((index, aTag) => {
@@ -97,34 +101,64 @@ const withoutNavigation = document => new Promise(resolve => {
 })
 
 const docSet = new Array()
-const downloadDocPage = url =>
-    fetch(`${baseUrl.href}${url}`)
+const downloadDocPage = (service, section, url) => {
+    const fullUrl = new URL(`${baseUrl.href}/${service}/latest/${section}/${url}`)
+    return fetch(fullUrl.href)
         .then(res => res.text())
         .then(cheerio.load)
         .then(withoutNavigation)
         .then(withRelativeLinks)
-        .then(withImages)
-        .then(withStylesheets)
+        .then(withImages.bind({url: fullUrl}))
+        .then(withStylesheets.bind({url: fullUrl}))
         .then(document => {
             const title = document('title').text()
             console.log(` - Saving "${title}" (${url})`)
 
-            const documentPath = path.resolve(documentRoot, url)
+            const documentPath = path.resolve(documentRoot, service, 'latest', section, url)
+
+            const segmentedDocumentPath = path.relative(process.cwd(), path.dirname(documentPath)).split('/')
+            for (let i = 1; i <= segmentedDocumentPath.length; i++) {
+                const segment = segmentedDocumentPath.slice(0, i).join('/')
+                if (!fs.existsSync(segment)) fs.mkdirSync(segment)
+            }
+
             return writeFilePromise(documentPath, document.root().html())
                 .then(_ => {
                     docSet.push({ 
                         name: title,
                         type: 'Guide',
-                        path: url
+                        path: documentPath.replace(documentRoot, '')
                     })
                 })
-                .then(url => {
+                .then(doc => {
                     const nextPage = document('link[rel="next"]').attr('href')
-                    return (nextPage) ? downloadDocPage(nextPage) : url
+                    return (nextPage) ? downloadDocPage(service, section, nextPage) : doc
                 })
         })
+}
 
-downloadDocPage('Welcome.html')
+        Promise.all([
+            // CloudFormation
+            downloadDocPage('AWSCloudFormation', 'APIReference', 'Welcome.html'),
+            downloadDocPage('AWSCloudFormation', 'UserGuide', 'Welcome.html'),
+
+            // S3
+            downloadDocPage('AmazonS3', 'gsg', 'GetStartedWithS3.html'),
+            downloadDocPage('AmazonS3', 'dev', 'Welcome.html'),
+
+            // EC2
+            downloadDocPage('AWSEC2', 'UserGuide', 'concepts.html'),
+
+            // Lambda
+            downloadDocPage('lambda', 'dg', 'welcome.html'),
+
+            // API Gateway
+            downloadDocPage('apigateway', 'developerguide', 'welcome.html'),
+
+            // CloudFront
+            downloadDocPage('AmazonCloudFront', 'DeveloperGuide', 'Introduction.html')
+
+        ])
         .then(_ => SearchIndex.sync({ force: true }))
         .then(_ => SearchIndex.bulkCreate(docSet))
         .catch(console.error)
