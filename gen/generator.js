@@ -111,7 +111,7 @@ const downloadDocPage = (service, section, url) => {
         .then(withImages.bind({url: fullUrl}))
         .then(withStylesheets.bind({url: fullUrl}))
         .then(document => {
-            const title = document('title').text()
+            const title = document('title').text().replace(/[\n\r]+/g, '').replace(/\t/g, ' ').replace(/(\s\s+)/g, ' ').trim()
             console.log(` - Saving "${title}" (${url})`)
 
             const documentPath = path.resolve(documentRoot, service, 'latest', section, url)
