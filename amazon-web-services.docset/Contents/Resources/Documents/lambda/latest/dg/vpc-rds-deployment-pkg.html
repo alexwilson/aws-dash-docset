@@ -1,0 +1,225 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Step 2.1: Create a Deployment
+         Package - AWS Lambda
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="vpc-rds-create-lambda-function.html" title="Step 2: Create a Lambda Function">
+      <link rel="prev" href="vpc-rds-create-lambda-function.html" title="Step 2: Create a Lambda Function">
+      <link rel="next" href="vpc-rds-create-iam-role.html" title="Step 2.2: Create the Execution
+                Role (IAM Role)">
+      <meta name="description" content="At this time, example code for the Lambda function is provided only in Python. The following example Python code runs a SELECT query against the Employee table in the MySQL RDS instance that you created in the VPC. The code creates a table in the ExampleDB database, adds sample records, and retrieves those records.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/vpc-rds-deployment-pkg.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-introduction-function.html">Lambda Functions</a> &#xBB; <a href="accessing-resources.html">Accessing Resources from a Lambda Function</a> &#xBB; <a href="vpc.html">Configuring a Lambda Function to Access Resources in an Amazon VPC</a> &#xBB; <a href="vpc-tutorials.html">Tutorials: Configuring a Lambda Function to Access Resources in
+                                    an Amazon VPC</a> &#xBB; <a href="vpc-rds.html">Tutorial: Configuring a Lambda Function to Access Amazon RDS in an
+                                    Amazon VPC</a> &#xBB; <a href="vpc-rds-create-lambda-function.html">Step 2: Create a Lambda Function</a> &#xBB; <span class="breadcrumb">Step 2.1: Create a Deployment
+                                    Package</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="vpc-rds-deployment-pkg">Step 2.1: Create a Deployment
+                        Package
+                     </h1>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>At this time, example code for the Lambda function is provided only in
+                           Python.
+                        </p>
+                     </div>
+                     <h2 id="vpc-rds-deployment-pkg-python">Python</h2>
+                     
+                     
+                     
+                     <p>The following example Python code runs a SELECT query against the
+                        Employee table in the MySQL RDS instance that you created in the VPC. 
+                        The code creates a table in the ExampleDB
+                        database, adds sample records, and retrieves those records. 
+                        
+                     </p>
+                     
+                     
+                     <ol>
+                        <li>
+                           <p>Open a text editor, and then copy the following code.</p>
+                           
+                           
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">import sys
+import logging
+import rds_config
+import pymysql
+#rds settings
+rds_host  = &quot;<em class="replaceable"><code>rds-instance-endpoint</code></em>&quot;
+name = rds_config.db_username
+password = rds_config.db_password
+db_name = rds_config.db_name
+
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+try:
+    conn = pymysql.connect(rds_host, user=name, passwd=password, db=db_name, connect_timeout=5)
+except:
+    logger.error(&quot;ERROR: Unexpected error: Could not connect to MySql instance.&quot;)
+    sys.exit()
+
+logger.info(&quot;SUCCESS: Connection to RDS mysql instance succeeded&quot;)
+def handler(event, context):
+    &quot;&quot;&quot;
+    This function fetches content from mysql RDS instance
+    &quot;&quot;&quot;
+
+    item_count = 0
+
+    with conn.cursor() as cur:
+        cur.execute(&quot;create table Employee3 ( EmpID  int NOT NULL, Name varchar(255) NOT NULL, PRIMARY KEY (EmpID))&quot;)  
+        cur.execute(&apos;insert into Employee3 (EmpID, Name) values(1, &quot;Joe&quot;)&apos;)
+        cur.execute(&apos;insert into Employee3 (EmpID, Name) values(2, &quot;Bob&quot;)&apos;)
+        cur.execute(&apos;insert into Employee3 (EmpID, Name) values(3, &quot;Mary&quot;)&apos;)
+        conn.commit()
+        cur.execute(&quot;select * from Employee3&quot;)
+        for row in cur:
+            item_count += 1
+            logger.info(row)
+            #print(row)
+    
+
+    return &quot;Added %d items from RDS MySQL table&quot; %(item_count)</code></pre>
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>We recommend that <code class="code">pymysql.connect()</code> is executed outside the
+                                 handler, as shown, for better performance. 
+                              </p>
+                           </div>
+                           
+                           
+                        </li>
+                        <li>
+                           <p>Save the file as <code>app.py</code>.  
+                           </p>
+                        </li>
+                        <li>
+                           <p>Install the following library dependencies using <b>pip</b>:
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><code class="code">pymysql</code> &#x2013; The Lambda function code
+                                       uses this library to access your MySQL
+                                       instance (see <a href="https://pypi.python.org/pypi/PyMySQL" target="_blank">PyMySQL</a>) .
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                        </li>
+                        <li>
+                           <p>Create a config file that contains the following information and save it as
+                              <code class="code">rds_config.py</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">#config file containing credentials for rds mysql instance
+db_username = &quot;<em class="replaceable"><code>username</code></em>&quot;
+db_password = &quot;<em class="replaceable"><code>password</code></em>&quot;
+db_name = &quot;<em class="replaceable"><code>databasename</code></em>&quot; </code></pre></li>
+                        <li>
+                           <p>Zip all of these files into a file named <code>app.zip</code> to create your deployment package. 
+                              For step-by-step instructions, see <a href="lambda-python-how-to-create-deployment-package.html">Creating a Deployment Package
+                                 			(Python)</a>. 
+                           </p>
+                        </li>
+                     </ol>
+                     
+                     
+                     
+                     <p class="title"><b>Next Step</b></p>
+                     
+                     <p><a href="vpc-rds-create-iam-role.html">Step 2.2: Create the Execution
+                           Role (IAM Role)</a></p>
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="vpc-rds-create-lambda-function.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="vpc-rds-create-iam-role.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Python"><a class="pagetoc" href="#vpc-rds-deployment-pkg-python">Python</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>How Amazon S3 Authorizes a Request
+         			for an Object Operation  - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="how-s3-evaluates-access-control.html" title="How Amazon S3 Authorizes a Request">
+      <link rel="prev" href="access-control-auth-workflow-bucket-operation.html" title="How Amazon S3 Authorizes a Request
+			for a Bucket Operation ">
+      <link rel="next" href="access-policy-alternatives-guidelines.html" title="Guidelines for Using the Available
+			Access Policy Options">
+      <meta name="description" content="How Amazon S3 evaluates access control to authorize requests for object operations.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/access-control-auth-workflow-object-operation.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="s3-access-control.html">Managing Access Permissions to Your Amazon S3 Resources</a> &#xBB; <a href="intro-managing-access-s3-resources.html">Introduction to Managing Access Permissions to Your Amazon S3 Resources</a> &#xBB; <a href="how-s3-evaluates-access-control.html">How Amazon S3 Authorizes a Request</a> &#xBB; <span class="breadcrumb">How Amazon S3 Authorizes a Request
+                                    			for an Object Operation </span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="access-control-auth-workflow-object-operation">How Amazon S3 Authorizes a Request
+                        			for an Object Operation 
+                     </h1>
+                     <p>When Amazon S3 receives a request for an object operation, it converts all the relevant
+                        			permissions&#x2014;resource-based  permissions (object access control list
+                        			(ACL), bucket policy, bucket ACL) and IAM user policies&#x2014;into a set of policies
+                        to
+                        			be evaluated at run time. It then evaluates the resulting set of policies in a
+                        series of
+                        			steps. In each step, it evaluates a subset of policies in three specific
+                        			contexts&#x2014;user context, bucket context, and object context.
+                     </p>
+                     <div class="orderedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ol>
+                           <li>
+                              					
+                              <p><span class="topcom">User context</span> &#x2013; If the requester is an IAM user, the
+                                 					user must have permission from the parent AWS account to which it belongs. In
+                                 					this step, Amazon S3 evaluates a subset of policies owned by the parent account
+                                 					(also referred as the context authority). This subset of policies includes the
+                                 					user policy that the parent attaches to the user. If the parent also owns the
+                                 					resource in the request (bucket, object), Amazon S3 evaluates the corresponding
+                                 					resource policies (bucket policy, bucket ACL, and object ACL) at the same time.
+                                 
+                              </p>
+                              						
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>If the parent AWS account owns the resource (bucket or object), it can grant resource
+                                    								permissions to its IAM user by using either the user policy or the
+                                    								resource policy. 
+                                 </p>
+                              </div>					
+                              				
+                           </li>
+                           <li>
+                              <p><span class="topcom">Bucket context</span> &#x2013; In this context, Amazon S3 evaluates
+                                 						policies owned by the AWS account that owns the bucket.
+                              </p>
+                              					
+                              <p>If the AWS account that owns the object in the request is not same as the bucket owner,
+                                 					in the bucket context Amazon S3 checks the policies if the bucket owner has
+                                 					explicitly denied access to the object. If there is an explicit deny set on the
+                                 					object, Amazon S3 does not authorize the request. 
+                              </p>
+                           </li>
+                           <li>
+                              <p><span class="topcom">Object context</span> &#x2013; The requester must have permissions from
+                                 					the object owner to perform a specific object operation. In this step, Amazon
+                                 S3
+                                 					evaluates the object ACL. 
+                              </p>
+                              					
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>If bucket and object owners are the same, access to the object can be granted in the
+                                    bucket
+                                    						policy, which is evaluated at the bucket context. If the owners are
+                                    						different, the object owners must use an object ACL to grant permissions. If
+                                    						the AWS account that owns the object is also the parent account to which the
+                                    						IAM user belongs,&#xA0;it can configure object permissions in a user policy,
+                                    						which is evaluated at the user context. For more information about using
+                                    						these access policy alternatives, see <a href="access-policy-alternatives-guidelines.html">Guidelines for Using the Available
+                                       			Access Policy Options</a>.
+                                 </p>
+                              </div>
+                              				
+                           </li>
+                        </ol>
+                     </div>
+                     <p> The following is an illustration of the context-based evaluation for an object
+                        			operation.
+                     </p>
+                     <div class="mediaobject">
+                        				
+                        					<img src="../../..//img/AccessControlAuthorizationFlowObjectResource.png">
+                        				
+                        			
+                     </div>
+                     <h2 id="access-control-auth-workflow-object-operation-example1">Example 1: Object
+                        				Operation Request
+                     </h2>
+                     			
+                     			
+                     <p>In this example, IAM user Jill, whose parent AWS account is 1111-1111-1111, sends
+                        an object
+                        				operation request (for example, Get object) for an object owned by AWS account
+                        				3333-3333-3333 in a bucket owned by AWS account 2222-2222-2222. 
+                     </p>
+                     		
+                     				
+                     <div class="mediaobject">
+                        					
+                        						<img src="../../..//img/example50-policy-eval-logic.png">
+                        					
+                        				
+                     </div>
+                     			
+                     			
+                     <p>Jill will need permission from the parent AWS account, the bucket owner, and the object
+                        				owner. Amazon S3 evaluates the context as follows:
+                     </p>
+                     				
+                     <div class="orderedlist">
+                        					
+                        					
+                        					
+                        				
+                        <ol>
+                           <li>
+                              						
+                              <p>Because the request is from an IAM user, Amazon S3 evaluates the user context to verify
+                                 						that the parent AWS account 1111-1111-1111 has given Jill permission to
+                                 						perform the requested operation. If she has that permission, Amazon S3
+                                 						evaluates the bucket context. Otherwise, Amazon S3 denies the
+                                 						request.
+                              </p>
+                              					
+                           </li>
+                           <li>
+                              <p> In the bucket context, the bucket owner, AWS account 2222-2222-2222, is the context
+                                 						authority. Amazon S3 evaluates the bucket policy to determine if the bucket
+                                 						owner has explicitly denied Jill access to the object. 
+                              </p>
+                           </li>
+                           <li>
+                              <p>In the object context, the context authority is AWS account 3333-3333-3333, the object
+                                 owner.
+                                 						Amazon S3 evaluates the object ACL to determine if Jill has permission to
+                                 						access the object. If she does, Amazon S3 authorizes the request.
+                                 						
+                              </p>
+                           </li>
+                        </ol>
+                     </div>
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="access-control-auth-workflow-bucket-operation.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="access-policy-alternatives-guidelines.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Example 1: Object
+				Operation Request"><a class="pagetoc" href="#access-control-auth-workflow-object-operation-example1">Example 1: Object
+                              				Operation Request</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

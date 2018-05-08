@@ -1,0 +1,1085 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Deploying Applications on Amazon EC2 with AWS CloudFormation - AWS CloudFormation</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="CHAP_Using.html" title="Walkthroughs">
+      <link rel="prev" href="example-templates-autoscaling.html" title="Walkthrough: Create a Scalable, Load-balancing
+    Web Server">
+      <link rel="next" href="using-cfn-waitcondition.html" title="Creating Wait Conditions in a Template">
+      <meta name="description" content="Automatically install, configure, and start up your application on Amazon EC2 with AWS CloudFormation.">
+      <meta name="keywords" content="CloudFormation,AWSCloudFormation,resource provisioning,resource configuration,infrastructure management,CloudFormer,CloudFormation Designer,CloudFormation stack,CloudFormation stackset,CloudFormation template,change set">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS CloudFormation">
+      <meta name="guide" content="User Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/deploying.applications.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudformation">AWS CloudFormation</a> &#xBB; <a href="index.html">User Guide</a> &#xBB; <a href="template-guide.html">Working with AWS CloudFormation Templates</a> &#xBB; <a href="CHAP_Using.html">Walkthroughs</a> &#xBB; <span class="breadcrumb">Deploying Applications on Amazon EC2 with AWS CloudFormation</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="deploying.applications">Deploying Applications on Amazon EC2 with AWS CloudFormation</h1>
+                     <p>You can use AWS CloudFormation to automatically install, configure, and start applications
+                        on Amazon EC2
+                        instances. Doing so enables you to easily duplicate deployments and update existing
+                        installations without connecting directly to the instance, which can save you a lot
+                        of time and
+                        effort.
+                     </p>
+                     <p>AWS CloudFormation includes a set of helper scripts (cfn-init, cfn-signal, cfn-get-metadata,
+                        and cfn-hup)
+                        that are based on cloud-init. You call these helper scripts from your AWS CloudFormation
+                        templates to
+                        install, configure, and update applications on Amazon EC2 instances that are in the
+                        same
+                        template.
+                     </p>
+                     <p>The following walkthrough describes how to create a template that launches a LAMP
+                        stack by
+                        using cfn helper scripts to install, configure and start Apache, MySQL, and PHP. You&apos;ll
+                        start
+                        with a simple template that sets up a basic Amazon EC2 instance running Amazon Linux,
+                        and then
+                        continue adding to the template until it describes a full LAMP stack.
+                     </p>
+                     <p>For additional strategies and examples about deploying applications with AWS CloudFormation,
+                        see the
+                        <a href="http://aws.amazon.com/cloudformation/aws-cloudformation-articles-and-tutorials/" target="_blank">Bootstrapping Applications via AWS CloudFormation</a> article.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#deployment-walkthrough-basic-server">Basic Amazon EC2 Instance</a></li>
+                           <li><a href="#deployment-walkthrough-lamp-install">LAMP Installation</a></li>
+                           <li><a href="#deployment-walkthrough-config">LAMP Configuration</a></li>
+                           <li><a href="#deployment-walkthrough-cfn-signal">CreationPolicy Attribute</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="deployment-walkthrough-basic-server">Basic Amazon EC2 Instance</h2>
+                     
+                     
+                     <p>You start with a basic template that defines a single Amazon EC2 instance with a security
+                        group that allows SSH traffic on port 22 and HTTP traffic on port 80, as shown in
+                        the
+                        following example:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;AWSTemplateFormatVersion&quot; : &quot;2010-09-09&quot;,
+
+  &quot;Description&quot; : &quot;AWS CloudFormation sample template LAMP_Single_Instance: Create a LAMP stack using a single EC2
+instance and a local MySQL database for storage. This template demonstrates using the AWS CloudFormation bootstrap
+scripts to install the packages and files necessary to deploy the Apache web server, PHP, and MySQL at instance launch time.
+**WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.&quot;,
+
+  &quot;Parameters&quot; : {
+    &quot;KeyName&quot;: {
+      &quot;Description&quot; : &quot;Name of an existing EC2 KeyPair to enable SSH access to the instance&quot;,
+      &quot;Type&quot;: &quot;AWS::EC2::KeyPair::KeyName&quot;,
+      &quot;ConstraintDescription&quot; : &quot;Can contain only ASCII characters.&quot;
+    },  
+    &quot;InstanceType&quot; : {
+      &quot;Description&quot; : &quot;WebServer EC2 instance type&quot;,
+      &quot;Type&quot; : &quot;String&quot;,
+      &quot;Default&quot; : &quot;m1.small&quot;,
+      &quot;AllowedValues&quot; : [ &quot;t1.micro&quot;, &quot;t2.micro&quot;, &quot;t2.small&quot;, &quot;t2.medium&quot;, &quot;m1.small&quot;, &quot;m1.medium&quot;, &quot;m1.large&quot;, &quot;m1.xlarge&quot;, &quot;m2.xlarge&quot;, &quot;m2.2xlarge&quot;, &quot;m2.4xlarge&quot;, &quot;m3.medium&quot;, &quot;m3.large&quot;, &quot;m3.xlarge&quot;, &quot;m3.2xlarge&quot;, &quot;c1.medium&quot;, &quot;c1.xlarge&quot;, &quot;c3.large&quot;, &quot;c3.xlarge&quot;, &quot;c3.2xlarge&quot;, &quot;c3.4xlarge&quot;, &quot;c3.8xlarge&quot;, &quot;g2.2xlarge&quot;, &quot;r3.large&quot;, &quot;r3.xlarge&quot;, &quot;r3.2xlarge&quot;, &quot;r3.4xlarge&quot;, &quot;r3.8xlarge&quot;, &quot;i2.xlarge&quot;, &quot;i2.2xlarge&quot;, &quot;i2.4xlarge&quot;, &quot;i2.8xlarge&quot;, &quot;hi1.4xlarge&quot;, &quot;hs1.8xlarge&quot;, &quot;cr1.8xlarge&quot;, &quot;cc2.8xlarge&quot;, &quot;cg1.4xlarge&quot;],
+      &quot;ConstraintDescription&quot; : &quot;Must be a valid EC2 instance type&quot;
+    },
+    &quot;SSHLocation&quot; : {
+      &quot;Description&quot; : &quot;The IP address range that can be used to SSH to the EC2 instances&quot;,
+      &quot;Type&quot;: &quot;String&quot;,
+      &quot;MinLength&quot;: &quot;9&quot;,
+      &quot;MaxLength&quot;: &quot;18&quot;,
+      &quot;Default&quot;: &quot;0.0.0.0/0&quot;,
+      &quot;AllowedPattern&quot;: &quot;(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})&quot;,
+      &quot;ConstraintDescription&quot;: &quot;Must be a valid IP CIDR range of the form x.x.x.x/x&quot;
+    } 
+  },
+
+  &quot;Mappings&quot; : {
+    &quot;AWSInstanceType2Arch&quot; : {
+      &quot;t1.micro&quot;    : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;t2.micro&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;t2.small&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;t2.medium&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m1.small&quot;    : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m1.medium&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m1.large&quot;    : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m1.xlarge&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m2.xlarge&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m2.2xlarge&quot;  : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m2.4xlarge&quot;  : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m3.medium&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m3.large&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m3.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m3.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c1.medium&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;c1.xlarge&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;c3.large&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c3.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c3.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c3.4xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c3.8xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;g2.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVMG2&quot;  },
+      &quot;r3.large&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;r3.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;r3.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;r3.4xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;r3.8xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;i2.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;i2.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;i2.4xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;i2.8xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;hi1.4xlarge&quot; : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;hs1.8xlarge&quot; : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;cr1.8xlarge&quot; : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;cc2.8xlarge&quot; : { &quot;Arch&quot; : &quot;HVM64&quot;  }
+    },
+
+    &quot;AWSRegionArch2AMI&quot; : {
+      &quot;us-east-1&quot;      : { &quot;PV64&quot; : &quot;ami-50842d38&quot;, &quot;HVM64&quot; : &quot;ami-08842d60&quot;, &quot;HVMG2&quot; : &quot;ami-3a329952&quot;  },
+      &quot;us-west-2&quot;      : { &quot;PV64&quot; : &quot;ami-af86c69f&quot;, &quot;HVM64&quot; : &quot;ami-8786c6b7&quot;, &quot;HVMG2&quot; : &quot;ami-47296a77&quot;  },
+      &quot;us-west-1&quot;      : { &quot;PV64&quot; : &quot;ami-c7a8a182&quot;, &quot;HVM64&quot; : &quot;ami-cfa8a18a&quot;, &quot;HVMG2&quot; : &quot;ami-331b1376&quot;  },
+      &quot;eu-west-1&quot;      : { &quot;PV64&quot; : &quot;ami-aa8f28dd&quot;, &quot;HVM64&quot; : &quot;ami-748e2903&quot;, &quot;HVMG2&quot; : &quot;ami-00913777&quot;  },
+      &quot;ap-southeast-1&quot; : { &quot;PV64&quot; : &quot;ami-20e1c572&quot;, &quot;HVM64&quot; : &quot;ami-d6e1c584&quot;, &quot;HVMG2&quot; : &quot;ami-fabe9aa8&quot;  },
+      &quot;ap-northeast-1&quot; : { &quot;PV64&quot; : &quot;ami-21072820&quot;, &quot;HVM64&quot; : &quot;ami-35072834&quot;, &quot;HVMG2&quot; : &quot;ami-5dd1ff5c&quot;  },
+      &quot;ap-southeast-2&quot; : { &quot;PV64&quot; : &quot;ami-8b4724b1&quot;, &quot;HVM64&quot; : &quot;ami-fd4724c7&quot;, &quot;HVMG2&quot; : &quot;ami-e98ae9d3&quot;  },
+      &quot;sa-east-1&quot;      : { &quot;PV64&quot; : &quot;ami-9d6cc680&quot;, &quot;HVM64&quot; : &quot;ami-956cc688&quot;, &quot;HVMG2&quot; : &quot;NOT_SUPPORTED&quot; },
+      &quot;cn-north-1&quot;     : { &quot;PV64&quot; : &quot;ami-a857c591&quot;, &quot;HVM64&quot; : &quot;ami-ac57c595&quot;, &quot;HVMG2&quot; : &quot;NOT_SUPPORTED&quot; },
+      &quot;eu-central-1&quot;   : { &quot;PV64&quot; : &quot;ami-a03503bd&quot;, &quot;HVM64&quot; : &quot;ami-b43503a9&quot;, &quot;HVMG2&quot; : &quot;ami-b03503ad&quot;  }
+    }
+  },
+
+  &quot;Resources&quot; : {
+
+    &quot;WebServerInstance&quot;: {
+      &quot;Type&quot;: &quot;AWS::EC2::Instance&quot;,
+      &quot;Properties&quot;: {
+        &quot;ImageId&quot; : { &quot;Fn::FindInMap&quot; : [ &quot;AWSRegionArch2AMI&quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; },
+                          { &quot;Fn::FindInMap&quot; : [ &quot;AWSInstanceType2Arch&quot;, { &quot;Ref&quot; : &quot;InstanceType&quot; }, &quot;Arch&quot; ] } ] },
+        &quot;InstanceType&quot;   : { &quot;Ref&quot; : &quot;InstanceType&quot; },
+        &quot;SecurityGroups&quot; : [ {&quot;Ref&quot; : &quot;WebServerSecurityGroup&quot;} ],
+        &quot;KeyName&quot;        : { &quot;Ref&quot; : &quot;KeyName&quot; }
+      }
+    },
+    &quot;WebServerSecurityGroup&quot; : {
+      &quot;Type&quot; : &quot;AWS::EC2::SecurityGroup&quot;,
+      &quot;Properties&quot; : {
+        &quot;GroupDescription&quot; : &quot;Enable HTTP access via port 80&quot;,
+        &quot;SecurityGroupIngress&quot; : [
+          {&quot;IpProtocol&quot; : &quot;tcp&quot;, &quot;FromPort&quot; : &quot;80&quot;, &quot;ToPort&quot; : &quot;80&quot;, &quot;CidrIp&quot; : &quot;0.0.0.0/0&quot;},
+          {&quot;IpProtocol&quot; : &quot;tcp&quot;, &quot;FromPort&quot; : &quot;22&quot;, &quot;ToPort&quot; : &quot;22&quot;, &quot;CidrIp&quot; : { &quot;Ref&quot; : &quot;SSHLocation&quot;}}
+        ]
+      }
+    }
+  },
+
+  &quot;Outputs&quot; : {
+    &quot;WebsiteURL&quot; : {
+      &quot;Description&quot; : &quot;URL for newly created LAMP stack&quot;,
+      &quot;Value&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [&quot;http://&quot;, { &quot;Fn::GetAtt&quot; : [ &quot;WebServerInstance&quot;, &quot;PublicDnsName&quot; ]}]] }
+    }
+  }
+}</code></pre>
+                     <p>In addition to the Amazon EC2 instance and security group, we create three input parameters
+                        that specify the instance type, an Amazon EC2 key pair to use for SSH access, and
+                        an IP address
+                        range that can be used to SSH to the instance. The mapping section ensures that AWS
+                        CloudFormation uses the
+                        correct AMI ID for the stack&apos;s region and the Amazon EC2 instance type. Finally, the
+                        output section
+                        outputs the public URL of the web server.
+                     </p>
+                     
+                     <h2 id="deployment-walkthrough-lamp-install">LAMP Installation</h2>
+                     
+                     
+                     <p>You&apos;ll build on the previous basic Amazon EC2 template to automatically install Apache,
+                        MySQL,
+                        and PHP. To install the applications, you&apos;ll add a <code class="code">UserData</code> property and
+                        <code class="code">Metadata</code> property. However, the template won&apos;t configure and start the
+                        applications until the next section.
+                     </p>
+                     
+                     <p>In the following example, sections marked with an ellipsis (<code class="code">...</code>) are omitted
+                        for brevity. Additions to the template are shown in red italic text.
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;AWSTemplateFormatVersion&quot; : &quot;2010-09-09&quot;,
+
+  &quot;Description&quot; : &quot;AWS CloudFormation Sample Template LAMP_Install_Only: ...&quot;,
+
+  &quot;Parameters&quot; : {
+
+    &quot;KeyName&quot; : { ... },
+
+    &quot;InstanceType&quot; : { ...  },
+
+  &quot;Mappings&quot; : { ... },
+
+  &quot;Resources&quot; : {
+    &quot;WebServerInstance&quot;: {
+      &quot;Type&quot;: &quot;AWS::EC2::Instance&quot;,
+<em class="replaceable"><code>      &quot;Metadata&quot; : {
+        &quot;Comment1&quot; : &quot;Configure the bootstrap helpers to install the Apache Web Server and PHP&quot;,
+        &quot;Comment2&quot; : &quot;Save website content to /var/www/html/index.php&quot;,
+
+        &quot;AWS::CloudFormation::Init&quot; : {
+          &quot;configSets&quot; : {
+            &quot;Install&quot; : [ &quot;Install&quot; ]
+          },
+
+          &quot;Install&quot; : {
+            &quot;packages&quot; : {
+              &quot;yum&quot; : {
+                &quot;mysql&quot;        : [],
+                &quot;mysql-server&quot; : [],
+                &quot;mysql-libs&quot;   : [],
+                &quot;httpd&quot;        : [],
+                &quot;php&quot;          : [],
+                &quot;php-mysql&quot;    : []
+              }
+            },
+
+            &quot;files&quot; : {
+              &quot;/var/www/html/index.php&quot; : {
+                &quot;content&quot; : { &quot;Fn::Join&quot; : [ &quot;&quot;, [
+                  &quot;&lt;html&gt;\n&quot;,
+                  &quot;  &lt;head&gt;\n&quot;,
+                  &quot;    &lt;title&gt;AWS CloudFormation PHP Sample&lt;/title&gt;\n&quot;,
+                  &quot;    &lt;meta http-equiv=\&quot;Content-Type\&quot; content=\&quot;text/html; charset=ISO-8859-1\&quot;&gt;\n&quot;,
+                  &quot;  &lt;/head&gt;\n&quot;,
+                  &quot;  &lt;body&gt;\n&quot;,
+                  &quot;    &lt;h1&gt;Welcome to the AWS CloudFormation PHP Sample&lt;/h1&gt;\n&quot;,
+                  &quot;    &lt;p/&gt;\n&quot;,
+                  &quot;    &lt;?php\n&quot;,
+                  &quot;      // Print out the current data and time\n&quot;,
+                  &quot;      print \&quot;The Current Date and Time is: &lt;br/&gt;\&quot;;\n&quot;,
+                  &quot;      print date(\&quot;g:i A l, F j Y.\&quot;);\n&quot;,
+                  &quot;    ?&gt;\n&quot;,
+                  &quot;    &lt;p/&gt;\n&quot;,
+                  &quot;    &lt;?php\n&quot;,
+                  &quot;      // Setup a handle for CURL\n&quot;,
+                  &quot;      $curl_handle=curl_init();\n&quot;,
+                  &quot;      curl_setopt($curl_handle,CURLOPT_CONNECTTIMEOUT,2);\n&quot;,
+                  &quot;      curl_setopt($curl_handle,CURLOPT_RETURNTRANSFER,1);\n&quot;,
+                  &quot;      // Get the hostname of the instance from the instance metadata\n&quot;,
+                  &quot;      curl_setopt($curl_handle,CURLOPT_URL,&apos;http://169.254.169.254/latest/meta-data/public-hostname&apos;);\n&quot;,
+                  &quot;      $hostname = curl_exec($curl_handle);\n&quot;,
+                  &quot;      if (empty($hostname))\n&quot;,
+                  &quot;      {\n&quot;,
+                  &quot;        print \&quot;Sorry, for some reason, we got no hostname back &lt;br /&gt;\&quot;;\n&quot;,
+                  &quot;      }\n&quot;,
+                  &quot;      else\n&quot;,
+                  &quot;      {\n&quot;,
+                  &quot;        print \&quot;Server = \&quot; . $hostname . \&quot;&lt;br /&gt;\&quot;;\n&quot;,
+                  &quot;      }\n&quot;,
+                  &quot;      // Get the instance-id of the instance from the instance metadata\n&quot;,
+                  &quot;      curl_setopt($curl_handle,CURLOPT_URL,&apos;http://169.254.169.254/latest/meta-data/instance-id&apos;);\n&quot;,
+                  &quot;      $instanceid = curl_exec($curl_handle);\n&quot;,
+                  &quot;      if (empty($instanceid))\n&quot;,
+                  &quot;      {\n&quot;,
+                  &quot;        print \&quot;Sorry, for some reason, we got no instance id back &lt;br /&gt;\&quot;;\n&quot;,
+                  &quot;      }\n&quot;,
+                  &quot;      else\n&quot;,
+                  &quot;      {\n&quot;,
+                  &quot;        print \&quot;EC2 instance-id = \&quot; . $instanceid . \&quot;&lt;br /&gt;\&quot;;\n&quot;,
+                  &quot;      }\n&quot;,
+                  &quot;      $Database   = \&quot;&quot;, {&quot;Ref&quot; : &quot;DBName&quot;}, &quot;\&quot;;\n&quot;,
+                  &quot;      $DBUser     = \&quot;&quot;, {&quot;Ref&quot; : &quot;DBUsername&quot;}, &quot;\&quot;;\n&quot;,
+                  &quot;      $DBPassword = \&quot;&quot;, {&quot;Ref&quot; : &quot;DBPassword&quot;}, &quot;\&quot;;\n&quot;,
+                  &quot;      print \&quot;Database = \&quot; . $Database . \&quot;&lt;br /&gt;\&quot;;\n&quot;,
+                  &quot;      $dbconnection = mysql_connect($Database, $DBUser, $DBPassword)\n&quot;,
+                  &quot;                      or die(\&quot;Could not connect: \&quot; . ysql_error());\n&quot;,
+                  &quot;      print (\&quot;Connected to $Database successfully\&quot;);\n&quot;,
+                  &quot;      mysql_close($dbconnection);\n&quot;,
+                  &quot;    ?&gt;\n&quot;,
+                  &quot;    &lt;h2&gt;PHP Information&lt;/h2&gt;\n&quot;,
+                  &quot;    &lt;p/&gt;\n&quot;,
+                  &quot;    &lt;?php\n&quot;,
+                  &quot;      phpinfo();\n&quot;,
+                  &quot;    ?&gt;\n&quot;,
+                  &quot;  &lt;/body&gt;\n&quot;,
+                  &quot;&lt;/html&gt;\n&quot;
+                ]]},
+                &quot;mode&quot;  : &quot;000600&quot;,
+                &quot;owner&quot; : &quot;apache&quot;,
+                &quot;group&quot; : &quot;apache&quot;
+              },
+            &quot;services&quot; : {
+              &quot;sysvinit&quot; : {  
+                &quot;httpd&quot;   : { &quot;enabled&quot; : &quot;true&quot;, &quot;ensureRunning&quot; : &quot;true&quot; }
+              }
+            }
+          }
+</code></em>      },
+      &quot;Properties&quot;: {
+        &quot;ImageId&quot; : { &quot;Fn::FindInMap&quot; : [ &quot;AWSRegionArch2AMI&quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; },
+                          { &quot;Fn::FindInMap&quot; : [ &quot;AWSInstanceType2Arch&quot;, { &quot;Ref&quot; : &quot;InstanceType&quot; }, &quot;Arch&quot; ] } ] },
+        &quot;InstanceType&quot;   : { &quot;Ref&quot; : &quot;InstanceType&quot; },
+        &quot;SecurityGroups&quot; : [ {&quot;Ref&quot; : &quot;WebServerSecurityGroup&quot;} ],
+        &quot;KeyName&quot;        : { &quot;Ref&quot; : &quot;KeyName&quot; },
+<em class="replaceable"><code>        &quot;UserData&quot;       : { &quot;Fn::Base64&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [
+             &quot;#!/bin/bash -xe\n&quot;,
+             &quot;yum install -y aws-cfn-bootstrap\n&quot;,
+
+             &quot;# Install the files and packages from the metadata\n&quot;,
+             &quot;/opt/aws/bin/cfn-init -v &quot;,
+             &quot;         --stack &quot;, { &quot;Ref&quot; : &quot;AWS::StackName&quot; },
+             &quot;         --resource WebServerInstance &quot;,
+             &quot;         --configsets Install &quot;,
+             &quot;         --region &quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;
+		]]}}</code></em>
+      }
+    },
+
+
+    &quot;WebServerSecurityGroup&quot; : { ...  }
+  },
+
+  &quot;Outputs&quot; : { ... }
+}
+</code></pre>
+                     <p>The <code class="code">UserData</code> property runs two shell commands: install the AWS CloudFormation helper
+                        scripts and then run the <a href="cfn-init.html">cfn-init</a> helper script.
+                        Because the helper scripts are updated periodically, running the <code class="code">yum install -y 
+                           aws-cfn-bootstrap</code> command ensures that you get the latest helper scripts. 
+                        When you run cfn-init, it reads metadata from the <a href="aws-resource-init.html">AWS::CloudFormation::Init</a> resource, which describes the actions to be carried out
+                        by cfn-init. For example, you can use cfn-init and AWS::CloudFormation::Init to install
+                        packages, write files to disk, or start a service. In our case, cfn-init installs
+                        the listed
+                        packages (httpd, mysql, and php) and creates the <code>/var/www/html/index.php</code>
+                        file (a sample PHP application).
+                     </p>
+                     
+                     <h2 id="deployment-walkthrough-config">LAMP Configuration</h2>
+                     
+                     
+                     <p>Now that we have a template that installs Linux, Apache, MySQL, and PHP, we&apos;ll need
+                        to
+                        expand the template so that it automatically configures and runs Apache, MySQL, and
+                        PHP. In
+                        the following example, we expand on the <code class="code">Parameters</code> section,
+                        <code class="code">AWS::CloudFormation::Init</code> resource, and <code class="code">UserData</code> property to
+                        complete the configuration. As with the previous template, sections marked with an
+                        ellipsis
+                        (...) are omitted for brevity. Additions to the template are shown in red italic text.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;AWSTemplateFormatVersion&quot; : &quot;2010-09-09&quot;,
+
+  &quot;Description&quot; : &quot;AWS CloudFormation Sample Template LAMP_Single_Instance: Create a LAMP stack using a single EC2 instance and a local MySQL database for storage. This template demonstrates using the AWS CloudFormation bootstrap scripts to install the packages and files necessary to deploy the Apache web server, PHP and MySQL at instance launch time. **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.&quot;,
+
+  &quot;Parameters&quot; : {
+
+    &quot;KeyName&quot; : { ...  },
+<em class="replaceable"><code>
+    &quot;DBName&quot;: {
+      &quot;Default&quot;: &quot;MyDatabase&quot;,
+      &quot;Description&quot; : &quot;MySQL database name&quot;,
+      &quot;Type&quot;: &quot;String&quot;,
+      &quot;MinLength&quot;: &quot;1&quot;,
+      &quot;MaxLength&quot;: &quot;64&quot;,
+      &quot;AllowedPattern&quot; : &quot;[a-zA-Z][a-zA-Z0-9]*&quot;,
+      &quot;ConstraintDescription&quot; : &quot;Must begin with a letter and contain only alphanumeric characters&quot;
+    },
+
+    &quot;DBUsername&quot;: {
+      &quot;NoEcho&quot;: &quot;true&quot;,
+      &quot;Description&quot; : &quot;Username for MySQL database access&quot;,
+      &quot;Type&quot;: &quot;String&quot;,
+      &quot;MinLength&quot;: &quot;1&quot;,
+      &quot;MaxLength&quot;: &quot;16&quot;,
+      &quot;AllowedPattern&quot; : &quot;[a-zA-Z][a-zA-Z0-9]*&quot;,
+      &quot;ConstraintDescription&quot; : &quot;Must begin with a letter and contain only alphanumeric characters&quot;
+    },
+
+    &quot;DBPassword&quot;: {
+      &quot;NoEcho&quot;: &quot;true&quot;,
+      &quot;Description&quot; : &quot;Password for MySQL database access&quot;,
+      &quot;Type&quot;: &quot;String&quot;,
+      &quot;MinLength&quot;: &quot;1&quot;,
+      &quot;MaxLength&quot;: &quot;41&quot;,
+      &quot;AllowedPattern&quot; : &quot;[a-zA-Z0-9]*&quot;,
+      &quot;ConstraintDescription&quot; : &quot;Must contain only alphanumeric characters&quot;
+    },
+
+    &quot;DBRootPassword&quot;: {
+      &quot;NoEcho&quot;: &quot;true&quot;,
+      &quot;Description&quot; : &quot;Root password for MySQL&quot;,
+      &quot;Type&quot;: &quot;String&quot;,
+      &quot;MinLength&quot;: &quot;1&quot;,
+      &quot;MaxLength&quot;: &quot;41&quot;,
+      &quot;AllowedPattern&quot; : &quot;[a-zA-Z0-9]*&quot;,
+      &quot;ConstraintDescription&quot; : &quot;Must contain only alphanumeric characters&quot;
+    },
+</code></em>
+    &quot;InstanceType&quot; : { ...  }
+
+  },
+
+  &quot;Mappings&quot; : {
+  ...
+  },
+
+  &quot;Resources&quot; : {
+    &quot;WebServerInstance&quot;: {
+      &quot;Type&quot;: &quot;AWS::EC2::Instance&quot;,
+      &quot;Metadata&quot; : {
+        &quot;Comment1&quot; : &quot;Configure the bootstrap helpers to install the Apache Web Server and PHP&quot;,
+        &quot;Comment2&quot; : &quot;Save website content to /var/www/html/index.php&quot;,
+
+        &quot;AWS::CloudFormation::Init&quot; : {
+          &quot;configSets&quot; : {
+<em class="replaceable"><code>            &quot;InstallAndRun&quot; : [ &quot;Install&quot;, &quot;Configure&quot; ]</code></em>
+          },
+
+          &quot;Install&quot; : {
+            &quot;packages&quot; : {
+              &quot;yum&quot; : {
+                &quot;mysql&quot;        : [],
+                &quot;mysql-server&quot; : [],
+                &quot;mysql-libs&quot;   : [],
+                &quot;httpd&quot;        : [],
+                &quot;php&quot;          : [],
+                &quot;php-mysql&quot;    : []
+              }
+            },
+
+            &quot;files&quot; : {
+              &quot;/var/www/html/index.php&quot; : {
+                &quot;content&quot; : { ... },
+                &quot;mode&quot;  : &quot;000600&quot;,
+                &quot;owner&quot; : &quot;apache&quot;,
+                &quot;group&quot; : &quot;apache&quot;
+              },
+<em class="replaceable"><code>            &quot;/tmp/setup.mysql&quot; : {
+                &quot;content&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [
+                  &quot;CREATE DATABASE &quot;, { &quot;Ref&quot; : &quot;DBName&quot; }, &quot;;\n&quot;,
+                  &quot;GRANT ALL ON &quot;, { &quot;Ref&quot; : &quot;DBName&quot; }, &quot;.* TO &apos;&quot;, { &quot;Ref&quot; : &quot;DBUsername&quot; }, &quot;&apos;@localhost IDENTIFIED BY &apos;&quot;, { &quot;Ref&quot; : &quot;DBPassword&quot; }, &quot;&apos;;\n&quot;
+                  ]]},
+                &quot;mode&quot;  : &quot;000400&quot;,
+                &quot;owner&quot; : &quot;root&quot;,
+                &quot;group&quot; : &quot;root&quot;
+              },
+              &quot;/etc/cfn/cfn-hup.conf&quot; : {
+                &quot;content&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [
+                  &quot;[main]\n&quot;,
+                  &quot;stack=&quot;, { &quot;Ref&quot; : &quot;AWS::StackId&quot; }, &quot;\n&quot;,
+                  &quot;region=&quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;
+                ]]},
+                &quot;mode&quot;    : &quot;000400&quot;,
+                &quot;owner&quot;   : &quot;root&quot;,
+                &quot;group&quot;   : &quot;root&quot;
+              },
+
+              &quot;/etc/cfn/hooks.d/cfn-auto-reloader.conf&quot; : {
+                &quot;content&quot;: { &quot;Fn::Join&quot; : [&quot;&quot;, [
+                  &quot;[cfn-auto-reloader-hook]\n&quot;,
+                  &quot;triggers=post.update\n&quot;,
+                  &quot;path=Resources.WebServerInstance.Metadata.AWS::CloudFormation::Init\n&quot;,
+                  &quot;action=/opt/aws/bin/cfn-init -v &quot;,
+                  &quot;         --stack &quot;, { &quot;Ref&quot; : &quot;AWS::StackName&quot; },
+                  &quot;         --resource WebServerInstance &quot;,
+                  &quot;         --configsets InstallAndRun &quot;,
+                  &quot;         --region &quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;,
+                  &quot;runas=root\n&quot;
+                ]]}
+              }
+            },</code></em>
+            },
+
+<em class="replaceable"><code>            &quot;services&quot; : {
+              &quot;sysvinit&quot; : {  
+                &quot;mysqld&quot;  : { &quot;enabled&quot; : &quot;true&quot;, &quot;ensureRunning&quot; : &quot;true&quot; },
+                &quot;httpd&quot;   : { &quot;enabled&quot; : &quot;true&quot;, &quot;ensureRunning&quot; : &quot;true&quot; },
+                &quot;cfn-hup&quot; : { &quot;enabled&quot; : &quot;true&quot;, &quot;ensureRunning&quot; : &quot;true&quot;,
+                              &quot;files&quot; : [&quot;/etc/cfn/cfn-hup.conf&quot;, &quot;/etc/cfn/hooks.d/cfn-auto-reloader.conf&quot;]}
+              }
+            }</code></em>
+          },
+<em class="replaceable"><code>          &quot;Configure&quot; : {
+            &quot;commands&quot; : {
+              &quot;01_set_mysql_root_password&quot; : {
+                &quot;command&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [&quot;mysqladmin -u root password &apos;&quot;, { &quot;Ref&quot; : &quot;DBRootPassword&quot; }, &quot;&apos;&quot;]]},
+                &quot;test&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [&quot;$(mysql &quot;, { &quot;Ref&quot; : &quot;DBUsername&quot; }, &quot; -u root --password=&apos;&quot;, { &quot;Ref&quot; : &quot;DBRootPassword&quot; }, &quot;&apos; &gt;/dev/null 2&gt;&amp;1 &lt;/dev/null); (( $? != 0 ))&quot;]]}
+              },
+              &quot;02_create_database&quot; : {
+                &quot;command&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [&quot;mysql -u root --password=&apos;&quot;, { &quot;Ref&quot; : &quot;DBRootPassword&quot; }, &quot;&apos; &lt; /tmp/setup.mysql&quot;]]},
+                &quot;test&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [&quot;$(mysql &quot;, { &quot;Ref&quot; : &quot;DBUsername&quot; }, &quot; -u root --password=&apos;&quot;, { &quot;Ref&quot; : &quot;DBRootPassword&quot; }, &quot;&apos; &gt;/dev/null 2&gt;&amp;1 &lt;/dev/null); (( $? != 0 ))&quot;]]}
+              }
+            }
+          }</code></em>
+        }
+      },
+      &quot;Properties&quot;: {
+        &quot;ImageId&quot; : { &quot;Fn::FindInMap&quot; : [ &quot;AWSRegionArch2AMI&quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; },
+                          { &quot;Fn::FindInMap&quot; : [ &quot;AWSInstanceType2Arch&quot;, { &quot;Ref&quot; : &quot;InstanceType&quot; }, &quot;Arch&quot; ] } ] },
+        &quot;InstanceType&quot;   : { &quot;Ref&quot; : &quot;InstanceType&quot; },
+        &quot;SecurityGroups&quot; : [ {&quot;Ref&quot; : &quot;WebServerSecurityGroup&quot;} ],
+        &quot;KeyName&quot;        : { &quot;Ref&quot; : &quot;KeyName&quot; },
+        &quot;UserData&quot;       : { &quot;Fn::Base64&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [
+          &quot;#!/bin/bash -xe\n&quot;,
+          &quot;yum install -y aws-cfn-bootstrap\n&quot;,
+          
+          &quot;# Install the files and packages from the metadata\n&quot;,
+          &quot;/opt/aws/bin/cfn-init &quot;,
+          &quot;         --stack &quot;, { &quot;Ref&quot; : &quot;AWS::StackName&quot; },
+          &quot;         --resource WebServerInstance &quot;,^M
+          &quot;         --configsets <em class="replaceable"><code>InstallAndRun</code></em> &quot;,
+          &quot;         --region &quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;
+		]]}}
+      }
+    },
+
+    &quot;WebServerSecurityGroup&quot; : { ... }
+  },
+
+  &quot;Outputs&quot; : { ... }
+}
+</code></pre>
+                     <p>The example adds more parameters to obtain information for configuring the MySQL database,
+                        such as the database name, user name, password, and root password. The parameters
+                        also contain
+                        constraints that catch incorrectly formatted values before AWS CloudFormation creates
+                        the stack.
+                     </p>
+                     
+                     <p>In the <code class="code">AWS::CloudFormation::Init</code> resource, we added a MySQL setup file,
+                        containing the database name, user name, and password. The example also adds a
+                        <code class="code">services</code> property to ensure that the httpd and mysqld services are running
+                        (<code class="code">ensureRunning</code> set to <code class="code">true</code>) and to ensure that the services are
+                        restarted if the instance is rebooted (<code class="code">enabled</code> set to <code class="code">true</code>). A good
+                        practice is to also include the <a href="cfn-hup.html">cfn-hup</a> helper
+                        script, with which you can make configuration updates to running instances by updating
+                        the
+                        stack template. For example, you could change the sample PHP application and then
+                        run a stack
+                        update to deploy the change.
+                     </p>
+                     
+                     <p>In order to run the MySQL commands after the installation is complete, the example
+                        adds
+                        another configuration set to run the commands. Configuration sets are useful when
+                        you have a
+                        series of tasks that must be completed in a specific order. The example first runs
+                        the
+                        <code class="code">Installation</code> configuration set and then the <code class="code">Configure</code>
+                        configuration set. The <code class="code">Configure</code> configuration set specifies the database root
+                        password and then creates a database. In the commands section, the commands are processed
+                        in
+                        alphabetical order by name, so the example adds a number before each command name
+                        to indicate
+                        its desired run order.
+                     </p>
+                     
+                     
+                     <h2 id="deployment-walkthrough-cfn-signal">CreationPolicy Attribute</h2>
+                     
+                     
+                     <p>Finally, you need a way to instruct AWS CloudFormation to complete stack creation
+                        only after all the
+                        services (such as Apache and MySQL) are running and not after all the stack resources
+                        are
+                        created. In other words, if you use the template from the previous section to launch
+                        a stack,
+                        AWS CloudFormation sets the status of the stack as <code class="code">CREATE_COMPLETE</code> after it successfully
+                        creates all the resources. However, if one or more services failed to start, AWS CloudFormation
+                        still sets
+                        the stack status as <code class="code">CREATE_COMPLETE</code>. To prevent the status from changing to
+                        <code class="code">CREATE_COMPLETE</code> until all the services have successfully started, you can add a
+                        <a href="aws-attribute-creationpolicy.html">CreationPolicy</a>
+                        attribute to the instance. This attribute puts the instance&apos;s status in
+                        <code class="code">CREATE_IN_PROGRESS</code> until AWS CloudFormation receives the required number of success signals
+                        or the timeout period is exceeded, so you can control when the instance has been successfully
+                        created.
+                     </p>
+                     
+                     <p>The following example adds a creation policy to the Amazon EC2 instance to ensure
+                        that
+                        cfn-init completes the LAMP installation and configuration before the stack creation
+                        is
+                        completed. In conjunction with the creation policy, the example needs to run the <a href="cfn-signal.html">cfn-signal</a> helper script to signal AWS CloudFormation when all the
+                        applications are installed and configured.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;AWSTemplateFormatVersion&quot; : &quot;2010-09-09&quot;,
+
+  &quot;Description&quot; : &quot;AWS CloudFormation Sample Template LAMP_Single_Instance: ...&quot;,
+
+  &quot;Parameters&quot; : { ... },
+
+  &quot;Mappings&quot; : { ... },
+
+  &quot;Resources&quot; : {
+    &quot;WebServerInstance&quot;: {
+      &quot;Type&quot;: &quot;AWS::EC2::Instance&quot;,
+      &quot;Metadata&quot; : { ... },
+      &quot;Properties&quot;: {
+        &quot;ImageId&quot; : { &quot;Fn::FindInMap&quot; : [ &quot;AWSRegionArch2AMI&quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; },
+                          { &quot;Fn::FindInMap&quot; : [ &quot;AWSInstanceType2Arch&quot;, { &quot;Ref&quot; : &quot;InstanceType&quot; }, &quot;Arch&quot; ] } ] },
+        &quot;InstanceType&quot;   : { &quot;Ref&quot; : &quot;InstanceType&quot; },
+        &quot;SecurityGroups&quot; : [ {&quot;Ref&quot; : &quot;WebServerSecurityGroup&quot;} ],
+        &quot;KeyName&quot;        : { &quot;Ref&quot; : &quot;KeyName&quot; },
+        &quot;UserData&quot;       : { &quot;Fn::Base64&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [
+             &quot;#!/bin/bash -xe\n&quot;,
+             &quot;yum update aws-cfn-bootstrap\n&quot;,
+
+             &quot;# Install the files and packages from the metadata\n&quot;,
+             &quot;/opt/aws/bin/cfn-init &quot;,
+             &quot;         --stack &quot;, { &quot;Ref&quot; : &quot;AWS::StackName&quot; },
+             &quot;         --resource WebServerInstance &quot;,^M
+             &quot;         --configsets InstallAndRun &quot;,
+             &quot;         --region &quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;,
+
+<em class="replaceable"><code>             &quot;# Signal the status from cfn-init\n&quot;,
+             &quot;/opt/aws/bin/cfn-signal -e $? &quot;,
+             &quot;         --stack &quot;, { &quot;Ref&quot; : &quot;AWS::StackName&quot; },
+             &quot;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0; --resource WebServerInstance &quot;,
+             &quot;         --region &quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;</code></em>
+        ]]}}        
+      },
+<em class="replaceable"><code>      &quot;CreationPolicy&quot; : {
+        &quot;ResourceSignal&quot; : {
+          &quot;Timeout&quot; : &quot;PT5M&quot;
+        }
+      }</code></em>
+    },
+
+    &quot;WebServerSecurityGroup&quot; : { ...
+    }
+  },
+
+  &quot;Outputs&quot; : {
+    &quot;WebsiteURL&quot; : { ...
+    }
+  }
+}
+
+</code></pre>
+                     <p>The creation policy attribute uses the ISO 8601 format to define a timeout period
+                        of 5
+                        minutes. And because you&apos;re waiting for just 1 instance to be configured, you only
+                        need to
+                        wait for one success signal, which is the default count.
+                     </p>
+                     
+                     <p>In the <code class="code">UserData</code> property, the template runs the cfn-signal script to send a
+                        success signal with an exit code if all the services are configured and started successfully.
+                        When you use the cfn-signal script, you must include the stack ID or name and the
+                        logical ID
+                        of the resource that you want to signal. If the configuration fails or if the timeout
+                        period
+                        is exceeded, cfn-signal sends a failure signal that causes the resource creation to
+                        fail.
+                     </p>
+                     
+                     
+                     <p>The following example shows final complete template. You can also
+                        view the template at the following location:
+                     </p>
+                     
+                     <p><a href="https://s3.amazonaws.com/cloudformation-templates-us-east-1/LAMP_Single_Instance.template" target="_blank">https://s3.amazonaws.com/cloudformation-templates-us-east-1/LAMP_Single_Instance.template</a></p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;AWSTemplateFormatVersion&quot; : &quot;2010-09-09&quot;,
+  
+  &quot;Description&quot; : &quot;AWS CloudFormation Sample Template LAMP_Single_Instance: Create a LAMP stack using a single EC2 instance and a local MySQL database for storage. This template demonstrates using the AWS CloudFormation bootstrap scripts to install the packages and files necessary to deploy the Apache web server, PHP and MySQL at instance launch time. **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.&quot;,
+  
+  &quot;Parameters&quot; : {
+      
+    &quot;KeyName&quot;: {
+      &quot;Description&quot; : &quot;Name of an existing EC2 KeyPair to enable SSH access to the instance&quot;,
+      &quot;Type&quot;: &quot;AWS::EC2::KeyPair::KeyName&quot;,
+      &quot;ConstraintDescription&quot; : &quot;Can contain only ASCII characters.&quot;
+    },    
+
+    &quot;DBName&quot;: {
+      &quot;Default&quot;: &quot;MyDatabase&quot;,
+      &quot;Description&quot; : &quot;MySQL database name&quot;,
+      &quot;Type&quot;: &quot;String&quot;,
+      &quot;MinLength&quot;: &quot;1&quot;,
+      &quot;MaxLength&quot;: &quot;64&quot;,
+      &quot;AllowedPattern&quot; : &quot;[a-zA-Z][a-zA-Z0-9]*&quot;,
+      &quot;ConstraintDescription&quot; : &quot;Must begin with a letter and contain only alphanumeric characters&quot;
+    },
+
+    &quot;DBUsername&quot;: {
+      &quot;NoEcho&quot;: &quot;true&quot;,
+      &quot;Description&quot; : &quot;User name for MySQL database access&quot;,
+      &quot;Type&quot;: &quot;String&quot;,
+      &quot;MinLength&quot;: &quot;1&quot;,
+      &quot;MaxLength&quot;: &quot;16&quot;,
+      &quot;AllowedPattern&quot; : &quot;[a-zA-Z][a-zA-Z0-9]*&quot;,
+      &quot;ConstraintDescription&quot; : &quot;Must begin with a letter and contain only alphanumeric characters&quot;
+    },
+
+    &quot;DBPassword&quot;: {
+      &quot;NoEcho&quot;: &quot;true&quot;,
+      &quot;Description&quot; : &quot;Password for MySQL database access&quot;,
+      &quot;Type&quot;: &quot;String&quot;,
+      &quot;MinLength&quot;: &quot;1&quot;,
+      &quot;MaxLength&quot;: &quot;41&quot;,
+      &quot;AllowedPattern&quot; : &quot;[a-zA-Z0-9]*&quot;,
+      &quot;ConstraintDescription&quot; : &quot;Must contain only alphanumeric characters&quot;
+    },
+
+    &quot;DBRootPassword&quot;: {
+      &quot;NoEcho&quot;: &quot;true&quot;,
+      &quot;Description&quot; : &quot;Root password for MySQL&quot;,
+      &quot;Type&quot;: &quot;String&quot;,
+      &quot;MinLength&quot;: &quot;1&quot;,
+      &quot;MaxLength&quot;: &quot;41&quot;,
+      &quot;AllowedPattern&quot; : &quot;[a-zA-Z0-9]*&quot;,
+      &quot;ConstraintDescription&quot; : &quot;Must contain only alphanumeric characters&quot;
+    },
+
+    &quot;InstanceType&quot; : {
+      &quot;Description&quot; : &quot;WebServer EC2 instance type&quot;,
+      &quot;Type&quot; : &quot;String&quot;,
+      &quot;Default&quot; : &quot;m1.small&quot;,
+      &quot;AllowedValues&quot; : [ &quot;t1.micro&quot;, &quot;t2.micro&quot;, &quot;t2.small&quot;, &quot;t2.medium&quot;, &quot;m1.small&quot;, &quot;m1.medium&quot;, &quot;m1.large&quot;, &quot;m1.xlarge&quot;, &quot;m2.xlarge&quot;, &quot;m2.2xlarge&quot;, &quot;m2.4xlarge&quot;, &quot;m3.medium&quot;, &quot;m3.large&quot;, &quot;m3.xlarge&quot;, &quot;m3.2xlarge&quot;, &quot;c1.medium&quot;, &quot;c1.xlarge&quot;, &quot;c3.large&quot;, &quot;c3.xlarge&quot;, &quot;c3.2xlarge&quot;, &quot;c3.4xlarge&quot;, &quot;c3.8xlarge&quot;, &quot;g2.2xlarge&quot;, &quot;r3.large&quot;, &quot;r3.xlarge&quot;, &quot;r3.2xlarge&quot;, &quot;r3.4xlarge&quot;, &quot;r3.8xlarge&quot;, &quot;i2.xlarge&quot;, &quot;i2.2xlarge&quot;, &quot;i2.4xlarge&quot;, &quot;i2.8xlarge&quot;, &quot;hi1.4xlarge&quot;, &quot;hs1.8xlarge&quot;, &quot;cr1.8xlarge&quot;, &quot;cc2.8xlarge&quot;, &quot;cg1.4xlarge&quot;],
+      &quot;ConstraintDescription&quot; : &quot;Must be a valid EC2 instance type&quot;
+    },
+    &quot;SSHLocation&quot; : {
+      &quot;Description&quot; : &quot;The IP address range that can be used to SSH to the EC2 instances&quot;,
+      &quot;Type&quot;: &quot;String&quot;,
+      &quot;MinLength&quot;: &quot;9&quot;,
+      &quot;MaxLength&quot;: &quot;18&quot;,
+      &quot;Default&quot;: &quot;0.0.0.0/0&quot;,
+      &quot;AllowedPattern&quot;: &quot;(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})&quot;,
+      &quot;ConstraintDescription&quot;: &quot;Must be a valid IP CIDR range of the form x.x.x.x/x&quot;
+    } 
+  },
+  
+  &quot;Mappings&quot; : {
+    &quot;AWSInstanceType2Arch&quot; : {
+      &quot;t1.micro&quot;    : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;t2.micro&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;t2.small&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;t2.medium&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m1.small&quot;    : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m1.medium&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m1.large&quot;    : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m1.xlarge&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m2.xlarge&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m2.2xlarge&quot;  : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m2.4xlarge&quot;  : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m3.medium&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m3.large&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m3.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m3.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c1.medium&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;c1.xlarge&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;c3.large&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c3.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c3.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c3.4xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c3.8xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;g2.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVMG2&quot;  },
+      &quot;r3.large&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;r3.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;r3.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;r3.4xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;r3.8xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;i2.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;i2.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;i2.4xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;i2.8xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;hi1.4xlarge&quot; : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;hs1.8xlarge&quot; : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;cr1.8xlarge&quot; : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;cc2.8xlarge&quot; : { &quot;Arch&quot; : &quot;HVM64&quot;  }
+    },
+
+    &quot;AWSRegionArch2AMI&quot; : {
+      &quot;us-east-1&quot;      : { &quot;PV64&quot; : &quot;ami-50842d38&quot;, &quot;HVM64&quot; : &quot;ami-08842d60&quot;, &quot;HVMG2&quot; : &quot;ami-3a329952&quot;  },
+      &quot;us-west-2&quot;      : { &quot;PV64&quot; : &quot;ami-af86c69f&quot;, &quot;HVM64&quot; : &quot;ami-8786c6b7&quot;, &quot;HVMG2&quot; : &quot;ami-47296a77&quot;  },
+      &quot;us-west-1&quot;      : { &quot;PV64&quot; : &quot;ami-c7a8a182&quot;, &quot;HVM64&quot; : &quot;ami-cfa8a18a&quot;, &quot;HVMG2&quot; : &quot;ami-331b1376&quot;  },
+      &quot;eu-west-1&quot;      : { &quot;PV64&quot; : &quot;ami-aa8f28dd&quot;, &quot;HVM64&quot; : &quot;ami-748e2903&quot;, &quot;HVMG2&quot; : &quot;ami-00913777&quot;  },
+      &quot;ap-southeast-1&quot; : { &quot;PV64&quot; : &quot;ami-20e1c572&quot;, &quot;HVM64&quot; : &quot;ami-d6e1c584&quot;, &quot;HVMG2&quot; : &quot;ami-fabe9aa8&quot;  },
+      &quot;ap-northeast-1&quot; : { &quot;PV64&quot; : &quot;ami-21072820&quot;, &quot;HVM64&quot; : &quot;ami-35072834&quot;, &quot;HVMG2&quot; : &quot;ami-5dd1ff5c&quot;  },
+      &quot;ap-southeast-2&quot; : { &quot;PV64&quot; : &quot;ami-8b4724b1&quot;, &quot;HVM64&quot; : &quot;ami-fd4724c7&quot;, &quot;HVMG2&quot; : &quot;ami-e98ae9d3&quot;  },
+      &quot;sa-east-1&quot;      : { &quot;PV64&quot; : &quot;ami-9d6cc680&quot;, &quot;HVM64&quot; : &quot;ami-956cc688&quot;, &quot;HVMG2&quot; : &quot;NOT_SUPPORTED&quot; },
+      &quot;cn-north-1&quot;     : { &quot;PV64&quot; : &quot;ami-a857c591&quot;, &quot;HVM64&quot; : &quot;ami-ac57c595&quot;, &quot;HVMG2&quot; : &quot;NOT_SUPPORTED&quot; },
+      &quot;eu-central-1&quot;   : { &quot;PV64&quot; : &quot;ami-a03503bd&quot;, &quot;HVM64&quot; : &quot;ami-b43503a9&quot;, &quot;HVMG2&quot; : &quot;ami-b03503ad&quot;  }
+    }
+
+  },
+    
+  &quot;Resources&quot; : {     
+      
+    &quot;WebServerInstance&quot;: {  
+      &quot;Type&quot;: &quot;AWS::EC2::Instance&quot;,
+      &quot;Metadata&quot; : {
+        &quot;AWS::CloudFormation::Init&quot; : {
+          &quot;configSets&quot; : {
+            &quot;InstallAndRun&quot; : [ &quot;Install&quot;, &quot;Configure&quot; ]
+          },
+
+          &quot;Install&quot; : {
+            &quot;packages&quot; : {
+              &quot;yum&quot; : {
+                &quot;mysql&quot;        : [],
+                &quot;mysql-server&quot; : [],
+                &quot;mysql-libs&quot;   : [],
+                &quot;httpd&quot;        : [],
+                &quot;php&quot;          : [],
+                &quot;php-mysql&quot;    : []
+              }
+            },
+
+            &quot;files&quot; : {
+              &quot;/var/www/html/index.php&quot; : {
+                &quot;content&quot; : { &quot;Fn::Join&quot; : [ &quot;&quot;, [
+                  &quot;&lt;html&gt;\n&quot;,
+                  &quot;  &lt;head&gt;\n&quot;,
+                  &quot;    &lt;title&gt;AWS CloudFormation PHP Sample&lt;/title&gt;\n&quot;,
+                  &quot;    &lt;meta http-equiv=\&quot;Content-Type\&quot; content=\&quot;text/html; charset=ISO-8859-1\&quot;&gt;\n&quot;,
+                  &quot;  &lt;/head&gt;\n&quot;,
+                  &quot;  &lt;body&gt;\n&quot;,
+                  &quot;    &lt;h1&gt;Welcome to the AWS CloudFormation PHP Sample&lt;/h1&gt;\n&quot;,
+                  &quot;    &lt;p/&gt;\n&quot;,
+                  &quot;    &lt;?php\n&quot;,
+                  &quot;      // Print out the current data and time\n&quot;,
+                  &quot;      print \&quot;The Current Date and Time is: &lt;br/&gt;\&quot;;\n&quot;,
+                  &quot;      print date(\&quot;g:i A l, F j Y.\&quot;);\n&quot;,
+                  &quot;    ?&gt;\n&quot;,
+                  &quot;    &lt;p/&gt;\n&quot;,
+                  &quot;    &lt;?php\n&quot;,
+                  &quot;      // Setup a handle for CURL\n&quot;,
+                  &quot;      $curl_handle=curl_init();\n&quot;,
+                  &quot;      curl_setopt($curl_handle,CURLOPT_CONNECTTIMEOUT,2);\n&quot;,
+                  &quot;      curl_setopt($curl_handle,CURLOPT_RETURNTRANSFER,1);\n&quot;,
+                  &quot;      // Get the hostname of the intance from the instance metadata\n&quot;,
+                  &quot;      curl_setopt($curl_handle,CURLOPT_URL,&apos;http://169.254.169.254/latest/meta-data/public-hostname&apos;);\n&quot;,
+                  &quot;      $hostname = curl_exec($curl_handle);\n&quot;,
+                  &quot;      if (empty($hostname))\n&quot;,
+                  &quot;      {\n&quot;,
+                  &quot;        print \&quot;Sorry, for some reason, we got no hostname back &lt;br /&gt;\&quot;;\n&quot;,
+                  &quot;      }\n&quot;,
+                  &quot;      else\n&quot;,
+                  &quot;      {\n&quot;,
+                  &quot;        print \&quot;Server = \&quot; . $hostname . \&quot;&lt;br /&gt;\&quot;;\n&quot;,
+                  &quot;      }\n&quot;,
+                  &quot;      // Get the instance-id of the intance from the instance metadata\n&quot;,
+                  &quot;      curl_setopt($curl_handle,CURLOPT_URL,&apos;http://169.254.169.254/latest/meta-data/instance-id&apos;);\n&quot;,
+                  &quot;      $instanceid = curl_exec($curl_handle);\n&quot;,
+                  &quot;      if (empty($instanceid))\n&quot;,
+                  &quot;      {\n&quot;,
+                  &quot;        print \&quot;Sorry, for some reason, we got no instance id back &lt;br /&gt;\&quot;;\n&quot;,
+                  &quot;      }\n&quot;,
+                  &quot;      else\n&quot;,
+                  &quot;      {\n&quot;,
+                  &quot;        print \&quot;EC2 instance-id = \&quot; . $instanceid . \&quot;&lt;br /&gt;\&quot;;\n&quot;,
+                  &quot;      }\n&quot;,
+                  &quot;      $Database   = \&quot;&quot;, {&quot;Ref&quot; : &quot;DBName&quot;}, &quot;\&quot;;\n&quot;,
+                  &quot;      $DBUser     = \&quot;&quot;, {&quot;Ref&quot; : &quot;DBUsername&quot;}, &quot;\&quot;;\n&quot;,
+                  &quot;      $DBPassword = \&quot;&quot;, {&quot;Ref&quot; : &quot;DBPassword&quot;}, &quot;\&quot;;\n&quot;,
+                  &quot;      print \&quot;Database = \&quot; . $Database . \&quot;&lt;br /&gt;\&quot;;\n&quot;,
+                  &quot;      $dbconnection = mysql_connect($Database, $DBUser, $DBPassword)\n&quot;,
+                  &quot;                      or die(\&quot;Could not connect: \&quot; . ysql_error());\n&quot;,
+                  &quot;      print (\&quot;Connected to $Database successfully\&quot;);\n&quot;,
+                  &quot;      mysql_close($dbconnection);\n&quot;,
+                  &quot;    ?&gt;\n&quot;,
+                  &quot;    &lt;h2&gt;PHP Information&lt;/h2&gt;\n&quot;,
+                  &quot;    &lt;p/&gt;\n&quot;,
+                  &quot;    &lt;?php\n&quot;,
+                  &quot;      phpinfo();\n&quot;,
+                  &quot;    ?&gt;\n&quot;,
+                  &quot;  &lt;/body&gt;\n&quot;,
+                  &quot;&lt;/html&gt;\n&quot;
+                ]]},
+                &quot;mode&quot;  : &quot;000600&quot;,
+                &quot;owner&quot; : &quot;apache&quot;,
+                &quot;group&quot; : &quot;apache&quot;
+              },
+
+              &quot;/tmp/setup.mysql&quot; : {
+                &quot;content&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [
+                  &quot;CREATE DATABASE &quot;, { &quot;Ref&quot; : &quot;DBName&quot; }, &quot;;\n&quot;,
+                  &quot;GRANT ALL ON &quot;, { &quot;Ref&quot; : &quot;DBName&quot; }, &quot;.* TO &apos;&quot;, { &quot;Ref&quot; : &quot;DBUsername&quot; }, &quot;&apos;@localhost IDENTIFIED BY &apos;&quot;, { &quot;Ref&quot; : &quot;DBPassword&quot; }, &quot;&apos;;\n&quot;
+                  ]]},
+                &quot;mode&quot;  : &quot;000400&quot;,
+                &quot;owner&quot; : &quot;root&quot;,
+                &quot;group&quot; : &quot;root&quot;
+              },
+              &quot;/etc/cfn/cfn-hup.conf&quot; : {
+                &quot;content&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [
+                  &quot;[main]\n&quot;,
+                  &quot;stack=&quot;, { &quot;Ref&quot; : &quot;AWS::StackId&quot; }, &quot;\n&quot;,
+                  &quot;region=&quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;
+                ]]},
+                &quot;mode&quot;    : &quot;000400&quot;,
+                &quot;owner&quot;   : &quot;root&quot;,
+                &quot;group&quot;   : &quot;root&quot;
+              },
+
+              &quot;/etc/cfn/hooks.d/cfn-auto-reloader.conf&quot; : {
+                &quot;content&quot;: { &quot;Fn::Join&quot; : [&quot;&quot;, [
+                  &quot;[cfn-auto-reloader-hook]\n&quot;,
+                  &quot;triggers=post.update\n&quot;,
+                  &quot;path=Resources.WebServerInstance.Metadata.AWS::CloudFormation::Init\n&quot;,
+                  &quot;action=/opt/aws/bin/cfn-init -v &quot;,
+                  &quot;         --stack &quot;, { &quot;Ref&quot; : &quot;AWS::StackName&quot; },
+                  &quot;         --resource WebServerInstance &quot;,
+                  &quot;         --configsets InstallAndRun &quot;,
+                  &quot;         --region &quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;,
+                  &quot;runas=root\n&quot;
+                ]]}
+              }
+            },
+
+            &quot;services&quot; : {
+              &quot;sysvinit&quot; : {  
+                &quot;mysqld&quot;  : { &quot;enabled&quot; : &quot;true&quot;, &quot;ensureRunning&quot; : &quot;true&quot; },
+                &quot;httpd&quot;   : { &quot;enabled&quot; : &quot;true&quot;, &quot;ensureRunning&quot; : &quot;true&quot; },
+                &quot;cfn-hup&quot; : { &quot;enabled&quot; : &quot;true&quot;, &quot;ensureRunning&quot; : &quot;true&quot;,
+                              &quot;files&quot; : [&quot;/etc/cfn/cfn-hup.conf&quot;, &quot;/etc/cfn/hooks.d/cfn-auto-reloader.conf&quot;]}
+              }
+            }
+          },
+
+          &quot;Configure&quot; : {
+            &quot;commands&quot; : {
+              &quot;01_set_mysql_root_password&quot; : {
+                &quot;command&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [&quot;mysqladmin -u root password &apos;&quot;, { &quot;Ref&quot; : &quot;DBRootPassword&quot; }, &quot;&apos;&quot;]]},
+                &quot;test&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [&quot;$(mysql &quot;, { &quot;Ref&quot; : &quot;DBUsername&quot; }, &quot; -u root --password=&apos;&quot;, { &quot;Ref&quot; : &quot;DBRootPassword&quot; }, &quot;&apos; &gt;/dev/null 2&gt;&amp;1 &lt;/dev/null); (( $? != 0 ))&quot;]]}
+              },
+              &quot;02_create_database&quot; : {
+                &quot;command&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [&quot;mysql -u root --password=&apos;&quot;, { &quot;Ref&quot; : &quot;DBRootPassword&quot; }, &quot;&apos; &lt; /tmp/setup.mysql&quot;]]},
+                &quot;test&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [&quot;$(mysql &quot;, { &quot;Ref&quot; : &quot;DBUsername&quot; }, &quot; -u root --password=&apos;&quot;, { &quot;Ref&quot; : &quot;DBRootPassword&quot; }, &quot;&apos; &gt;/dev/null 2&gt;&amp;1 &lt;/dev/null); (( $? != 0 ))&quot;]]}
+              }
+            }
+          }
+        }
+      },
+      &quot;Properties&quot;: {
+        &quot;ImageId&quot; : { &quot;Fn::FindInMap&quot; : [ &quot;AWSRegionArch2AMI&quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; },
+                          { &quot;Fn::FindInMap&quot; : [ &quot;AWSInstanceType2Arch&quot;, { &quot;Ref&quot; : &quot;InstanceType&quot; }, &quot;Arch&quot; ] } ] },
+        &quot;InstanceType&quot;   : { &quot;Ref&quot; : &quot;InstanceType&quot; },
+        &quot;SecurityGroups&quot; : [ {&quot;Ref&quot; : &quot;WebServerSecurityGroup&quot;} ],
+        &quot;KeyName&quot;        : { &quot;Ref&quot; : &quot;KeyName&quot; },
+        &quot;UserData&quot;       : { &quot;Fn::Base64&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [
+             &quot;#!/bin/bash -xe\n&quot;,
+             &quot;yum install -y aws-cfn-bootstrap\n&quot;,
+
+             &quot;# Install the files and packages from the metadata\n&quot;,
+             &quot;/opt/aws/bin/cfn-init -v &quot;,
+             &quot;         --stack &quot;, { &quot;Ref&quot; : &quot;AWS::StackName&quot; },
+             &quot;         --resource WebServerInstance &quot;,
+             &quot;         --configsets InstallAndRun &quot;,
+             &quot;         --region &quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;,
+
+             &quot;# Signal the status from cfn-init\n&quot;,
+             &quot;/opt/aws/bin/cfn-signal -e $? &quot;,
+             &quot;         --stack &quot;, { &quot;Ref&quot; : &quot;AWS::StackName&quot; },
+             &quot;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0; --resource WebServerInstance &quot;,
+             &quot;         --region &quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;
+        ]]}}        
+      },
+      &quot;CreationPolicy&quot; : {
+        &quot;ResourceSignal&quot; : {
+          &quot;Timeout&quot; : &quot;PT5M&quot;
+        }
+      }
+    },
+    
+    &quot;WebServerSecurityGroup&quot; : {
+      &quot;Type&quot; : &quot;AWS::EC2::SecurityGroup&quot;,
+      &quot;Properties&quot; : {
+        &quot;GroupDescription&quot; : &quot;Enable HTTP access via port 80&quot;,
+        &quot;SecurityGroupIngress&quot; : [
+          {&quot;IpProtocol&quot; : &quot;tcp&quot;, &quot;FromPort&quot; : &quot;80&quot;, &quot;ToPort&quot; : &quot;80&quot;, &quot;CidrIp&quot; : &quot;0.0.0.0/0&quot;},
+          {&quot;IpProtocol&quot; : &quot;tcp&quot;, &quot;FromPort&quot; : &quot;22&quot;, &quot;ToPort&quot; : &quot;22&quot;, &quot;CidrIp&quot; : { &quot;Ref&quot; : &quot;SSHLocation&quot;}}
+        ]
+      }      
+    }          
+  },
+  
+  &quot;Outputs&quot; : {
+    &quot;WebsiteURL&quot; : {
+      &quot;Description&quot; : &quot;URL for newly created LAMP stack&quot;,
+      &quot;Value&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [&quot;http://&quot;, { &quot;Fn::GetAtt&quot; : [ &quot;WebServerInstance&quot;, &quot;PublicDnsName&quot; ]}]] }
+    }
+  }
+}</code></pre>
+                     </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="example-templates-autoscaling.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="using-cfn-waitcondition.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Basic Amazon EC2 Instance"><a class="pagetoc" href="#deployment-walkthrough-basic-server">Basic Amazon EC2 Instance</a></li>
+                        <li class="pagetoc" name="LAMP Installation"><a class="pagetoc" href="#deployment-walkthrough-lamp-install">LAMP Installation</a></li>
+                        <li class="pagetoc" name="LAMP Configuration"><a class="pagetoc" href="#deployment-walkthrough-config">LAMP Configuration</a></li>
+                        <li class="pagetoc" name="CreationPolicy Attribute"><a class="pagetoc" href="#deployment-walkthrough-cfn-signal">CreationPolicy Attribute</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS CloudFormation';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

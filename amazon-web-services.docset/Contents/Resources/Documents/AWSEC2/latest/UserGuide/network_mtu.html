@@ -1,0 +1,341 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Network Maximum Transmission Unit (MTU) for Your EC2 Instance - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="EC2_Network_and_Security.html" title="Network and Security">
+      <link rel="prev" href="placement-groups.html" title="Placement Groups">
+      <link rel="next" href="enhanced-networking.html" title="Enhanced Networking on Linux">
+      <meta name="description" content="The maximum supported MTU for an EC2 instance depends on its instance type.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/network_mtu.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="EC2_Network_and_Security.html">Network and Security</a> &#xBB; <span class="breadcrumb">Network Maximum Transmission Unit (MTU) for Your EC2 Instance</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="network_mtu">Network Maximum Transmission Unit (MTU) for Your EC2 Instance</h1>
+                     <p>The maximum transmission unit (MTU) of a network connection is the size, in bytes,
+                        of the
+                        largest permissible packet that can be passed over the connection. The larger the
+                        MTU of a
+                        connection, the more data that can be passed in a single packet. Ethernet packets
+                        consist of
+                        the frame, or the actual data you are sending, and the network overhead information
+                        that
+                        surrounds it.
+                     </p>
+                     <p>Ethernet frames can come in different formats, and the most common format is the standard
+                        Ethernet v2 frame format. It supports 1500 MTU, which is the largest Ethernet packet
+                        size
+                        supported over most of the Internet. The maximum supported MTU for an instance depends
+                        on
+                        its instance type. All Amazon EC2 instance types support 1500 MTU, and many current
+                        instance
+                        sizes support 9001 MTU, or jumbo frames.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#jumbo_frame_instances">Jumbo Frames (9001 MTU)</a></li>
+                           <li><a href="#path_mtu_discovery">Path MTU Discovery</a></li>
+                           <li><a href="#check_path_mtu">Check the Path MTU Between Two Hosts</a></li>
+                           <li><a href="#set_mtu">Check and Set the MTU on Your Linux Instance</a></li>
+                           <li><a href="#mtu-troubleshooting">Troubleshooting</a></li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="jumbo_frame_instances">Jumbo Frames (9001 MTU)</h2>
+                     
+                     
+                     <p>Jumbo frames allow more than 1500 bytes of data by increasing the payload size per
+                        packet, and thus increasing the percentage of the packet that is not packet overhead.
+                        Fewer packets are needed to send the same amount of usable data. However, outside
+                        of a
+                        given AWS region (EC2-Classic), a single VPC, or a VPC peering connection, you will
+                        experience a maximum path of 1500 MTU. VPN connections and traffic sent over an Internet
+                        gateway are limited to 1500 MTU. If packets are over 1500 bytes, they are fragmented,
+                        or
+                        they are dropped if the <code class="code">Don&apos;t Fragment</code> flag is set in the IP header.
+                     </p>
+                     
+                     <p>Jumbo frames should be used with caution for Internet-bound traffic or any traffic
+                        that leaves a VPC. Packets are fragmented by intermediate systems, which slows down
+                        this
+                        traffic. To use jumbo frames inside a VPC and not slow traffic that&apos;s bound for outside
+                        the VPC, you can configure the MTU size by route, or use multiple elastic network
+                        interfaces with different MTU sizes and different routes.
+                     </p>
+                     
+                     <p>For instances that are collocated inside a cluster placement group, jumbo frames help
+                        to
+                        achieve the maximum network throughput possible, and they are recommended in this
+                        case.
+                        For more information, see <a href="placement-groups.html">Placement Groups</a>.
+                     </p>
+                     
+                     
+                     <p>The following instances support jumbo frames:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>General purpose: M3, M4, M5, T2</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Compute optimized: C3, C4, C5, CC2</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Accelerated computing: F1, G2, G3, P2, P3</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Memory optimized: CR1, R3, R4, X1</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Storage optimized: D2, H1, HS1, I2, I3</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     <h2 id="path_mtu_discovery">Path MTU Discovery</h2>
+                     
+                     <p>Path MTU Discovery is used to determine the path MTU between two devices. The path
+                        MTU
+                        is the maximum packet size that&apos;s supported on the path between the originating host
+                        and
+                        the receiving host. If a host sends a packet that&apos;s larger than the MTU of the receiving
+                        host or that&apos;s larger than the MTU of a device along the path, the receiving host
+                        or
+                        device returns the following ICMP message: <code class="code">Destination Unreachable: Fragmentation
+                           Needed and Don&apos;t Fragment was Set</code> (Type 3, Code 4). This instructs the
+                        original host to adjust the MTU until the packet can be transmitted. 
+                     </p>
+                     
+                     <p>By default, security groups do not allow any inbound ICMP traffic. To ensure that
+                        your
+                        instance can receive this message and the packet does not get dropped, you must add
+                        a
+                        <b>Custom ICMP Rule</b> with the <b>Destination
+                           Unreachable</b> protocol to the inbound security group rules for your
+                        instance. For more information, see <a href="security-group-rules-reference.html#sg-rules-path-mtu">Path MTU Discovery</a>.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Modifying your instance&apos;s security group to allow path MTU discovery does not
+                           guarantee that jumbo frames will not be dropped by some routers. An Internet
+                           gateway in your VPC will forward packets up to 1500 bytes only. 1500 MTU packets
+                           are recommended for Internet traffic.
+                        </p>
+                     </div>
+                     
+                     
+                     <h2 id="check_path_mtu">Check the Path MTU Between Two Hosts</h2>
+                     
+                     <p>You can check the path MTU between two hosts using the <span><b>tracepath</b></span> command, <span>which is
+                           part of the <code>iputils</code> package that is available by default on many
+                           Linux distributions, including Amazon Linux</span>. 
+                     </p>
+                     
+                     
+                     
+                     <p class="title"><b>To check path MTU using tracepath</b></p>
+                     
+                     <p>Use the following command to check the path MTU between your EC2 instance
+                        and another host. You can use a DNS name or an IP address as the destination.
+                        If the destination is another EC2 instance, verify that the security group allows
+                        inbound UDP traffic. This example checks the path MTU between an EC2 instance and
+                        
+                        <code>amazon.com</code>.
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>tracepath <em class="replaceable"><code>amazon.com</code></em></code></strong><code class="computeroutput" copy="false">
+ 1?: [LOCALHOST]     pmtu 9001
+ 1:  ip-172-31-16-1.us-west-1.compute.internal (172.31.16.1)   0.187ms pmtu 1500
+ 1:  no reply
+ 2:  no reply
+ 3:  no reply
+ 4:  100.64.16.241 (100.64.16.241)                          0.574ms
+ 5:  72.21.222.221 (72.21.222.221)                         84.447ms asymm 21
+ 6:  205.251.229.97 (205.251.229.97)                       79.970ms asymm 19
+ 7:  72.21.222.194 (72.21.222.194)                         96.546ms asymm 16
+ 8:  72.21.222.239 (72.21.222.239)                         79.244ms asymm 15
+ 9:  205.251.225.73 (205.251.225.73)                       91.867ms asymm 16
+...
+31:  no reply
+     Too many hops: pmtu 1500
+     Resume: pmtu 1500</code></code></pre>
+                     <p>In this example, the path MTU is 1500.</p>
+                     
+                     
+                     
+                     
+                     <h2 id="set_mtu">Check and Set the MTU on Your Linux Instance</h2>
+                     
+                     <p>Some instances are configured to use jumbo frames, and others are configured to use
+                        standard frame sizes. You may want to use jumbo frames for network traffic within
+                        your
+                        VPC or you may want to use standard frames for Internet traffic. Whatever your use
+                        case,
+                        we recommend verifying that your instance will behave the way you expect it to. You
+                        can
+                        use the procedures in this section to check your network interface&apos;s MTU setting and
+                        modify it if needed.
+                     </p>
+                     
+                     
+                     
+                     <p class="title"><b>To check the MTU setting on a Linux instance</b></p>
+                     
+                     <p>You can check the current MTU value using the following <b>ip</b>
+                        command. Note that in the example output, <em class="replaceable"><code>mtu 9001</code></em>
+                        indicates that this instance uses jumbo frames.
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>ip link show eth0</code></strong><code class="computeroutput" copy="false">
+2: eth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; <em class="replaceable"><code>mtu 9001</code></em> qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+    link/ether 02:90:c0:b7:9e:d1 brd ff:ff:ff:ff:ff:ff</code></code></pre>
+                     
+                     <p class="title"><b>To set the MTU value on a Linux instance</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>You can set the MTU value using the <b>ip</b> command. The following command 
+                              sets the desired MTU value to 1500, but you could use 9001 instead.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo ip link set dev eth0 mtu <em class="replaceable"><code>1500</code></em></code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>(Optional) To persist your network MTU setting after a reboot, modify the
+                              following configuration files, based on your operating system type.
+                           </p>
+                           
+                           <p>For Amazon Linux, add the following lines to your <code>/etc/dhcp/dhclient-eth0.conf</code> file.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">interface &quot;eth0&quot; {
+supersede interface-mtu <em class="replaceable"><code>1500</code></em>;
+}</code></pre>
+                           <p>For Ubuntu, add the following line to <code>/etc/network/interfaces.d/eth0.cfg</code>.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">post-up /sbin/ifconfig eth0 mtu <em class="replaceable"><code>1500</code></em></code></pre>
+                           <p>For other Linux distributions, consult their specific documentation.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Reboot your instance and verify that the MTU setting is correct.</p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     
+                     <h2 id="mtu-troubleshooting">Troubleshooting</h2>
+                     
+                     <p>If you experience connectivity issues between your EC2 instance and an Amazon Redshift
+                        cluster
+                        when using jumbo frames, see <a href="./redshift/latest/mgmt/connecting-drop-issues.html" target="_blank">Queries Appear to Hang</a> in the <em>Amazon Redshift Cluster Management Guide</em></p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="placement-groups.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="enhanced-networking.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Jumbo Frames (9001 MTU)"><a class="pagetoc" href="#jumbo_frame_instances">Jumbo Frames (9001 MTU)</a></li>
+                        <li class="pagetoc" name="Path MTU Discovery"><a class="pagetoc" href="#path_mtu_discovery">Path MTU Discovery</a></li>
+                        <li class="pagetoc" name="Check the Path MTU Between Two Hosts"><a class="pagetoc" href="#check_path_mtu">Check the Path MTU Between Two Hosts</a></li>
+                        <li class="pagetoc" name="Check and Set the MTU on Your Linux Instance"><a class="pagetoc" href="#set_mtu">Check and Set the MTU on Your Linux Instance</a></li>
+                        <li class="pagetoc" name="Troubleshooting"><a class="pagetoc" href="#mtu-troubleshooting">Troubleshooting</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

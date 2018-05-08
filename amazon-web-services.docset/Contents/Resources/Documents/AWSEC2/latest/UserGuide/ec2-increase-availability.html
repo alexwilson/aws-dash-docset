@@ -1,0 +1,656 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Tutorial: Increase the Availability of Your
+         			Application on Amazon EC2 - Amazon Elastic Compute Cloud
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ec2-tutorials.html" title="Tutorials for Amazon EC2 Instances Running Linux">
+      <link rel="prev" href="SSL-on-an-instance.html" title="Tutorial: Configure Apache Web Server on Amazon Linux 2 to Use
+            SSL/TLS">
+      <link rel="next" href="tutorial_run_command.html" title="Tutorial: Remotely Manage Your Amazon EC2 Instances">
+      <meta name="description" content="Learn how to use Amazon EC2 Auto Scaling and Elastic Load Balancing to increase the availability of your application on Amazon EC2.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-increase-availability.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="ec2-tutorials.html">Tutorials for Amazon EC2 Instances Running Linux</a> &#xBB; <span class="breadcrumb">Tutorial: Increase the Availability of Your
+                                    			Application on Amazon EC2</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ec2-increase-availability">Tutorial: Increase the Availability of Your
+                        			Application on Amazon EC2
+                     </h1>
+                     <p>Suppose that you start out running your app or website on a single EC2 instance, and
+                        over
+                        		time, traffic increases to the point that you require more than one instance to
+                        meet the
+                        		demand. You can launch multiple EC2 instances from your AMI and then use Elastic
+                        Load Balancing to distribute
+                        		incoming traffic for your application across these EC2 instances. This increases
+                        the
+                        		availability of your application. Placing your instances in multiple Availability
+                        Zones also
+                        		improves the fault tolerance in your application. If one Availability Zone experiences
+                        an
+                        		outage, traffic is routed to the other Availability Zone.
+                     </p>
+                     <p>You can use Amazon EC2 Auto Scaling to maintain a minimum number of running instances
+                        for your application at
+                        		all times. Amazon EC2 Auto Scaling can detect when your instance or application
+                        is unhealthy and replace it
+                        		automatically to maintain the availability of your application. You can also use
+                        Amazon EC2 Auto Scaling to
+                        		scale your Amazon EC2 capacity up or down automatically based on demand, using criteria
+                        that you
+                        		specify.
+                     </p>
+                     <p>In this tutorial, we use Amazon EC2 Auto Scaling with Elastic Load Balancing to ensure
+                        that you maintain a specified number of
+                        		healthy EC2 instances behind your load balancer. Note that these instances do not
+                        need
+                        		public IP addresses, because traffic goes to the load balancer and is then routed
+                        to the
+                        		instances. For more information, see <a href="https://aws.amazon.com/ec2/autoscaling/" target="_blank">Amazon EC2 Auto Scaling</a>
+                        		and <a href="https://aws.amazon.com/elasticloadbalancing/" target="_blank">Elastic Load Balancing</a>.
+                     </p>
+                     <div class="mediaobject">
+                        		
+                        			<img src="../../..//img/tutorial_as_elb_architecture.png" alt="
+			Architecture with Auto Scaling and Elastic Load Balancing
+		">
+                        		
+                        		
+                        	
+                     </div>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#scale-and-load-balance-prerequisites">Prerequisites</a></li>
+                           <li><a href="#scale-and-load-balance">Scale and Load Balance Your Application</a></li>
+                           <li><a href="#test-load-balancer">Test Your Load Balancer</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="scale-and-load-balance-prerequisites">Prerequisites</h2>
+                     		
+                     		
+                     <p>This tutorial assumes that you have already done the following:</p>
+                     		
+                     <ol>
+                        <li>
+                           				
+                           <p>If you don&apos;t have a default virtual private cloud (VPC), create a VPC with one
+                              					public subnet in two or more Availability Zones. For more information, see <a href="get-set-up-for-amazon-ec2.html#create-a-vpc">Create a Virtual Private Cloud (VPC)</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Launch an instance in the VPC.</p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Connect to the instance and customize it. For example, you can install
+                              					software and applications, copy data, and attach additional EBS volumes. For
+                              					information about setting up a web server on your instance, see <a href="install-LAMP.html">Tutorial: Install a LAMP Web Server with the Amazon Linux AMI</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Test your application on your instance to ensure that your instance is
+                              					configured correctly.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Create a custom Amazon Machine Image (AMI) from your instance. For more
+                              					information, see <a href="creating-an-ami-ebs.html">Creating an Amazon EBS-Backed Linux AMI</a><span>
+                                 						or <a href="creating-an-ami-instance-store.html">Creating an Instance Store-Backed Linux AMI</a></span>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>(Optional) Terminate the instance if you no longer need it.</p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Create an IAM role that grants your application the access to AWS that it
+                              					needs. For more information, see <a href="iam-roles-for-amazon-ec2.html#create-iam-role-console">To create an IAM role using the
+                                 						IAM console</a>.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     	
+                     <h2 id="scale-and-load-balance">Scale and Load Balance Your Application</h2>
+                     		
+                     
+                     		
+                     <p>Use the following procedure to create a load balancer, create a launch configuration
+                        			for your instances, create an Auto Scaling group with two or more instances, and
+                        associate the
+                        			load balancer with the Auto Scaling group.
+                     </p>
+                     
+                     		
+                     <p class="title"><b>To scale and load-balance your application</b></p>
+                     <ol>
+                        <li> 
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p> 
+                        </li>
+                        <li>
+                           				
+                           <p>On the navigation pane, under <b>LOAD BALANCING</b>, choose
+                              						<b>Load Balancers</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Choose <b>Create Load Balancer</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>For <b>Application Load Balancer</b>, choose
+                              					<b>Create</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Configure Load Balancer</b> page, do the
+                              					following:
+                           </p>
+                           				
+                           <ol>
+                              <li>
+                                 						
+                                 <p>For <b>Name</b>, type a name for your load balancer. For
+                                    							example, <strong class="userinput"><code>my-lb</code></strong>.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>For <b>Scheme</b>, keep the default value,
+                                    								<b>internet-facing</b>.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>For <b>Listeners</b>, keep the default, which is a
+                                    							listener that accepts HTTP traffic on port 80.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>For <b>Availability Zones</b>, select the VPC that you used for your
+                                    instances. Select an Availability Zone and then select the public subnet
+                                    for that Availability Zone. Repeat for a second Availability
+                                    Zone.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>Choose <b>Next: Configure Security Settings</b>.
+                                 </p>
+                                 					
+                              </li>
+                           </ol>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>For this tutorial, you are not using a secure listener. Choose <b>Next:
+                                 						Configure Security Groups</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Configure Security Groups</b> page, do the
+                              					following:
+                           </p>
+                           				
+                           <ol>
+                              <li>
+                                 						
+                                 <p>Choose <b>Create a new security group</b>.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>Type a name and description for the security group, or keep the
+                                    							default name and description. This new security group contains a rule
+                                    							that allows traffic to the port configured for the listener.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>Choose <b>Next: Configure Routing</b>.
+                                 </p>
+                                 					
+                              </li>
+                           </ol>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Configure Routing</b> page, do the following:
+                           </p>
+                           				
+                           <ol>
+                              <li>
+                                 						
+                                 <p>For <b>Target group</b>, keep the default, <b>New
+                                       								target group</b>.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>For <b>Name</b>, type a name for the target
+                                    							group.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>Keep <b>Protocol</b> as HTTP, <b>Port</b> as 80, and
+                                    								<b>Target type</b> as instance.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>For <b>Health checks</b>, keep the default protocol and
+                                    							path.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>Choose <b>Next: Register Targets</b>.
+                                 </p>
+                                 					
+                              </li>
+                           </ol>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Register Targets</b> page, choose <b>Next:
+                                 						Review</b> to continue to the next page, as we&apos;ll use Amazon EC2 Auto Scaling to add EC2
+                              					instances to the target group.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Review</b> page, choose <b>Create</b>.
+                              					After the load balancer is created, choose <b>Close</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the navigation pane, under <b>AUTO SCALING</b>, choose
+                              						<b>Launch Configurations</b>.
+                           </p>
+                           				
+                           <ul>
+                              					
+                              <li>
+                                 						
+                                 <p>If you are new to Amazon EC2 Auto Scaling, you see a welcome page. Choose
+                                    								<b>Create Auto Scaling group</b> to start the Create
+                                    							Auto Scaling Group wizard, and then choose <b>Create launch
+                                       								configuration</b>.
+                                 </p>
+                                 					
+                              </li>
+                              					
+                              <li>
+                                 						
+                                 <p>Otherwise, choose <b>Create launch
+                                       							configuration</b>.
+                                 </p>
+                                 					
+                              </li>
+                              				
+                           </ul>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Choose AMI</b> page, select the <b>My
+                                 						AMIs</b> tab, and then select the AMI that you created in <a href="ec2-increase-availability.html#scale-and-load-balance-prerequisites">Prerequisites</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Choose Instance Type</b> page, select an instance
+                              					type, and then choose <b>Next: Configure details</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Configure details</b> page, do the following:
+                           </p>
+                           				
+                           <ol>
+                              <li>
+                                 						
+                                 <p>For <b>Name</b>, type a name for your launch
+                                    							configuration (for example,
+                                    							<strong class="userinput"><code>my-launch-config</code></strong>).
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>For <b>IAM role</b>, select the IAM role that you
+                                    							created in <a href="ec2-increase-availability.html#scale-and-load-balance-prerequisites">Prerequisites</a>.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>(Optional) If you need to run a startup script, expand
+                                    								<b>Advanced Details</b> and type the script in
+                                    								<b>User data</b>.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>Choose <b>Skip to review</b>.
+                                 </p>
+                                 					
+                              </li>
+                           </ol>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Review</b> page, choose <b>Edit security
+                                 						groups</b>. You can select an existing security group or create a new
+                              					one. This security group must allow HTTP traffic and health checks from the load
+                              					balancer. If your instances will have public IP addresses, you can optionally
+                              					allow <span>SSH</span> traffic if you need to connect to the instances. When
+                              					you are finished, choose <b>Review</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Review</b> page, choose <b>Create launch
+                                 						configuration</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>When prompted, select an existing key pair, create a new key pair, or proceed
+                              					without a key pair. Select the acknowledgment check box, and then choose
+                              						<b>Create launch configuration</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>After the launch configuration is created, you must create an Auto Scaling
+                              					group.
+                           </p>
+                           				
+                           <ul>
+                              					
+                              <li>
+                                 						
+                                 <p>If you are new to Amazon EC2 Auto Scaling and you are using the Create Auto Scaling
+                                    group
+                                    							wizard, you are taken to the next step automatically.
+                                 </p>
+                                 					
+                              </li>
+                              					
+                              <li>
+                                 						
+                                 <p>Otherwise, choose <b>Create an Auto Scaling group using this
+                                       								launch configuration</b>.
+                                 </p>
+                                 					
+                              </li>
+                              				
+                           </ul>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Configure Auto Scaling group details</b> page, do the
+                              					following:
+                           </p>
+                           				
+                           <ol>
+                              <li>
+                                 						
+                                 <p>For <b>Group name</b>, type a name for the Auto Scaling
+                                    							group. For example, <strong class="userinput"><code>my-asg</code></strong>.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>For <b>Group size</b>, type the number of instances (for
+                                    							example, <strong class="userinput"><code>2</code></strong>). Note that we recommend that you
+                                    							maintain approximately the same number of instances in each Availability
+                                    							Zone.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>Select your VPC from <b>Network</b> and your two public
+                                    							subnets from <b>Subnet</b>.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>Under <b>Advanced Details</b>, select <b>Receive
+                                       								traffic from one or more load balancers</b>. Select your
+                                    							target group from <b>Target Groups</b>.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>Choose <b>Next: Configure scaling policies</b>.
+                                 </p>
+                                 					
+                              </li>
+                           </ol>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Configure scaling policies</b> page, choose
+                              						<b>Review</b>, as we will let Amazon EC2 Auto Scaling maintain the group at the
+                              					specified size. Note that later on, you can manually scale this Auto Scaling
+                              group,
+                              					configure the group to scale on a schedule, or configure the group to scale
+                              					based on demand.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Review</b> page, choose <b>Create Auto Scaling
+                                 						group</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>After the group is created, choose <b>Close</b>.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     
+                     	
+                     <h2 id="test-load-balancer">Test Your Load Balancer</h2>
+                     		
+                     
+                     		
+                     <p>When a client sends a request to your load balancer, the load balancer routes the
+                        			request to one of its registered instances.
+                     </p>
+                     
+                     		
+                     <p class="title"><b>To test your load balancer</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Verify that your instances are ready. From the <b>Auto Scaling
+                                 						Groups</b> page, select your Auto Scaling group, and then choose the
+                              						<b>Instances</b> tab. Initially, your instances are in the
+                              						<code class="code">Pending</code> state. When their states are <code class="code">InService</code>,
+                              					they are ready for use.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Verify that your instances are registered with the load balancer. From the
+                              						<b>Target Groups</b> page, select your target group, and then
+                              					choose the <b>Targets</b> tab. If the state of your instances is
+                              						<code class="code">initial</code>, it&apos;s possible that they are still registering. When
+                              					the state of your instances is <code class="code">healthy</code>, they are ready for use.
+                              					After your instances are ready, you can test your load balancer as
+                              					follows.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>From the <b>Load Balancers</b> page, select your load
+                              					balancer.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Description</b> tab, locate the DNS name. This name
+                              					has the following form:
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><em class="replaceable"><code>my-lb</code></em>-<em class="replaceable"><code>xxxxxxxxxx</code></em>.<em class="replaceable"><code>us-west-2</code></em>.elb.amazonaws.com</code></pre>
+                           			</li>
+                        <li>
+                           				
+                           <p>In a web browser, paste the DNS name for the load balancer into the address
+                              					bar and press Enter. You&apos;ll see your website displayed.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="SSL-on-an-instance.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="tutorial_run_command.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Prerequisites"><a class="pagetoc" href="#scale-and-load-balance-prerequisites">Prerequisites</a></li>
+                        <li class="pagetoc" name="Scale and Load Balance Your Application"><a class="pagetoc" href="#scale-and-load-balance">Scale and Load Balance Your Application</a></li>
+                        <li class="pagetoc" name="Test Your Load Balancer"><a class="pagetoc" href="#test-load-balancer">Test Your Load Balancer</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

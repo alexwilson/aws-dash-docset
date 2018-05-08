@@ -1,0 +1,447 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Managing Concurrency - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="admin-lambda-apps.html" title="Administering Lambda-based Applications">
+      <link rel="prev" href="policy-templates.html" title="Policy Templates">
+      <link rel="next" href="advanced.html" title="Advanced Topics">
+      <meta name="description" content="The unit of scale for AWS Lambda is a concurrent execution (see for more details). However, scaling indefinitely is not desirable in all scenarios. For example, you may want to control your concurrency for cost reasons, or to regulate how long it takes you to process a batch of events, or to simply match it with a downstream resource. To assist with this, Lambda provides a concurrent execution limit control at both the account level and the function level.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/concurrent-executions.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="admin-lambda-apps.html">Administering Lambda-based Applications</a> &#xBB; <span class="breadcrumb">Managing Concurrency</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="concurrent-executions">Managing Concurrency</h1>
+                     <p>
+                        The unit of scale for AWS Lambda is a concurrent execution (see <a href="scaling.html">Understanding Scaling Behavior</a> for more details). However, scaling indefinitely is not desirable in all scenarios.
+                        For example, you may want to control your concurrency for cost reasons,
+                        or to regulate how long it takes you to process a batch of events, or to simply match
+                        it with a downstream resource. To assist with this, Lambda provides a concurrent execution
+                        limit control at both the account level and the function level.
+                     </p>
+                     <h2 id="concurrent-execution-safety-limit">Account Level Concurrent Execution Limit</h2>
+                     
+                     
+                     
+                     <p>By default, AWS Lambda limits the total concurrent executions across all functions
+                        within a given region to 1000. You can view the account level setting by using the
+                        <a href="API_GetAccountSettings.html">GetAccountSettings</a> API and viewing the <code class="code">AccountLimit</code> object.
+                        This limit can be raised as described below:
+                     </p>
+                     <a id="increase-concurrent-executions-limit"></a><p class="title"><b>To request a limit increase for concurrent executions</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the <a href="https://console.aws.amazon.com/support/home#/" target="_blank">AWS Support Center</a> page, sign in if necessary, and then choose
+                              <b>Create case</b>.
+                           </p>
+                        </li>
+                        <li>
+                           <p>For <b>Regarding</b>, select <b>Service Limit Increase</b>.
+                           </p>
+                        </li>
+                        <li>
+                           <p>For <b>Limit Type</b>, choose <b>Lambda</b>, fill in the necessary
+                              fields in the form, and then choose the button at the bottom of the page for
+                              your preferred method of contact.
+                           </p>
+                        </li>
+                     </ol>   
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     <h2 id="per-function-concurrency">Function Level Concurrent Execution Limit</h2>
+                     
+                     <p>By default, the concurrent execution limit is enforced against the sum of the concurrent
+                        executions of all functions. The shared concurrent execution pool is referred to as
+                        the unreserved concurrency allocation.
+                        If you haven&#x2019;t set up any function-level concurrency limit, then the unreserved concurrency
+                        limit is the same as the account level concurrency limit. Any increases to the account
+                        level limit have a corresponding increase in 
+                        the unreserved concurrency limit. You can view the unreserved concurrency allocation
+                        for a function by using the  <a href="API_GetAccountSettings.html">GetAccountSettings</a> API 
+                        or using the AWS Lambda console. Functions that are being accounted against the shared
+                        concurrent execution pool will not show any concurrency value when queried using the
+                        
+                        <a href="API_GetFunctionConfiguration.html">GetFunctionConfiguration</a> API.
+                     </p>
+                     
+                     <p>You can optionally set the concurrent execution limit for a function. You may choose
+                        to do this for a few reasons:
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>The default behavior means a surge of concurrent executions in one function prevents
+                                 the function you have isolated with an execution limit from getting throttled. By
+                                 setting a concurrent execution limit on a function, you are reserving the specified
+                                 concurrent execution value for that function.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Functions scale automatically based on incoming request rate, but not all resources
+                                 in your architecture may be able to do so.
+                                 For example, relational databases have limits on how many concurrent connections they
+                                 can handle. You can set the concurrent execution limit for a function to align with
+                                 the values of its downstream resources support.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>If your function connects to VPC based resources, each concurrent execution consumes
+                                 one IP within the assigned subnet. You can set the concurrent execution limit for
+                                 a function to match the subnet size limits you have.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>If you need a function to stop processing any invocations, you can choose to set the
+                                 concurrency to 0 and throttle all incoming executions.
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     <p>By setting a concurrency limit on a function, Lambda guarantees that allocation will
+                        be applied specifically to that function, regardless of the amount of traffic processing
+                        remaining functions.
+                        If that limit is exceeded, the function will be throttled. How that function behaves
+                        when throttled will depend on the event source. For more information, see <a href="concurrent-executions.html#throttling-behavior">Throttling Behavior</a>.
+                     </p> 
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Concurrency limits can only be set at the function level, not for individual versions.
+                           All invocations to all versions and aliases of a given function will accrue towards
+                           the function limit.
+                        </p>
+                     </div>
+                     
+                     
+                     
+                     
+                     <h3 id="reserved-vs-unreserved-concurrency-limits">Reserved vs. Unreserved Concurrency Limits</h3> 
+                     
+                     
+                     <p>If you set the concurrent execution limit for a function, the value is deducted from
+                        the unreserved concurrency pool. For example, if your account&apos;s concurrent execution
+                        limit is 1000 and you have 10 functions, 
+                        you can specify a limit on one function at 200 and another function at 100. The remaining
+                        700 will be shared among the other 8 functions. 
+                     </p>
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>AWS Lambda will keep the unreserved concurrency pool at a minimum of 100 concurrent
+                           executions, so that functions that do not have specific limits set can still process
+                           requests. So, in practice, if your total account limit is 1000, you are limited to
+                           allocating 900 to individual functions. 
+                        </p>
+                     </div>
+                     
+                     
+                     <h3 id="per-function-concurrency-console">Setting Concurrency Limits Per Function (Console)</h3>
+                     
+                     <p>To set a concurrency limit for your Lambda function using the Lambda console, do the
+                        following:
+                     </p>
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>Sign in to the AWS Management Console and open the AWS Lambda console.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Whether you are creating a new Lambda function or updating an existing function, the
+                              process of setting a concurrency limit is the same. If you are new to Lambda and are
+                              unfamiliar with creating a function, see 
+                              <a href="get-started-create-function.html">Create a Simple Lambda
+                                 			Function</a>.
+                           </p>
+                           
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Under the <b>Configuration</b> tab, choose <b>Concurrency</b>. In <b>Reserve concurrency</b>, set the value to the maximum of concurrent executions
+                              you want reserved for the function. Note that when you set this value, the <b>Unreserved account concurrency</b> value will automatically be updated to display the remaining number of concurrent
+                              executions available for all other functions in the account. Also note that if you
+                              want to block invocation of this function, set the value to 0. To remove a dedicated
+                              allotment value for this account, choose <b>Use unreserved account concurrency</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <h3 id="per-function-concurrency-cli">Setting Concurrency Limits Per Function (CLI)</h3>
+                     
+                     <p>To set a concurrency limit for your Lambda function using the AWS CLI, do the following:</p>
+                     
+                     <div class="itemizedlist">
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Use the <a href="API_PutFunctionConcurrency.html">PutFunctionConcurrency</a> operation and pass in the function name and concurrency limit you want allocated
+                                 to this function:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><p>aws lambda put-function-concurrency --function-name <em class="replaceable"><code>function-name</code></em>
+                    --reserved-concurrent-executions <em class="replaceable"><code>limit value</code></em>
+</p></code></pre>
+                              </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>To remove a concurrency limit for your Lambda function using the AWS CLI, do the following:</p>
+                     
+                     <div class="itemizedlist">
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Use the <a href="API_DeleteFunctionConcurrency.html">DeleteFunctionConcurrency</a> operation and pass in the function name:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><p>aws lambda delete-function-concurrency --function-name <em class="replaceable"><code>function-name</code></em>  </p></code></pre> </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     <p>To view a concurrency limit for your Lambda function using the AWS CLI, do the following:</p>
+                     
+                     <div class="itemizedlist">
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Use the <a href="API_GetFunctionConfiguration.html">GetFunction</a> operation and pass in the function name:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><p>aws lambda get-function --function-name <em class="replaceable"><code>function-name</code></em>  </p></code></pre> </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Setting the per function concurrency can impact the concurrency pool available to
+                           other functions. We recommend restricting the permissions to the
+                           <a href="API_PutFunctionConcurrency.html">PutFunctionConcurrency</a> API and  <a href="API_DeleteFunctionConcurrency.html">DeleteFunctionConcurrency</a> API to administrative users so that the number of users who can make these changes
+                           is limited.
+                        </p>
+                     </div>
+                     
+                     <h2 id="throttling-behavior">Throttling Behavior</h2>
+                     
+                     
+                     <p>On reaching the concurrency limit associated with a function, any further invocation
+                        requests to that function are throttled, i.e. the invocation doesn&apos;t execute your
+                        function. Each throttled invocation increases the Amazon CloudWatch <code class="code">Throttles</code> metric for the function. 
+                        AWS Lambda handles throttled invocation requests differently, depending on their source:
+                        
+                        
+                     </p>   
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><b>Event sources that aren&apos;t stream-based: </b>Some of these event sources invoke a Lambda function synchronously, and others invoke
+                                 it asynchronously. Handling is different for each: 
+                                 
+                                 
+                                 
+                              </p>
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p><b>Synchronous invocation:</b> If the function is invoked synchronously and is throttled, Lambda returns a 429 error
+                                          and the invoking service is responsible for retries.
+                                          The <code class="code">ThrottledReason</code> error code explains whether you ran into a function level throttle (if specified)
+                                          or an account level throttle (see note below). Each service may have its own retry
+                                          policy. 
+                                          For example, CloudWatch Logs retries the failed batch up to five times with delays
+                                          between retries. For a list of event sources and their invocation type, see  <a href="invoking-lambda-function.html">Supported Event Sources</a>. 
+                                       </p>
+                                       
+                                       <div class="aws-note">
+                                          <p class="aws-note">Note</p>
+                                          <p>If you invoke the function directly through the AWS SDKs using the <code class="code">RequestResponse</code> invocation mode, your client receives the 429 error and you can retry the invocation.
+                                             
+                                          </p>
+                                       </div>
+                                       
+                                       
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       <p><b>Asynchronous invocation:</b> If your Lambda function is invoked asynchronously and is throttled, AWS Lambda automatically
+                                          retries the throttled event for up to six hours, with delays between retries. 
+                                          Remember, asynchronous events are queued before they are used to invoke the Lambda
+                                          function. 
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                           </li>
+                           <li class="listitem">
+                              <p><b>Stream-based event sources:</b> For stream-based event sources (Kinesis and DynamoDB streams), AWS Lambda polls your
+                                 stream and invokes your Lambda function. When your Lambda function is throttled, Lambda
+                                 attempts to process
+                                 the throttled batch of records until the time the data expires. This time period can
+                                 be up to seven days for Kinesis. The throttled request is treated as blocking per
+                                 shard, and Lambda doesn&apos;t read any new records from the shard until the 
+                                 throttled batch of records either expires or succeeds. If there is more than one shard
+                                 in the stream, Lambda continues invoking on the non-throttled shards until one gets
+                                 through. 
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     <h2 id="monitoring-concurrent-usage">Monitoring Your Concurrency Usage</h2>
+                     
+                     <p>To understand your concurrent execution usage, AWS Lambda provides the following metrics:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><b>ConcurrentExecutions:</b> This shows you the concurrent executions at an account level, and for any function
+                                 with a custom concurrency limit.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><b>UnreservedConcurrentExecutions:</b> This shows you the total concurrent executions for functions assigned to the default
+                                 &#x201C;unreserved&#x201D; concurrency pool.
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>To learn about these metrics and how to access them, see <a href="monitoring-functions.html">Using Amazon CloudWatch</a>.
+                        
+                        
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="policy-templates.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="advanced.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Account Level Concurrent Execution Limit"><a class="pagetoc" href="#concurrent-execution-safety-limit">Account Level Concurrent Executions Limit</a></li>
+                        <li class="pagetoc" name="Function Level Concurrent Execution Limit"><a class="pagetoc" href="#per-function-concurrency">Function Level Concurrent Execution Limit</a></li>
+                        <li class="pagetoc" name="Throttling Behavior"><a class="pagetoc" href="#throttling-behavior">Throttling Behavior</a></li>
+                        <li class="pagetoc" name="Monitoring Your Concurrency Usage"><a class="pagetoc" href="#monitoring-concurrent-usage">Monitoring Your Concurrency Usage</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

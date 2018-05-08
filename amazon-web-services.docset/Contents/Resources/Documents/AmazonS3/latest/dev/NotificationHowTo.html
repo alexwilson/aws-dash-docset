@@ -1,0 +1,1054 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title> Configuring Amazon S3 Event Notifications - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="Welcome.html" title="What Is Amazon S3?">
+      <link rel="prev" href="getting-started-cleanup.html" title="Clean Up Your Example Resources">
+      <link rel="next" href="ways-to-add-notification-config-to-bucket.html" title="Example Walkthrough 1: Configure
+            a Bucket for Notifications (Message Destination: SNS Topic and SQS Queue)">
+      <meta name="description" content="Set up and configure notifications so that key events on buckets cause a message to be sent to an Amazon SNS topic.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <span class="breadcrumb"> Configuring Amazon S3 Event Notifications</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="NotificationHowTo"> Configuring Amazon S3 Event Notifications</h1>
+                     <p>The Amazon S3 notification feature enables you to receive notifications when certain
+                        events
+                        happen in your bucket. To enable notifications, you must first add a notification
+                        configuration identifying the events you want Amazon S3 to publish, and the destinations
+                        where
+                        you want Amazon S3 to send the event notifications. You store this configuration in
+                        the
+                        <em>notification</em> subresource (see <a href="UsingBucket.html#bucket-config-options-intro">Bucket Configuration Options</a>)
+                        associated with a bucket. Amazon S3 provides an API for you to manage this subresource.
+                        
+                     </p>
+                     <div class="highlights">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#notification-how-to-overview">Overview</a></li>
+                           <li><a href="#how-to-enable-disable-notification-intro">How to Enable Event Notifications </a></li>
+                           <li><a href="#notification-how-to-event-types-and-destinations">Event Notification Types and Destinations</a></li>
+                           <li><a href="#notification-how-to-filtering">Configuring Notifications with Object Key Name
+                                 Filtering</a></li>
+                           <li><a href="#grant-destinations-permissions-to-s3">Granting Permissions to Publish Event Notification
+                                 Messages to a Destination</a></li>
+                           <li><a href="ways-to-add-notification-config-to-bucket.html">Example Walkthrough 1: Configure
+                                 a Bucket for Notifications (Message Destination: SNS Topic and SQS Queue)</a></li>
+                           <li><a href="notification-walkthrough-2.html">Example Walkthrough 2: Configure a Bucket for
+                                 Notifications (Message Destination: AWS Lambda)</a></li>
+                           <li><a href="notification-content-structure.html">Event Message Structure</a></li>
+                        </ul>
+                     </div>        
+                     
+                     <h2 id="notification-how-to-overview">Overview</h2>        
+                     
+                     
+                     <p> Currently, Amazon S3 can publish the following events:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>A new object created event&#x2014;Amazon S3 supports multiple APIs to create objects.
+                                 You can request notification when only a specific API is used (e.g.,
+                                 <code class="code">s3:ObjectCreated:Put</code>) or you can use a wildcard (e.g.,
+                                 <code class="code">s3:ObjectCreated:*</code>) to request notification when an object is
+                                 created regardless of the API used. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>An object removal event&#x2014;Amazon S3 supports deletes of versioned and
+                                 unversioned objects. For information about object versioning, see <a href="ObjectVersioning.html">Object Versioning</a> and <a href="Versioning.html">Using Versioning</a>. 
+                              </p>
+                              
+                              <p>You can request notification when an object is deleted or a versioned object
+                                 is permanently deleted by using the <code class="code">s3:ObjectRemoved:Delete</code> event
+                                 type. Or you can request notification when a delete marker is created for a
+                                 versioned object by using <code class="code">s3:ObjectRemoved:DeleteMarkerCreated</code>. You
+                                 can also use a wildcard <code class="code">s3:ObjectRemoved:*</code> to request notification
+                                 anytime an object is deleted. For information about deleting versioned objects,
+                                 see <a href="DeletingObjectVersions.html">Deleting Object Versions</a>. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>A Reduced Redundancy Storage (RRS) object lost event&#x2014;Amazon S3 sends a
+                                 notification message when it detects that an object of the RRS storage class has been
+                                 lost. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>For a list of supported event types, see <a href="NotificationHowTo.html#supported-notification-event-types">Supported Event Types</a>. 
+                     </p>
+                     
+                     <p>Amazon S3 supports the following destinations where it can publish events:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Amazon Simple Notification Service (Amazon SNS) topic</p>
+                              
+                              <p>Amazon SNS is a flexible, fully managed push messaging service. Using this service,
+                                 you can push messages to mobile devices or distributed services. With SNS you
+                                 can publish a message once, and deliver it one or more times. An SNS topic is an
+                                 access point that recipients can dynamically subscribe to in order to receive event
+                                 notifications. For more information about SNS, see the <a href="https://aws.amazon.com/sns/" target="_blank">Amazon SNS</a> product detail page.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Amazon Simple Queue Service (Amazon SQS) queue</p>
+                              
+                              <p>Amazon SQS is a scalable and fully managed message queuing service. You can use SQS
+                                 to
+                                 transmit any volume of data without requiring other services to be always available.
+                                 In your notification configuration you can request that Amazon S3 publish events to
+                                 an
+                                 SQS queue. For more information about SQS, see <a href="https://aws.amazon.com/sqs/" target="_blank">Amazon SQS</a> product detail page.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>AWS Lambda</p>
+                              
+                              <p>AWS Lambda is a compute service that makes it easy for you to build
+                                 applications that respond quickly to new information. AWS Lambda runs your code
+                                 in response to events such as image uploads, in-app activity, website clicks, or
+                                 outputs from connected devices. You can use AWS Lambda to extend other AWS
+                                 services with custom logic, or create your own back-end that operates at AWS scale,
+                                 performance, and security. With AWS Lambda, you can easily create discrete,
+                                 event-driven applications that execute only when needed and scale automatically from
+                                 a few requests per day to thousands per second. 
+                              </p>
+                              
+                              <p>AWS Lambda can run custom code in response to Amazon S3 bucket events. You upload
+                                 your
+                                 custom code to AWS Lambda and create what is called a Lambda function. When Amazon
+                                 S3 detects
+                                 an event of a specific type (for example, an object created event), it can publish
+                                 the event to AWS Lambda and invoke your function in Lambda. In response, AWS Lambda
+                                 executes your function. For more information, see <a href="https://aws.amazon.com/lambda/" target="_blank">AWS Lambda</a> product detail page. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>The following sections offer more detail about how to enable event notifications on
+                        a
+                        bucket. The subtopics also provide example walkthroughs to help you explore the
+                        notification feature.
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>
+                                 <a href="ways-to-add-notification-config-to-bucket.html">Example Walkthrough 1: Configure
+                                    a Bucket for Notifications (Message Destination: SNS Topic and SQS Queue)</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <a href="notification-walkthrough-2.html">Example Walkthrough 2: Configure a Bucket for
+                                    Notifications (Message Destination: AWS Lambda)</a>
+                                 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="how-to-enable-disable-notification-intro">How to Enable Event Notifications </h2>
+                     
+                     
+                     <p>Enabling notifications is a bucket-level operation; that is, you store notification
+                        configuration information in the <em>notification</em> subresource
+                        associated with a bucket. You can use any of the following methods to manage
+                        notification configuration:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Using the Amazon S3 console</p>
+                              
+                              <p>The console UI enables you to set a notification configuration on a bucket
+                                 without having to write any code. For instruction, see <a href="./AmazonS3/latest/user-guide/enable-event-notifications.html" target="_blank">How Do I Enable and Configure Event Notifications for an S3 Bucket?</a>
+                                 in the <em>Amazon Simple Storage Service Console User Guide</em>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Programmatically using the AWS SDKs</p>
+                              
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>If you need to, you can also make the Amazon S3 REST API calls directly from
+                                    your code. However, this can be cumbersome because it requires you to write
+                                    code to authenticate your requests. 
+                                 </p>
+                              </div>
+                              
+                              <p>Internally, both the console and the SDKs call the Amazon S3 REST API to manage
+                                 <em>notification</em> subresources associated with the bucket.
+                                 For notification configuration using AWS SDK examples, see the walkthrough link
+                                 provided in the preceding section.
+                              </p>
+                              
+                              <p>Regardless of the method you use, Amazon S3 stores the notification configuration
+                                 as XML in the <em>notification</em> subresource associated with a
+                                 bucket. For information about bucket subresources, see <a href="UsingBucket.html#bucket-config-options-intro">Bucket Configuration Options</a>). By default, notifications
+                                 are not enabled for any type of event. Therefore, initially the
+                                 <em>notification</em> subresource stores an empty
+                                 configuration.
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;NotificationConfiguration xmlns=&quot;http://s3.amazonaws.com/doc/2006-03-01/&quot;&gt; 
+&lt;/NotificationConfiguration&gt;</code></pre>
+                              <p>To enable notifications for events of specific types, you replace the XML with
+                                 the appropriate configuration that identifies the event types you want Amazon S3 to
+                                 publish and the destination where you want the events published. For each
+                                 destination, you add a corresponding XML configuration. For example: 
+                              </p>
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       
+                                       <p>Publish event messages to an SQS queue&#x2014;To set an SQS queue as
+                                          the notification destination for one or more event types, you add the
+                                          <code class="code">QueueConfiguration</code>.
+                                       </p>
+                                       <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&lt;NotificationConfiguration&gt;
+  &lt;QueueConfiguration&gt;
+    &lt;Id&gt;<em class="replaceable"><code>optional-id-string</code></em>&lt;/Id&gt;
+    &lt;Queue&gt;<em class="replaceable"><code>sqs-queue-arn</code></em>&lt;/Queue&gt;
+    &lt;Event&gt;<em class="replaceable"><code>event-type</code></em>&lt;/Event&gt;
+    &lt;Event&gt;<em class="replaceable"><code>event-type</code></em>&lt;/Event&gt;
+     ...
+  &lt;/QueueConfiguration&gt;
+   ...
+&lt;/NotificationConfiguration&gt;</code></pre>
+                                       </li>
+                                    <li class="listitem">
+                                       
+                                       <p>Publish event messages to an SNS topic&#x2014;To set an SNS topic as
+                                          the notification destination for specific event types, you add the
+                                          <code class="code">TopicConfiguration</code>.
+                                       </p>
+                                       <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&lt;NotificationConfiguration&gt;
+  &lt;TopicConfiguration&gt;
+     &lt;Id&gt;<em class="replaceable"><code>optional-id-string</code></em>&lt;/Id&gt;
+     &lt;Topic&gt;<em class="replaceable"><code>sns-topic-arn</code></em>&lt;/Topic&gt;
+     &lt;Event&gt;<em class="replaceable"><code>event-type</code></em>&lt;/Event&gt;
+     &lt;Event&gt;<em class="replaceable"><code>event-type</code></em>&lt;/Event&gt;
+      ...
+  &lt;/TopicConfiguration&gt;
+   ...
+&lt;/NotificationConfiguration&gt;</code></pre>
+                                       </li>
+                                    <li class="listitem">
+                                       
+                                       <p>Invoke the AWS Lambda function and provide an event message as an
+                                          argument&#x2014;To set a Lambda function as the notification destination
+                                          for specific event types, you add the
+                                          <code class="code">CloudFunctionConfiguration</code>.
+                                       </p>
+                                       <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&lt;NotificationConfiguration&gt;
+  &lt;CloudFunctionConfiguration&gt; &#xA0;&#xA0;
+     &lt;Id&gt;<em class="replaceable"><code>optional-id-string</code></em>&lt;/Id&gt;&#xA0;&#xA0;&#xA0;
+     &lt;Cloudcode&gt;<em class="replaceable"><code>cloud-function-arn</code></em>&lt;/Cloudcode&gt; &#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;
+     &lt;Event&gt;<em class="replaceable"><code>event-type</code></em>&lt;/Event&gt; &#xA0;&#xA0;&#xA0;&#xA0;&#xA0;
+     &lt;Event&gt;<em class="replaceable"><code>event-type</code></em>&lt;/Event&gt; &#xA0;&#xA0;&#xA0;&#xA0;&#xA0;
+      ... &#xA0;
+  &lt;/CloudFunctionConfiguration&gt;  
+   ...
+&lt;/NotificationConfiguration&gt;</code></pre>
+                                       </li>
+                                 </ul>
+                              </div>
+                              
+                              
+                              <p>To remove all notifications configured on a bucket, you save an empty
+                                 <code class="code">&lt;NotificationConfiguration/&gt;</code> element in the
+                                 <em>notification</em> subresource. 
+                              </p>
+                              
+                              <p>When Amazon S3 detects an event of the specific type, it publishes a message with
+                                 the event information. For more information, see <a href="notification-content-structure.html">Event Message Structure</a>. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="notification-how-to-event-types-and-destinations">Event Notification Types and Destinations</h2>   
+                     
+                     
+                     <p>This section describes the event notification types that are supported by Amazon S3
+                        and
+                        the type of destinations where the notifications can be published.
+                     </p>
+                     
+                     <h3 id="supported-notification-event-types">Supported Event Types</h3>
+                     
+                     
+                     <p>Amazon S3 can publish events of the following types. You specify these event types
+                        in
+                        the notification configuration.
+                     </p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac37c11b4b4">
+                              
+                              <tbody><tr>
+                                 
+                                 <th> Event types</th>
+                                 
+                                 <th> Description </th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><em>s3:ObjectCreated:*</em></p>
+                                    
+                                    <p><em>s3:ObjectCreated:Put</em></p>
+                                    
+                                    <p><em>s3:ObjectCreated:Post</em></p>
+                                    
+                                    <p><em>s3:ObjectCreated:Copy</em></p>
+                                    
+                                    <p><em>s3:ObjectCreated:CompleteMultipartUpload</em></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <p>Amazon S3 APIs such as PUT, POST, and COPY can create an object. Using
+                                       these event types, you can enable notification when an object is
+                                       created using a specific API, or you can use the
+                                       <em>s3:ObjectCreated:*</em> event type to request
+                                       notification regardless of the API that was used to create an
+                                       object. 
+                                    </p>
+                                    
+                                    <p>You will not receive event notifications from failed operations.</p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><em>s3:ObjectRemoved:*</em></p>
+                                    
+                                    <p><em>s3:ObjectRemoved:Delete</em></p>
+                                    
+                                    <p><em>s3:ObjectRemoved:DeleteMarkerCreated</em></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <p>By using the <em>ObjectRemoved</em> event types, 
+                                       you can enable notification when an object or a batch of objects is removed from a
+                                       bucket.
+                                    </p>   
+                                    
+                                    <p> You can request notification when an object is deleted or
+                                       a versioned object is permanently deleted by using the
+                                       <em>s3:ObjectRemoved:Delete</em> event type. Or
+                                       you can request notification when a delete marker is created for
+                                       a versioned object by using
+                                       <em>s3:ObjectRemoved:DeleteMarkerCreated</em>.
+                                       For information about deleting versioned objects, see <a href="DeletingObjectVersions.html">Deleting Object Versions</a>. You can also use a
+                                       wildcard <code class="code">s3:ObjectRemoved:*</code> to request notification
+                                       anytime an object is deleted. 
+                                    </p>
+                                    
+                                    <p>You will not receive event notifications from automatic
+                                       deletes from lifecycle policies or from failed
+                                       operations.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td><em>s3:ReducedRedundancyLostObject</em></td>
+                                 
+                                 <td>You can use this event type to request Amazon S3 to send a
+                                    notification message when Amazon S3 detects that an object of the RRS
+                                    storage class is lost.
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     
+                     <h3 id="supported-notification-destinations">Supported Destinations </h3>
+                     
+                     
+                     
+                     <p>Amazon S3 can send event notification messages to the following destinations. You
+                        specify the ARN value of these destinations in the notification
+                        configuration.
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Publish event messages to an Amazon Simple Notification Service (Amazon SNS) topic</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Publish event messages to an Amazon Simple Queue Service (Amazon SQS) queue</p>
+                              
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>If the destination queue is SSE enabled, Amazon S3 will need access to the
+                                    associated KMS key to enable message encryption.
+                                 </p>
+                              </div>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Publish event messages to AWS Lambda by invoking a Lambda function and
+                                 providing the event message as an argument
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>You must grant Amazon S3 permissions to post messages to an Amazon SNS topic or an
+                        Amazon SQS queue.
+                        You must also grant Amazon S3 permission to invoke an AWS Lambda function on your
+                        behalf. For information about granting these permissions, see
+                        <a href="NotificationHowTo.html#grant-destinations-permissions-to-s3">Granting Permissions to Publish Event Notification
+                           Messages to a Destination</a>.
+                        
+                     </p>
+                     
+                             
+                     
+                     <h2 id="notification-how-to-filtering">Configuring Notifications with Object Key Name
+                        Filtering
+                     </h2>        
+                     
+                     
+                     
+                     <p>You can configure notifications to be filtered by the prefix and suffix of the key
+                        name of objects. For example, you can set up a configuration so that you are sent
+                        a
+                        notification only when image files with a &quot;.jpg&quot; extension are added to a bucket.
+                        Or you
+                        can have a configuration that delivers a notification to an Amazon SNS topic when
+                        an object
+                        with the prefix &quot;images/&quot; is added to the bucket, while having notifications for objects
+                        with a &quot;logs/&quot; prefix in the same bucket delivered to an AWS Lambda function. 
+                     </p>	
+                     
+                     <p>You can set up notification configurations that use object key name filtering in the
+                        Amazon S3 console and by using Amazon S3 APIs through the AWS SDKs or the REST APIs
+                        directly. For
+                        information about using the console UI to set a notification configuration on a bucket,
+                        see <a href="./AmazonS3/latest/user-guide/enable-event-notifications.html" target="_blank">
+                           How Do I Enable and Configure Event Notifications for an S3 Bucket?</a> 
+                        in the <em>Amazon Simple Storage Service Console User Guide</em>. 
+                     </p>
+                     
+                     <p>Amazon S3 stores the notification configuration as XML in the
+                        <em>notification</em> subresource associated with a bucket as described
+                        in <a href="NotificationHowTo.html#how-to-enable-disable-notification-intro">How to Enable Event Notifications </a>. You use the
+                        <code class="code">Filter</code> XML structure to define the rules for notifications to be
+                        filtered by the prefix and/or suffix of an object key name. For information about
+                        the
+                        details of the <code class="code">Filter</code> XML structure, see <a href="./AmazonS3/latest/API/RESTBucketPUTnotification.html" target="_blank">PUT Bucket notification</a> in
+                        the <em>Amazon Simple Storage Service API Reference</em>. 
+                     </p>
+                     
+                     <p>Notification configurations that use <code class="code">Filter</code> cannot define
+                        filtering rules with overlapping prefixes, overlapping suffixes, or prefix and suffix
+                        overlapping. The following sections have examples of valid notification configurations
+                        with object key name filtering and examples of notification configurations that are
+                        invalid because
+                        of prefix/suffix overlapping. 
+                     </p>
+                     
+                     <h3 id="notification-how-to-filtering-example-valid">Examples of Valid Notification
+                        Configurations with Object Key Name Filtering
+                     </h3>
+                     
+                     
+                     
+                     <p>The following notification configuration contains a queue configuration identifying
+                        an Amazon SQS queue 
+                        for Amazon S3 to publish events to of the <code class="code">s3:ObjectCreated:Put</code> type. The events will be published 
+                        whenever an object that has a prefix of <code class="code">images/</code> and a <code class="code">jpg</code> suffix is PUT to a bucket. 
+                        
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&lt;NotificationConfiguration&gt;
+  &lt;QueueConfiguration&gt;
+      &lt;Id&gt;1&lt;/Id&gt;
+      &lt;Filter&gt;
+          &lt;S3Key&gt;
+              &lt;FilterRule&gt;
+                  &lt;Name&gt;prefix&lt;/Name&gt;
+                  &lt;Value&gt;<em class="replaceable"><code>images/</code></em>&lt;/Value&gt;
+              &lt;/FilterRule&gt;
+              &lt;FilterRule&gt;
+                  &lt;Name&gt;suffix&lt;/Name&gt;
+                  &lt;Value&gt;<em class="replaceable"><code>jpg</code></em>&lt;/Value&gt;
+              &lt;/FilterRule&gt;
+          &lt;/S3Key&gt;
+     &lt;/Filter&gt;
+     &lt;Queue&gt;arn:aws:sqs:us-west-2:444455556666:s3notificationqueue&lt;/Queue&gt;
+     &lt;Event&gt;s3:ObjectCreated:Put&lt;/Event&gt;
+  &lt;/QueueConfiguration&gt;
+  &lt;/NotificationConfiguration&gt;</code></pre>
+                     <p>The following notification configuration has multiple non-overlapping prefixes.
+                        The configuration defines that notifications for PUT requests in the
+                        <code class="code">images/</code> folder will go to queue-A while notifications for PUT
+                        requests in the <code class="code">logs/</code> folder will go to queue-B.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;NotificationConfiguration&gt;
+  &lt;QueueConfiguration&gt;
+     &lt;Id&gt;1&lt;/Id&gt;
+     &lt;Filter&gt;
+            &lt;S3Key&gt;
+                &lt;FilterRule&gt;
+                    &lt;Name&gt;prefix&lt;/Name&gt;
+                    &lt;Value&gt;images/&lt;/Value&gt;
+                &lt;/FilterRule&gt;
+            &lt;/S3Key&gt;
+     &lt;/Filter&gt;
+     &lt;Queue&gt;arn:aws:sqs:us-west-2:444455556666:sqs-queue-A&lt;/Queue&gt;
+     &lt;Event&gt;s3:ObjectCreated:Put&lt;/Event&gt;
+  &lt;/QueueConfiguration&gt;
+  &lt;QueueConfiguration&gt;
+     &lt;Id&gt;2&lt;/Id&gt;
+     &lt;Filter&gt;
+            &lt;S3Key&gt;
+                &lt;FilterRule&gt;
+                    &lt;Name&gt;prefix&lt;/Name&gt;
+                    &lt;Value&gt;logs/&lt;/Value&gt;
+                &lt;/FilterRule&gt;
+            &lt;/S3Key&gt;
+     &lt;/Filter&gt;
+     &lt;Queue&gt;arn:aws:sqs:us-west-2:444455556666:sqs-queue-B&lt;/Queue&gt;
+     &lt;Event&gt;s3:ObjectCreated:Put&lt;/Event&gt;
+  &lt;/QueueConfiguration&gt;
+  &lt;/NotificationConfiguration&gt;</code></pre>
+                     <p>The following notification configuration has multiple non-overlapping suffixes.
+                        The configuration defines that all .jpg images newly added to the bucket will be
+                        processed by Lambda cloud-function-A and all newly added .png images will be
+                        processed by cloud-function-B. The suffixes .png and .jpg are not overlapping even
+                        though they have the same last letter. Two suffixes are considered overlapping if
+                        a
+                        given string can end with both suffixes. A string cannot end with both .png and .jpg
+                        so the suffixes in the example configuration are not overlapping suffixes. 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;NotificationConfiguration&gt;
+  &lt;CloudFunctionConfiguration&gt;
+     &lt;Id&gt;1&lt;/Id&gt;
+     &lt;Filter&gt;
+            &lt;S3Key&gt;
+                &lt;FilterRule&gt;
+                    &lt;Name&gt;suffix&lt;/Name&gt;
+                    &lt;Value&gt;.jpg&lt;/Value&gt;
+                &lt;/FilterRule&gt;
+            &lt;/S3Key&gt;
+     &lt;/Filter&gt;
+     &lt;Cloudcode&gt;arn:aws:lambda:us-west-2:444455556666:cloud-function-A&lt;/Cloudcode&gt;
+     &lt;Event&gt;s3:ObjectCreated:Put&lt;/Event&gt;
+  &lt;/CloudFunctionConfiguration&gt;
+  &lt;CloudFunctionConfiguration&gt;
+     &lt;Id&gt;2&lt;/Id&gt;
+     &lt;Filter&gt;
+            &lt;S3Key&gt;
+                &lt;FilterRule&gt;
+                    &lt;Name&gt;suffix&lt;/Name&gt;
+                    &lt;Value&gt;.png&lt;/Value&gt;
+                &lt;/FilterRule&gt;
+            &lt;/S3Key&gt;
+     &lt;/Filter&gt;
+     &lt;Cloudcode&gt;arn:aws:lambda:us-west-2:444455556666:cloud-function-B&lt;/Cloudcode&gt;
+     &lt;Event&gt;s3:ObjectCreated:Put&lt;/Event&gt;
+  &lt;/CloudFunctionConfiguration&gt;
+  &lt;/NotificationConfiguration&gt;</code></pre>
+                     
+                     <p>Your notification configurations that use <code class="code">Filter</code> cannot define
+                        filtering rules with overlapping prefixes for the same event types, unless the
+                        overlapping prefixes are used with suffixes that do not overlap. The following
+                        example configuration shows how objects created with a common prefix but
+                        non-overlapping suffixes can be delivered to different destinations.
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;NotificationConfiguration&gt;
+  &lt;CloudFunctionConfiguration&gt;
+     &lt;Id&gt;1&lt;/Id&gt;
+     &lt;Filter&gt;
+            &lt;S3Key&gt;
+                &lt;FilterRule&gt;
+                    &lt;Name&gt;prefix&lt;/Name&gt;
+                    &lt;Value&gt;images&lt;/Value&gt;
+                &lt;/FilterRule&gt;
+                &lt;FilterRule&gt;
+                    &lt;Name&gt;suffix&lt;/Name&gt;
+                    &lt;Value&gt;.jpg&lt;/Value&gt;
+                &lt;/FilterRule&gt;
+            &lt;/S3Key&gt;
+     &lt;/Filter&gt;
+     &lt;Cloudcode&gt;arn:aws:lambda:us-west-2:444455556666:cloud-function-A&lt;/Cloudcode&gt;
+     &lt;Event&gt;s3:ObjectCreated:Put&lt;/Event&gt;
+  &lt;/CloudFunctionConfiguration&gt;
+  &lt;CloudFunctionConfiguration&gt;
+     &lt;Id&gt;2&lt;/Id&gt;
+     &lt;Filter&gt;
+            &lt;S3Key&gt;
+                &lt;FilterRule&gt;
+                    &lt;Name&gt;prefix&lt;/Name&gt;
+                    &lt;Value&gt;images&lt;/Value&gt;
+                &lt;/FilterRule&gt;
+                &lt;FilterRule&gt;
+                    &lt;Name&gt;suffix&lt;/Name&gt;
+                    &lt;Value&gt;.png&lt;/Value&gt;
+                &lt;/FilterRule&gt;
+            &lt;/S3Key&gt;
+     &lt;/Filter&gt;
+     &lt;Cloudcode&gt;arn:aws:lambda:us-west-2:444455556666:cloud-function-B&lt;/Cloudcode&gt;
+     &lt;Event&gt;s3:ObjectCreated:Put&lt;/Event&gt;
+  &lt;/CloudFunctionConfiguration&gt;
+&lt;/NotificationConfiguration&gt;</code></pre>
+                     
+                     
+                     <h3 id="notification-how-to-filtering-examples-invalid">Examples of Notification
+                        Configurations with Invalid Prefix/Suffix Overlapping 
+                     </h3>
+                     
+                     
+                     
+                     <p>Your notification configurations that use <code class="code">Filter</code>, for the most
+                        part, cannot define filtering rules with overlapping prefixes, overlapping suffixes,
+                        or overlapping combinations of prefixes and suffixes for the same event types. (You
+                        can have overlapping prefixes as long as the suffixes do not overlap. For an
+                        example, see <a href="NotificationHowTo.html#notification-how-to-filtering">Configuring Notifications with Object Key Name
+                           Filtering</a>.)
+                     </p>
+                     
+                     <p>You can use overlapping object key name filters with different event types. For
+                        example, you could create a notification configuration that uses the prefix
+                        <code>image/</code> for the <code class="code">ObjectCreated:Put</code> event type
+                        and the prefix <code>image/</code> for the <code class="code">ObjectDeleted:*</code>
+                        event type. 
+                     </p>
+                     
+                     <p>You will get an error if you try to save a notification configuration
+                        that has invalid overlapping name filters for the same event types, when using the
+                        AWS Amazon S3
+                        console or when using the Amazon S3 API. This section shows examples of notification
+                        configurations that are invalid because of overlapping name filters. 
+                     </p> 
+                     
+                     <p>Any existing notification configuration rule is assumed to have a default prefix
+                        and suffix that match any other prefix and suffix respectively. The following
+                        notification configuration is invalid because it has overlapping prefixes, where the
+                        root prefix overlaps with any other prefix. (The same thing would be true if we were
+                        using suffix instead of prefix in this example. The root suffix overlaps with any
+                        other suffix.)
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;NotificationConfiguration&gt;
+     &lt;TopicConfiguration&gt;
+         &lt;Topic&gt;arn:aws:sns:us-west-2:444455556666:sns-notification-one&lt;/Topic&gt;
+         &lt;Event&gt;s3:ObjectCreated:*&lt;/Event&gt;
+    &lt;/TopicConfiguration&gt;
+    &lt;TopicConfiguration&gt;
+         &lt;Topic&gt;arn:aws:sns:us-west-2:444455556666:sns-notification-two&lt;/Topic&gt;
+         &lt;Event&gt;s3:ObjectCreated:*&lt;/Event&gt;
+         &lt;Filter&gt;
+             &lt;S3Key&gt;
+                 &lt;FilterRule&gt;
+                     &lt;Name&gt;prefix&lt;/Name&gt;
+                     &lt;Value&gt;images&lt;/Value&gt;
+                 &lt;/FilterRule&gt;
+            &lt;/S3Key&gt;
+        &lt;/Filter&gt;
+    &lt;/TopicConfiguration&gt;             
+    &lt;/NotificationConfiguration&gt;</code></pre>
+                     <p>The following notification configuration is invalid because it has overlapping
+                        suffixes. Two suffixes are considered overlapping if a given string can end with
+                        both suffixes. A string can end with <code class="code">jpg</code> and <code class="code">pg</code> so the
+                        suffixes are overlapping. (The same is true for prefixes, two prefixes are
+                        considered overlapping if a given string can begin with both prefixes.)
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class=""> &lt;NotificationConfiguration&gt;
+     &lt;TopicConfiguration&gt;
+         &lt;Topic&gt;arn:aws:sns:us-west-2:444455556666:sns-topic-one&lt;/Topic&gt;
+         &lt;Event&gt;s3:ObjectCreated:*&lt;/Event&gt;
+         &lt;Filter&gt;
+             &lt;S3Key&gt;
+                 &lt;FilterRule&gt;
+                     &lt;Name&gt;suffix&lt;/Name&gt;
+                     &lt;Value&gt;jpg&lt;/Value&gt;
+                 &lt;/FilterRule&gt;
+            &lt;/S3Key&gt;
+        &lt;/Filter&gt;
+    &lt;/TopicConfiguration&gt;
+    &lt;TopicConfiguration&gt;
+         &lt;Topic&gt;arn:aws:sns:us-west-2:444455556666:sns-topic-two&lt;/Topic&gt;
+         &lt;Event&gt;s3:ObjectCreated:Put&lt;/Event&gt;
+         &lt;Filter&gt;
+             &lt;S3Key&gt;
+                 &lt;FilterRule&gt;
+                     &lt;Name&gt;suffix&lt;/Name&gt;
+                     &lt;Value&gt;pg&lt;/Value&gt;
+                 &lt;/FilterRule&gt;
+            &lt;/S3Key&gt;
+        &lt;/Filter&gt;
+    &lt;/TopicConfiguration&gt;
+&lt;/NotificationConfiguration</code></pre>
+                     <p>The following notification configuration is invalid because
+                        it has overlapping prefixes and suffixes.
+                        
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;NotificationConfiguration&gt;
+     &lt;TopicConfiguration&gt;
+         &lt;Topic&gt;arn:aws:sns:us-west-2:444455556666:sns-topic-one&lt;/Topic&gt;
+         &lt;Event&gt;s3:ObjectCreated:*&lt;/Event&gt;
+         &lt;Filter&gt;
+             &lt;S3Key&gt;
+                 &lt;FilterRule&gt;
+                     &lt;Name&gt;prefix&lt;/Name&gt;
+                     &lt;Value&gt;images&lt;/Value&gt;
+                 &lt;/FilterRule&gt;
+                 &lt;FilterRule&gt;
+                     &lt;Name&gt;suffix&lt;/Name&gt;
+                     &lt;Value&gt;jpg&lt;/Value&gt;
+                 &lt;/FilterRule&gt;
+            &lt;/S3Key&gt;
+        &lt;/Filter&gt;
+    &lt;/TopicConfiguration&gt;
+    &lt;TopicConfiguration&gt;
+         &lt;Topic&gt;arn:aws:snsus-west-2:444455556666:sns-topic-two&lt;/Topic&gt;
+         &lt;Event&gt;s3:ObjectCreated:Put&lt;/Event&gt;
+         &lt;Filter&gt;
+             &lt;S3Key&gt;
+                 &lt;FilterRule&gt;
+                     &lt;Name&gt;suffix&lt;/Name&gt;
+                     &lt;Value&gt;jpg&lt;/Value&gt;
+                 &lt;/FilterRule&gt;
+            &lt;/S3Key&gt;
+        &lt;/Filter&gt;
+    &lt;/TopicConfiguration&gt;
+&lt;/NotificationConfiguration&gt;</code></pre>
+                     
+                          
+                     <h2 id="grant-destinations-permissions-to-s3">Granting Permissions to Publish Event Notification
+                        Messages to a Destination
+                     </h2>
+                     
+                     
+                     <p>Before Amazon S3 can publish messages to a destination, you must
+                        grant the Amazon S3 principal the necessary permissions to call the relevant API to
+                        publish
+                        messages to an SNS topic, an SQS queue, or a Lambda function. 
+                        
+                     </p>
+                     
+                     
+                     <h3 id="grant-lambda-invoke-permission-to-s3">Granting Permissions to
+                        Invoke an AWS Lambda Function
+                     </h3>
+                     
+                     
+                     
+                     <p>Amazon S3 publishes event messages to AWS Lambda by invoking a Lambda function and
+                        providing the event message as an argument.
+                     </p>
+                     
+                     <p>When you use the Amazon S3 console to configure event notifications on an Amazon S3
+                        bucket for a Lambda function, 
+                        the Amazon S3 console will set up the necessary permissions on the Lambda function
+                        so that Amazon S3 has permissions 
+                        to invoke the function from the bucket. For more information, see 
+                        <a href="./AmazonS3/latest/user-guide/enable-event-notifications.html" target="_blank">How Do I Enable and Configure Event Notifications for an S3 Bucket?</a>
+                        in the <em>Amazon Simple Storage Service Console User Guide</em>.
+                        
+                     </p>       
+                     
+                     <p>You can also grant Amazon S3 permissions from AWS Lambda to invoke your Lambda function.
+                        For more information, see 
+                        <a href="./lambda/latest/dg/with-s3-example.html" target="_blank">Tutorial: Using AWS Lambda with Amazon S3</a> in the <em>AWS Lambda Developer Guide</em>.
+                     </p>
+                     
+                     
+                     
+                     <h3 id="grant-sns-sqs-permission-for-s3">Granting Permissions to Publish
+                        Messages to an SNS Topic or an SQS Queue
+                     </h3>
+                     
+                     
+                     <p>You attach an IAM policy to the destination SNS topic or SQS queue to grant Amazon
+                        S3 permissions to publish messages to the SNS topic or SQS queue.       
+                        
+                     </p>
+                     
+                     
+                     <p>Example of an IAM policy that you attach to the destination SNS topic.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+ &quot;Version&quot;: &quot;2008-10-17&quot;,
+ &quot;Id&quot;: &quot;example-ID&quot;,
+ &quot;Statement&quot;: [
+  {
+   &quot;Sid&quot;: &quot;example-statement-ID&quot;,
+   &quot;Effect&quot;: &quot;Allow&quot;,
+   &quot;Principal&quot;: {
+     &quot;Service&quot;: &quot;s3.amazonaws.com&quot;  
+   },
+   &quot;Action&quot;: [
+    &quot;<em class="replaceable"><code>SNS:Publish</code></em>&quot;
+   ],
+   &quot;Resource&quot;: &quot;<em class="replaceable"><code>SNS-ARN</code></em>&quot;,
+   &quot;Condition&quot;: {
+      &quot;ArnLike&quot;: {   &#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;
+      &quot;aws:SourceArn&quot;: &quot;arn:aws:s3:*:*:<em class="replaceable"><code>bucket-name</code></em>&quot;    
+    }
+   }
+  }
+ ]
+}</code></pre>
+                     
+                     
+                     <p>Example of an IAM policy that you attach to the destination SQS queue.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+ &quot;Version&quot;: &quot;2008-10-17&quot;,
+ &quot;Id&quot;: &quot;example-ID&quot;,
+ &quot;Statement&quot;: [
+  {
+   &quot;Sid&quot;: &quot;example-statement-ID&quot;,
+   &quot;Effect&quot;: &quot;Allow&quot;,
+   &quot;Principal&quot;: {
+     &quot;AWS&quot;: &quot;*&quot;  
+   },
+   &quot;Action&quot;: [
+    &quot;<em class="replaceable"><code>SQS:SendMessage</code></em>&quot;
+   ],
+   &quot;Resource&quot;: &quot;<em class="replaceable"><code>SQS-ARN</code></em>&quot;,
+   &quot;Condition&quot;: {
+      &quot;ArnLike&quot;: {   &#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;
+      &quot;aws:SourceArn&quot;: &quot;arn:aws:s3:*:*:<em class="replaceable"><code>bucket-name</code></em>&quot;    
+    }
+   }
+  }
+ ]
+}</code></pre>              
+                     
+                     <p>Note that for both the Amazon SNS and Amazon SQS IAM policies, you can specify the
+                        <code class="code">StringLike</code> condition in the policy,
+                        instead of the <code class="code">ArnLike</code> condition.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&quot;Condition&quot;: {   &#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;
+  &quot;StringLike&quot;: {   &#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;
+      &quot;aws:SourceArn&quot;: &quot;arn:aws:s3:*:*:<em class="replaceable"><code>bucket-name</code></em>&quot;   &#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;
+  }
+  }  </code></pre>
+                     
+                     <p>Example of a key policy that you attach to the associated KMS key if the SQS queue
+                        is SSE enabled. 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Id&quot;: &quot;example-ID&quot;,
+    &quot;Statement&quot;: [
+        {
+            &quot;Sid&quot;: &quot;example-statement-ID&quot;,
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Principal&quot;: {
+                &quot;Service&quot;: &quot;s3.amazonaws.com&quot;
+            },
+            &quot;Action&quot;: [
+                &quot;kms:GenerateDataKey&quot;,
+                &quot;kms:Decrypt&quot;
+            ],
+            &quot;Resource&quot;: &quot;*&quot;
+        }
+    ]
+}</code></pre>
+                     <p>The policy grants Amazon S3 service principal permission for specific KMS actions
+                        that
+                        are necessary to encrypt messages added to the queue.
+                     </p>
+                     
+                     
+                     <p>For an example of how to attach a policy to a SNS topic or an SQS
+                        queue, see               
+                        <a href="ways-to-add-notification-config-to-bucket.html">Example Walkthrough 1: Configure
+                           a Bucket for Notifications (Message Destination: SNS Topic and SQS Queue)</a>.
+                     </p>
+                     
+                     <p>For more information about permissions, see the following topics:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./sns/latest/dg/AccessPolicyLanguage_UseCases_Sns.html" target="_blank">Example Cases for Amazon SNS Access Control</a> in
+                                 the <em>Amazon Simple Notification Service Developer Guide</em></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="./AWSSimpleQueueService/latest/SQSDeveloperGuide/UsingIAM.html" target="_blank">Access Control Using AWS
+                                    Identity and Access Management (IAM)</a> in the
+                                 <em>Amazon Simple Queue Service Developer Guide</em></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="getting-started-cleanup.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ways-to-add-notification-config-to-bucket.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Overview"><a class="pagetoc" href="#notification-how-to-overview">Overview</a></li>
+                        <li class="pagetoc" name="How to Enable Event Notifications "><a class="pagetoc" href="#how-to-enable-disable-notification-intro">How to Enable Event Notifications </a></li>
+                        <li class="pagetoc" name="Event Notification Types and Destinations"><a class="pagetoc" href="#notification-how-to-event-types-and-destinations">Event Notification Types and Destinations</a></li>
+                        <li class="pagetoc" name="Configuring Notifications with Object Key Name
+            Filtering"><a class="pagetoc" href="#notification-how-to-filtering">Configuring Notifications with Object Key Name
+                              Filtering</a></li>
+                        <li class="pagetoc" name="Granting Permissions to Publish Event Notification
+                Messages to a Destination"><a class="pagetoc" href="#grant-destinations-permissions-to-s3">Granting Permissions to Publish Event Notification
+                              Messages to a Destination</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

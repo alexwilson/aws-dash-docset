@@ -1,0 +1,290 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Tracing Lambda-Based Applications with
+         AWS X-Ray - AWS Lambda
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="lambda-x-ray.html" title="Using AWS X-Ray">
+      <link rel="prev" href="lambda-x-ray.html" title="Using AWS X-Ray">
+      <link rel="next" href="enabling-x-ray.html" title="Setting Up AWS X-Ray with Lambda ">
+      <meta name="description" content="AWS X-Ray is an AWS service that allows you to detect, analyze, and optimize performance issues with your AWS Lambda applications. X-Ray collects metadata from the Lambda service and any upstream or downstream services that make up your application. X-Ray uses this metadata to generate a detailed service graph that illustrates performance bottlenecks, latency spikes, and other issues that impact the performance of your Lambda application.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/using-x-ray.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="troubleshooting.html">Monitoring and Troubleshooting Lambda-based Applications</a> &#xBB; <a href="lambda-x-ray.html">Using AWS X-Ray</a> &#xBB; <span class="breadcrumb">Tracing Lambda-Based Applications with
+                                    AWS X-Ray</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="using-x-ray">Tracing Lambda-Based Applications with
+                        AWS X-Ray
+                     </h1>
+                     <p> AWS X-Ray is an AWS service that allows you to detect, analyze, and optimize
+                        performance issues with your AWS Lambda applications. X-Ray collects metadata from
+                        the Lambda service and any upstream or downstream services that make up your
+                        application. X-Ray uses this metadata to generate a detailed service graph that
+                        illustrates performance bottlenecks, latency spikes, and other issues that impact
+                        the performance of your Lambda application. 
+                     </p>
+                     <p>After using the <a href="using-x-ray.html#lambda-service-map">Lambda on the AWS X-Ray Service Map </a>to identify a problematic resource or
+                        component, you can zoom in and view a visual representation of the request. This
+                        visual representation covers the time from when an event source triggers a Lambda
+                        function until the function execution has completed. X-Ray provides you with a
+                        breakdown of your function&apos;s operations, such as information regarding downstream
+                        calls your Lambda function made to other services. In addition, X-Ray integration
+                        with Lambda provides you with visibility into the AWS Lambda service overhead. It
+                        does
+                        so by displaying specifics such as your request&apos;s dwell time and number of
+                        invocations. 
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Only services that currently integrate with X-Ray show as standalone traces, outside
+                           of your
+                           Lambda trace. For a list of services that currently support X-Ray, see <a href="./xray/latest/devguide/xray-services.html" target="_blank">Integrating AWS X-Ray with Other AWS Services</a>.
+                        </p>
+                     </div>
+                     <h2 id="lambda-service-map">Lambda on the AWS X-Ray Service Map </h2>
+                     
+                     
+                     <p>X-Ray displays three types of nodes on the service map for requests served by Lambda:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><b>Lambda service (AWS::Lambda)</b> &#x2013; This type of node
+                                 represents the time the request spent in the Lambda service. Timing starts
+                                 when Lambda first receives the request and ends when the request leaves the
+                                 Lambda service.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><b>Lambda function (AWS::Lambda::Function) &#x2013; </b>This type of
+                                 node represents the Lambda function&apos;s execution time.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><b>Downstream service calls</b> &#x2013; In this type, each
+                                 downstream service call from within the Lambda function is represented by a
+                                 separate node. 
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>In the diagram following, the nodes represent (from left to right): The Lambda
+                        service, the user function, and a downstream call to Amazon S3:
+                     </p>
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/Tracing-S3.png">
+                        
+                        
+                     </div>    
+                     
+                     <p>For more information, see <a href="./xray/latest/devguide/xray-console.html" target="_blank">Viewing the Service Map</a>.
+                     </p>
+                     
+                     <h2 id="lambda-request">Lambda as an AWS X-Ray Trace</h2>
+                     
+                     
+                     
+                     <p>From the service map, you can zoom in to see a trace view of your Lambda function.
+                        The trace will display in-depth information
+                        regarding your function invocations, represented as segments and subsegments:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><b> 
+                                    Lambda service segment</b> &#x2013; This segment represents different information depending on the event source used
+                                 to invoke the function:
+                              </p>
+                              
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p><b>Synchronous and stream event sources</b> &#x2013; The service
+                                          segment measures the time from when the Lambda service receives the
+                                          request/event and ends when the request leaves the Lambda service
+                                          (after the final invocation for the request is completed).
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p><b>Asynchronous</b> - The service segment represents the response time, that is, the time it took the
+                                          
+                                          Lambda service to return a 202 response to the client.
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                              
+                              <p>The Lambda service segment can include two types of subsegments:</p>
+                              
+                              
+                              
+                              
+                              
+                              
+                              <div class="itemizedlist">    
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p><b>Dwell time (asynchronous invocations only)</b> &#x2013; Represents the time the function spends in the Lambda service 
+                                          before being invoked. This subsegment starts when the Lambda service receives the
+                                          request/event and ends when the Lambda function is invoked 
+                                          for the first time.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p><b>Attempt</b> &#x2013; Represents a single invocation attempt, including any
+                                          overhead introduced by the Lambda service. Examples of overhead are
+                                          time spent initializing the function&apos;s code and function execution
+                                          time.
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                              
+                           </li>
+                           <li class="listitem">
+                              <p><b>Lambda function segment</b> - Represents execution time for the function for a given invocation attempt. 
+                                 It starts when the function handler
+                                 starts executing and ends when the function terminates. This segment can include three
+                                 types of subsegments:
+                              </p>
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p><b>Initialization</b> - The time spent running the <code class="code">initialization</code> code of
+                                          the function, defined as the code outside the Lambda function handler
+                                          or static initializers.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p><b>Downstream calls</b> - Calls made to other AWS services from the
+                                          Lambda function&apos;s code.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p><b>Custom subsegments</b> - Custom subsegments or user annotations
+                                          that you can add to the Lambda function segment by using the X-Ray
+                                          SDK. 
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>For each traced invocation, Lambda emits the Lambda service segment and all of its
+                           subsegments.
+                           These segments are emitted regardless of the runtime and require you to use the XRay
+                           SDK for AWS API calls.  
+                        </p>
+                     </div>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="lambda-x-ray.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="enabling-x-ray.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Lambda on the AWS X-Ray Service Map "><a class="pagetoc" href="#lambda-service-map">Lambda on the AWS X-Ray Service Map </a></li>
+                        <li class="pagetoc" name="Lambda as an AWS X-Ray Trace"><a class="pagetoc" href="#lambda-request">Lambda as an AWS X-Ray Trace</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

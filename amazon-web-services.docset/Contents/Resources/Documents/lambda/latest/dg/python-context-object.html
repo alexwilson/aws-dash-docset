@@ -1,0 +1,464 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>The Context Object (Python) - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="python-programming-model.html" title="Programming Model for Authoring Lambda Functions in
+        Python">
+      <link rel="prev" href="python-programming-model-handler-types.html" title="Lambda Function Handler
+            (Python)">
+      <link rel="next" href="python-logging.html" title="Logging (Python)">
+      <meta name="description" content="While a Lambda function is executing, it can interact with the AWS Lambda service to get useful runtime information such as:">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-introduction-function.html">Lambda Functions</a> &#xBB; <a href="lambda-app.html">Building Lambda Functions</a> &#xBB; <a href="programming-model-v2.html">Programming Model</a> &#xBB; <a href="python-programming-model.html">Programming Model for Authoring Lambda Functions in
+                                    Python</a> &#xBB; <span class="breadcrumb">The Context Object (Python)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="python-context-object">The Context Object (Python)</h1>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#python-context-object-example">Example</a></li>
+                           <li><a href="#python-context-object-methods">The Context Object Methods
+                                 (Python)</a></li>
+                           <li><a href="#python-context-object-props">The Context Object Attributes
+                                 (Python)</a></li>
+                        </ul>
+                     </div>
+                     <p>While a Lambda function is executing, it can interact with the AWS Lambda service
+                        to get
+                        useful runtime information such as:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>How much time is remaining before AWS Lambda terminates your Lambda function
+                                 (timeout is one of the Lambda function configuration properties).
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The CloudWatch log group and log stream associated with the Lambda
+                                 function that is executing.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The AWS request ID returned to the client that invoked the Lambda function. You
+                                 can use the request ID for any follow up inquiry with AWS support. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p> If the Lambda function is invoked through AWS Mobile SDK, you can learn more
+                                 about the mobile application calling the Lambda function. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <p>AWS Lambda provides this information via the <code class="code">context</code> object that the service
+                        passes as the second parameter to your Lambda function handler. For more information,
+                        see
+                        <a href="python-programming-model-handler-types.html">Lambda Function Handler
+                           (Python)</a>.  
+                     </p>
+                     <p>The following sections provide an example Lambda function that uses the
+                        <code class="code">context</code> object, and then lists all of the available methods and
+                        attributes.
+                     </p>
+                     <h2 id="python-context-object-example">Example</h2>
+                     
+                     
+                     <p>Consider the following Python example. It has one function that is also the handler.
+                        The handler receives runtime information via the <code class="code">context</code> object passed as
+                        parameter. 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">from __future__ import print_function
+
+import time
+def get_my_log_stream(event, context):   &#xA0;&#xA0;&#xA0; 
+    print(&quot;Log stream name:&quot;, context.log_stream_name)
+&#xA0;&#xA0;  print(&quot;Log group name:&quot;,  context.log_group_name)
+&#xA0;&#xA0;  print(&quot;Request ID:&quot;,context.aws_request_id)
+&#xA0;&#xA0;  print(&quot;Mem. limits(MB):&quot;, context.memory_limit_in_mb)
+    # Code will execute quickly, so we add a 1 second intentional delay so you can see that in time remaining value.
+    time.sleep(1) 
+&#xA0;&#xA0;  print(&quot;Time remaining (MS):&quot;, context.get_remaining_time_in_millis())</code></pre>
+                     <p>The handler code in this example simply prints some of the runtime information. Each
+                        print statement creates a log entry in CloudWatch. If you invoke the function using
+                        the Lambda
+                        console, the console displays the logs. The <code class="code">from __future__</code> statement
+                        enables you to write code that is compatible with Python 2 or 3.
+                     </p>
+                     
+                     
+                     <p class="title"><b>To test this code in the AWS Lambda console</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>In the console, create a Lambda function using the hello-world blueprint. In
+                              <b>runtime</b>, choose <b>Python 2.7</b>. In <b>Handler</b>,
+                              replace <code class="code">lambda_function.lambda_handler</code>&#xA0;with <code class="code">lambda_function.get_my_log_stream</code>.
+                              For instructions on how to do this, see 
+                              <a href="get-started-create-function.html">Create a Simple Lambda
+                                 			Function</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Test the function, and then you can also update the code to get more context
+                              information.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <p>The following sections provide a list of available <code class="code">context</code> object methods
+                        and attributes that you can use to get runtime information of your Lambda
+                        function.
+                     </p>
+                     
+                     <h2 id="python-context-object-methods">The Context Object Methods
+                        (Python)
+                     </h2>
+                     
+                     
+                     <p>The context object provides the following methods:</p>
+                     
+                     <div class="variablelist">
+                        
+                        
+                        <dl>
+                           
+                           <dt><b><span class="term">get_remaining_time_in_millis()</span></b></dt>
+                           
+                           <dd>
+                              <p>
+                                 Returns the remaining execution time, in milliseconds, until AWS Lambda
+                                 terminates the function. 
+                              </p>
+                              
+                           </dd>
+                           
+                        </dl>
+                     </div>
+                     
+                     <h2 id="python-context-object-props">The Context Object Attributes
+                        (Python)
+                     </h2>
+                     
+                     
+                     <p>The context object provides the following attributes:</p>
+                     
+                     <div class="variablelist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <dl>
+                           
+                           <dt><b><span class="term">function_name</span></b></dt>
+                           
+                           <dd>
+                              
+                              <p>Name of the Lambda function that is executing.</p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><b><span class="term">function_version</span></b></dt>
+                           
+                           <dd>
+                              
+                              <p>The Lambda function
+                                 version that is executing. If an alias is used to invoke the function, then
+                                 <code class="code">function_version</code> will be the version the alias points to.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><b><span class="term">invoked_function_arn</span></b></dt>
+                           
+                           <dd>
+                              
+                              <p>The ARN used to invoke this function. It can be function ARN or alias ARN. An unqualified
+                                 ARN
+                                 executes the <code class="code">$LATEST</code> version and aliases execute the function version it is
+                                 pointing to. 
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><b><span class="term">memory_limit_in_mb</span></b></dt>
+                           
+                           <dd>
+                              
+                              <p>Memory limit, in
+                                 MB, you configured for the Lambda function. You set the memory limit at the
+                                 time you create a Lambda function and you can change it later.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><b><span class="term">aws_request_id</span></b></dt>
+                           
+                           <dd>
+                              
+                              <p>AWS request ID associated with the request. This is the ID returned to the client
+                                 that
+                                 called the <code class="code">invoke</code> method. 
+                              </p>
+                              
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>If AWS Lambda retries the invocation (for example, in a situation
+                                    where the Lambda function that is processing Kinesis records throws an
+                                    exception), the request ID remains the same.
+                                 </p>
+                              </div>
+                              
+                           </dd>
+                           
+                           
+                           <dt><b><span class="term">log_group_name</span></b></dt>
+                           
+                           <dd>
+                              
+                              <p>The name of the CloudWatch log group where you can find logs written by
+                                 your Lambda function.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><b><span class="term">log_stream_name</span></b></dt>
+                           
+                           <dd>
+                              
+                              <p> The name of the CloudWatch log stream where you can find logs written by
+                                 your Lambda function. The log stream may or may not change for each
+                                 invocation of the Lambda function.
+                              </p>
+                              
+                              <p>The value is null if your Lambda function is unable to create a log
+                                 stream, which can happen if the execution role that grants necessary
+                                 permissions to the Lambda function does not include permissions for the
+                                 CloudWatch Logs actions.
+                              </p>
+                              
+                              
+                           </dd>
+                           
+                           
+                           <dt><b><span class="term">identity</span></b></dt>
+                           
+                           <dd>
+                              
+                              <p>Information about the Amazon Cognito identity provider when invoked
+                                 through the AWS Mobile SDK. It can be null.
+                              </p>
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       
+                                       <p><span class="topcom">identity.cognito_identity_id</span></p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><span class="topcom">identity.cognito_identity_pool_id</span></p>
+                                       
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                           </dd>
+                           
+                           
+                           
+                           <dt><b><span class="term">client_context</span></b></dt>
+                           
+                           <dd>
+                              
+                              <p>Information about the client application and device when invoked through
+                                 the AWS Mobile SDK. It can be null.
+                              </p>
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       
+                                       <p><span class="topcom">client_context.client.installation_id</span></p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><span class="topcom">client_context.client.app_title</span></p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><span class="topcom">client_context.client.app_version_name</span></p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><span class="topcom">client_context.client.app_version_code</span></p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><span class="topcom">client_context.client.app_package_name</span></p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><span class="topcom">client_context.custom</span></p>
+                                       
+                                       <p>A <code class="code">dict</code> of custom values set by the mobile client
+                                          application.
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><span class="topcom">client_context.env</span></p>
+                                       
+                                       <p>A <code class="code">dict</code> of environment information provided by the AWS
+                                          Mobile SDK.
+                                       </p>
+                                       
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                           </dd>
+                           
+                        </dl>
+                     </div>
+                     
+                     <p>In addition to the options listed above, you can also use the AWS X-Ray SDK for <a href="python-tracing.html">Python</a> to identify critical code paths, trace their performance and capture the data for
+                        analysis. 
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="python-programming-model-handler-types.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="python-logging.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Example"><a class="pagetoc" href="#python-context-object-example">Example</a></li>
+                        <li class="pagetoc" name="The Context Object Methods
+            (Python)"><a class="pagetoc" href="#python-context-object-methods">The Context Object Methods
+                              (Python)</a></li>
+                        <li class="pagetoc" name="The Context Object Attributes
+            (Python)"><a class="pagetoc" href="#python-context-object-props">The Context Object Attributes
+                              (Python)</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

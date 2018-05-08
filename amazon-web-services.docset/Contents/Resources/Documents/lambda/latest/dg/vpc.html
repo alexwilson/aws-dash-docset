@@ -1,0 +1,344 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Configuring a Lambda Function to Access Resources in an Amazon VPC - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="accessing-resources.html" title="Accessing Resources from a Lambda Function">
+      <link rel="prev" href="accessing-resources.html" title="Accessing Resources from a Lambda Function">
+      <link rel="next" href="vpc-tutorials.html" title="Tutorials: Configuring a Lambda Function to Access Resources in
+            an Amazon VPC">
+      <meta name="description" content="Describes how Lambda functions can access Amazon Virtual Private Cloud resources.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/vpc.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-introduction-function.html">Lambda Functions</a> &#xBB; <a href="accessing-resources.html">Accessing Resources from a Lambda Function</a> &#xBB; <span class="breadcrumb">Configuring a Lambda Function to Access Resources in an Amazon VPC</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="vpc">Configuring a Lambda Function to Access Resources in an Amazon VPC</h1>
+                     <p>Typically, you create resources inside Amazon Virtual Private Cloud (Amazon VPC) so
+                        that they cannot be accessed 
+                        over the public Internet. These resources could be AWS service resources, such as
+                        Amazon Redshift 
+                        data warehouses, Amazon ElastiCache clusters, or Amazon RDS instances. They could
+                        also be your own services running on
+                        your own EC2 instances. By default, resources within a VPC are not accessible from
+                        within a
+                        Lambda function. 
+                     </p>
+                     <p>AWS Lambda runs your function code securely within a VPC by default. However, to enable
+                        your Lambda function to access resources inside your private VPC, you must provide
+                        additional
+                        VPC-specific configuration information that includes VPC subnet IDs and security group
+                        IDs.
+                        AWS Lambda uses this information to set up elastic network interfaces <a href="./AmazonVPC/latest/UserGuide/VPC_ElasticNetworkInterfaces.html" target="_blank">(ENIs)</a> that enable your function
+                        to connect securely to other resources within your private VPC.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>AWS Lambda does not support connecting to resources within Dedicated Tenancy VPCs.
+                           For more information, see <a href="./AmazonVPC/latest/UserGuide/dedicated-instance.html" target="_blank">Dedicated VPCs</a>.
+                        </p>
+                     </div>
+                     <h2 id="vpc-configuring">Configuring a Lambda Function for Amazon VPC Access</h2>
+                     
+                     
+                     <p>You add VPC information to your Lambda function configuration using the
+                        <code class="code">VpcConfig</code> parameter, either at the time you create a Lambda function
+                        (see <a href="API_CreateFunction.html">CreateFunction</a>), or you can add
+                        it to the existing Lambda function configuration (see <a href="API_UpdateFunctionConfiguration.html">UpdateFunctionConfiguration</a>). Following are AWS CLI
+                        examples:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>The <code class="code">create-function</code> CLI command specifies the
+                                 <code class="code">--vpc-config</code> parameter to provide VPC information at the
+                                 time you create a Lambda function. Note that the <code class="code">--runtime</code> parameter specifies <code class="code">python3.6</code>. You can also use <code class="code">python2.7</code>.
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">$  aws lambda create-function \
+--function-name ExampleFunction \
+--runtime python3.6 \
+--role <em class="replaceable"><code>execution-role-arn</code></em> \
+--zip-file fileb://<em class="replaceable"><code>path</code></em>/app.zip \
+--handler app.handler \
+--vpc-config SubnetIds=<em class="replaceable"><code>comma-separated-vpc-subnet-ids</code></em>,SecurityGroupIds=<em class="replaceable"><code>comma-separated-security-group-ids</code></em> \
+--memory-size 1024 
+</code></pre>
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>The Lambda function execution role must have permissions to create, describe and delete
+                                    
+                                    ENIs. AWS Lambda provides a permissions policy,
+                                    <code class="code">AWSLambdaVPCAccessExecutionRole</code>, with permissions
+                                    for the necessary EC2 actions
+                                    (<code class="code">ec2:CreateNetworkInterface</code>, <code class="code">
+                                       ec2:DescribeNetworkInterfaces</code>, and
+                                    <code class="code">ec2:DeleteNetworkInterface</code>) that you can use when
+                                    creating a role. You can review the policy in the IAM
+                                    console. Do not delete this role immediately after your Lambda function execution.
+                                    There is a delay between
+                                    the time your Lambda function executes and ENI deletion. If you do delete the role
+                                    immediately after
+                                    function execution, you are responsible for deleting the ENIs.
+                                 </p>
+                              </div>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The <code class="code">update-function-configuration</code> CLI command specifies the
+                                 <code class="code">--vpc-config</code> parameter to add VPC information to an
+                                 existing Lambda function configuration.
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">$ aws lambda update-function-configuration \
+--function-name ExampleFunction \
+--vpc-config SubnetIds=<em class="replaceable"><code>comma-separated-vpc-subnet-ids</code></em>,SecurityGroupIds=<em class="replaceable"><code>security-group-ids</code></em></code></pre>
+                              <p>To remove VPC-related information from your Lambda function configuration, use the
+                                 <code class="code">UpdateFunctionConfiguration</code> API by providing an empty list of subnet
+                                 IDs and security group IDs as shown in the following example CLI command.
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">$ aws lambda update-function-configuration \
+--function-name ExampleFunction \
+--vpc-config SubnetIds=[],SecurityGroupIds=[]</code></pre>
+                              </li>
+                        </ul>
+                     </div>
+                     
+                     <p>Note the following additional considerations:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>When you add VPC configuration to a Lambda function, it can only access
+                                 resources in that VPC. If a Lambda function needs to access both VPC
+                                 resources and the public Internet, the VPC needs to have a Network Address
+                                 Translation (NAT) instance inside the VPC. 
+                              </p>
+                              
+                              <p>&#xA0;</p>
+                              
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>When a Lambda function is configured to run within a VPC, it incurs an additional
+                                 ENI start-up penalty. This means address resolution may be delayed
+                                 when trying to connect to network resources.
+                              </p>
+                              
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="vpc-internet">Internet Access for Lambda Functions</h2>
+                     
+                     
+                     <p>AWS Lambda uses the VPC information you provide to set up <a href="./AmazonVPC/latest/UserGuide/VPC_ElasticNetworkInterfaces.html" target="_blank">ENIs</a> that allow your Lambda function to access VPC resources. 
+                        Each ENI is assigned a private IP address from the IP address range within the Subnets
+                        you specify, but is not assigned any public IP addresses. 
+                        <em>Therefore, if your Lambda function requires Internet access (for example, to access
+                           AWS services that don&apos;t have VPC endpoints 
+                           ), you can configure a NAT instance inside your VPC or you can use the Amazon VPC
+                           NAT gateway</em>. 
+                        For more information, see <a href="./AmazonVPC/latest/UserGuide/vpc-nat-gateway.html" target="_blank">NAT Gateways</a> in the <em>Amazon VPC User Guide</em>. You cannot use an Internet gateway attached to your VPC, 
+                        since that requires the ENI to have public IP addresses. 
+                     </p>
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>If your Lambda function needs Internet access, do not attach it to a public subnet
+                           or to a private subnet without Internet access. Instead, attach it only to private
+                           subnets with Internet
+                           access through a NAT instance or an Amazon VPC NAT gateway. 
+                        </p>
+                     </div>
+                     
+                     <h2 id="vpc-setup-guidelines">Guidelines for Setting Up VPC-Enabled Lambda
+                        Functions
+                     </h2>
+                     
+                     
+                     <p>Your Lambda function automatically scales based on the number of events it
+                        processes. The following are general guidelines for setting up VPC-enabled Lambda
+                        functions to support
+                        the scaling behavior. 
+                     </p>
+                     
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>If your Lambda function accesses a VPC, you must make sure that your VPC has
+                                 sufficient ENI capacity to support the scale requirements of your Lambda
+                                 function. You can use the following formula to approximately determine the ENI
+                                 capacity.
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">Projected peak concurrent executions * (Memory in GB / 3GB)</code></pre>
+                              <p>Where: </p>
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p><b>Projected peak concurrent execution</b> &#x2013; 
+                                          Use the information in 
+                                           <a href="concurrent-executions.html">Managing Concurrency</a> to determine this value.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p><b>Memory</b> &#x2013; The amount of memory you configured for
+                                          your Lambda function. 
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                              <p>&#xA0;</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The subnets you specify should have sufficient available IP addresses to match the
+                                 number of ENIs.
+                              </p>
+                              
+                              <p>&#xA0;</p>
+                              
+                              <p>We also recommend that you specify at least one subnet in each
+                                 Availability Zone in your Lambda function configuration. By specifying
+                                 subnets in each of the Availability Zones, your Lambda function can run in 
+                                 another Availability Zone if one goes down or runs out
+                                 of IP addresses. 
+                              </p>
+                              
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>If your VPC does not have sufficient ENIs or subnet IPs, your Lambda function will
+                           not scale as requests increase, and you will see an increase in function
+                           failures. AWS Lambda currently does not log errors to CloudWatch Logs that are caused
+                           by insufficient ENIs or IP addresses. If you see an increase in errors
+                           without corresponding CloudWatch Logs, you can invoke the Lambda function
+                           synchronously to get the error responses (for example, test your Lambda function
+                           in the AWS Lambda console because the console invokes your Lambda function
+                           synchronously and displays errors).
+                        </p>
+                     </div>
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="accessing-resources.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="vpc-tutorials.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Configuring a Lambda Function for Amazon VPC Access"><a class="pagetoc" href="#vpc-configuring">Configuring a Lambda Function for Amazon VPC Access</a></li>
+                        <li class="pagetoc" name="Internet Access for Lambda Functions"><a class="pagetoc" href="#vpc-internet">Internet Access for Lambda Functions</a></li>
+                        <li class="pagetoc" name="Guidelines for Setting Up VPC-Enabled Lambda
+            Functions"><a class="pagetoc" href="#vpc-setup-guidelines">Guidelines for Setting Up VPC-Enabled Lambda
+                              Functions</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

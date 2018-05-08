@@ -1,0 +1,339 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Function Errors (C#) - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="dotnet-programming-model.html" title="Programming Model for Authoring Lambda Functions in C#">
+      <link rel="prev" href="dotnet-logging.html" title="Logging (C#)">
+      <link rel="next" href="deployment-package-v2.html" title="Creating a Deployment Package">
+      <meta name="description" content="When an exception occurs in your Lambda function, Lambda will report the exception information back to you. Exceptions can occur in two different places:">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/dotnet-exceptions.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-introduction-function.html">Lambda Functions</a> &#xBB; <a href="lambda-app.html">Building Lambda Functions</a> &#xBB; <a href="programming-model-v2.html">Programming Model</a> &#xBB; <a href="dotnet-programming-model.html">Programming Model for Authoring Lambda Functions in C#</a> &#xBB; <span class="breadcrumb">Function Errors (C#)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="dotnet-exceptions">Function Errors (C#)</h1>
+                     <p>When an exception occurs in your Lambda function, Lambda will report the exception
+                        information back to you. Exceptions can occur in two different places: 
+                     </p>
+                     <div class="itemizedlist">
+                        
+                                   
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Initialization (Lambda loading your code, validating the handler string, and creating
+                                 an instance of your class if it is non-static).
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>The Lambda function invocation.</p>
+                           </li>
+                        </ul>
+                     </div>
+                     <p>The serialized exception information is returned as the payload as a modeled JSON
+                        object and outputted to CloudWatch logs. 
+                     </p>
+                     <p>In the initialization phase, exceptions can be thrown for invalid handler strings,
+                        a rule-breaking type or method (see <a href="dotnet-programming-model-handler-types.html#dotnet-handler-restrictions">Lambda Function Handler
+                           Restrictions </a>), or any other validation method (such as forgetting the serializer attribute and
+                        having a POCO as your input or output type). 
+                        These exceptions are of type <code class="code">LambdaException</code>. For example: 
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;errorType&quot;: &quot;LambdaException&quot;,
+  &quot;errorMessage&quot;: &quot;Invalid lambda function handler: &apos;http://this.is.not.a.valid.handler/&apos;. 
+  The valid format is &apos;ASSEMBLY::TYPE::METHOD&apos;.&quot;
+}</code></pre><p>If your constructor throws an exception, the error type is also of type <code class="code">LambdaException</code>, but the exception thrown during construction
+                        is provided in the <code class="code">cause</code> property, which is itself a modeled exception object: 
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;errorType&quot;: &quot;LambdaException&quot;,
+  &quot;errorMessage&quot;: &quot;An exception was thrown when the constructor for type &apos;LambdaExceptionTestFunction.ThrowExceptionInConstructor&apos;
+   was invoked. Check inner exception for more details.&quot;,
+  &quot;cause&quot;:   {
+    &quot;errorType&quot;: &quot;TargetInvocationException&quot;,
+    &quot;errorMessage&quot;: &quot;Exception has been thrown by the target of an invocation.&quot;,
+    &quot;stackTrace&quot;: [
+      &quot;at System.RuntimeTypeHandle.CreateInstance(RuntimeType type, Boolean publicOnly, Boolean noCheck, Boolean&amp;canBeCached, 
+      RuntimeMethodHandleInternal&amp;ctor, Boolean&amp; bNeedSecurityCheck)&quot;,
+      &quot;at System.RuntimeType.CreateInstanceSlow(Boolean publicOnly, Boolean skipCheckThis, Boolean fillCache, StackCrawlMark&amp; stackMark)&quot;,
+      &quot;at System.Activator.CreateInstance(Type type, Boolean nonPublic)&quot;,
+      &quot;at System.Activator.CreateInstance(Type type)&quot;
+    ],
+    &quot;cause&quot;:     {
+      &quot;errorType&quot;: &quot;ArithmeticException&quot;,
+      &quot;errorMessage&quot;: &quot;Sorry, 2 + 2 = 5&quot;,
+      &quot;stackTrace&quot;: [
+        &quot;at LambdaExceptionTestFunction.ThrowExceptionInConstructor..ctor()&quot;
+      ]
+    }
+  }
+}
+</code></pre><p>As the example shows, the inner exceptions are always preserved (as the <code class="code">cause</code> property), and can be deeply nested. 
+                     </p>
+                     <p>Exceptions can also occur during invocation. In this case, the exception type is preserved
+                        and the exception is returned directly as the payload and in the CloudWatch logs.
+                        For example: 
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;errorType&quot;: &quot;AggregateException&quot;,
+  &quot;errorMessage&quot;: &quot;One or more errors occurred. (An unknown web exception occurred!)&quot;,
+  &quot;stackTrace&quot;: [
+    &quot;at System.Threading.Tasks.Task.ThrowIfExceptional(Boolean includeTaskCanceledExceptions)&quot;,
+    &quot;at System.Threading.Tasks.Task`1.GetResultCore(Boolean waitCompletionNotification)&quot;,
+    &quot;at lambda_method(Closure , Stream , Stream , ContextInfo )&quot;
+  ],
+  &quot;cause&quot;:   {
+    &quot;errorType&quot;: &quot;UnknownWebException&quot;,
+    &quot;errorMessage&quot;: &quot;An unknown web exception occurred!&quot;,
+    &quot;stackTrace&quot;: [
+      &quot;at LambdaDemo107.LambdaEntryPoint.&lt;GetUriResponse&gt;d__1.MoveNext()&quot;,
+      &quot;--- End of stack trace from previous location where exception was thrown ---&quot;,
+      &quot;at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)&quot;,
+      &quot;at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)&quot;,
+      &quot;at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()&quot;,
+      &quot;at LambdaDemo107.LambdaEntryPoint.&lt;CheckWebsiteStatus&gt;d__0.MoveNext()&quot;
+    ],
+    &quot;cause&quot;:     {
+      &quot;errorType&quot;: &quot;WebException&quot;,
+      &quot;errorMessage&quot;: &quot;An error occurred while sending the request. SSL peer certificate or SSH remote key was not OK&quot;,
+      &quot;stackTrace&quot;: [
+        &quot;at System.Net.HttpWebRequest.EndGetResponse(IAsyncResult asyncResult)&quot;,
+        &quot;at System.Threading.Tasks.TaskFactory`1.FromAsyncCoreLogic(IAsyncResult iar, Func`2 endFunction, Action`1 endAction, Task`1 promise, Boolean requiresSynchronization)&quot;,
+        &quot;--- End of stack trace from previous location where exception was thrown ---&quot;,
+        &quot;at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)&quot;,
+        &quot;at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)&quot;,
+        &quot;at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()&quot;,
+        &quot;at LambdaDemo107.LambdaEntryPoint.&lt;GetUriResponse&gt;d__1.MoveNext()&quot;
+      ],
+      &quot;cause&quot;:       {
+        &quot;errorType&quot;: &quot;HttpRequestException&quot;,
+        &quot;errorMessage&quot;: &quot;An error occurred while sending the request.&quot;,
+        &quot;stackTrace&quot;: [
+          &quot;at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)&quot;,
+          &quot;at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)&quot;,
+          &quot;at System.Net.Http.HttpClient.&lt;FinishSendAsync&gt;d__58.MoveNext()&quot;,
+          &quot;--- End of stack trace from previous location where exception was thrown ---&quot;,
+          &quot;at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)&quot;,
+          &quot;at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)&quot;,
+          &quot;at System.Net.HttpWebRequest.&lt;SendRequest&gt;d__63.MoveNext()&quot;,
+          &quot;--- End of stack trace from previous location where exception was thrown ---&quot;,
+          &quot;at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)&quot;,
+          &quot;at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)&quot;,
+          &quot;at System.Net.HttpWebRequest.EndGetResponse(IAsyncResult asyncResult)&quot;
+        ],
+        &quot;cause&quot;:         {
+          &quot;errorType&quot;: &quot;CurlException&quot;,
+          &quot;errorMessage&quot;: &quot;SSL peer certificate or SSH remote key was not OK&quot;,
+          &quot;stackTrace&quot;: [
+            &quot;at System.Net.Http.CurlHandler.ThrowIfCURLEError(CURLcode error)&quot;,
+            &quot;at System.Net.Http.CurlHandler.MultiAgent.FinishRequest(StrongToWeakReference`1 easyWrapper, CURLcode messageResult)&quot;
+          ]
+        }
+      }
+    }
+  }
+}</code></pre><p>The method in which error information is conveyed depends on the invocation type:
+                        
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><code class="code">RequestResponse</code> invocation type (that is, synchronous execution): In
+                                 this case, you get the error message back. 
+                              </p>
+                              
+                              <p>For example, if you invoke a Lambda function using the Lambda console, the
+                                 <code class="code">RequestResponse</code> is always the invocation type and the
+                                 console displays the error information returned by AWS Lambda in the
+                                 <b>Execution result</b> section of the console.
+                              </p>
+                              
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">Event</code> invocation type (that is, asynchronous execution): In this case
+                                 AWS Lambda does not return anything. Instead, it logs the error information
+                                 in CloudWatch Logs and CloudWatch metrics.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <p>Depending on the event source, AWS Lambda may retry the failed Lambda function. For
+                        more information, see <a href="retries-on-errors.html">Understanding Retry Behavior</a>.
+                        
+                        
+                     </p>
+                     <h2 id="dotnet-custom-errors">Function Error Handling </h2>
+                     
+                     
+                     <p>You can create custom error handling to raise an exception directly from your Lambda
+                        function
+                        and handle it directly (Retry or Catch) within an AWS Step Functions State Machine.
+                        For more information, see <a href="./step-functions/latest/dg/tutorial-handling-error-conditions.html" target="_blank">Handling Error Conditions Using a State Machine</a>.
+                        
+                     </p>
+                     
+                     <p>Consider a <code class="code">CreateAccount</code> <a href="./step-functions/latest/dg/awl-ref-states.html" target="_blank">state</a> is a <a href="./step-functions/latest/dg/awl-ref-states-task.html" target="_blank">task</a>
+                        that writes a customer&apos;s details to a database using a Lambda function.
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>If the task succeeds, an account is created and a welcome email is sent.</p>
+                           </li>
+                           <li class="listitem"> 
+                              <p>If a user tries to create an account for a username that already exists, the Lambda
+                                 function raises an error, causing the state machine to
+                                 suggest a different username and to retry the account-creation process.
+                              </p>
+                           </li>
+                        </ul>
+                     </div> 
+                     
+                     
+                     <p>The following code samples demonstrate how to do this. Note that custom errors in
+                        C# must extend the <code class="code">Exception</code> class.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="C# ">namespace Example {            
+   public class AccountAlreadyExistsException : Exception {
+      public AccountAlreadyExistsException(String message) :
+         base(message) {
+      }
+   }
+} 
+
+namespace Example {
+   public class Handler {
+     public static void CreateAccount() {
+       throw new AccountAlreadyExistsException(&quot;Account is in use!&quot;);
+     }
+   }
+} 
+</code></pre>
+                     
+                     <p>You can configure Step Functions to catch the error using a <code class="code">Catch</code> rule. Lambda automatically sets the error name to the simple class name of the exception
+                        at runtime:
+                     </p>   
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+   &quot;StartAt&quot;: &quot;CreateAccount&quot;,
+   &quot;States&quot;: {
+      &quot;CreateAccount&quot;: {
+         &quot;Type&quot;: &quot;Task&quot;,
+         &quot;Resource&quot;: &quot;arn:aws:lambda:us-east-1:123456789012:function:CreateAccount&quot;,
+         &quot;Next&quot;: &quot;SendWelcomeEmail&quot;,
+         &quot;Catch&quot;: [
+            {
+               &quot;ErrorEquals&quot;: [&quot;AccountAlreadyExistsException&quot;],
+               &quot;Next&quot;: &quot;SuggestAccountName&quot;
+            }
+         ]
+      },
+      &#x2026;
+   }
+}
+</code></pre>
+                     
+                     <p>At runtime, AWS Step Functions catches the error, <a href="./step-functions/latest/dg/concepts-transitions.html" target="_blank">transitioning</a> to the <code class="code">SuggestAccountName</code> state as specified in the <code class="code">Next</code> transition.
+                     </p>
+                     
+                     
+                     
+                     
+                     <p>Custom error handling makes it easier to create <a href="https://aws.amazon.com/serverless" target="_blank">serverless</a> applications. This feature integrates with 
+                        all the languages supported by the Lambda <a href="programming-model-v2.html">Programming Model</a>, allowing you to design your application in the programming languages of your choice,
+                        mixing and matching as you go.
+                     </p>
+                     
+                     <p>To learn more about creating your own serverless applications using AWS Step Functions
+                        and AWS Lambda, see <a href="https://aws.amazon.com/step-functions/" target="_blank">AWS Step Functions</a>. 
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="dotnet-logging.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="deployment-package-v2.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Function Error Handling "><a class="pagetoc" href="#dotnet-custom-errors">Function Error Handling </a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

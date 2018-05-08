@@ -1,0 +1,776 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Creating an AMI from an Instance Store-Backed
+         			Instance - Amazon Elastic Compute Cloud
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="creating-an-ami-instance-store.html" title="Creating an Instance Store-Backed Linux AMI">
+      <link rel="prev" href="set-up-ami-tools.html" title="Setting Up the AMI Tools">
+      <link rel="next" href="Using_ConvertingS3toEBS.html" title="Converting your Instance Store-Backed AMI to an
+			Amazon EBS-Backed AMI">
+      <meta name="description" content="Create an instance store-backed AMI from an Amazon Linux or Ubuntu instance.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/create-instance-store-ami.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="AMIs.html">Amazon Machine Images (AMI)</a> &#xBB; <a href="creating-an-ami-instance-store.html">Creating an Instance Store-Backed Linux AMI</a> &#xBB; <span class="breadcrumb">Creating an AMI from an Instance Store-Backed
+                                    			Instance</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="create-instance-store-ami">Creating an AMI from an Instance Store-Backed
+                        			Instance
+                     </h1>
+                     <p>The following procedures are for creating an instance store-backed AMI from an
+                        			instance store-backed instance. Before you begin, ensure that you&apos;ve read the <a href="creating-an-ami-instance-store.html#bundle-ami-prerequisites">Prerequisites</a>.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#amazon_linux_instructions">Creating an AMI from an Instance
+                                 				Store-Backed Amazon Linux Instance</a></li>
+                           <li><a href="#ubuntu_instructions">Creating an AMI from an Instance Store-Backed
+                                 				Ubuntu Instance</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="amazon_linux_instructions">Creating an AMI from an Instance
+                        				Store-Backed Amazon Linux Instance
+                     </h2>
+                     			
+                     			
+                     <p>This section describes the creation of an AMI from an Amazon Linux instance. The
+                        				following procedures may not work for instances running other Linux distributions.
+                        				For Ubuntu-specific procedures, see <a href="create-instance-store-ami.html#ubuntu_instructions">Creating an AMI from an Instance Store-Backed
+                           				Ubuntu Instance</a>.
+                     </p>
+                     			
+                     <p class="title"><b>To prepare to use the AMI tools (HVM instances only) </b></p>
+                     <ol>
+                        <li>
+                           					
+                           <p>The AMI tools require GRUB Legacy to boot properly. Use the following
+                              						command to install GRUB:
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo yum install -y grub</code></strong></code></pre>
+                           				</li>
+                        <li>
+                           					
+                           <p>Install the partition management packages with the following
+                              						command:
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo yum install -y gdisk kpartx parted</code></strong></code></pre>
+                           				</li>
+                     </ol>
+                     			
+                     <p class="title"><b>To create an AMI from an instance store-backed Amazon Linux instance</b></p>
+                     <p>This procedure assumes that you have satisfied the prerequisites in <a href="creating-an-ami-instance-store.html#bundle-ami-prerequisites">Prerequisites</a>.
+                     </p>
+                     <ol>
+                        <li>
+                           					
+                           <p>Upload your credentials to your instance. We use these credentials to
+                              						ensure that only you and Amazon EC2 can access your AMI.
+                           </p>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>Create a temporary directory on your instance for your credentials
+                                    								as follows:
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>mkdir /tmp/cert</code></strong></code></pre>
+                                 							<p>This enables you to exclude your credentials from the created
+                                    								image.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>Copy your X.509 certificate and corresponding private key from
+                                    								your computer to the <code>/tmp/cert</code> directory on
+                                    								your instance using a secure copy tool such as <a href="AccessingInstancesLinux.html#AccessingInstancesLinuxSCP">scp</a>. The <code class="code">-i
+                                       										<em class="replaceable"><code>my-private-key</code></em>.pem</code> option
+                                    								in the following <b>scp</b> command is the private key
+                                    								you use to connect to your instance with SSH, not the X.509 private
+                                    								key. For example:
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">you@your_computer:~ $ </code><strong class="userinput"><code>scp -i <em class="replaceable"><code>my-private-key</code></em>.pem <em class="replaceable"><code>/path/to/pk-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem</code></em> <em class="replaceable"><code>/path/to/cert-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem</code></em> ec2-user@<em class="replaceable"><code>ec2-203-0-113-25.compute-1.amazonaws.com</code></em>:/tmp/cert/</code></strong><code class="computeroutput" copy="false">
+pk-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem  100%  717     0.7KB/s   00:00
+cert-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem  100%  685     0.7KB/s   00:00</code></code></pre>
+                                 						</li>
+                           </ol>
+                           					
+                           <p>Alternatively, because these are plain text files, you can open the
+                              						certificate and key in a text editor and copy their contents into new files
+                              						in <code>/tmp/cert</code>.
+                           </p>
+                           				
+                        </li>
+                        <li><a id="step_with_bundle_path_amazon_linux"></a>
+                           					
+                           <p>Prepare the bundle to upload to Amazon S3 by running the <a href="ami-tools-commands.html#ami-bundle-vol">ec2-bundle-vol</a> command from
+                              						inside your instance. Be sure to specify the <code class="code">-e</code> option to
+                              						exclude the directory where your credentials are stored. By default, the
+                              						bundle process excludes files that might contain sensitive information.
+                              						These files include <code>*.sw</code>, <code>*.swo</code>,
+                              							<code>*.swp</code>, <code>*.pem</code>,
+                              							<code>*.priv</code>, <code>*id_rsa*</code>,
+                              							<code>*id_dsa*</code>
+                              						<code>*.gpg</code>, <code>*.jks</code>,
+                              							<code>*/.ssh/authorized_keys</code>, and
+                              							<code>*/.bash_history</code>. To include all of these files, use
+                              						the <code class="code">--no-filter</code> option. To include some of these files, use the
+                              							<code class="code">--include</code> option.
+                           </p>
+                           					
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>By default, the AMI bundling process creates a compressed, encrypted
+                                 							collection of files in the <code>/tmp</code> directory that
+                                 							represents your root volume. If you do not have enough free disk space
+                                 							in <code>/tmp</code> to store the bundle, you need to specify a
+                                 							different location for the bundle to be stored with the <code class="code">-d
+                                    									<em class="replaceable"><code>/path/to/bundle/storage</code></em></code>
+                                 							option. Some instances have ephemeral storage mounted at
+                                 								<code>/mnt</code> or <code>/media/ephemeral0</code>
+                                 							that you can use, or you can also <a href="ebs-creating-volume.html">create</a>, <a href="ebs-attaching-volume.html">attach</a>,
+                                 							and <a href="ebs-using-volumes.html">mount</a> a new Amazon EBS volume to
+                                 							store the bundle.
+                              </p>
+                           </div>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>You must run the <b>ec2-bundle-vol</b> command as
+                                    								root. For most commands, you can use <b>sudo</b> to gain
+                                    								elevated permissions, but in this case, you should run <b>sudo
+                                       									-E su</b> to keep your environment variables.
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo -E su</code></strong></code></pre>
+                                 							<p>Note that bash prompt now identifies you as the root user, and
+                                    								that the dollar sign has been replaced by a hash tag, signalling
+                                    								that you are in a root shell:
+                                 </p>
+                                 							<pre class="screen">[root ec2-user]#</pre>
+                                 						</li>
+                              <li>
+                                 							
+                                 <p>To create the AMI bundle, run the <a href="ami-tools-commands.html#ami-bundle-vol">ec2-bundle-vol</a> command as follows:
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[root ec2-user]# </code><strong class="userinput"><code>ec2-bundle-vol -k /tmp/cert/<em class="replaceable"><code>pk-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem</code></em> -c /tmp/cert/<em class="replaceable"><code>cert-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem</code></em> -u <em class="replaceable"><code>123456789012</code></em> -r x86_64 -e /tmp/cert --partition <em class="replaceable"><code>gpt</code></em></code></strong></code></pre>
+                                 							<div class="aws-note">
+                                    <p class="aws-note">Note</p>
+                                    <p>For the China (Beijing) and AWS GovCloud (US) regions, use the <code class="code">--ec2cert</code>
+                                       parameter and specify the certificates as per the <a href="creating-an-ami-instance-store.html#bundle-ami-prerequisites">prerequisites</a>.
+                                    </p>
+                                 </div>
+                                 						    
+                                 <p>It can take a few minutes to create the image. When this command
+                                    								completes, your <code>/tmp</code> (or non-default) directory
+                                    								contains the bundle (<code>image.manifest.xml</code>, plus
+                                    								multiple
+                                    									<code>image.part.</code><em class="replaceable"><code>xx</code></em>
+                                    								files).
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>Exit from the root shell.</p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[root ec2-user]# </code><strong class="userinput"><code>exit</code></strong></code></pre>
+                                 						</li>
+                           </ol>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>(Optional) To add more instance store volumes, edit the block device
+                              						mappings in the <code>image.manifest.xml</code> file for your AMI.
+                              						For more information, see <a href="block-device-mapping-concepts.html">Block Device Mapping</a>.
+                           </p>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>Create a backup of your <code>image.manifest.xml</code>
+                                    								file.
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo cp /tmp/image.manifest.xml /tmp/image.manifest.xml.bak</code></strong></code></pre>
+                                 						</li>
+                              <li>
+                                 							
+                                 <p>Reformat the <code>image.manifest.xml</code> file so that
+                                    								it is easier to read and edit.
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo xmllint --format /tmp/image.manifest.xml.bak &gt; sudo /tmp/image.manifest.xml</code></strong></code></pre>
+                                 						</li>
+                              <li>
+                                 							
+                                 <p>Edit the block device mappings in
+                                    									<code>image.manifest.xml</code> with a text editor. The
+                                    								example below shows a new entry for the
+                                    									<code>ephemeral1</code> instance store volume.
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">    &lt;block_device_mapping&gt;
+      &lt;mapping&gt;
+        &lt;virtual&gt;ami&lt;/virtual&gt;
+        &lt;device&gt;sda&lt;/device&gt;
+      &lt;/mapping&gt;
+      &lt;mapping&gt;
+        &lt;virtual&gt;ephemeral0&lt;/virtual&gt;
+        &lt;device&gt;sdb&lt;/device&gt;
+      &lt;/mapping&gt;
+<em class="replaceable"><code>      &lt;mapping&gt;
+        &lt;virtual&gt;ephemeral1&lt;/virtual&gt;
+        &lt;device&gt;sdc&lt;/device&gt;
+      &lt;/mapping&gt;</code></em>
+      &lt;mapping&gt;
+        &lt;virtual&gt;root&lt;/virtual&gt;
+        &lt;device&gt;/dev/sda1&lt;/device&gt;
+      &lt;/mapping&gt;
+    &lt;/block_device_mapping&gt;</code></pre>
+                                 						</li>
+                              <li>
+                                 							
+                                 <p>Save the <code>image.manifest.xml</code> file and exit
+                                    								your text editor.
+                                 </p>
+                                 						
+                              </li>
+                           </ol>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>To upload your bundle to Amazon S3, run the <a href="ami-tools-commands.html#ami-upload-bundle">ec2-upload-bundle</a> command as follows.
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>ec2-upload-bundle -b <em class="replaceable"><code>my-s3-bucket</code></em>/<em class="replaceable"><code>bundle_folder</code></em>/<em class="replaceable"><code>bundle_name</code></em> -m /tmp/image.manifest.xml -a <em class="replaceable"><code>your_access_key_id</code></em> -s <em class="replaceable"><code>your_secret_access_key</code></em></code></strong></code></pre>
+                           					<div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>To register your AMI in a region other than US East (N. Virginia), you
+                                 							must specify both the target region with the <code class="code">--region</code>
+                                 							option and a bucket path that already exists in the target region or a
+                                 							unique bucket path that can be created in the target region.
+                              </p>
+                           </div>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>(Optional) After the bundle is uploaded to Amazon S3, you can remove the bundle
+                              						from the <code>/tmp</code> directory on the instance using the
+                              						following <b>rm</b> command:
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo rm /tmp/image.manifest.xml /tmp/image.part.* /tmp/image</code></strong></code></pre>
+                           					<div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If you specified a path with the <code class="code">-d
+                                    									<em class="replaceable"><code>/path/to/bundle/storage</code></em></code> option
+                                 							in <a href="create-instance-store-ami.html#step_with_bundle_path_amazon_linux">Step&#xA0;2</a>, use that path
+                                 							instead of <code>/tmp</code>.
+                              </p>
+                           </div>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>To register your AMI, run the <a href="./cli/latest/reference/ec2/register-image.html" target="_blank">register-image</a>
+                              						command as follows.
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>aws ec2 register-image --image-location <em class="replaceable"><code>my-s3-bucket</code></em>/<em class="replaceable"><code>bundle_folder</code></em>/<em class="replaceable"><code>bundle_name</code></em>/image.manifest.xml --name <em class="replaceable"><code>AMI_name</code></em> --virtualization-type <em class="replaceable"><code>hvm</code></em></code></strong></code></pre>
+                           					<div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If you previously specified a region for the <a href="ami-tools-commands.html#ami-upload-bundle">ec2-upload-bundle</a>
+                                 							command, specify that region again for this command.
+                              </p>
+                           </div>
+                           				
+                        </li>
+                     </ol>
+                     		
+                     <h2 id="ubuntu_instructions">Creating an AMI from an Instance Store-Backed
+                        				Ubuntu Instance
+                     </h2>
+                     			
+                     			
+                     <p>This section describes the creation of an AMI from an Ubuntu Linux instance. The
+                        				following procedures may not work for instances running other Linux distributions.
+                        				For procedures specific to Amazon Linux, see <a href="create-instance-store-ami.html#amazon_linux_instructions">Creating an AMI from an Instance
+                           				Store-Backed Amazon Linux Instance</a>.
+                     </p>
+                     			
+                     <p class="title"><b>To prepare to use the AMI Tools (HVM instances only) </b></p>
+                     <p>The AMI tools require GRUB Legacy to boot properly. However, Ubuntu is
+                        					configured to use GRUB 2. You must check to see that your instance uses GRUB
+                        					Legacy, and if not, you need to install and configure it.
+                     </p>
+                     <p>HVM instances also require partitioning tools to be installed for the AMI
+                        					tools to work properly.
+                     </p>
+                     <ol>
+                        <li>
+                           					
+                           <p>GRUB Legacy (version 0.9<em class="replaceable"><code>x</code></em> or less) must be
+                              						installed on your instance. Check to see if GRUB Legacy is present and
+                              						install it if necessary.
+                           </p>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>Check the version of your GRUB installation.</p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>grub-install --version</code></strong>
+<code class="computeroutput" copy="false">grub-install (GRUB) 1.99-21ubuntu3.10</code></code></pre>
+                                 							<p>In this example, the GRUB version is greater than
+                                    									0.9<em class="replaceable"><code>x</code></em>, so GRUB Legacy must be
+                                    								installed. Proceed to <a href="create-instance-store-ami.html#grub-install-step">Step&#xA0;2</a>. If GRUB
+                                    								Legacy is already present, you can skip to <a href="create-instance-store-ami.html#partition">Step&#xA0;2</a>.
+                                 </p>
+                                 						
+                              </li>
+                              <li><a id="grub-install-step"></a>
+                                 							
+                                 <p>Install the <code>grub</code> package using the following
+                                    								command.
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo apt-get install -y grub</code></strong></code></pre>
+                                 							<p>Verify that your instance is using GRUB Legacy.</p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>grub --version</code></strong>
+<code class="computeroutput" copy="false">grub (GNU GRUB 0.97)</code></code></pre>
+                                 						</li>
+                           </ol>
+                           				
+                        </li>
+                        <li><a id="partition"></a>
+                           					
+                           <p>Install the following partition management packages using the package
+                              						manager for your distribution. 
+                           </p>
+                           					
+                           <div class="itemizedlist">
+                              						
+                              						
+                              						
+                              					
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    							
+                                    <p><code>gdisk</code> (some distributions may call this
+                                       								package <code>gptfdisk</code> instead) 
+                                    </p>
+                                    						
+                                 </li>
+                                 <li class="listitem">
+                                    							
+                                    <p><code>kpartx</code></p>
+                                    						
+                                 </li>
+                                 <li class="listitem">
+                                    							
+                                    <p><code>parted</code></p>
+                                    						
+                                 </li>
+                              </ul>
+                           </div>
+                           					
+                           <p>Use the following command.</p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo apt-get install -y gdisk kpartx parted</code></strong></code></pre>
+                           				</li>
+                        <li>
+                           					
+                           <p>Check the kernel parameters for your instance.</p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>cat /proc/cmdline</code></strong>
+<code class="computeroutput" copy="false">BOOT_IMAGE=/boot/vmlinuz-3.2.0-54-virtual root=UUID=4f392932-ed93-4f8f-aee7-72bc5bb6ca9d ro console=ttyS0 xen_emul_unplug=unnecessary</code></code></pre>
+                           					<p>Note the options following the kernel and root device parameters:
+                              							<code class="code">ro</code>, <code class="code">console=ttyS0</code>, and
+                              							<code class="code">xen_emul_unplug=unnecessary</code>. Your options may
+                              						differ.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Check the kernel entries in
+                              						<code>/boot/grub/menu.lst</code>.
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>grep ^kernel /boot/grub/menu.lst</code></strong>
+<code class="computeroutput" copy="false">kernel		/boot/vmlinuz-3.2.0-54-virtual root=LABEL=cloudimg-rootfs ro console=hvc0
+kernel		/boot/vmlinuz-3.2.0-54-virtual root=LABEL=cloudimg-rootfs ro single
+kernel		/boot/memtest86+.bin</code></code></pre>
+                           					<p>Note that the <code class="code">console</code> parameter is pointing to
+                              							<code class="code">hvc0</code> instead of <code class="code">ttyS0</code> and that the
+                              							<code class="code">xen_emul_unplug=unnecessary</code> parameter is missing. Again,
+                              						your options may differ.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Edit the <code>/boot/grub/menu.lst</code> file with your favorite
+                              						text editor (such as <b>vim</b> or <b>nano</b>) to
+                              						change the console and add the parameters you identified earlier to the boot
+                              						entries.
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">title           Ubuntu 12.04.3 LTS, kernel 3.2.0-54-virtual
+root            (hd0)
+kernel          /boot/vmlinuz-3.2.0-54-virtual root=LABEL=cloudimg-rootfs ro <strong class="userinput"><code>console=ttyS0 xen_emul_unplug=unnecessary</code></strong>
+initrd          /boot/initrd.img-3.2.0-54-virtual
+
+title           Ubuntu 12.04.3 LTS, kernel 3.2.0-54-virtual (recovery mode)
+root            (hd0)
+kernel          /boot/vmlinuz-3.2.0-54-virtual root=LABEL=cloudimg-rootfs ro single <strong class="userinput"><code>console=ttyS0 xen_emul_unplug=unnecessary</code></strong>
+initrd          /boot/initrd.img-3.2.0-54-virtual
+
+title           Ubuntu 12.04.3 LTS, memtest86+
+root            (hd0)
+kernel          /boot/memtest86+.bin</code></pre>
+                           				</li>
+                        <li>
+                           					
+                           <p>Verify that your kernel entries now contain the correct parameters.</p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>grep ^kernel /boot/grub/menu.lst</code></strong>
+<code class="computeroutput" copy="false">kernel		/boot/vmlinuz-3.2.0-54-virtual root=LABEL=cloudimg-rootfs ro console=ttyS0 xen_emul_unplug=unnecessary
+kernel		/boot/vmlinuz-3.2.0-54-virtual root=LABEL=cloudimg-rootfs ro single console=ttyS0 xen_emul_unplug=unnecessary
+kernel		/boot/memtest86+.bin</code></code></pre>
+                           				</li>
+                        <li>
+                           					
+                           <p>[For Ubuntu 14.04 and later only] Starting with Ubuntu 14.04, instance
+                              						store backed Ubuntu AMIs use a GPT partition table and a separate EFI
+                              						partition mounted at <code>/boot/efi</code>. The
+                              							<b>ec2-bundle-vol</b> command will not bundle this boot
+                              						partition, so you need to comment out the <code>/etc/fstab</code>
+                              						entry for the EFI partition as shown in the following example.
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">LABEL=cloudimg-rootfs   /        ext4   defaults        0 0
+<strong class="userinput"><code>#</code></strong>LABEL=UEFI     /boot/efi       vfat    defaults        0 0
+/dev/xvdb       /mnt    auto    defaults,nobootwait,comment=cloudconfig 0       2</code></pre>
+                           				</li>
+                     </ol>
+                     			
+                     <p class="title"><b>To create an AMI from an instance store-backed Ubuntu instance</b></p>
+                     <p>This procedure assumes that you have satisfied the prerequisites in <a href="creating-an-ami-instance-store.html#bundle-ami-prerequisites">Prerequisites</a>.
+                     </p>
+                     <ol>
+                        <li>
+                           					
+                           <p>Upload your credentials to your instance. We use these credentials to
+                              						ensure that only you and Amazon EC2 can access your AMI.
+                           </p>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>Create a temporary directory on your instance for your credentials
+                                    								as follows:
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>mkdir /tmp/cert</code></strong></code></pre>
+                                 							<p>This enables you to exclude your credentials from the created
+                                    								image.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>Copy your X.509 certificate and private key from your computer to
+                                    								the <code>/tmp/cert</code> directory on your instance, using
+                                    								a secure copy tool such as <a href="AccessingInstancesLinux.html#AccessingInstancesLinuxSCP">scp</a>. The <code class="code">-i
+                                       										<em class="replaceable"><code>my-private-key</code></em>.pem</code> option
+                                    								in the following <b>scp</b> command is the private key
+                                    								you use to connect to your instance with SSH, not the X.509 private
+                                    								key. For example:
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">you@your_computer:~ $ </code><strong class="userinput"><code>scp -i <em class="replaceable"><code>my-private-key</code></em>.pem <em class="replaceable"><code>/path/to/pk-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem</code></em> <em class="replaceable"><code>/path/to/cert-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem</code></em> ec2-user@<em class="replaceable"><code>ec2-203-0-113-25.compute-1.amazonaws.com</code></em>:/tmp/cert/</code></strong>
+<code class="computeroutput" copy="false">pk-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem  100%  717     0.7KB/s   00:00
+cert-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem  100%  685     0.7KB/s   00:00</code></code></pre>
+                                 						</li>
+                           </ol>
+                           					
+                           <p>Alternatively, because these are plain text files, you can open the
+                              						certificate and key in a text editor and copy their contents into new files
+                              						in <code>/tmp/cert</code>.
+                           </p>
+                           				
+                        </li>
+                        <li><a id="step_with_bundle_path_ubuntu"></a>
+                           					
+                           <p>Prepare the bundle to upload to Amazon S3 by running the <a href="ami-tools-commands.html#ami-bundle-vol">ec2-bundle-vol</a> command from
+                              						your instance. Be sure to specify the <code class="code">-e</code> option to exclude the
+                              						directory where your credentials are stored. By default, the bundle process
+                              						excludes files that might contain sensitive information. These files include
+                              							<code>*.sw</code>, <code>*.swo</code>,
+                              							<code>*.swp</code>, <code>*.pem</code>,
+                              							<code>*.priv</code>, <code>*id_rsa*</code>,
+                              							<code>*id_dsa*</code>
+                              						<code>*.gpg</code>, <code>*.jks</code>,
+                              							<code>*/.ssh/authorized_keys</code>, and
+                              							<code>*/.bash_history</code>. To include all of these files, use
+                              						the <code class="code">--no-filter</code> option. To include some of these files, use the
+                              							<code class="code">--include</code> option.
+                           </p>
+                           					
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>By default, the AMI bundling process creates a compressed, encrypted
+                                 							collection of files in the <code>/tmp</code> directory that
+                                 							represents your root volume. If you do not have enough free disk space
+                                 							in <code>/tmp</code> to store the bundle, you need to specify a
+                                 							different location for the bundle to be stored with the <code class="code">-d
+                                    									<em class="replaceable"><code>/path/to/bundle/storage</code></em></code>
+                                 							option. Some instances have ephemeral storage mounted at
+                                 								<code>/mnt</code> or <code>/media/ephemeral0</code>
+                                 							that you can use, or you can also <a href="ebs-creating-volume.html">create</a>, <a href="ebs-attaching-volume.html">attach</a>,
+                                 							and <a href="ebs-using-volumes.html">mount</a> a new Amazon EBS volume to
+                                 							store the bundle.
+                              </p>
+                           </div>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>You must run the <b>ec2-bundle-vol</b> command needs
+                                    								as root. For most commands, you can use <b>sudo</b> to
+                                    								gain elevated permissions, but in this case, you should run
+                                    									<b>sudo -E su</b> to keep your environment
+                                    								variables.
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo -E su</code></strong></code></pre>
+                                 							<p>Note that bash prompt now identifies you as the root user, and
+                                    								that the dollar sign has been replaced by a hash tag, signalling
+                                    								that you are in a root shell:
+                                 </p>
+                                 							<pre class="screen">root@ubuntu:#</pre>
+                                 						</li>
+                              <li><a id="create_bundle_Ubuntu_Linux_step"></a>
+                                 							
+                                 <p>To create the AMI bundle, run the <a href="ami-tools-commands.html#ami-bundle-vol">ec2-bundle-vol</a> command as follows.
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">root@ubuntu:# </code><strong class="userinput"><code>ec2-bundle-vol -k /tmp/cert/<em class="replaceable"><code>pk-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem</code></em> -c /tmp/cert/<em class="replaceable"><code>cert-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem</code></em> -u <em class="replaceable"><code>your_aws_account_id</code></em> -r x86_64 -e /tmp/cert --partition <em class="replaceable"><code>gpt</code></em></code></strong></code></pre>
+                                 							<div class="aws-note">
+                                    <p class="aws-note">Important</p>
+                                    <p>For Ubuntu 14.04 and later HVM instances, add the
+                                       										<code class="code">--partition mbr</code> flag to bundle the boot
+                                       									instructions properly; otherwise, your newly-created AMI will
+                                       									not boot.
+                                    </p>
+                                 </div>
+                                 
+                                 							
+                                 <p>It can take a few minutes to create the image. When this command
+                                    								completes, your <code>tmp</code> directory contains the
+                                    								bundle (<code>image.manifest.xml</code>, plus multiple
+                                    									<code>image.part.</code><em class="replaceable"><code>xx</code></em>
+                                    								files).
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>Exit from the root shell.</p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">root@ubuntu:# </code><strong class="userinput"><code>exit</code></strong></code></pre>
+                                 						</li>
+                           </ol>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>(Optional) To add more instance store volumes, edit the block device
+                              						mappings in the <code>image.manifest.xml</code> file for your AMI.
+                              						For more information, see <a href="block-device-mapping-concepts.html">Block Device Mapping</a>.
+                           </p>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>Create a backup of your <code>image.manifest.xml</code>
+                                    								file.
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo cp /tmp/image.manifest.xml /tmp/image.manifest.xml.bak</code></strong></code></pre>
+                                 						</li>
+                              <li>
+                                 							
+                                 <p>Reformat the <code>image.manifest.xml</code> file so that
+                                    								it is easier to read and edit.
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo xmllint --format /tmp/image.manifest.xml.bak &gt; /tmp/image.manifest.xml</code></strong></code></pre>
+                                 						</li>
+                              <li>
+                                 							
+                                 <p>Edit the block device mappings in
+                                    									<code>image.manifest.xml</code> with a text editor. The
+                                    								example below shows a new entry for the
+                                    									<em class="replaceable"><code>ephemeral1</code></em> instance store
+                                    								volume.
+                                 </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">    &lt;block_device_mapping&gt;
+      &lt;mapping&gt;
+        &lt;virtual&gt;ami&lt;/virtual&gt;
+        &lt;device&gt;sda&lt;/device&gt;
+      &lt;/mapping&gt;
+      &lt;mapping&gt;
+        &lt;virtual&gt;ephemeral0&lt;/virtual&gt;
+        &lt;device&gt;sdb&lt;/device&gt;
+      &lt;/mapping&gt;
+<em class="replaceable"><code>      &lt;mapping&gt;
+        &lt;virtual&gt;ephemeral1&lt;/virtual&gt;
+        &lt;device&gt;sdc&lt;/device&gt;
+      &lt;/mapping&gt;</code></em>
+      &lt;mapping&gt;
+        &lt;virtual&gt;root&lt;/virtual&gt;
+        &lt;device&gt;/dev/sda1&lt;/device&gt;
+      &lt;/mapping&gt;
+    &lt;/block_device_mapping&gt;</code></pre>
+                                 						</li>
+                              <li>
+                                 							
+                                 <p>Save the <code>image.manifest.xml</code> file and exit
+                                    								your text editor.
+                                 </p>
+                                 						
+                              </li>
+                           </ol>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>To upload your bundle to Amazon S3, run the <a href="ami-tools-commands.html#ami-upload-bundle">ec2-upload-bundle</a> command as follows.
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>ec2-upload-bundle -b <em class="replaceable"><code>my-s3-bucket</code></em>/<em class="replaceable"><code>bundle_folder</code></em>/<em class="replaceable"><code>bundle_name</code></em> -m /tmp/image.manifest.xml -a <em class="replaceable"><code>your_access_key_id</code></em> -s <em class="replaceable"><code>your_secret_access_key</code></em></code></strong></code></pre>
+                           					<div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If you intend to register your AMI in a region other than
+                                 							US East (N. Virginia), you must specify both the target region with the
+                                 								<code class="code">--region</code> option and a bucket path that already exists
+                                 							in the target region or a unique bucket path that can be created in the
+                                 							target region.
+                              </p>
+                           </div>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>(Optional) After the bundle is uploaded to Amazon S3, you can remove the bundle
+                              						from the <code>/tmp</code> directory on the instance using the
+                              						following <b>rm</b> command:
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo rm /tmp/image.manifest.xml /tmp/image.part.* /tmp/image</code></strong></code></pre>
+                           					<div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If you specified a path with the <code class="code">-d
+                                    									<em class="replaceable"><code>/path/to/bundle/storage</code></em></code> option
+                                 							in <a href="create-instance-store-ami.html#step_with_bundle_path_ubuntu">Step&#xA0;2</a>, use that same path
+                                 							below, instead of <code>/tmp</code>.
+                              </p>
+                           </div>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>To register your AMI, run the <a href="./cli/latest/reference/ec2/register-image.html" target="_blank">register-image</a> AWS CLI
+                              						command as follows.
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>aws ec2 register-image --image-location <em class="replaceable"><code>my-s3-bucket</code></em>/<em class="replaceable"><code>bundle_folder</code></em>/<em class="replaceable"><code>bundle_name</code></em>/image.manifest.xml --name <em class="replaceable"><code>AMI_name</code></em> --virtualization-type <em class="replaceable"><code>hvm</code></em></code></strong></code></pre>
+                           					<div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If you previously specified a region for the <a href="ami-tools-commands.html#ami-upload-bundle">ec2-upload-bundle</a>
+                                 							command, specify that region again for this command.
+                              </p>
+                           </div>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>[Ubuntu 14.04 and later] Uncomment the EFI entry in
+                              							<code>/etc/fstab</code>; otherwise, your running instance will
+                              						not be able to reboot.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="set-up-ami-tools.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="Using_ConvertingS3toEBS.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Creating an AMI from an Instance
+				Store-Backed Amazon Linux Instance"><a class="pagetoc" href="#amazon_linux_instructions">Creating an AMI from an Instance
+                              				Store-Backed Amazon Linux Instance</a></li>
+                        <li class="pagetoc" name="Creating an AMI from an Instance Store-Backed
+				Ubuntu Instance"><a class="pagetoc" href="#ubuntu_instructions">Creating an AMI from an Instance Store-Backed
+                              				Ubuntu Instance</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

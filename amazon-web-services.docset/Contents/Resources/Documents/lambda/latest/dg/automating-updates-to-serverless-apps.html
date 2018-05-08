@@ -1,0 +1,435 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Gradual Code Deployment - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="automating-deployment.html" title="Automating Deployment of Lambda-based Applications">
+      <link rel="prev" href="build-pipeline.html" title="Building a Pipeline for Your Serverless Application">
+      <link rel="next" href="troubleshooting.html" title="Monitoring and Troubleshooting Lambda-based Applications">
+      <meta name="description" content="If you use AWS SAM to create your serverless application, it comes built-in with AWS CodeDeploy for safe Lambda deployments. With just a few lines of configuration, SAM will do the following for you:">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/automating-updates-to-serverless-apps.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="deploying-lambda-apps.html">Deploying Lambda-based Applications</a> &#xBB; <a href="automating-deployment.html">Automating Deployment of Lambda-based Applications</a> &#xBB; <span class="breadcrumb">Gradual Code Deployment</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="automating-updates-to-serverless-apps">Gradual Code Deployment</h1>
+                     <p>If you use AWS SAM to create your serverless application, it comes built-in with <a href="./codedeploy/latest/userguide/welcome.html" target="_blank">AWS CodeDeploy</a> for safe Lambda deployments. With just a few lines of configuration,
+                        SAM will do the following for you:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Deploy new versions of your Lambda function and automatically create aliases that
+                                 point to the new version. 
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Gradually shift customer traffic to the new version until you are satisfied it is
+                                 working as expected or roll back the update. 
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Define pre-traffic and post-traffic test functions to verify the newly deployed code
+                                 is configured correctly and your application operates as expected. 
+                                 
+                                 
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Roll back the deployment if CloudWatch alarms are triggered. </p>
+                           </li>
+                        </ul>
+                     </div>
+                     <p>This can all be done by updating your SAM template. The example below demonstrates
+                        a simple version of using Code Deploy to gradually shift customers to your newly deployed
+                        version:
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">Resources:
+ MyLambdaFunction:
+   Type: AWS::Serverless::Function
+   Properties:
+     Handler: index.handler
+     Runtime: nodejs4.3
+     CodeUri: s3://bucket/code.zip
+
+     AutoPublishAlias: live
+
+     DeploymentPreference:
+       Type: Canary10Percent10Minutes 
+       Alarms:
+         # A list of alarms that you want to monitor
+         - !Ref AliasErrorMetricGreaterThanZeroAlarm
+         - !Ref LatestVersionErrorMetricGreaterThanZeroAlarm
+       Hooks:
+         # Validation Lambda functions that are run before &amp; after traffic shifting
+         PreTraffic: !Ref PreTrafficLambdaFunction
+         PostTraffic: !Ref PostTrafficLambdaFunction</code></pre><p>The above revisions to a SAM template do the following:</p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><b>AutoPublishAlias</b> - By adding this property and specifying an alias name, AWS SAM will do the following:
+                              </p>
+                              
+                              
+                              
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p>Detect when new code is being deployed based on changes to the Lambda function&apos;s Amazon
+                                          S3 URI.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Create and publish an updated version of that function with the latest code.</p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Create an alias with a name you provide (unless an alias already exists) and points
+                                          to the updated version of the Lambda function. Function invocations should use the
+                                          alias qualifier to take advantage of this. If you are not familiar with Lambda function
+                                          versioning and aliases, see <a href="versioning-aliases.html">AWS Lambda Function Versioning and Aliases</a>.
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                              
+                              
+                              
+                              
+                              
+                           </li>
+                           <li class="listitem">
+                              <p><b>Deployment Preference Type</b> - In the above example, 10 percent of your customer traffic will be immediately shifted
+                                 to your new version and after 10 minutes all traffic will be shifted to the new version.
+                                 However, if either your pre- and post hook tests
+                                 fail or a CloudWatch alarm is triggered, CodeDeploy will roll back your deployment.
+                                 The table below outlines other traffic-shifting options available beyond the one used
+                                 above. Note the following:
+                                 
+                                 
+                                 
+                                 
+                              </p>
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       
+                                       <p><b>Canary:</b> Traffic is shifted in two increments. You can choose from predefined canary options
+                                          that specify the percentage of traffic shifted to your updated Lambda function version
+                                          in the first increment and the interval, in minutes, before the remaining traffic
+                                          is shifted in the second increment. 
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       <p><b>Linear:</b> Traffic is shifted in equal increments with an equal number of minutes between each
+                                          increment. You can choose from predefined linear options that specify the percentage
+                                          of traffic shifted in each incremement and the number of minutes between each increment.
+                                          
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p><b> All-at-once:</b> All traffic is shifted from the original Lambda function to the updated Lambda function
+                                          version at once. 
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                              <p>&#xA0; </p>
+                              
+                              <div class="table">
+                                 <div class="table-contents">
+                                    <table id="w326aac19c19c12c12b2b5">
+                                       				
+                                       <tbody><tr>
+                                          					
+                                          <th>Deployment Preference Type</th>
+                                          					
+                                          				
+                                          				
+                                       </tr>
+                                       			
+                                       				
+                                       				
+                                       <tr>
+                                          					
+                                          				    
+                                          <td>
+                                             <p>Canary10Percent30Minutes</p> 
+                                          </td>
+                                          					
+                                          					
+                                          				
+                                          					
+                                          				
+                                       </tr>
+                                       				
+                                       			    
+                                       <tr>
+                                          			        
+                                          			        
+                                          <td>
+                                             <p>Canary10Percent5Minutes</p> 
+                                          </td>
+                                          			         
+                                          			        
+                                          			        
+                                          			    
+                                       </tr>
+                                       				
+                                       			    
+                                       <tr>
+                                          			        
+                                          			        
+                                          <td>
+                                             <p>Canary10Percent10Minutes</p> 
+                                          </td>
+                                          			      
+                                          			        
+                                          			        
+                                          			        
+                                          			    
+                                       </tr>
+                                       			    
+                                       			    
+                                       <tr>
+                                          			        
+                                          			        
+                                          <td>
+                                             <p>Canary10Percent15Minutes</p> 
+                                          </td>
+                                          			       
+                                          			        
+                                          			        
+                                          			        
+                                          			    
+                                       </tr>
+                                       			    
+                                       			    
+                                       <tr>
+                                          			        
+                                          			        
+                                          <td>
+                                             <p>Linear10PercentEvery10Minutes</p> 
+                                          </td>
+                                          			      
+                                          			        
+                                          			        
+                                          			    
+                                       </tr>
+                                       			    
+                                       <tr>
+                                          			        
+                                          			        
+                                          <td>
+                                             <p>Linear10PercentEvery1Minute</p> 
+                                          </td>
+                                          			    
+                                          			        
+                                          			        
+                                          			    
+                                       </tr>
+                                       			    
+                                       <tr>
+                                          			        
+                                          			        
+                                          <td>
+                                             <p>Linear10PercentEvery2Minutes</p> 
+                                          </td>
+                                          			      
+                                          			        
+                                          			        
+                                          			    
+                                       </tr>
+                                       			    
+                                       <tr>
+                                          			        
+                                          			        
+                                          <td>
+                                             <p>Linear10PercentEvery3Minutes</p> 
+                                          </td>
+                                          			      
+                                          			        
+                                          			        
+                                          			        
+                                          			    
+                                       </tr>
+                                       			    
+                                       <tr>
+                                          			        
+                                          			        
+                                          <td>
+                                             <p>AllAtOnce</p> 
+                                          </td>
+                                          			      
+                                          			        
+                                          			    
+                                       </tr>
+                                       			    
+                                       				
+                                       			
+                                    </tbody></table>
+                                 </div>
+                              </div>  
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                           </li>
+                           <li class="listitem">
+                              <p><b>Alarms</b> - CloudWatch alarms that will be triggered by any errors raised by the deployment
+                                 and automatically roll back your deployment. For instance, if the updated code you
+                                 are deploying is creating errors within the application
+                                 or any <a href="./lambda/latest/dg/monitoring-functions-metrics.html" target="_blank">AWS Lambda</a> or custom CloudWatch metrics you have specified have breached the alarm threshold.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><b>Hooks</b> - Pre-traffic and Post-traffic test functions that run sanity checks before traffic-shifting
+                                 starts to the new version and after traffic-shifting completes.
+                                 
+                              </p>
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p><b>PreTraffic:</b> Before traffic shifting starts, CodeDeploy will invoke the pre-traffic hook Lambda
+                                          function. This Lambda function must call back to CodeDeploy denoting success or failure.
+                                          On failure, it will abort and report a failure back to AWS CloudFormation. On success,
+                                          CodeDeploy
+                                          will proceed to traffic shifting.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p><b>PostTraffic:</b> After traffic shifting completes, CodeDeploy will invoke the post-traffic hook Lambda
+                                          function. This is similar to pre-traffic hook, where the function must call back to
+                                          CodeDeploy to report a success or failure. Use post-traffic hooks to run integration
+                                          tests or other validation actions.
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                              <p>For more information, see <a href="https://github.com/awslabs/serverless-application-model/blob/master/docs/safe_lambda_deployments.rst" target="_blank">SAM Reference to Safe Deployments</a>.
+                                 
+                              </p>
+                              
+                              
+                           </li>
+                        </ul>
+                     </div>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="build-pipeline.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="troubleshooting.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

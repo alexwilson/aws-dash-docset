@@ -1,0 +1,415 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Leveraging Predefined Interfaces for Creating Handler (Java) - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="java-programming-model-handler-types.html" title="Lambda Function Handler
+            (Java)">
+      <link rel="prev" href="java-handler-io-type-stream.html" title="Example: Using Stream for Handler Input/Output (Java)">
+      <link rel="next" href="java-context-object.html" title="The Context Object (Java)">
+      <meta name="description" content="You can use one of the predefined interfaces provided by the AWS Lambda Java core library ( aws-lambda-java-core ) to create your Lambda function handler, as an alternative to writing your own handler method with an arbitrary name and parameters. For more information about handlers, see (see">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/java-handler-using-predefined-interfaces.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-introduction-function.html">Lambda Functions</a> &#xBB; <a href="lambda-app.html">Building Lambda Functions</a> &#xBB; <a href="programming-model-v2.html">Programming Model</a> &#xBB; <a href="java-programming-model.html">Programming Model for Authoring Lambda Functions in Java</a> &#xBB; <a href="java-programming-model-handler-types.html">Lambda Function Handler
+                                    (Java)</a> &#xBB; <span class="breadcrumb">Leveraging Predefined Interfaces for Creating Handler (Java)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="java-handler-using-predefined-interfaces">Leveraging Predefined Interfaces for Creating Handler (Java)</h1>
+                     <p>You can use one of the predefined interfaces provided by the AWS Lambda Java core
+                        library
+                        (<code class="code">aws-lambda-java-core</code>)  to create your Lambda function handler, as an
+                        alternative to writing your own handler method with an arbitrary name and parameters.
+                        For
+                        more information about handlers, see  (see <a href="java-programming-model-handler-types.html">Lambda Function Handler
+                           (Java)</a>).
+                     </p>
+                     <p>You can implement one of the predefined interfaces, <code class="code">RequestStreamHandler</code> or
+                        <code class="code">RequestHandler</code> and provide implementation for the
+                        <code class="code">handleRequest</code> method that the interfaces provide. You implement one of
+                        these interfaces depending on whether you want to use standard Java types or custom
+                        POJO
+                        types for your handler input/output (where AWS Lambda automatically serializes and
+                        deserializes the input and output to Match your data type), or customize the serialization
+                        using the <code class="code">Stream</code> type.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>These interfaces are available in the <code class="code">aws-lambda-java-core</code> library. 
+                        </p>
+                     </div>
+                     <p>When you implement standard interfaces, they help you validate your method signature
+                        at
+                        compile time. 
+                     </p>
+                     <p>If you implement one of the interfaces, you
+                        specify <em class="replaceable"><code>package</code></em>.<em class="replaceable"><code>class</code></em> in your Java
+                        code as the handler when you create the Lambda function. For example, the following
+                        is the modified <code class="code">create-function</code>
+                        CLI command from the getting started. Note that the <code class="code">--handler</code> parameter
+                        specifies &quot;example.Hello&quot; value:
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws lambda create-function \
+--region <em class="replaceable"><code>region</code></em> \
+--function-name getting-started-lambda-function-in-java \
+--zip-file fileb://<em>deployment-package (zip or jar)
+        path</em> \
+--role arn:aws:iam::<em>account-id</em>:role/lambda_basic_execution  \
+--handler example.Hello \
+--runtime java8 \
+--timeout 15 \
+--memory-size 512</code></pre><p>The following sections provide examples of implementing these interfaces. </p>
+                     <h2 id="java-handler-using-predefined-interfaces-pojo-handler-class">Example 1: Creating Handler with Custom POJO
+                        Input/Output (Leverage the RequestHandler Interface)
+                     </h2>
+                     
+                     
+                     <p>The example <code class="code">Hello</code> class in this section implements the
+                        <code class="code">RequestHandler</code> interface. The interface defines
+                        <code class="code">handleRequest()</code> method that takes in event data as input parameter of
+                        the <code class="code">Request</code> type and returns an POJO object of the <code class="code">Response</code>
+                        type:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">public Response handleRequest(Request request, Context context) {
+   ...
+}</code></pre>
+                     <p>The <code class="code">Hello</code> class with sample implementation of the
+                        <code class="code">handleRequest()</code> method is shown. For this example, we assume event data
+                        consists of first name and last name. 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">package example;
+
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.amazonaws.services.lambda.runtime.Context; 
+
+public class Hello implements RequestHandler&lt;Request, Response&gt; {
+    
+    public Response handleRequest(Request request, Context context) {
+        String greetingString = String.format(&quot;Hello %s %s.&quot;, request.firstName, request.lastName);
+        return new Response(greetingString);
+    }
+}</code></pre>
+                     <p>For example, if the event data in the <code class="code">Request</code> object is:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;firstName&quot;:&quot;value1&quot;,
+  &quot;lastName&quot; : &quot;value2&quot;
+}</code></pre>
+                     <p>The method returns a <code class="code">Response</code> object as follows:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;greetings&quot;: &quot;Hello value1 value2.&quot;
+}</code></pre>
+                     <p>Next, you need to implement the <code class="code">Request</code> and <code class="code">Response</code> classes.
+                        You can use the following implementation for testing:
+                     </p>
+                     
+                     <p>The Request class:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">package example;
+
+public class Request {
+    String firstName;
+    String lastName;
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public Request(String firstName, String lastName) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+
+    public Request() {
+    }
+}</code></pre>
+                     <p>The Response class:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">package example;
+
+public class Response {
+    String greetings;
+
+    public String getGreetings() {
+        return greetings;
+    }
+
+    public void setGreetings(String greetings) {
+        this.greetings = greetings;
+    }
+
+    public Response(String greetings) {
+        this.greetings = greetings;
+    }
+
+    public Response() {
+    }
+}</code></pre>
+                     
+                     <p>You can create a Lambda function from this code and test the end-to-end experience
+                        as
+                        follows:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Using the preceding code, create a deployment package. For more information, see <a href="lambda-java-how-to-create-deployment-package.html">Creating a Deployment Package (Java)</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Upload the deployment package to AWS Lambda and create your Lambda
+                                 function.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Test the Lambda function using either the console or CLI. You can specify
+                                 any sample JSON data that conform to the getter and setter in your
+                                 <code class="code">Request</code> class, for example:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;firstName&quot;:&quot;John&quot;,
+  &quot;lastName&quot; : &quot;Doe&quot;
+}</code></pre>
+                              <p>The Lambda function will return the following JSON in response. </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;greetings&quot;: &quot;Hello John, Doe.&quot;
+}</code></pre>
+                              </li>
+                        </ul>
+                     </div>
+                     
+                     <p>Follow instructions provided in the getting started (see 
+                         <a href="get-started-step4-optional.html">(Optional) Create a Lambda Function Authored in
+                           Java</a>). Note the following differences:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>When you create a deployment package, don&apos;t forget the
+                                 <code class="code">aws-lambda-java-core</code> library dependency.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>When you create the Lambda function specify <code class="code">example.Hello</code>
+                                 (<em class="replaceable"><code>package</code></em>.<em class="replaceable"><code>class</code></em>) as the 
+                                 handler value.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="java-handler-using-predefined-interfaces-stream-handler-class"> Example 2: Creating Handler with Stream
+                        Input/Output (Leverage the <code class="code">RequestStreamHandler</code> Interface)
+                     </h2>
+                     
+                     
+                     <p>The <code class="code">Hello</code> class in this example implements the
+                        <code class="code">RequestStreamHandler</code> interface. The interface defines
+                        <code class="code">handleRequest</code> method as follows:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">public void handleRequest(InputStream inputStream, OutputStream outputStream, Context context)
+        throws IOException {
+      ...
+}</code></pre>
+                     <p>The <code class="code">Hello</code> class with sample implementation of the
+                        <code class="code">handleRequest()</code> handler is shown. The handler processes incoming event
+                        data (for example, a string &quot;hello&quot;) by simply converting it to uppercase and return
+                        it.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">package example;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.amazonaws.services.lambda.runtime.Context; 
+
+public class Hello implements RequestStreamHandler {
+    public void handleRequest(InputStream inputStream, OutputStream outputStream, Context context)
+            throws IOException {
+        int letter;
+        while((letter = inputStream.read()) != -1)
+        {
+            outputStream.write(Character.toUpperCase(letter));
+        }
+    }
+}</code></pre>
+                     <p>You can create a Lambda function from this code and test the end-to-end experience
+                        as
+                        follows:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Use the preceding code to create deployment package.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Upload the deployment package to AWS Lambda and create your Lambda
+                                 function.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Test the Lambda function using either the console or CLI. You can specify
+                                 any sample string data, for example:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">&quot;test&quot;</code></pre>
+                              <p>The Lambda function will return <code class="code">TEST</code> in response. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>Follow instructions provided in the getting started (see 
+                         <a href="get-started-step4-optional.html">(Optional) Create a Lambda Function Authored in
+                           Java</a>). Note the following differences:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>When you create a deployment package, don&apos;t forget the
+                                 <code class="code">aws-lambda-java-core</code> library dependency.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>When you create the Lambda function specify <code class="code">example.Hello</code>
+                                 (<em class="replaceable"><code>package</code></em>.<em class="replaceable"><code>class</code></em>) as the 
+                                 handler value.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="java-handler-io-type-stream.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="java-context-object.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Example 1: Creating Handler with Custom POJO
+            Input/Output (Leverage the RequestHandler Interface)"><a class="pagetoc" href="#java-handler-using-predefined-interfaces-pojo-handler-class">Example 1: Creating Handler with Custom POJO
+                              Input/Output (Leverage the RequestHandler Interface)</a></li>
+                        <li class="pagetoc" name=" Example 2: Creating Handler with Stream
+            Input/Output (Leverage the RequestStreamHandler Interface)"><a class="pagetoc" href="#java-handler-using-predefined-interfaces-stream-handler-class"> Example 2: Creating Handler with Stream
+                              Input/Output (Leverage the RequestStreamHandler Interface)</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

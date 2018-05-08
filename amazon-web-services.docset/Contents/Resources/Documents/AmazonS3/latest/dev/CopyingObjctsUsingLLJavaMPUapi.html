@@ -1,0 +1,238 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Copy an Object Using the AWS SDK for Java
+         		Multipart Upload API - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="CopyingObjctsMPUapi.html" title="Copying Objects Using the Multipart Upload API">
+      <link rel="prev" href="CopyingObjctsMPUapi.html" title="Copying Objects Using the Multipart Upload API">
+      <link rel="next" href="CopyingObjctsUsingLLNetMPUapi.html" title="Copy an Amazon S3 Object Using the AWS SDK for .NET Multipart Upload API">
+      <meta name="description" content="Copy objects larger than 5 GB in Amazon S3 using the AWS SDK for Java multipart upload API.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/CopyingObjctsUsingLLJavaMPUapi.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="UsingObjects.html">Working with Amazon S3 Objects</a> &#xBB; <a href="ObjectOperations.html">Operations on Objects</a> &#xBB; <a href="CopyingObjectsExamples.html">Copying Objects</a> &#xBB; <a href="CopyingObjctsMPUapi.html">Copying Objects Using the Multipart Upload API</a> &#xBB; <span class="breadcrumb">Copy an Object Using the AWS SDK for Java
+                                    		Multipart Upload API</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="CopyingObjctsUsingLLJavaMPUapi">Copy an Object Using the AWS SDK for Java
+                        		Multipart Upload API
+                     </h1>
+                     <p>To copy an Amazon S3 object that is larger than 5 GB with the AWS SDK for Java,  use
+                        the low-level Java
+                        			API . For objects smaller than 5 GB, use the single-operation copy described in
+                        <a href="CopyingObjectUsingJava.html">Copy an Object Using the AWS SDK for Java</a>. 
+                     </p>
+                     <p>To copy an object using the low-level Java API, do the following:</p>
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Initiate a multipart upload by executing the
+                                 						<code class="code">AmazonS3Client.initiateMultipartUpload()</code> method.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Save the upload ID from the response object that the
+                                 						<code class="code">AmazonS3Client.initiateMultipartUpload()</code> method returns. You
+                                 					provide this upload ID for each part-upload operation.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Copy all of the parts. For each part that you need to copy, create a new instance
+                                 of the
+                                 						<code class="code">CopyPartRequest</code> class.  Provide the part information, including
+                                 					the source and destination bucket names, source and destination object keys,
+                                 					upload ID, locations of the first and last bytes of the part, and part number.
+                                 
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Save the responses of the <code class="code">AmazonS3Client.copyPart()</code> method calls. Each response
+                                 					includes the <code class="code">ETag</code> value and part number for the uploaded part. You
+                                 					need this information to complete the multipart upload. 
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Call the <code class="code">AmazonS3Client.completeMultipartUpload()</code> method to
+                                 					complete the copy operation. 
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="example">
+                        <div class="example-contents">
+                           <p>The following example shows how to use the Amazon S3 low-level Java API to perform
+                              a multipart
+                              				copy. For instructions on creating and testing a working sample, see <a href="UsingTheMPJavaAPI.html#TestingJavaSamples">Testing the Amazon S3 Java Code Examples</a>.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="java ">import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.*;
+import com.amazonaws.services.s3.model.*;
+
+public class LowLevelMultipartCopy {
+
+    public static void main(String[] args) throws IOException {
+        String clientRegion = &quot;*** Client region ***&quot;;
+        String sourceBucketName = &quot;*** Source bucket name ***&quot;;
+        String sourceObjectKey = &quot;*** Source object key ***&quot;;
+        String destBucketName = &quot;*** Target bucket name ***&quot;;
+        String destObjectKey = &quot;*** Target object key ***&quot;;
+
+        try {
+            AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
+                    .withCredentials(new ProfileCredentialsProvider())
+                    .withRegion(clientRegion)
+                    .build();
+
+            // Initiate the multipart upload.
+            InitiateMultipartUploadRequest initRequest = new InitiateMultipartUploadRequest(destBucketName, destObjectKey);
+            InitiateMultipartUploadResult initResult = s3Client.initiateMultipartUpload(initRequest);
+    
+            // Get the object size to track the end of the copy operation.
+            GetObjectMetadataRequest metadataRequest = new GetObjectMetadataRequest(sourceBucketName, sourceObjectKey);
+            ObjectMetadata metadataResult = s3Client.getObjectMetadata(metadataRequest);
+            long objectSize = metadataResult.getContentLength();
+    
+            // Copy the object using 5 MB parts.
+            long partSize = 5 * 1024 * 1024;
+            long bytePosition = 0;
+            int partNum = 1;
+            List&lt;CopyPartResult&gt; copyResponses = new ArrayList&lt;CopyPartResult&gt;();
+            while (bytePosition &lt; objectSize) {
+                // The last part might be smaller than partSize, so check to make sure
+                // that lastByte isn&apos;t beyond the end of the object.
+                long lastByte = Math.min(bytePosition + partSize - 1, objectSize - 1);
+                
+                // Copy this part.
+                CopyPartRequest copyRequest = new CopyPartRequest()
+                        .withSourceBucketName(sourceBucketName)
+                        .withSourceKey(sourceObjectKey)
+                        .withDestinationBucketName(destBucketName)
+                        .withDestinationKey(destObjectKey)
+                        .withUploadId(initResult.getUploadId())
+                        .withFirstByte(bytePosition)
+                        .withLastByte(lastByte)
+                        .withPartNumber(partNum++);
+                copyResponses.add(s3Client.copyPart(copyRequest));
+                bytePosition += partSize;
+            }
+    
+            // Complete the upload request to concatenate all uploaded parts and make the copied object available.
+            CompleteMultipartUploadRequest completeRequest = new CompleteMultipartUploadRequest(
+                                                                        destBucketName,
+                                                                        destObjectKey, 
+                                                                        initResult.getUploadId(),
+                                                                        getETags(copyResponses));
+            s3Client.completeMultipartUpload(completeRequest);
+            System.out.println(&quot;Multipart copy complete.&quot;);
+        }
+        catch(AmazonServiceException e) {
+            // The call was transmitted successfully, but Amazon S3 couldn&apos;t process 
+            // it, so it returned an error response.
+            e.printStackTrace();
+        }
+        catch(SdkClientException e) {
+            // Amazon S3 couldn&apos;t be contacted for a response, or the client  
+            // couldn&apos;t parse the response from Amazon S3.
+            e.printStackTrace();
+        }
+    }
+
+    // This is a helper function to construct a list of ETags.
+    private static List&lt;PartETag&gt; getETags(List&lt;CopyPartResult&gt; responses) {
+        List&lt;PartETag&gt; etags = new ArrayList&lt;PartETag&gt;();
+        for (CopyPartResult response : responses) {
+            etags.add(new PartETag(response.getPartNumber(), response.getETag()));
+        }
+        return etags;
+    }
+}
+</code></pre></div>
+                     </div>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="CopyingObjctsMPUapi.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="CopyingObjctsUsingLLNetMPUapi.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

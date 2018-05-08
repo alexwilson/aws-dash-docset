@@ -1,0 +1,250 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Creating an Amazon EBS Snapshot - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="EBSSnapshots.html" title="Amazon EBS Snapshots">
+      <link rel="prev" href="EBSSnapshots.html" title="Amazon EBS Snapshots">
+      <link rel="next" href="ebs-deleting-snapshot.html" title="Deleting an Amazon EBS Snapshot">
+      <meta name="description" content="Create a snapshot of an Amazon EBS volume to use as a baseline for new volumes or for data backup.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-creating-snapshot.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Storage.html">Storage</a> &#xBB; <a href="AmazonEBS.html">Amazon Elastic Block Store (Amazon EBS)</a> &#xBB; <a href="EBSSnapshots.html">Amazon EBS Snapshots</a> &#xBB; <span class="breadcrumb">Creating an Amazon EBS Snapshot</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ebs-creating-snapshot">Creating an Amazon EBS Snapshot</h1>
+                     <p>A point-in-time snapshot of an EBS volume, can be used as a baseline for new volumes
+                        or
+                        for data backup. If you make periodic snapshots of a volume, the snapshots are
+                        incremental&#x2014;only the blocks on the device that have changed after your last snapshot
+                        are saved
+                        in the new snapshot. Even though snapshots are saved incrementally, the snapshot deletion
+                        process is designed so that you need to retain only the most recent snapshot in order
+                        to
+                        restore the entire volume.
+                     </p>
+                     <p>Snapshots occur asynchronously; the point-in-time snapshot is created immediately,
+                        but the
+                        status of the snapshot is <code class="code">pending</code> until the snapshot is complete (when all of the
+                        modified blocks have been transferred to Amazon S3), which can take several hours
+                        for large initial
+                        snapshots or subsequent snapshots where many blocks have changed. While it is completing,
+                        an
+                        in-progress snapshot is not affected by ongoing reads and writes to the volume.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Although you can take a snapshot of a volume while a previous snapshot of that volume
+                           is
+                           in the <code class="code">pending</code> status, having multiple <code class="code">pending</code> snapshots of a
+                           volume may result in reduced volume performance until the snapshots complete.
+                        </p>
+                        <p>There is a limit of five <code class="code">pending</code> snapshots for a single <code class="code">gp2</code>, <code class="code">io1</code>, or
+                           Magnetic volume, and one <code class="code">pending</code> snapshot for a single <code class="code">st1</code> or <code class="code">sc1</code> volume.
+                           If you receive a <code class="code">ConcurrentSnapshotLimitExceeded</code> error while trying to create
+                           multiple concurrent snapshots of the same volume, wait for one or more of the
+                           <code class="code">pending</code> snapshots to complete before creating another snapshot of that
+                           volume.
+                        </p>
+                     </div>
+                     <p>Snapshots that are taken from encrypted volumes are automatically encrypted. Volumes
+                        that
+                        are created from encrypted snapshots are also automatically encrypted. The data in
+                        your
+                        encrypted volumes and any associated snapshots is protected both at rest and in motion.
+                        For
+                        more information, see <a href="./AWSEC2/latest/UserGuide/EBSEncryption.html" target="_blank">Amazon EBS
+                           Encryption</a>.
+                     </p>
+                     <p>By default, only you can create volumes from snapshots that you own. However, you
+                        can
+                        share your unencrypted snapshots with specific AWS accounts, or you can share them
+                        with the
+                        entire AWS community by making them public. For more information, see <a href="ebs-modifying-snapshot-permissions.html">Sharing an Amazon EBS Snapshot</a>.
+                     </p>
+                     <p>You can share an encrypted snapshot only with specific AWS accounts. For others to
+                        use
+                        your shared, encrypted snapshot, you must also share the CMK key that was used to
+                        encrypt it.
+                        Users with access to your encrypted snapshot must create their own personal copy of
+                        it and
+                        then use that copy to restore the volume. Your copy of a shared, encrypted snapshot
+                        can also
+                        be re-encrypted with a different key. For more information, see <a href="ebs-modifying-snapshot-permissions.html">Sharing an Amazon EBS Snapshot</a>.
+                     </p>
+                     <p>When a snapshot is created from a volume with an AWS Marketplace product code, the
+                        product code is propagated to the snapshot.
+                     </p>
+                     <p>You can take a snapshot of an attached volume that is in use. However, snapshots only
+                        capture data that has been written to your Amazon EBS volume at the time the snapshot
+                        command is
+                        issued. This might exclude any data that has been cached by any applications or the
+                        operating
+                        system. If you can pause any file writes to the volume long enough to take a snapshot,
+                        your
+                        snapshot should be complete. However, if you can&apos;t pause all file writes to the volume,
+                        you
+                        should unmount the volume from within the instance, issue the snapshot command, and
+                        then
+                        remount the volume to ensure a consistent and complete snapshot. You can remount and
+                        use your
+                        volume while the snapshot status is <code class="code">pending</code>.
+                     </p>
+                     <p>To create a snapshot for an Amazon EBS volume that serves as a root device, you should
+                        stop the
+                        instance before taking the snapshot.
+                     </p>
+                     <p>To unmount the volume in Linux, use the following command, where
+                        <em>device_name</em> is the device name (for example,
+                        <code>/dev/sdh</code>):
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">umount -d <em>device_name</em></code></pre><p>To make snapshot management easier, you can tag your snapshots during creation or
+                        add tags
+                        afterward. For example, you can apply tags describing the original volume from which
+                        the
+                        snapshot was created, or the device name that was used to attach the original volume
+                        to an
+                        instance. For more information, see <a href="Using_Tags.html">Tagging Your Amazon EC2 Resources</a>.
+                     </p>
+                     <p class="title"><b>To create a snapshot using the console</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Snapshots</b> in the navigation pane.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Create Snapshot</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>On the <b>Create Snapshot</b> page, select the volume to create a
+                              snapshot for.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Choose <b>Add tags to your snapshot</b>. For each tag,
+                              provide a tag key and a tag value.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Create Snapshot</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     <div class="itemizedlist">
+                        
+                        <p class="title"><b>To create a snapshot using the command line</b></p>
+                        
+                        <p>You can use one of the following commands. For more information about these command
+                           line
+                           interfaces, see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./cli/latest/reference/ec2/create-snapshot.html" target="_blank">create-snapshot</a>
+                                 (AWS CLI)
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="./powershell/latest/reference/items/New-EC2Snapshot.html" target="_blank">New-EC2Snapshot</a>
+                                 (AWS Tools for Windows PowerShell)
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="EBSSnapshots.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ebs-deleting-snapshot.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

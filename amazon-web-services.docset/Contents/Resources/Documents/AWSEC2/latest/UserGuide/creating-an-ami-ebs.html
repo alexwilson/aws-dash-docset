@@ -1,0 +1,618 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Creating an Amazon EBS-Backed Linux AMI - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="AMIs.html" title="Amazon Machine Images (AMI)">
+      <link rel="prev" href="paid-amis.html" title="Paid AMIs">
+      <link rel="next" href="creating-an-ami-instance-store.html" title="Creating an Instance Store-Backed Linux AMI">
+      <meta name="description" content="Create your own AMI from a customized Amazon EBS-backed Linux instance.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/creating-an-ami-ebs.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="AMIs.html">Amazon Machine Images (AMI)</a> &#xBB; <span class="breadcrumb">Creating an Amazon EBS-Backed Linux AMI</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="creating-an-ami-ebs">Creating an Amazon EBS-Backed Linux AMI</h1>
+                     <p>To create an Amazon EBS-backed Linux AMI, start from an instance that you&apos;ve launched
+                        from an
+                        		existing Amazon EBS-backed Linux AMI. This can be an AMI you have obtained from
+                        the AWS Marketplace, an
+                        		AMI you have created using the <a href="https://aws.amazon.com/server-migration-service/" target="_blank">AWS Server Migration Service</a> or <a href="./vm-import/latest/userguide/what-is-vmimport.html" target="_blank">VM
+                           			Import/Export</a>, or any other AMI you can access. After you customize the instance
+                        		to suit your needs, create and register a new AMI, which you can use to launch new
+                        		instances with these customizations.
+                     </p>
+                     <p>The procedures described below work for Amazon EC2 instances backed by encrypted Amazon
+                        EBS volumes
+                        		(including the root volume) as well as for unencrypted volumes.
+                     </p>
+                     <p>The AMI creation process is different for instance store-backed AMIs. For more
+                        		information about the differences between Amazon EBS-backed and instance store-backed
+                        instances,
+                        		and how to determine the root device type for your instance, see <a href="ComponentsAMIs.html#storage-for-the-root-device">Storage for the Root Device</a>. For
+                        		more information about creating an instance store-backed Linux AMI, see <a href="creating-an-ami-instance-store.html">Creating an Instance Store-Backed Linux AMI</a>.
+                     </p>
+                     <p>For more information about creating an Amazon EBS-backed Windows AMI, see <a href="./AWSEC2/latest/WindowsGuide/Creating_EBSbacked_WinAMI.html" target="_blank">Creating an Amazon EBS-Backed Windows
+                           			AMI</a> in the <em>Amazon EC2 User Guide for Windows Instances</em>.
+                     </p>
+                     <h2 id="process-creating-an-ami-ebs">Overview of Creating Amazon EBS-Backed
+                        			AMIs
+                     </h2>
+                     		
+                     		
+                     <p>First, launch an instance from an AMI that&apos;s similar to the AMI that you&apos;d like to
+                        			create. You can connect to your instance and customize it. When the instance is
+                        			configured correctly, ensure data integrity by stopping the instance before you
+                        create
+                        			an AMI, then create the image. When you create an Amazon EBS-backed AMI, we automatically
+                        			register it for you.
+                     </p>
+                     		
+                     <p>Amazon EC2 powers down the instance before creating the AMI to ensure that everything
+                        on
+                        			the instance is stopped and in a consistent state during the creation process.
+                        If you&apos;re
+                        			confident that your instance is in a consistent state appropriate for AMI creation,
+                        			you can tell Amazon EC2 not to power down and reboot the instance. Some file systems,
+                        such as
+                        			XFS, can freeze and unfreeze activity, making it safe to create the image without
+                        			rebooting the instance.
+                     </p>
+                     		
+                     <p>During the AMI-creation process, Amazon EC2 creates snapshots of your instance&apos;s root
+                        volume
+                        and any other EBS volumes attached to your instance. You&apos;re charged for the snapshots
+                        until you deregister the AMI and delete the snapshots. For more information, see <a href="deregister-ami.html">Deregistering Your Linux AMI</a>. If any volumes attached
+                        to the instance are encrypted, the new AMI only launches successfully on instances
+                        that support Amazon EBS encryption. For more information, see <a href="EBSEncryption.html">Amazon EBS Encryption</a>.
+                     </p>
+                     		
+                     <p>Depending on the size of the volumes, it can take several minutes for the AMI-creation
+                        			process to complete (sometimes up to 24 hours). You may find it more efficient
+                        to create
+                        			snapshots of your volumes before creating your AMI. This way, only small, incremental
+                        			snapshots need to be created when the AMI is created, and the process completes
+                        more
+                        			quickly (the total time for snapshot creation remains the same). For more information,
+                        			see <a href="ebs-creating-snapshot.html">Creating an Amazon EBS Snapshot</a>.
+                     </p>
+                     		
+                     <p>After the process completes, you have a new AMI and snapshot created from the root
+                        volume
+                        of the instance. When you launch an instance using the new AMI, we create a new EBS
+                        volume for its root volume using the snapshot.
+                     </p>
+                     		
+                     <p>If you add instance-store volumes or EBS volumes to your instance in addition to the
+                        			root device volume, the block device mapping for the new AMI contains information
+                        for
+                        			these volumes, and the block device mappings for instances that you launch from
+                        the new
+                        			AMI automatically contain information for these volumes. The instance-store volumes
+                        			specified in the block device mapping for the new instance are new and don&apos;t contain
+                        any
+                        			data from the instance store volumes of the instance you used to create the AMI.
+                        The
+                        			data on EBS volumes persists. For more information, see <a href="block-device-mapping-concepts.html">Block Device Mapping</a>.
+                     </p>
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>When you create a new instance from an EBS-backed AMI, you should initialize both
+                           its root
+                           				volume and any additional EBS storage before putting it into production. For more
+                           				information, see <a href="./AWSEC2/latest/UserGuide/ebs-initialize.html" target="_blank">Initializing Amazon
+                              					EBS Volumes</a>.
+                        </p>
+                     </div>
+                     	
+                     <h2 id="how-to-create-ebs-ami">Creating a Linux AMI from an Instance</h2>
+                     		
+                     		
+                     <p>You can create an AMI using the AWS Management Console or the command line. The following
+                        diagram
+                        			summarizes the process for creating an Amazon EBS-backed AMI from a running EC2
+                        instance.
+                        			Start with an existing AMI, launch an instance, customize it, create a new AMI
+                        from
+                        			it, and finally launch an instance of your new AMI. The steps in the following
+                        diagram
+                        			match the steps in the procedure below.
+                     </p>
+                     
+                     		
+                     <div class="mediaobject">
+                        			
+                        				<img src="../../..//img/running-instance.png" alt="
+				Workflow for creating an AMI from an instance
+			">
+                        			
+                        			
+                        		
+                     </div>
+                     
+                     
+                     		
+                     <p class="title"><b>To create an AMI from an instance using the console</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Select an appropriate EBS-backed AMI to serve as a starting point for your new
+                              					AMI, and configure it as needed before launch. For more information, see <a href="launching-instance.html">Launching an Instance Using the Launch Instance Wizard</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Choose <b>Launch</b> to launch an instance of the EBS-backed AMI
+                              					that you&apos;ve selected. Accept the default values as you step through the wizard.
+                              					For more information, see <a href="launching-instance.html">Launching an Instance Using the Launch Instance Wizard</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>While the instance is running, connect to it. You can perform any of the
+                              					following actions on your instance to customize it for your needs:
+                           </p>
+                           				
+                           <div class="itemizedlist">
+                              					
+                              					
+                              					
+                              					
+                              				
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    						
+                                    <p>Install software and applications</p>
+                                    					
+                                 </li>
+                                 <li class="listitem">
+                                    						
+                                    <p>Copy data</p>
+                                    					
+                                 </li>
+                                 <li class="listitem">
+                                    						
+                                    <p>Reduce start time by deleting temporary files, defragmenting your hard
+                                       							drive, and zeroing out free space
+                                    </p>
+                                    					
+                                 </li>
+                                 <li class="listitem">
+                                    						
+                                    <p>Attach additional Amazon EBS volumes</p>
+                                    					
+                                 </li>
+                              </ul>
+                           </div>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>(Optional) Create snapshots of all the volumes attached to your instance. For
+                              					more information about creating snapshots, see <a href="ebs-creating-snapshot.html">Creating an Amazon EBS Snapshot</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the navigation pane, choose <b>Instances</b>, select your
+                              					instance, and then choose <b>Actions</b>,
+                              						<b>Image</b>, <b>Create Image</b>.
+                           </p>
+                           				
+                           <div class="aws-note">
+                              <p class="aws-note">Tip</p>
+                              <p>If this option is disabled, your instance isn&apos;t an Amazon EBS-backed
+                                 						instance.
+                              </p>
+                           </div>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the <b>Create Image</b> dialog box, specify the following
+                              					information, and then choose <b>Create Image</b>.
+                           </p>
+                           				
+                           <div class="itemizedlist">
+                              					
+                              					
+                              					
+                              					
+                              				
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    						
+                                    <p><b>Image name</b> &#x2013; A unique name for the
+                                       							image.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li class="listitem">
+                                    						
+                                    <p><b>Image description</b> &#x2013; An optional description
+                                       							of the image, up to 255 characters.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li class="listitem">
+                                    						
+                                    <p><b>No reboot</b> &#x2013; This option is not selected by
+                                       							default. Amazon EC2 shuts down the instance, takes snapshots of any attached
+                                       							volumes, creates and registers the AMI, and then reboots the instance.
+                                       							Select <b>No reboot</b> to avoid having your instance shut
+                                       							down.
+                                    </p>
+                                    						
+                                    <div class="aws-note">
+                                       <p class="aws-note">Warning</p>
+                                       <p>If you select <b>No reboot</b>, we can&apos;t guarantee
+                                          								the file system integrity of the created image.
+                                       </p>
+                                    </div>
+                                    					
+                                 </li>
+                                 <li class="listitem">
+                                    						
+                                    <p><b>Instance Volumes</b> &#x2013; The fields in this
+                                       							section enable you to modify the root volume, and add additional Amazon EBS
+                                       							and instance store volumes. For information about each field, pause on
+                                       							the <b>i</b> icon next to each field to display field
+                                       							tooltips. Some important points are listed below.
+                                    </p>
+                                    						
+                                    <div class="itemizedlist">
+                                       							
+                                       							
+                                       							
+                                       							
+                                       						
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             								
+                                             <p>To change the size of the root volume, locate
+                                                										<b>Root</b> in the <b>Volume
+                                                   										Type</b> column, and for <b>Size
+                                                   										(GiB)</b>, type the required value.
+                                             </p>
+                                             							
+                                          </li>
+                                          <li class="listitem">
+                                             								
+                                             <p>If you select <b>Delete on Termination</b>, when
+                                                									you terminate the instance created from this AMI, the EBS volume
+                                                									is deleted. If you clear <b>Delete on
+                                                   										Termination</b>, when you terminate the instance, the
+                                                									EBS volume is not deleted.
+                                             </p>
+                                             								
+                                             <div class="aws-note">
+                                                <p class="aws-note">Note</p>
+                                                <p><b>Delete on Termination</b> determines if
+                                                   										the EBS volume is deleted or not; it does not affect the
+                                                   										instance or the AMI. 
+                                                </p>
+                                             </div>
+                                             							
+                                          </li>
+                                          <li class="listitem">
+                                             								
+                                             <p>To add an Amazon EBS volume, choose <b>Add New
+                                                   										Volume</b> (which adds a new row). For
+                                                										<b>Volume Type</b>, choose
+                                                										<b>EBS</b>, and fill in the fields in the row.
+                                                									When you launch an instance from your new AMI, additional
+                                                									volumes are automatically attached to the instance. Empty
+                                                									volumes must be formatted and mounted. Volumes based on a
+                                                									snapshot must be mounted.
+                                             </p>
+                                             							
+                                          </li>
+                                          <li class="listitem">
+                                             								
+                                             <p>To add an instance store volume, see <a href="add-instance-store-volumes.html#adding-instance-storage-ami">Adding Instance Store Volumes to an AMI</a>. When you
+                                                									launch an instance from your new AMI, additional volumes are
+                                                									automatically initialized and mounted. These volumes do not
+                                                									contain data from the instance store volumes of the running
+                                                									instance on which you based your AMI.
+                                             </p>
+                                             							
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    					
+                                 </li>
+                              </ul>
+                           </div>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>To view the status of your AMI while it is being created, in the navigation
+                              					pane, choose <b>AMIs</b>. Initially, the status is
+                              						<code class="code">pending</code> but  should change to <code class="code">available</code> after a
+                              					few minutes.
+                           </p>
+                           				
+                           <p>(Optional) To view the snapshot that was created for the new AMI, choose
+                              						<b>Snapshots</b>. When you launch an instance from this AMI,
+                              					we use this snapshot to create its root device volume.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Launch an instance from your new AMI. For more information, see <a href="launching-instance.html">Launching an Instance Using the Launch Instance Wizard</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>The new running instance contains all of the customizations that you applied
+                              					in previous steps.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     		
+                     <h3 id="create-ami-cli">To Create an AMI from an Instance Using the Command Line</h3>
+                     			
+                     			
+                     <p>You can use one of the following commands. For more information about these
+                        				command line interfaces, see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><a href="./cli/latest/reference/ec2/create-image.html" target="_blank">create-image</a>
+                                 						(AWS CLI)
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><a href="./powershell/latest/reference/items/New-EC2Image.html" target="_blank">New-EC2Image</a>
+                                 						(AWS Tools for Windows PowerShell)
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     	
+                     <h2 id="creating-launching-ami-from-snapshot">Creating a Linux AMI from a
+                        			Snapshot
+                     </h2>
+                     		
+                     		
+                     <p>If you have a snapshot of the root device volume of an instance, you can create an
+                        			AMI from this snapshot using the AWS Management Console or the command line.
+                     </p>
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Some Linux distributions, such as Red Hat Enterprise Linux (RHEL) and SUSE Linux
+                           				Enterprise Server (SLES), use the Amazon EC2 <code class="code">billingProduct</code> code associated
+                           				with an AMI to verify subscription status for package updates. Creating an AMI
+                           				from an EBS snapshot does not maintain this billing code, and subsequent instances
+                           				launched from such an AMI will not be able to connect to package update
+                           				infrastructure.
+                        </p>
+                        <p>Similarly, although you can create a Windows AMI from a snapshot, you can&apos;t
+                           				successfully launch an instance from the AMI.
+                        </p>
+                        <p>In general, AWS advises against manually creating AMIs from snapshots.</p>
+                        <p>For more information about creating Windows AMIs or AMIs for Linux operating
+                           				systems that must retain AMI billing codes to work properly, see <a href="creating-an-ami-ebs.html#how-to-create-ebs-ami">Creating a Linux AMI from an Instance</a>. 
+                        </p>
+                     </div>
+                     		
+                     <p class="title"><b>To create an AMI from a snapshot using the console</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           				
+                           <p>In the navigation pane, under <b>Elastic Block Store</b>, choose
+                              						<b>Snapshots</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Choose the snapshot and choose <b>Actions</b>, <b>Create
+                                 						Image</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the <b>Create Image from EBS Snapshot</b> dialog box,
+                              					complete the fields to create your AMI, then choose
+                              						<b>Create</b>. If you&apos;re re-creating a parent instance, then
+                              					choose the same options as the parent instance.
+                           </p>
+                           				
+                           <div class="itemizedlist">
+                              					
+                              					
+                              					
+                              					
+                              					
+                              				
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    						
+                                    <p><b>Architecture</b>: Choose <b>i386</b>
+                                       							for 32-bit or <b>x86_64</b> for 64-bit.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li class="listitem">
+                                    						
+                                    <p><b>Root device name</b>: Enter the appropriate name for
+                                       							the root volume. For more information, see <a href="device_naming.html">Device Naming on <span>Linux</span> Instances</a>.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li class="listitem">
+                                    						
+                                    <p><b>Virtualization type</b>: Choose whether instances
+                                       							launched from this AMI use paravirtual (PV) or hardware virtual
+                                       							machine (HVM) virtualization. For more information, see <a href="virtualization_types.html">Linux AMI Virtualization Types</a>.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li class="listitem">
+                                    						
+                                    <p>(PV virtualization type only) <b>Kernel ID</b> and <b>RAM disk
+                                          								ID</b>: Choose the AKI and ARI from the lists. If you choose
+                                       							the default AKI or don&apos;t choose an AKI, you must specify an AKI every
+                                       							time you launch an instance using this AMI. In addition, your instance
+                                       							may fail the health checks if the default AKI is incompatible with the
+                                       							instance.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li class="listitem">
+                                    						
+                                    <p>(Optional) <b>Block Device Mappings</b>: Add volumes or
+                                       							expand the default size of the root volume for the AMI. For more
+                                       							information about resizing the file system on your instance for a larger
+                                       							volume, see <a href="recognize-expanded-volume-linux.html">Extending a Linux File System after Resizing
+                                          the Volume</a>.
+                                    </p>
+                                    					
+                                 </li>
+                              </ul>
+                           </div>
+                           			
+                        </li>
+                     </ol>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>To create an AMI from a snapshot using the command line</b></p>
+                        			
+                        <p>You can use one of the following commands. For more information about these
+                           				command line interfaces, see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p><a href="./cli/latest/reference/ec2/register-image.html" target="_blank">register-image</a> (AWS
+                                 					CLI)
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><a href="./powershell/latest/reference/items/Register-EC2Image.html" target="_blank">Register-EC2Image</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="paid-amis.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="creating-an-ami-instance-store.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Overview of Creating Amazon EBS-Backed
+			AMIs"><a class="pagetoc" href="#process-creating-an-ami-ebs">Overview of Creating Amazon EBS-Backed
+                              			AMIs</a></li>
+                        <li class="pagetoc" name="Creating a Linux AMI from an Instance"><a class="pagetoc" href="#how-to-create-ebs-ami">Creating a Linux AMI from an Instance</a></li>
+                        <li class="pagetoc" name="Creating a Linux AMI from a
+			Snapshot"><a class="pagetoc" href="#creating-launching-ami-from-snapshot">Creating a Linux AMI from a
+                              			Snapshot</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

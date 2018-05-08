@@ -1,0 +1,398 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Tutorial: Using AWS Lambda
+         				Aliases - AWS Lambda
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="aliases-intro.html" title="Introduction to AWS Lambda Aliases">
+      <link rel="prev" href="aliases-intro.html" title="Introduction to AWS Lambda Aliases">
+      <link rel="next" href="versioning-aliases-permissions.html" title="Versioning, Aliases, and
+			Resource Policies">
+      <meta name="description" content="This AWS CLI-based tutorial creates Lambda function versions and aliases that point to it as described in the .">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/versioning-aliases-walkthrough1.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="deploying-lambda-apps.html">Deploying Lambda-based Applications</a> &#xBB; <a href="versioning-aliases.html">AWS Lambda Function Versioning and Aliases</a> &#xBB; <a href="aliases-intro.html">Introduction to AWS Lambda Aliases</a> &#xBB; <span class="breadcrumb">Tutorial: Using AWS Lambda
+                                    				Aliases</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="versioning-aliases-walkthrough1">Tutorial: Using AWS Lambda
+                        				Aliases
+                     </h1>
+                     <p>This AWS CLI-based tutorial creates Lambda function versions and aliases that point
+                        to
+                        				it as described in the <a href="aliases-intro.html#aliases-intro-example">Example: Using Aliases to Manage
+                           				Lambda Function Versions</a>.
+                     </p>
+                     <p>This example uses the us-west-2 (US West Oregon) region to create the Lambda function
+                        and
+                        				aliases.
+                     </p>
+                     <p>Create a Lambda function (<code class="code">helloworld</code>). 
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws lambda create-function \
+--region <em class="replaceable"><code>region</code></em> \
+--function-name helloworld \
+--zip-file fileb://<em class="replaceable"><code>file-path</code></em>/helloworld.zip \
+--role arn:aws:iam::account-id:role/lambda_basic_execution \
+--handler helloworld.handler \
+--runtime nodejs6.10 \
+--profile adminuser</code></pre><p>The response returns the configuration information showing
+                        						<code class="code">$LATEST</code> as the function version as shown in the following
+                        					example response.
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+    &quot;CodeSha256&quot;: &quot;OjRFuuHKizEE8tHFIMsI+iHR6BPAfJ5S0rW31Mh6jKg=&quot;,
+    &quot;FunctionName&quot;: &quot;helloworld&quot;,
+    &quot;CodeSize&quot;: 287,
+    &quot;MemorySize&quot;: 128,
+    &quot;FunctionArn&quot;: &quot;arn:aws:lambda:us-west-2:account-id:function:helloworld&quot;,
+    &quot;Version&quot;: &quot;$LATEST&quot;,
+    &quot;Role&quot;: &quot;arn:aws:iam::account-id:role/lambda_basic_execution&quot;,
+    &quot;Timeout&quot;: 3,
+    &quot;LastModified&quot;: &quot;2015-09-30T18:39:53.873+0000&quot;,
+    &quot;Handler&quot;: &quot;helloworld.handler&quot;,
+    &quot;Runtime&quot;: &quot;nodejs6.10&quot;,
+    &quot;Description&quot;: &quot;&quot;
+}</code></pre><ol>
+                        <li>
+                           <p>Create a deployment package that you can upload to create your Lambda function: </p>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>Open a text editor, and then copy the following code. </p>
+                                 							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">console.log(&apos;Loading function&apos;);
+
+exports.handler = function(event, context, callback) {
+    console.log(&apos;value1 =&apos;, event.key1);
+    console.log(&apos;value2 =&apos;, event.key2);
+    console.log(&apos;value3 =&apos;, event.key3);
+    callback(null, &quot;message&quot;);  
+   
+};</code></pre>
+                                 						</li>
+                              <li>
+                                 							
+                                 <p>Save the file as <code>helloworld.js</code>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>Zip the <code>helloworld.js</code> file as
+                                    									<code>helloworld.zip</code>. 
+                                 </p>
+                                 						
+                              </li>
+                           </ol>
+                           				
+                        </li>
+                        <li>
+                           <p>Create an AWS Identity and Access Management (IAM) role (execution role) that you
+                              can specify at the time you create your Lambda
+                              						function: 
+                           </p>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>Sign in to the AWS Management Console and open the IAM console at <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>Follow the steps in <a href="./IAM/latest/UserGuide/id_roles.html" target="_blank">IAM Roles</a> in the <em>IAM User Guide</em> 
+                                    								to create an IAM role (execution role). 
+                                    								As you follow the steps to create a role, note the following: 
+                                 </p>
+                                 							
+                                 <div class="itemizedlist">
+                                    								
+                                    								
+                                    							
+                                    <ul class="itemizedlist" type="disc">
+                                       <li class="listitem">
+                                          									
+                                          <p>For <b>Select Role Type</b>, choose <b>AWS Service
+                                                											Roles</b>, and then choose
+                                             											<b>AWS Lambda</b>.
+                                          </p>
+                                          								
+                                       </li>
+                                       <li class="listitem">
+                                          									
+                                          <p>For <b>Attach Policy</b>, choose the policy named
+                                             											<b>AWSLambdaBasicExecutionRole</b>. 
+                                          </p>
+                                          								
+                                       </li>
+                                    </ul>
+                                 </div>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>Write down the Amazon Resource Name (ARN) of the IAM role. You
+                                    								need this value when you create your Lambda function in the
+                                    								next step.
+                                 </p>
+                                 						
+                              </li>
+                           </ol>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Create an alias (<code class="code">DEV</code>) that points to the <code class="code">$LATEST</code> version of the
+                              							<code class="code">helloworld</code> Lambda function.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws lambda create-alias \
+--region <em class="replaceable"><code>region</code></em> \
+--function-name helloworld \
+--description &quot;sample alias&quot; \
+--function-version &quot;\$LATEST&quot; \
+--name DEV \
+--profile adminuser</code></pre>
+                           					<p>The response returns the alias information, including the function version it points
+                              to
+                              						and the alias ARN. The ARN is the same as the function ARN with an alias
+                              						name suffix. The following is an example response.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+    &quot;AliasArn&quot;: &quot;arn:aws:lambda:us-west-2:account-id:function:helloworld:DEV&quot;,
+    &quot;FunctionVersion&quot;: &quot;$LATEST&quot;,
+    &quot;Name&quot;: &quot;DEV&quot;,
+    &quot;Description&quot;: &quot;sample alias&quot;
+}</code></pre>
+                           				</li>
+                        <li>
+                           					
+                           <p>Publish a version of the <code class="code">helloworld</code> Lambda function.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws lambda publish-version \
+--region <em class="replaceable"><code>region</code></em> \
+--function-name helloworld \
+--profile adminuser</code></pre>
+                           					<p>The response returns configuration information of the function version, including
+                              the
+                              						version number, and the function ARN with the version suffix. The following
+                              						is an example response.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+    &quot;CodeSha256&quot;: &quot;OjRFuuHKizEE8tHFIMsI+iHR6BPAfJ5S0rW31Mh6jKg=&quot;,
+    &quot;FunctionName&quot;: &quot;helloworld&quot;,
+    &quot;CodeSize&quot;: 287,
+    &quot;MemorySize&quot;: 128,
+    &quot;FunctionArn&quot;: &quot;arn:aws:lambda:us-west-2:account-id:function:helloworld:1&quot;,
+    &quot;Version&quot;: &quot;1&quot;,
+    &quot;Role&quot;: &quot;arn:aws:iam::account-id:role/lambda_basic_execution&quot;,
+    &quot;Timeout&quot;: 3,
+    &quot;LastModified&quot;: &quot;2015-10-03T00:48:00.435+0000&quot;,
+    &quot;Handler&quot;: &quot;helloworld.handler&quot;,
+    &quot;Runtime&quot;: &quot;nodejs6.10
+    &quot;,
+    &quot;Description&quot;: &quot;&quot;
+}</code></pre>
+                           				</li>
+                        <li>
+                           					
+                           <p>Create an alias (<code class="code">BETA</code>) for the for the <code class="code">helloworld</code> Lambda function version 1.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws lambda create-alias \
+--region <em class="replaceable"><code>region</code></em> \
+--function-name helloworld \
+--description &quot;sample alias&quot; \
+--function-version 1 \
+--name BETA \
+--profile adminuser</code></pre>
+                           					<p>Now you have two aliases for the <code class="code">helloworld</code> function. The <code class="code">DEV</code> alias
+                              						points to the <code class="code">$LATEST</code> function version, and the <code class="code">BETA</code> alias points to 
+                              						version 1 of the Lambda function.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Suppose that you want to put the version 1 of the <code class="code">helloworld</code>
+                              						function in production. Create another alias (<code class="code">PROD</code>) that points
+                              						to version 1.
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws lambda create-alias \
+--region <em class="replaceable"><code>region</code></em> \
+--function-name helloworld \
+--description &quot;sample alias&quot; \
+--function-version 1 \
+--name PROD \
+--profile adminuser</code></pre>
+                           					<p>At this time, you have both the <code class="code">BETA</code> and <code class="code">PROD</code>
+                              						aliases pointing to version 1 of the Lambda function.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>You can now publish a newer version (for example, version 2), but first you need to
+                              						update your code and upload a modified deployment package. If the
+                              						<code class="code">$LATEST</code> version is not changed, you cannot publish more than one version of
+                              						it. Assuming you updated the deployment package, uploaded it, and published
+                              						version 2, you can now change the <code class="code">BETA</code> alias to point to version 2 of
+                              						the Lambda function. 
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws lambda update-alias \
+--region <em class="replaceable"><code>region</code></em> \
+--function-name helloworld \
+--function-version 2 \
+--name BETA \
+--profile adminuser</code></pre>
+                           					<p>Now you have three aliases pointing to a different version of the Lambda
+                              						function (<code class="code">DEV</code> alias points to the <code class="code">$LATEST</code> version, 
+                              						<code class="code">BETA</code> alias points to version 2, and the <code class="code">PROD</code> alias 
+                              						points to version 1 of the Lambda function.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     <p>For information about using the AWS Lambda console to manage versioning, see <a href="how-to-manage-versioning.html">Managing Versioning Using the AWS Management Console, the AWS CLI, or
+                           				Lambda API Operations</a>.
+                     </p>
+                     <h2 id="versioning-permissions-cli">Granting Permissions in a Push
+                        						Model
+                     </h2>In a push model (see <a href="invocation-options.html#intro-invocation-modes">Event Source Mapping</a>), event sources such as Amazon S3 invoke
+                     				your Lambda function. These event sources maintain a mapping that identifies the
+                     				function version or alias that they invoke when events occur. Note the following:
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>We recommend that you specify an existing Lambda function alias in the
+                                 							mapping configuration (see <a href="aliases-intro.html">Introduction to AWS Lambda Aliases</a>). For example, if the event source
+                                 							is Amazon S3, you specify the alias ARN in the bucket notification
+                                 							configuration so that Amazon S3 can invoke the alias when it detects specific
+                                 							events.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>In the push model, you grant event sources permissions using a
+                                 							resource policy that you attach to your Lambda function. In versioning,
+                                 							the permissions you add are specific to the qualifier that you specify
+                                 							in the <code class="code">AddPermission</code> request (see <a href="versioning-aliases-permissions.html">Versioning, Aliases, and
+                                    			Resource Policies</a>). 
+                              </p>
+                              						
+                              <p>For example, the following AWS CLI command grants Amazon S3 permissions to
+                                 							invoke the PROD alias of the <code class="code">helloworld</code> Lambda function
+                                 							(note that the <code class="code">--qualifier</code> parameter specifies the alias
+                                 							name). 
+                              </p>
+                              						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws lambda add-permission \
+--region <em class="replaceable"><code>region</code></em> \
+--function-name helloworld \
+--qualifier PROD \
+--statement-id 1 \
+--principal s3.amazonaws.com \
+--action lambda:InvokeFunction \
+--source-arn arn:aws:s3:::examplebucket \
+--source-account 111111111111 \
+--profile adminuser </code></pre>
+                              						<p>In this case, Amazon S3 is now able to invoke the PROD alias and AWS Lambda
+                                 							can then execute the helloworld Lambda function version that the PROD
+                                 							alias points to. For this to work, you must use the PROD alias ARN in
+                                 							the S3 bucket&apos;s notification configuration. 
+                              </p>
+                              						
+                              <p>For information about how to handle Amazon S3 events, see <a href="with-s3-example.html">Tutorial: Using AWS Lambda with Amazon S3</a>.
+                              </p>
+                              						
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>If you use the AWS Lambda console to add an event source for your
+                                    								Lambda function, the console adds the necessary permissions for
+                                    								you.
+                                 </p>
+                              </div>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="aliases-intro.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="versioning-aliases-permissions.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Granting Permissions in a Push
+						Model"><a class="pagetoc" href="#versioning-permissions-cli">Granting Permissions in a Push
+                              						Model</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

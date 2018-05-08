@@ -1,0 +1,790 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>
+         Set up Lambda Proxy Integrations in API Gateway
+          - Amazon API Gateway
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="set-up-lambda-integrations.html" title="
+            Set up Lambda Integrations in API Gateway
+        ">
+      <link rel="prev" href="set-up-lambda-integrations.html" title="
+            Set up Lambda Integrations in API Gateway
+        ">
+      <link rel="next" href="set-up-lambda-custom-integrations.html" title="
+                Set up Lambda Custom Integrations in API Gateway
+            ">
+      <meta name="description" content="Learn how to configure a Lambda proxy integration request and integration response in API Gateway.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon API Gateway">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/apigateway">Amazon API Gateway</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="how-to-create-api.html">Creating an API in Amazon API Gateway</a> &#xBB; <a href="how-to-integration-settings.html">Set up API Integrations in API Gateway</a> &#xBB; <a href="set-up-lambda-integrations.html">
+                                    Set up Lambda Integrations in API Gateway
+                                    </a> &#xBB; <span class="breadcrumb">
+                                    Set up Lambda Proxy Integrations in API Gateway
+                                    </span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="set-up-lambda-proxy-integrations">
+                        Set up Lambda Proxy Integrations in API Gateway
+                        
+                     </h1>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#api-gateway-create-api-as-simple-proxy"> Understand API Gateway Lambda Proxy
+                                 Integration </a></li>
+                           <li><a href="#api-gateway-set-up-lambda-proxy-integration-on-proxy-resource">Set up a Proxy
+                                 Resource with the Lambda Proxy Integration</a></li>
+                           <li><a href="#set-up-lambda-proxy-integration-using-cli">Set up Lambda Proxy
+                                 Integration Using the AWS CLI</a></li>
+                           <li><a href="#api-gateway-simple-proxy-for-lambda-input-format">Input Format of a Lambda
+                                 Function for Proxy Integration
+                                 </a></li>
+                           <li><a href="#api-gateway-simple-proxy-for-lambda-output-format">Output Format of a Lambda
+                                 Function for Proxy Integration</a></li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="api-gateway-create-api-as-simple-proxy"> Understand API Gateway Lambda Proxy
+                        Integration 
+                     </h2>
+                     
+                     <p>Amazon API Gateway Lambda proxy integration is a simple, powerful, and nimble mechanism
+                        to build
+                        an API with a setup of a single API method. The Lambda proxy integration allows the
+                        client to
+                        call a single Lambda function in the backend. The function accesses many resources
+                        or
+                        features of other AWS services, including calling other Lambda functions. 
+                     </p>
+                     
+                     <p> With the Lambda proxy integration, when a client submits an API request, API Gateway
+                        passes to
+                        the integrated Lambda function the raw request as-is. This <a href="set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format">request data</a> includes the request
+                        headers, query string parameters, URL path variables, payload, and API configuration
+                        data.
+                        The configuration data can include current deployment stage name, stage variables,
+                        user
+                        identity, or authorization context (if any). The backend Lambda function parses the
+                        incoming
+                        request data to determine the response that it returns. For API Gateway to pass the
+                        Lambda output as 
+                        the API response to the client, the Lambda function must return the result in <a href="set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-output-format">this format</a>.
+                        
+                     </p>
+                     
+                     <p> Because API Gateway doesn&apos;t intervene very much between the client and the backend
+                        Lambda function for
+                        the Lambda proxy integration, the client and the integrated Lambda function can
+                        adapt to changes in each other without breaking the existing integration setup of
+                        the API.
+                        To enable this, the client must follow application protocols enacted by the backend
+                        Lambda
+                        function. 
+                     </p>
+                     
+                     <p> You can set up a Lambda proxy integration for any API method. But a Lambda proxy
+                        integration is more potent when it is configured for an API method involving a generic
+                        proxy
+                        resource. The generic proxy resource can be denoted by a special templated path variable
+                        of
+                        <code class="code">{proxy+}</code>, the catch-all <code class="code">ANY</code> method placeholder, or both. The
+                        client can pass the input to the backend Lambda function in the incoming request as
+                        request
+                        parameters or applicable payload. The request parameters include headers, URL path
+                        variables, query string parameters, and the applicable payload. The integrated Lambda
+                        function verifies all of the input sources before processing the request and responding
+                        to
+                        the client with meaningful error messages if any of the required input is missing.
+                     </p>
+                     
+                     <p> When calling an API method integrated with the generic HTTP method of <code class="code">ANY</code>
+                        and the generic resource of <code class="code">{proxy+}</code>, the client submits a request with a
+                        particular HTTP method in place of <code class="code">ANY</code>. The client also specifies a particular
+                        URL path instead of <code class="code">{proxy+}</code>, and includes any required headers, query string
+                        parameters, or an applicable payload. 
+                     </p>
+                     
+                     <p> The following list summarizes runtime behaviors of different API methods with the
+                        Lambda
+                        proxy integration: 
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><code class="code">ANY /{proxy+}</code>: The client must choose a particular HTTP method, must
+                                 set a particular resource path hierarchy, and can set any headers, query string
+                                 parameters, and applicable payload to pass the data as input to the integrated Lambda
+                                 function. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">ANY /res</code>: The client must choose a particular HTTP method and can set
+                                 any headers, query string parameters, and applicable payload to pass the data as
+                                 input to the integrated Lambda function. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">GET|POST|PUT|... /{proxy+}</code>: The client can set a particular resource
+                                 path hierarchy, any headers, query string parameters, and applicable payload to pass
+                                 the data as input to the integrated Lambda function. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <code class="code">GET|POST|PUT|... /res/{path}/...</code>: The client must choose a particular
+                                 path segment (for the <code class="code">{path}</code> variable) and can set any request headers,
+                                 query string parameters, and applicable payload to pass input data to the integrated
+                                 Lambda function.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <code class="code">GET|POST|PUT|... /res</code>: The client can choose any request headers, query
+                                 string parameters, and applicable payload to pass input data to the integrated Lambda
+                                 function.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p> Both the proxy resource of <code class="code">{proxy+}</code> and the custom resource of
+                        <code class="code">{custom}</code> are expressed as templated path variables. However
+                        <code class="code">{proxy+}</code> can refer to any resource along a path hierarchy, while
+                        <code class="code">{custom}</code> refers to a particular path segment only. For example,  a  grocery
+                        store might organize its online product inventory by department names, produce categories,
+                        and product types. The grocery store&apos;s website can then represent available products
+                        by the
+                        following templated path variables of custom resources:
+                        <code class="code">/{department}/{produce-category}/{product-type}</code>. For example, apples are
+                        represented by <code class="code">/produce/fruit/apple</code> and carrots by
+                        <code class="code">/produce/vegetables/carrot</code>. It can also use <code class="code">/{proxy+}</code> to
+                        represent any department, any produce category, or any product type that a customer
+                        can
+                        search for while shopping in the online store. For example, <code class="code">/{proxy+}</code> can refer
+                        to any of the following items: 
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><code class="code">/produce</code></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">/produce/fruit</code></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">/produce/vegetables/carrot</code></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p> To let customers search for any available product, its produce category, and the
+                        associated store department, you can expose a single method of <code class="code">GET /{proxy+}</code>
+                        with read-only permissions. Similarly, to allow a supervisor to update the
+                        <code class="code">produce</code> department&apos;s inventory, you can set up another single method of
+                        <code class="code">PUT /produce/{proxy+}</code> with read/write permissions. To allow a cashier to
+                        update the running total of a vegetable, you can set up a <code class="code">POST
+                           /produce/vegetables/{proxy+}</code> method with read/write permissions. To let a store
+                        manager perform any possible action on any available product, the online store developer
+                        can
+                        expose the <code class="code">ANY /{proxy+}</code> method with read/write permissions. In any case, at
+                        run time, the customer or the employee must select a particular product of a given
+                        type in a
+                        chosen department, a specific produce category in a chosen department, or a specific
+                        department. 
+                     </p>
+                     
+                     
+                     <p>For more information about setting up the API Gateway proxy integrations, see <a href="api-gateway-set-up-simple-proxy.html">Set up a Proxy Integration with a Proxy Resource</a>. 
+                     </p>
+                     
+                     <p> The proxy integration requires that the client have more detailed knowledge of the
+                        backend requirements. Therefore, to ensure optimal app performance and user experience,
+                        the
+                        backend developer must communicate clearly to the client developer the requirements
+                        of the
+                        backend, and provide a robust error feedback mechanism when the requirements are not
+                        met. 
+                     </p>
+                     
+                     <h2 id="api-gateway-set-up-lambda-proxy-integration-on-proxy-resource">Set up a Proxy
+                        Resource with the Lambda Proxy Integration
+                     </h2>
+                     
+                     
+                     <p>To set up a proxy resource with the Lambda proxy integration type, create an API resource
+                        with a
+                        greedy path parameter (for example, <code class="code">/parent/{proxy+}</code>) and integrate
+                        this resource with a Lambda function backend (for example,
+                        <code class="code">arn:aws:lambda:us-west-2:123456789012:function:SimpleLambda4ProxyResource</code>)
+                        on the <code class="code">ANY</code> method. The greedy path parameter must be at the end of the
+                        API resource path. As with a non-proxy resource, you can set up the proxy resource
+                        by using
+                        the API Gateway console, importing a Swagger definition file, or calling the API Gateway
+                        REST
+                        API directly.
+                     </p>
+                     
+                     <p>For detailed instructions about using the API Gateway console to configure a proxy
+                        resource with the
+                        Lambda proxy integration, see <a href="api-gateway-create-api-as-simple-proxy-for-lambda.html">
+                           Build an API Gateway API with Lambda Proxy Integration 
+                           </a>.
+                     </p>
+                     
+                     <p>The following Swagger API definition file shows an example of an API with a proxy
+                        resource
+                        that is integrated with the <a href="api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-proxy-integration-lambda-function-nodejs">SimpleLambda4ProxyResource</a> Lambda function.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;swagger&quot;: &quot;2.0&quot;,
+  &quot;info&quot;: {
+    &quot;version&quot;: &quot;2016-09-12T17:50:37Z&quot;,
+    &quot;title&quot;: &quot;ProxyIntegrationWithLambda&quot;
+  },
+  &quot;host&quot;: &quot;gy415nuibc.execute-api.us-east-1.amazonaws.com&quot;,
+  &quot;basePath&quot;: &quot;/testStage&quot;,
+  &quot;schemes&quot;: [
+    &quot;https&quot;
+  ],
+  &quot;paths&quot;: {
+    &quot;/{proxy+}&quot;: {
+      &quot;x-amazon-apigateway-any-method&quot;: {
+        &quot;produces&quot;: [
+          &quot;application/json&quot;
+        ],
+        &quot;parameters&quot;: [
+          {
+            &quot;name&quot;: &quot;proxy&quot;,
+            &quot;in&quot;: &quot;path&quot;,
+            &quot;required&quot;: true,
+            &quot;type&quot;: &quot;string&quot;
+          }
+        ],
+        &quot;responses&quot;: {},
+        &quot;x-amazon-apigateway-integration&quot;: {
+          &quot;responses&quot;: {
+            &quot;default&quot;: {
+              &quot;statusCode&quot;: &quot;200&quot;
+            }
+          },
+          &quot;uri&quot;: &quot;arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:SimpleLambda4ProxyResource/invocations&quot;,
+          &quot;passthroughBehavior&quot;: &quot;when_no_match&quot;,
+          &quot;httpMethod&quot;: &quot;POST&quot;,
+          &quot;cacheNamespace&quot;: &quot;roq9wj&quot;,
+          &quot;cacheKeyParameters&quot;: [
+            &quot;method.request.path.proxy&quot;
+          ],
+          &quot;type&quot;: &quot;aws_proxy&quot;
+        }
+      }
+    }
+  }
+}</code></pre>
+                     <p>With the Lambda proxy integration, at run time, API Gateway maps an incoming request
+                        into the
+                        input <code class="code">event</code> parameter of the Lambda function. The input includes the
+                        request method, path, headers, any query parameters, any payload, associated
+                        context, and any defined stage variables. The input format is explained in <a href="set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format">Input Format of a Lambda
+                           Function for Proxy Integration
+                           </a>. For API Gateway to
+                        map the Lambda output to HTTP responses successfully, the Lambda function must output
+                        the result in the format described in <a href="set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-output-format">Output Format of a Lambda
+                           Function for Proxy Integration</a>. 
+                     </p>
+                     
+                     <p>With the Lambda proxy integration of a proxy resource through the <code class="code">ANY</code> method,
+                        the single backend Lambda function serves as the event handler for all requests
+                        through the proxy resource. For example, to log traffic patterns, you can have a
+                        mobile device send its location information of state, city, street, and building by
+                        submitting a request with <code class="code">/state/city/street/house</code> in the URL path for
+                        the proxy resource. The backend Lambda function can then parse the URL path and
+                        insert the location tuples into a DynamoDB table.
+                     </p>
+                     
+                     
+                     <h2 id="set-up-lambda-proxy-integration-using-cli">Set up Lambda Proxy
+                        Integration Using the AWS CLI
+                     </h2>
+                     
+                     <p>In this section, we show how to use AWS CLI to set up an API with the Lambda proxy
+                        integration. 
+                     </p>
+                     
+                     <p>As an example, we use the following sample Lambda function as the backend of the
+                        API:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">exports.handler = function(event, context, callback) {
+    console.log(&apos;Received event:&apos;, JSON.stringify(event, null, 2));
+    var res ={
+        &quot;statusCode&quot;: 200,
+        &quot;headers&quot;: {
+            &quot;Content-Type&quot;: &quot;*/*&quot;
+        }
+    };
+    var greeter = &apos;World&apos;;
+    if (event.greeter &amp;&amp; event.greeter!==&quot;&quot;) {
+        greeter =  event.greeter;
+    } else if (event.body &amp;&amp; event.body !== &quot;&quot;) {
+        var body = JSON.parse(event.body);
+        if (body.greeter &amp;&amp; body.greeter !== &quot;&quot;) {
+            greeter = body.greeter;
+        }
+    } else if (event.queryStringParameters &amp;&amp; event.queryStringParameters.greeter &amp;&amp; event.queryStringParameters.greeter !== &quot;&quot;) {
+        greeter = event.queryStringParameters.greeter;
+    } else if (event.headers &amp;&amp; event.headers.greeter &amp;&amp; event.headers.greeter != &quot;&quot;) {
+        greeter = event.headers.greeter;
+    }
+    res.body = &quot;Hello, &quot; + greeter + &quot;!&quot;;
+    callback(null, res);
+};</code></pre>
+                     <p>Comparing this to <a href="set-up-lambda-custom-integrations.html#set-up-lambda-custom-integration-using-cli">the
+                           Lambda custom integration setup</a>, the input to this Lambda function can be
+                        expressed in the request parameters and body. You have more latitude to allow the
+                        client to pass the same input data. Here, the client can pass the greeter&apos;s name in
+                        as a query string parameter, a header, or a body property. The function can also
+                        support the Lambda custom integration. The API setup is simpler. You do not configure
+                        the method response or integration response at all.
+                     </p>
+                     
+                     <p class="title"><b>To set up a Lambda proxy integration using the AWS CLI</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p> Call the <code class="code">create-rest-api</code> command to create an API:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway create-rest-api --name &apos;HelloWorld (AWS CLI)&apos; --region us-west-2</code></pre>
+                           <p>Note the resulting API&apos;s <code class="code">id</code> value (<code class="code">te6si5ach7</code>)
+                              in the response:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;name&quot;: &quot;HelloWorldProxy (AWS CLI)&quot;, 
+    &quot;id&quot;: &quot;te6si5ach7&quot;, 
+    &quot;createdDate&quot;: 1508461860
+}</code></pre>
+                           <p>You need the API <code class="code">id</code> throughout this section.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Call the <code class="code">get-resources</code> command to get the root resource
+                              <code class="code">id</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway get-resources --rest-api-id te6si5ach7 --region us-west-2</code></pre>
+                           <p>The successful response is shown as follows:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;items&quot;: [
+        {
+            &quot;path&quot;: &quot;/&quot;, 
+            &quot;id&quot;: &quot;krznpq9xpg&quot;
+        }
+    ]
+}</code></pre>
+                           <p>Note the root resource <code class="code">id</code> value (<code class="code">krznpq9xpg</code>).
+                              You need it in the next step and later.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Call <code class="code">create-resource</code> to create an API Gateway <a href="./apigateway/api-reference/resource/resource/" target="_blank">Resource</a> of
+                              <code class="code">/greeting</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway create-resource --rest-api-id te6si5ach7 \
+      --region us-west-2 \
+      --parent-id krznpq9xpg \
+      --path-part {proxy+}</code></pre>
+                           <p>The successful response is similar to the following:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;path&quot;: &quot;/{proxy+}&quot;, 
+    &quot;pathPart&quot;: &quot;{proxy+}&quot;, 
+    &quot;id&quot;: &quot;2jf6xt&quot;, 
+    &quot;parentId&quot;: &quot;krznpq9xpg&quot;
+}</code></pre>
+                           <p>Note the resulting <code class="code">{proxy+}</code> resource&apos;s <code class="code">id</code> value
+                              (<code class="code">2jf6xt</code>). You need it to create a method on the
+                              <code class="code">/{proxy+}</code> resource in the next step.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Call <code class="code">put-method</code> to create an <code class="code">ANY</code> method request
+                              of <code class="code">ANY /{proxy+}</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway put-method --rest-api-id te6si5ach7 \
+       --region us-west-2 \
+       --resource-id 2jf6xt \
+       --http-method ANY \
+       --authorization-type &quot;NONE&quot; </code></pre>
+                           <p>The successful response is similar to the following:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;apiKeyRequired&quot;: false, 
+    &quot;httpMethod&quot;: &quot;ANY&quot;, 
+    &quot;authorizationType&quot;: &quot;NONE&quot;
+}</code></pre>
+                           <p>This API method allows the client to receive or send greetings from the
+                              Lambda function at the backend. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Call <code class="code">put-integration</code> to set up the integration of the
+                              <code class="code">ANY /{proxy+}</code> method with a Lambda function, named
+                              <code class="code">HelloWorld</code>. This function responds to the request with a
+                              message of <code class="code">&quot;Hello, {name}!&quot;</code>, if the <code class="code">greeter</code>
+                              parameter is provided, or <code class="code">&quot;Hello, World!&quot;</code>, if the query string
+                              parameter is not set.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway put-integration \
+        --region us-west-2
+        --rest-api-id vaz7da96z6 \
+        --resource-id 2jf6xt \
+        --http-method ANY \
+        --type AWS_PROXY \
+        --integration-http-method POST \
+        --uri arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:HelloWorld/invocations \
+        --credentials arn:aws:iam::123456789012:role/apigAwsProxyRole</code></pre>
+                           <p>For Lambda integrations, you must use the HTTP method of <code class="code">POST</code>
+                              for the integration request. The IAM role of <code class="code">apigAwsProxyRole</code>
+                              must have policies allowing the <code class="code">apigateway</code> service to invoke
+                              Lambda functions. For more information about the IAM permissions, see <a href="permissions.html#api-gateway-control-access-iam-permissions-model-for-managing-api">
+                                 API Gateway Permissions Model for Creating and Managing an API</a>.
+                           </p>
+                           
+                           <p>The successful output is similar to the following:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;passthroughBehavior&quot;: &quot;WHEN_NO_MATCH&quot;, 
+    &quot;cacheKeyParameters&quot;: [], 
+    &quot;uri&quot;: &quot;arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:1234567890:function:HelloWorld/invocations&quot;, 
+    &quot;httpMethod&quot;: &quot;POST&quot;, 
+    &quot;cacheNamespace&quot;: &quot;vvom7n&quot;, 
+    &quot;credentials&quot;: &quot;arn:aws:iam::1234567890:role/apigAwsProxyRole&quot;, 
+    &quot;type&quot;: &quot;AWS_PROXY&quot;
+}</code></pre>
+                           <p>Instead of supplying an IAM role for <code class="code">credentials</code>, you can
+                              call the <a href="./cli/latest/reference/lambda/add-permission.html" target="_blank">add-permission</a> command to add resource-based permissions. This
+                              is what the API Gateway console does. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Call  <code class="code">create-deployment</code> to deploy the API to a <code class="code">test</code>
+                              stage:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway create-deployment --rest-api-id te6si5ach7 --stage-name test</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p> Test the API using the following cURL commands in a terminal.</p>
+                           
+                           <p>Calling the API with the query string parameter of
+                              <code class="code">?greeter=jane</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">curl -X GET &apos;https://te6si5ach7.execute-api.us-west-2.amazonaws.com/test/greeting?greeter=jane&apos; \
+  -H &apos;authorization: AWS4-HMAC-SHA256 Credential={access_key}/20171020/us-west-2/execute-api/aws4_request, \
+      SignedHeaders=content-type;host;x-amz-date, Signature=f327...5751&apos; 
+     </code></pre>
+                           <p>Calling the API with a header parameter of
+                              <code class="code">greeter:jane</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">curl -X GET https://te6si5ach7.execute-api.us-west-2.amazonaws.com/test/hi \
+  -H &apos;authorization: AWS4-HMAC-SHA256 Credential={access_key}/20171020/us-west-2/execute-api/aws4_request, \
+      SignedHeaders=content-type;host;x-amz-date, Signature=f327...5751&apos; \
+  -H &apos;content-type: application/json&apos; \
+  -H &apos;greeter: jane&apos;</code></pre>
+                           <p>Calling the API with a body of <code class="code">{&quot;greeter&quot;:&quot;jane&quot;}</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">curl -X POST https://te6si5ach7.execute-api.us-west-2.amazonaws.com/test \
+  -H &apos;authorization: AWS4-HMAC-SHA256 Credential={access_key}/20171020/us-west-2/execute-api/aws4_request, \
+      SignedHeaders=content-type;host;x-amz-date, Signature=f327...5751&apos; 
+  -H &apos;content-type: application/json&apos; \
+  -d &apos;{ &quot;greeter&quot;: &quot;jane&quot; }&apos;</code></pre>
+                           <p>In all the cases, the output is a 200 response with the following response
+                              body:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Hello, jane!</code></pre>
+                           </li>
+                     </ol>
+                     
+                     <h2 id="api-gateway-simple-proxy-for-lambda-input-format">Input Format of a Lambda
+                        Function for Proxy Integration
+                        
+                     </h2>
+                     
+                     
+                     <p>
+                        With the Lambda proxy integration, API Gateway maps the entire client request to the
+                        input <code class="code">event</code> parameter of the
+                        backend Lambda function as follows:
+                        
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;resource&quot;: &quot;Resource path&quot;,
+    &quot;path&quot;: &quot;Path parameter&quot;,
+    &quot;httpMethod&quot;: &quot;Incoming request&apos;s method name&quot;
+    &quot;headers&quot;: {Incoming request headers}
+    &quot;queryStringParameters&quot;: {query string parameters }
+    &quot;pathParameters&quot;:  {path parameters}
+    &quot;stageVariables&quot;: {Applicable stage variables}
+    &quot;requestContext&quot;: {Request context, including authorizer-returned key-value pairs}
+    &quot;body&quot;: &quot;A JSON string of the request payload.&quot;
+    &quot;isBase64Encoded&quot;: &quot;A boolean flag to indicate if the applicable request payload is Base64-encode&quot;
+}</code></pre>
+                     <p>We illustrate this using the following <code class="code">POST</code> request to show an API deployed
+                        to <code class="code">testStage</code> with a stage variable of
+                        <code class="code">stageVariableName=stageVariableValue</code>:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">POST /testStage/hello/world?name=me HTTP/1.1
+Host: gy415nuibc.execute-api.us-east-1.amazonaws.com
+Content-Type: application/json
+headerName: headerValue
+
+{
+    &quot;a&quot;: 1
+}</code></pre>
+                     <p>This request produces the following response payload, which contains the output returned
+                        from the backend Lambda function, where <code class="code">input</code> was set to the
+                        <code class="code">event</code> parameter to the Lambda function.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;message&quot;: &quot;Hello me!&quot;,
+  &quot;input&quot;: {
+    &quot;resource&quot;: &quot;/{proxy+}&quot;,
+    &quot;path&quot;: &quot;/hello/world&quot;,
+    &quot;httpMethod&quot;: &quot;POST&quot;,
+    &quot;headers&quot;: {
+      &quot;Accept&quot;: &quot;*/*&quot;,
+      &quot;Accept-Encoding&quot;: &quot;gzip, deflate&quot;,
+      &quot;cache-control&quot;: &quot;no-cache&quot;,
+      &quot;CloudFront-Forwarded-Proto&quot;: &quot;https&quot;,
+      &quot;CloudFront-Is-Desktop-Viewer&quot;: &quot;true&quot;,
+      &quot;CloudFront-Is-Mobile-Viewer&quot;: &quot;false&quot;,
+      &quot;CloudFront-Is-SmartTV-Viewer&quot;: &quot;false&quot;,
+      &quot;CloudFront-Is-Tablet-Viewer&quot;: &quot;false&quot;,
+      &quot;CloudFront-Viewer-Country&quot;: &quot;US&quot;,
+      &quot;Content-Type&quot;: &quot;application/json&quot;,
+      &quot;headerName&quot;: &quot;headerValue&quot;,
+      &quot;Host&quot;: &quot;gy415nuibc.execute-api.us-east-1.amazonaws.com&quot;,
+      &quot;Postman-Token&quot;: &quot;9f583ef0-ed83-4a38-aef3-eb9ce3f7a57f&quot;,
+      &quot;User-Agent&quot;: &quot;PostmanRuntime/2.4.5&quot;,
+      &quot;Via&quot;: &quot;1.1 d98420743a69852491bbdea73f7680bd.cloudfront.net (CloudFront)&quot;,
+      &quot;X-Amz-Cf-Id&quot;: &quot;pn-PWIJc6thYnZm5P0NMgOUglL1DYtl0gdeJky8tqsg8iS_sgsKD1A==&quot;,
+      &quot;X-Forwarded-For&quot;: &quot;54.240.196.186, 54.182.214.83&quot;,
+      &quot;X-Forwarded-Port&quot;: &quot;443&quot;,
+      &quot;X-Forwarded-Proto&quot;: &quot;https&quot;
+    },
+    &quot;queryStringParameters&quot;: {
+      &quot;name&quot;: &quot;me&quot;
+    },
+    &quot;pathParameters&quot;: {
+      &quot;proxy&quot;: &quot;hello/world&quot;
+    },
+    &quot;stageVariables&quot;: {
+      &quot;stageVariableName&quot;: &quot;stageVariableValue&quot;
+    },
+    &quot;requestContext&quot;: {
+      &quot;accountId&quot;: &quot;12345678912&quot;,
+      &quot;resourceId&quot;: &quot;roq9wj&quot;,
+      &quot;stage&quot;: &quot;testStage&quot;,
+      &quot;requestId&quot;: &quot;deef4878-7910-11e6-8f14-25afc3e9ae33&quot;,
+      &quot;identity&quot;: {
+        &quot;cognitoIdentityPoolId&quot;: null,
+        &quot;accountId&quot;: null,
+        &quot;cognitoIdentityId&quot;: null,
+        &quot;caller&quot;: null,
+        &quot;apiKey&quot;: null,
+        &quot;sourceIp&quot;: &quot;192.168.196.186&quot;,
+        &quot;cognitoAuthenticationType&quot;: null,
+        &quot;cognitoAuthenticationProvider&quot;: null,
+        &quot;userArn&quot;: null,
+        &quot;userAgent&quot;: &quot;PostmanRuntime/2.4.5&quot;,
+        &quot;user&quot;: null
+      },
+      &quot;resourcePath&quot;: &quot;/{proxy+}&quot;,
+      &quot;httpMethod&quot;: &quot;POST&quot;,
+      &quot;apiId&quot;: &quot;gy415nuibc&quot;
+    },
+    &quot;body&quot;: &quot;{\r\n\t\&quot;a\&quot;: 1\r\n}&quot;,
+    &quot;isBase64Encoded&quot;: false
+  }
+}</code></pre>
+                     <p>In the input to Lambda, the <code class="code">requestContext</code> object is a map of key-value
+                        pairs. The key is a property name of the <a href="api-gateway-mapping-template-reference.html#context-variable-reference">$context</a> variable and the value is the property value of the corresponding
+                        <code class="code">$context</code> variable. API Gateway may add new keys to the map. Depending on the
+                        features enabled, the <code class="code">requestContext</code> map may vary from API to API. For
+                        example, in the preceding example, <code class="code">$context.authorizer.*</code> properties are
+                        absent because no Lambda authorizer (formerly known as a custom authorizer) is enabled
+                        for the API.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>API Gateway enacts certain restrictions and limitations when handling methods with
+                           either
+                           Lambda proxy integration or HTTP proxy integration. For details, see <a href="api-gateway-known-issues.html">Known Issues</a>.
+                        </p>
+                     </div>
+                     
+                     <h2 id="api-gateway-simple-proxy-for-lambda-output-format">Output Format of a Lambda
+                        Function for Proxy Integration
+                     </h2>
+                     
+                     
+                     <p>With the Lambda proxy integration, API Gateway requires the backend Lambda function
+                        to return
+                        output according to the following JSON format:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;isBase64Encoded&quot;: <em class="replaceable"><code>true|false</code></em>,
+    &quot;statusCode&quot;: <em class="replaceable"><code>httpStatusCode</code></em>,
+    &quot;headers&quot;: { &quot;<em class="replaceable"><code>headerName</code></em>&quot;: &quot;<em class="replaceable"><code>headerValue</code></em>&quot;, ... },
+    &quot;body&quot;: &quot;<em class="replaceable"><code>...</code></em>&quot;
+}</code></pre>
+                     <p>In the output, <code class="code">headers</code> can be unspecified if no extra response headers are
+                        to be returned. To enable CORS for the Lambda proxy integration, you must add <code class="code">Access-Control-Allow-Origin:<em class="replaceable"><code>domain-name</code></em></code> to the output <code class="code">headers</code>. <code class="code"><em class="replaceable"><code>domain-name</code></em></code> can be <code class="code">*</code> for any domain name. The output <code class="code">body</code> is marshalled to the frontend as the method
+                        response payload. If <code class="code">body</code> is a binary blob, you can encode it as a
+                        Base64-encoded string and set <code class="code">isBase64Encoded</code> to <code class="code">true</code>.
+                        Otherwise, you can set it to <code class="code">false</code> or leave it unspecified.
+                     </p>
+                     
+                     <p>If the function output is of a different format, API Gateway returns a <code class="code">502 Bad
+                           Gateway</code> error response. 
+                     </p>
+                     
+                     <p>In a Lambda function in Node.js, to return a successful response, call <code class="code">callback(null,
+                           {&quot;statusCode&quot;: 200, &quot;body&quot;: &quot;results&quot;})</code>. To throw an exception, call
+                        <code class="code">callback(new Error(&apos;internal server error&apos;))</code>. For a client-side
+                        error (if, for example, a required parameter is missing), you can call
+                        <code class="code">callback(null, {&quot;statusCode&quot;: 400, &quot;body&quot;: &quot;Missing parameters of
+                           ...&quot;})</code> to return the error without throwing an exception. 
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="set-up-lambda-integrations.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="set-up-lambda-custom-integrations.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name=" Understand API Gateway Lambda Proxy
+            Integration "><a class="pagetoc" href="#api-gateway-create-api-as-simple-proxy"> Understand Lambda Proxy Integration </a></li>
+                        <li class="pagetoc" name="Set up a Proxy
+                Resource with the Lambda Proxy Integration"><a class="pagetoc" href="#api-gateway-set-up-lambda-proxy-integration-on-proxy-resource">Set up a Proxy
+                              Resource with the Lambda Proxy Integration</a></li>
+                        <li class="pagetoc" name="Set up Lambda Proxy
+                    Integration Using the AWS CLI"><a class="pagetoc" href="#set-up-lambda-proxy-integration-using-cli">Set up Lambda Proxy
+                              Integration Using the AWS CLI</a></li>
+                        <li class="pagetoc" name="Input Format of a Lambda
+      Function for Proxy Integration
+    "><a class="pagetoc" href="#api-gateway-simple-proxy-for-lambda-input-format">Input Format of a Lambda
+                              Function for Proxy Integration
+                              </a></li>
+                        <li class="pagetoc" name="Output Format of a Lambda
+      Function for Proxy Integration"><a class="pagetoc" href="#api-gateway-simple-proxy-for-lambda-output-format">Output Format of a Lambda
+                              Function for Proxy Integration</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon API Gateway';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

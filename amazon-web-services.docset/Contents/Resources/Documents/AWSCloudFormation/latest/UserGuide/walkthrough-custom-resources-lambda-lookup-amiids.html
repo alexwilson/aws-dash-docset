@@ -1,0 +1,742 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Walkthrough: Looking Up Amazon Machine Image IDs - AWS CloudFormation</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="template-custom-resources-lambda.html" title="AWS Lambda-backed Custom Resources">
+      <link rel="prev" href="template-custom-resources-lambda.html" title="AWS Lambda-backed Custom Resources">
+      <link rel="next" href="crpg-ref.html" title="Custom Resource Reference">
+      <meta name="description" content="Use AWS Lambda and a custom resource to dynamically look up AMI IDs.">
+      <meta name="keywords" content="CloudFormation,AWSCloudFormation,resource provisioning,resource configuration,infrastructure management,CloudFormer,CloudFormation Designer,CloudFormation stack,CloudFormation stackset,CloudFormation template,change set">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS CloudFormation">
+      <meta name="guide" content="User Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/walkthrough-custom-resources-lambda-lookup-amiids.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudformation">AWS CloudFormation</a> &#xBB; <a href="index.html">User Guide</a> &#xBB; <a href="template-guide.html">Working with AWS CloudFormation Templates</a> &#xBB; <a href="template-custom-resources.html">Custom Resources</a> &#xBB; <a href="template-custom-resources-lambda.html">AWS Lambda-backed Custom Resources</a> &#xBB; <span class="breadcrumb">Walkthrough: Looking Up Amazon Machine Image IDs</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="walkthrough-custom-resources-lambda-lookup-amiids">Walkthrough: Looking Up Amazon Machine Image IDs</h1>
+                     <p>AWS CloudFormation templates that declare an Amazon Elastic Compute Cloud (Amazon
+                        EC2) instance must also
+                        specify an Amazon Machine Image (AMI) ID, which includes an operating system
+                        and other software and configuration information used to launch the
+                        instance. The correct AMI ID depends on the instance type and region in
+                        which you&apos;re launching your stack. And IDs can change regularly, such as
+                        when an AMI is updated with software updates.
+                     </p>
+                     <p>Normally, you might map AMI IDs to specific instance types and regions.
+                        To update the IDs, you manually change them in each of your templates. By
+                        using custom resources and AWS Lambda (Lambda), you can create a function that
+                        gets the IDs of the latest AMIs for the region and instance type that you&apos;re
+                        using so that you don&apos;t have to maintain mappings.
+                     </p>
+                     <p>This walkthrough shows you how to create a custom resource and associate
+                        a Lambda function with it to look up AMI IDs. Note that the walkthrough
+                        assumes that you understand how to use custom resources and Lambda. For more
+                        information, see <a href="template-custom-resources.html">Custom Resources</a> or the <a href="./lambda/latest/dg/" target="_blank">AWS Lambda Developer Guide</a>.
+                     </p>
+                     <p>Walkthrough Overview</p>
+                     <p>For this walkthrough, you&apos;ll create a stack with a custom resource, a
+                        Lambda function, and an EC2 instance. The walkthough provides sample code and
+                        a sample template that you&apos;ll use to create the stack.
+                     </p>
+                     <p>The sample template uses the custom resource type to invoke and send
+                        input values to the Lambda function. When you use the template, AWS CloudFormation
+                        invokes
+                        the function and sends information to it, such as the request type, input
+                        data, and a pre-signed Amazon Simple Storage Service (Amazon S3) URL. The function
+                        uses that
+                        information to look up the AMI ID, and then sends a response to the
+                        pre-signed URL.
+                     </p>
+                     <p>After AWS CloudFormation gets a response in the pre-signed URL location, it proceeds
+                        with creating the stack. When AWS CloudFormation creates the instance, it uses the
+                        Lambda
+                        function&apos;s response to specify the instance&apos;s AMI ID.
+                     </p>
+                     <p>The following list summarizes the process. You need AWS Identity and Access Management
+                        (IAM)
+                        permissions to use all the corresponding services, such as Lambda, Amazon EC2, and
+                        AWS CloudFormation.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>AWS CloudFormation is a free service; however, you are charged for the AWS
+                           resources, such as the Lambda function and EC2 instance, that you include
+                           in your stacks at the current rate for each. For more information about
+                           AWS pricing, see the detail page for each product at <a href="http://aws.amazon.com" target="_blank">http://aws.amazon.com</a>.
+                        </p>
+                     </div>
+                     <div class="orderedlist">
+                        
+                        
+                        
+                        
+                        <ol>
+                           <li>
+                              
+                              <p><a href="walkthrough-custom-resources-lambda-lookup-amiids.html#walkthrough-custom-resources-lambda-lookup-amiids-savesample">Save the sample Lambda package in an Amazon Simple Storage Service (Amazon S3)
+                                    bucket.</a></p>
+                              
+                              <p>The sample package contains everything that&apos;s required to create the
+                                 Lambda function. You must save the package in a bucket that&apos;s in the same
+                                 region in which you will create your stack.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p><a href="walkthrough-custom-resources-lambda-lookup-amiids.html#walkthrough-custom-resources-lambda-lookup-amiids-createfunction-createstack">Use the sample template to create a stack.</a></p>
+                              
+                              <p>The stack demonstrates how you associate the Lambda function with a
+                                 custom resource and how to use the results from the function to specify
+                                 an AMI ID. The stack also creates an IAM role (execution role), which
+                                 Lambda uses to make calls to Amazon EC2.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p><a href="walkthrough-custom-resources-lambda-lookup-amiids.html#walkthrough-custom-resources-lambda-lookup-amiids-createfunction-cleanup">Delete the stack.</a></p>
+                              
+                              <p>Delete the stack to clean up all the stack resources that you
+                                 created so that you aren&apos;t charged for unnecessary resources.
+                              </p>
+                              
+                           </li>
+                        </ol>
+                     </div>
+                     <h2 id="walkthrough-custom-resources-lambda-lookup-amiids-savesample">Step 1: Downloading and Saving the Sample Package in Amazon S3</h2>
+                     
+                     
+                     <p>When you create a stack with a Lambda function, you must specify the
+                        location of the Amazon S3 bucket that contains the function&apos;s source code. The
+                        bucket must be in the same region in which you create your stack.
+                     </p>
+                     
+                     <p>This walkthrough provides a sample package (a
+                        <code>.zip</code> file) that&apos;s required to create the Lambda
+                        function. A Lambda package contains the source code for the function and
+                        required libraries. For this walkthrough, the function doesn&apos;t require
+                        additional libraries.
+                     </p>
+                     
+                     <p>The function takes an instance&apos;s architecture and region as inputs
+                        from an AWS CloudFormation custom resource request and returns the latest AMI ID to
+                        a
+                        pre-signed Amazon S3 URL.
+                     </p>
+                     
+                     <p class="title"><b>To download and save the package in Amazon S3</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Download the sample package from Amazon S3. When you save the file, use
+                              the same file name as the sample, <code>amilookup.zip</code>
+                              or <code>amilookup-win.zip</code>.
+                           </p>
+                           
+                           <div class="variablelist">
+                              
+                              
+                              
+                              <dl>
+                                 
+                                 <dt><b><span class="term">Look up Linux AMI IDs</span></b></dt>
+                                 
+                                 <dd>
+                                    
+                                    <p><a href="https://s3.amazonaws.com/cloudformation-examples/lambda/amilookup.zip" target="_blank">https://s3.amazonaws.com/cloudformation-examples/lambda/amilookup.zip</a></p>
+                                    
+                                 </dd>
+                                 
+                                 
+                                 <dt><b><span class="term">Look up Windows AMI IDs</span></b></dt>
+                                 
+                                 <dd>
+                                    
+                                    <p><a href="https://s3.amazonaws.com/cloudformation-examples/lambda/amilookup-win.zip" target="_blank">https://s3.amazonaws.com/cloudformation-examples/lambda/amilookup-win.zip</a></p>
+                                    
+                                 </dd>
+                                 
+                              </dl>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Open the Amazon S3 console at <a href="https://console.aws.amazon.com/s3/home" target="_blank">https://console.aws.amazon.com/s3/home</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose or create a bucket that&apos;s located in the same region in
+                              which you&apos;ll create your AWS CloudFormation stack. Record the bucket name.
+                           </p>
+                           
+                           <p>You&apos;ll save the sample package in this bucket. For more
+                              information about creating a bucket, see <a href="./AmazonS3/latest/user-guide/CreatingaBucket.html" target="_blank">Creating a Bucket</a> in
+                              the <em>Amazon Simple Storage Service Console User Guide</em>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Upload the sample package to the bucket that you chose or
+                              created.
+                           </p>
+                           
+                           <p>For more information about uploading objects, see <a href="./AmazonS3/latest/user-guide/UploadingObjectsintoAmazonS3.html" target="_blank">Uploading
+                                 Objects</a> in the <em>Amazon Simple Storage Service Console User Guide</em>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p>With the package in Amazon S3, you can now specify its location in the
+                        Lambda resource declaration of the AWS CloudFormation template. The next step
+                        demonstrates how you declare the function and invoke it by using a custom
+                        resource. You&apos;ll also see how to use the results of the function to
+                        specify the AMI ID of an EC2 instance.
+                     </p>
+                     
+                     <h2 id="walkthrough-custom-resources-lambda-lookup-amiids-createfunction-createstack">Step 2: Creating the Stack</h2>
+                     
+                     
+                     <p>To create the sample Amazon EC2 stack, you&apos;ll use a sample template that
+                        includes a Lambda function, an IAM execution role, a custom resource that
+                        invokes the function, and an EC2 instance that uses the results from the
+                        function.
+                     </p>
+                     
+                     <p>During stack creation, the custom resource invokes the Lambda function
+                        and waits until the function sends a response to the pre-signed Amazon S3 URL.
+                        In the response, the function returns the ID of the latest AMI that
+                        corresponds to the EC2 instance type and region in which you are creating
+                        the instance. The data from the function&apos;s response is stored as an
+                        attribute of the custom resource, which is used to specify the AMI ID of
+                        the EC2 instance.
+                     </p>
+                     
+                     <p>The following snippets explain relevant parts of the sample template
+                        to help you understand how to associate a Lambda function with a custom
+                        resource and how to use the function&apos;s response. To view the entire sample
+                        template, see:
+                     </p>
+                     
+                     <div class="variablelist">
+                        
+                        
+                        
+                        <dl>
+                           
+                           <dt><b><span class="term">Linux template</span></b></dt>
+                           
+                           <dd>
+                              
+                              <p><a href="https://s3.amazonaws.com/cloudformation-examples/lambda/LambdaAMILookupSample.template" target="_blank">https://s3.amazonaws.com/cloudformation-examples/lambda/LambdaAMILookupSample.template</a></p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><b><span class="term">Windows template</span></b></dt>
+                           
+                           <dd>
+                              
+                              <p><a href="https://s3.amazonaws.com/cloudformation-examples/lambda/LambdaAMILookupSample-win.template" target="_blank">https://s3.amazonaws.com/cloudformation-examples/lambda/LambdaAMILookupSample-win.template</a></p>
+                              
+                           </dd>
+                           
+                        </dl>
+                     </div>
+                     
+                     <p>Stack Template Snippets</p>
+                     
+                     <p>To create the Lambda function, you declare the
+                        <code class="code">AWS::Lambda::Function</code> resource, which requires the
+                        function&apos;s source code, handler name, runtime environment, and execution
+                        role ARN.
+                     </p>
+                     
+                     <div class="example">
+                        <p class="title"><b>Example JSON Syntax</b></p>
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">&quot;AMIInfoFunction&quot;: {
+  &quot;Type&quot;: &quot;AWS::Lambda::Function&quot;,
+  &quot;Properties&quot;: {
+    &quot;Code&quot;: {
+      &quot;S3Bucket&quot;: { &quot;Ref&quot;: &quot;S3Bucket&quot; },
+      &quot;S3Key&quot;: { &quot;Ref&quot;: &quot;S3Key&quot; }
+    },
+    &quot;Handler&quot;: { &quot;Fn::Join&quot; : [ &quot;&quot;, [{ &quot;Ref&quot;: &quot;ModuleName&quot; },&quot;.handler&quot;] ] },
+    &quot;Runtime&quot;: &quot;nodejs4.3&quot;,
+    &quot;Timeout&quot;: &quot;30&quot;,
+    &quot;Role&quot;: { &quot;Fn::GetAtt&quot; : [&quot;LambdaExecutionRole&quot;, &quot;Arn&quot;] }
+  }
+}</code></pre></div>
+                     </div>
+                     
+                     <div class="example">
+                        <p class="title"><b>Example YAML Syntax</b></p>
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="yaml ">AMIInfoFunction:
+  Type: AWS::Lambda::Function
+  Properties:
+    Code:
+      S3Bucket: !Ref S3Bucket
+      S3Key: !Ref S3Key
+    Handler: !Sub &quot;${ModuleName}.handler&quot;
+    Runtime: nodejs4.3
+    Timeout: 30
+    Role: !GetAtt LambdaExecutionRole.Arn</code></pre></div>
+                     </div>
+                     
+                     <p>The <code class="code">Code</code> property specifies the Amazon S3 location (bucket
+                        name and file name) where you uploaded the sample package. The sample
+                        template uses input parameters (<code class="code">&quot;Ref&quot;: &quot;S3Bucket&quot;</code> and
+                        <code class="code">&quot;Ref&quot;: &quot;S3Key&quot;</code>) to set the bucket and file names so that
+                        you are able to specify the names when you create the stack. Similarly,
+                        the handler name, which corresponds to the name of the source file (the
+                        JavaScript file) in the <code>.zip</code> package, also uses an
+                        input parameter (<code class="code">&quot;Ref&quot;: &quot;ModuleName&quot;</code>). Because the source
+                        file is JavaScript code, the runtime is specified as
+                        <code class="code">nodejs4.3</code>.
+                     </p>
+                     
+                     <p>For this walkthrough, the execution time for the function exceeds the
+                        default value of <code class="code">3</code> seconds, so the timeout is set to
+                        <code class="code">30</code> seconds. If you don&apos;t specify a sufficiently long
+                        timeout, Lambda might cause a timeout before the function can complete,
+                        causing stack creation to fail.
+                     </p>
+                     
+                     <p>The execution role, which is declared elsewhere in the template, is
+                        specified by using the <code class="code">Fn::GetAtt</code> intrinsic function in the
+                        <code class="code">Role</code> property. The execution role grants the Lambda function
+                        permission to send logs to AWS and to call the EC2
+                        <code class="code">DescribeImages</code> API. The following snippet shows the role
+                        and policy that grant the appropriate permission:
+                     </p>
+                     
+                     <div class="example">
+                        <p class="title"><b>Example JSON Syntax</b></p>
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">&quot;LambdaExecutionRole&quot;: {
+  &quot;Type&quot;: &quot;AWS::IAM::Role&quot;,
+  &quot;Properties&quot;: {
+    &quot;AssumeRolePolicyDocument&quot;: {
+      &quot;Version&quot;: &quot;2012-10-17&quot;,
+      &quot;Statement&quot;: [{
+        &quot;Effect&quot;: &quot;Allow&quot;,
+        &quot;Principal&quot;: {&quot;Service&quot;: [&quot;lambda.amazonaws.com&quot;]},
+        &quot;Action&quot;: [&quot;sts:AssumeRole&quot;]
+      }]
+    },
+    &quot;Path&quot;: &quot;/&quot;,
+    &quot;Policies&quot;: [{
+      &quot;PolicyName&quot;: &quot;root&quot;,
+      &quot;PolicyDocument&quot;: {
+        &quot;Version&quot;: &quot;2012-10-17&quot;,
+        &quot;Statement&quot;: [{
+          &quot;Effect&quot;: &quot;Allow&quot;,
+          &quot;Action&quot;: [&quot;logs:CreateLogGroup&quot;,&quot;logs:CreateLogStream&quot;,&quot;logs:PutLogEvents&quot;],
+          &quot;Resource&quot;: &quot;arn:aws:logs:*:*:*&quot;
+        },
+        {
+          &quot;Effect&quot;: &quot;Allow&quot;,
+          &quot;Action&quot;: [&quot;ec2:DescribeImages&quot;],
+          &quot;Resource&quot;: &quot;*&quot;
+        }]
+      }
+    }]
+  }
+}</code></pre></div>
+                     </div>
+                     
+                     <div class="example">
+                        <p class="title"><b>Example YAML Syntax</b></p>
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="yaml ">LambdaExecutionRole:
+  Type: AWS::IAM::Role
+  Properties:
+    AssumeRolePolicyDocument:
+      Version: &apos;2012-10-17&apos;
+      Statement:
+      - Effect: Allow
+        Principal:
+          Service:
+          - lambda.amazonaws.com
+        Action:
+        - sts:AssumeRole
+    Path: &quot;/&quot;
+    Policies:
+    - PolicyName: root
+      PolicyDocument:
+        Version: &apos;2012-10-17&apos;
+        Statement:
+        - Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource: arn:aws:logs:*:*:*
+        - Effect: Allow
+          Action:
+          - ec2:DescribeImages
+          Resource: &quot;*&quot;</code></pre></div>
+                     </div>
+                     
+                     <p>For both the Linux and Windows templates, the custom resource invokes
+                        the Lambda function that is associated with it. To associate a function
+                        with a custom resource, you specify the Amazon Resource Name (ARN) of the
+                        function for the <code class="code">ServiceToken</code> property, using the
+                        <code class="code">Fn::GetAtt</code> intrinsic function. AWS CloudFormation sends the
+                        additional properties that are included in the custom resource
+                        declaration, such as <code class="code">Region</code> and <code class="code">Architecture</code>, to
+                        the Lambda function as inputs. The Lambda function determines the correct
+                        names and values for these input properties.
+                     </p>
+                     
+                     <div class="example">
+                        <p class="title"><b>Example JSON Syntax</b></p>
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">&quot;AMIInfo&quot;: {
+  &quot;Type&quot;: &quot;Custom::AMIInfo&quot;,
+  &quot;Properties&quot;: {
+    &quot;ServiceToken&quot;: { &quot;Fn::GetAtt&quot; : [&quot;AMIInfoFunction&quot;, &quot;Arn&quot;] },
+    &quot;Region&quot;: { &quot;Ref&quot;: &quot;AWS::Region&quot; },
+    &quot;Architecture&quot;: { &quot;Fn::FindInMap&quot; : [ &quot;AWSInstanceType2Arch&quot;, { &quot;Ref&quot; : &quot;InstanceType&quot; }, &quot;Arch&quot; ] }
+  }
+}</code></pre></div>
+                     </div>
+                     
+                     <div class="example">
+                        <p class="title"><b>Example YAML Syntax</b></p>
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="yaml ">AMIInfo:
+  Type: Custom::AMIInfo
+  Properties:
+    ServiceToken: !GetAtt AMIInfoFunction.Arn
+    Region: !Ref &quot;AWS::Region&quot;
+    Architecture:
+      Fn::FindInMap:
+      - AWSInstanceType2Arch
+      - !Ref InstanceType
+      - Arch</code></pre></div>
+                     </div>
+                     
+                     <p>For Windows, the custom resource provides the Windows version to the
+                        Lambda function instead of the instance&apos;s architecture.
+                     </p>
+                     
+                     <div class="example">
+                        <p class="title"><b>Example JSON Syntax</b></p>
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">&quot;AMIInfo&quot;: {
+  &quot;Type&quot;: &quot;Custom::AMIInfo&quot;,
+  &quot;Properties&quot;: {
+    &quot;ServiceToken&quot;: { &quot;Fn::GetAtt&quot; : [&quot;AMIInfoFunction&quot;, &quot;Arn&quot;] },
+    &quot;Region&quot;: { &quot;Ref&quot;: &quot;AWS::Region&quot; },
+    &quot;OSName&quot;: { &quot;Ref&quot;: &quot;WindowsVersion&quot; }
+  }
+}</code></pre></div>
+                     </div>
+                     
+                     <div class="example">
+                        <p class="title"><b>Example YAML Syntax</b></p>
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="yaml ">AMIInfo:
+  Type: Custom::AMIInfo
+  Properties:
+    ServiceToken: !GetAtt AMIInfoFunction.Arn
+    Region: !Ref &quot;AWS::Region&quot;
+    OSName: !Ref &quot;WindowsVersion&quot;</code></pre></div>
+                     </div>
+                     
+                     <p>When AWS CloudFormation invokes the Lambda function, the function calls the EC2
+                        <code class="code">DescribeImages</code> API, using the region and instance
+                        architecture or the OS name to filter the list of images. Then the
+                        function sorts the list of images by date and returns the ID of the latest
+                        AMI.
+                     </p>
+                     
+                     <p>When returning the ID of the latest AMI, the function sends the ID to
+                        a pre-signed URL in the <code class="code">Data</code> property of the <a href="crpg-ref-responses.html">response object</a>. The data is
+                        structured as a name-value pair, as shown in the following example:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">&quot;Data&quot;: { 
+  &quot;Id&quot;: &quot;ami-43795473&quot;
+}</code></pre>
+                     <p>The following snippet shows how to get the data from a Lambda function.
+                        It uses the <code class="code">Fn::GetAtt</code> intrinsic function, providing the name
+                        of the custom resource and the attribute name of the value that you want
+                        to get. In this walkthrough, the custom resource name is
+                        <code class="code">AMIInfo</code> and the attribute name is <code class="code">Id</code>.
+                     </p>
+                     
+                     <div class="example">
+                        <p class="title"><b>Example JSON Syntax</b></p>
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">&quot;SampleInstance&quot;: {  
+  &quot;Type&quot;: &quot;AWS::EC2::Instance&quot;,
+  &quot;Properties&quot;: {
+    &quot;InstanceType&quot;   : { &quot;Ref&quot; : &quot;InstanceType&quot; },
+    &quot;ImageId&quot;: { &quot;Fn::GetAtt&quot;: [ &quot;AMIInfo&quot;, &quot;Id&quot; ] }
+  }
+}</code></pre></div>
+                     </div>
+                     
+                     <div class="example">
+                        <p class="title"><b>Example YAML Syntax</b></p>
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="yaml ">SampleInstance:
+  Type: AWS::EC2::Instance
+  Properties:
+    InstanceType: !Ref InstanceType
+    ImageId: !GetAtt AMIInfo.Id</code></pre></div>
+                     </div>
+                     
+                     <p>Now that you understand what the template does, use the sample
+                        template to create a stack.
+                     </p>
+                     
+                     <p class="title"><b>To create the stack</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Open the AWS CloudFormation console at <a href="https://console.aws.amazon.com/cloudformation/" target="_blank">https://console.aws.amazon.com/cloudformation/</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Create Stack</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Template</b> section, choose
+                              <b>Specify an Amazon S3 template URL</b>, and then copy and
+                              paste the following URL in the text box:
+                           </p>
+                           
+                           <div class="variablelist">
+                              
+                              
+                              
+                              <dl>
+                                 
+                                 <dt><b><span class="term">Linux template</span></b></dt>
+                                 
+                                 <dd>
+                                    
+                                    <p><code class="code"><a href="https://s3.amazonaws.com/cloudformation-examples/lambda/LambdaAMILookupSample.template" target="_blank">https://s3.amazonaws.com/cloudformation-examples/lambda/LambdaAMILookupSample.template</a></code></p>
+                                    
+                                 </dd>
+                                 
+                                 
+                                 <dt><b><span class="term">Windows template</span></b></dt>
+                                 
+                                 <dd>
+                                    
+                                    <p><code class="code"><a href="https://s3.amazonaws.com/cloudformation-examples/lambda/LambdaAMILookupSample-win.template" target="_blank">https://s3.amazonaws.com/cloudformation-examples/lambda/LambdaAMILookupSample-win.template</a></code></p>
+                                    
+                                 </dd>
+                                 
+                              </dl>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Next</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Stack name</b> field, type
+                              <strong class="userinput"><code>SampleEC2Instance</code></strong>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Parameters</b> section, specify the name
+                              of the Amazon S3 bucket that you created, and then choose
+                              <b>Next</b>.
+                           </p>
+                           
+                           <p>The default values for the other parameters are the same names
+                              that are used in the sample <code>.zip</code> package.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For this walkthrough, you don&apos;t need to add tags or specify
+                              advanced settings, so choose <b>Next</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Ensure that the stack name and template URL are correct, and then
+                              choose <b>Create</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p>It might take several minutes for AWS CloudFormation to create your stack. To
+                        monitor progress, view the stack events. For more information, see <a href="cfn-console-view-stack-data-resources.html">Viewing Stack Data and Resources</a>.
+                     </p>
+                     
+                     <p>If stack creation succeeds, all resources in the stack, such as the
+                        Lambda function, custom resource, and EC2 instance, were created. You
+                        successfully used a Lambda function and custom resource to specify the AMI
+                        ID of an EC2 instance. You don&apos;t need to create and maintain a mapping of
+                        AMI IDs in this template.
+                     </p>
+                     
+                     <p>To see which AMI ID AWS CloudFormation used to create the EC2 instance, view the
+                        stack outputs.
+                     </p>
+                     
+                     <p>If the Lambda function returns an error, view the function&apos;s logs in
+                        the Amazon CloudWatch Logs <a href="https://console.aws.amazon.com/cloudwatch/home#logs:" target="_blank">console</a>. The name of the log stream is the physical ID of the
+                        custom resource, which you can find by viewing the stack&apos;s resources. For
+                        more information, see <a href="./AmazonCloudWatch/latest/DeveloperGuide/ViewingLogData.html" target="_blank">Viewing Log Data</a> in the
+                        <em>Amazon CloudWatch User Guide</em>.
+                     </p>
+                     
+                     <h2 id="walkthrough-custom-resources-lambda-lookup-amiids-createfunction-cleanup">Step 3: Clean Up Resources</h2>
+                     
+                     
+                     <p>To make sure that you are not charged for unwanted services, delete
+                        your stack.
+                     </p>
+                     
+                     <p class="title"><b>To delete the stack</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>From the AWS CloudFormation console, choose the
+                              <b>SampleEC2Instance</b> stack.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Actions</b> and then <b>Delete
+                                 Stack</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the confirmation message, choose <b>Yes,
+                                 Delete</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p>All the resources that you created are deleted.</p>
+                     
+                     <p>Now that you understand how to create and use Lambda functions with
+                        AWS CloudFormation, you can use the sample template and code from this walkthrough
+                        to
+                        build other stacks and functions.
+                     </p>
+                     
+                     <h2 id="w2ab2c17c26c14b7c29">Related Information</h2>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="crpg-ref.html">AWS CloudFormation Custom Resource
+                                    Reference</a></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="template-custom-resources-lambda.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="crpg-ref.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Step 1: Downloading and Saving the Sample Package in Amazon S3"><a class="pagetoc" href="#walkthrough-custom-resources-lambda-lookup-amiids-savesample">Step 1: Downloading and Saving the Sample Package in Amazon S3</a></li>
+                        <li class="pagetoc" name="Step 2: Creating the Stack"><a class="pagetoc" href="#walkthrough-custom-resources-lambda-lookup-amiids-createfunction-createstack">Step 2: Creating the Stack</a></li>
+                        <li class="pagetoc" name="Step 3: Clean Up Resources"><a class="pagetoc" href="#walkthrough-custom-resources-lambda-lookup-amiids-createfunction-cleanup">Step 3: Clean Up Resources</a></li>
+                        <li class="pagetoc" name="Related Information"><a class="pagetoc" href="#w2ab2c17c26c14b7c29">Related Information</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS CloudFormation';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

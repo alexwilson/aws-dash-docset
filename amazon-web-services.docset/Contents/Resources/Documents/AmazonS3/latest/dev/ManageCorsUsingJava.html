@@ -1,0 +1,242 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Enabling Cross-Origin Resource Sharing (CORS) Using the
+         AWS SDK for Java - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ManageCorsUsing.html" title="Enabling Cross-Origin Resource Sharing (CORS)">
+      <link rel="prev" href="ManageCorsUsingConsole.html" title="Enabling Cross-Origin Resource Sharing (CORS) Using
+        the AWS Management Console">
+      <link rel="next" href="ManageCorsUsingDotNet.html" title="Enabling Cross-Origin Resource Sharing (CORS) Using
+        the AWS SDK for .NET">
+      <meta name="description" content="Enable cross-origin resource sharing in Amazon S3 by setting a CORS configuration on your S3 bucket using the AWS SDK for Java.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/ManageCorsUsingJava.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="UsingObjects.html">Working with Amazon S3 Objects</a> &#xBB; <a href="cors.html">Cross-Origin Resource Sharing (CORS)</a> &#xBB; <a href="ManageCorsUsing.html">Enabling Cross-Origin Resource Sharing (CORS)</a> &#xBB; <span class="breadcrumb">Enabling Cross-Origin Resource Sharing (CORS) Using the
+                                    AWS SDK for Java</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ManageCorsUsingJava">Enabling Cross-Origin Resource Sharing (CORS) Using the
+                        AWS SDK for Java
+                     </h1>
+                     <p>You can use the AWS SDK for Java to manage cross-origin resource sharing (CORS) for
+                        a bucket.
+                        For more information about CORS, see <a href="cors.html">Cross-Origin Resource Sharing (CORS)</a>.
+                     </p>
+                     <div class="example">
+                        <div class="example-contents">
+                           <p> The following example: </p>
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p>Creates a CORS configuration and sets the configuration on a bucket</p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>Retrieves the configuration and modifies it by adding a rule</p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>Adds the modified configuration to the bucket</p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>Deletes the configuration</p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           <p> For instructions on how to create and test a working sample, see <a href="UsingTheMPJavaAPI.html#TestingJavaSamples">Testing the Amazon S3 Java Code Examples</a>. 
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="java ">import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.BucketCrossOriginConfiguration;
+import com.amazonaws.services.s3.model.CORSRule;
+
+public class CORS {
+
+    public static void main(String[] args) throws IOException {
+        String clientRegion = &quot;*** Client region ***&quot;;
+        String bucketName = &quot;*** Bucket name ***&quot;;
+
+        // Create two CORS rules.
+        List&lt;CORSRule.AllowedMethods&gt; rule1AM = new ArrayList&lt;CORSRule.AllowedMethods&gt;();
+        rule1AM.add(CORSRule.AllowedMethods.PUT);
+        rule1AM.add(CORSRule.AllowedMethods.POST);
+        rule1AM.add(CORSRule.AllowedMethods.DELETE);
+        CORSRule rule1 = new CORSRule().withId(&quot;CORSRule1&quot;).withAllowedMethods(rule1AM)
+                .withAllowedOrigins(Arrays.asList(new String[] { &quot;http://*.example.com&quot; }));
+
+        List&lt;CORSRule.AllowedMethods&gt; rule2AM = new ArrayList&lt;CORSRule.AllowedMethods&gt;();
+        rule2AM.add(CORSRule.AllowedMethods.GET);
+        CORSRule rule2 = new CORSRule().withId(&quot;CORSRule2&quot;).withAllowedMethods(rule2AM)
+                .withAllowedOrigins(Arrays.asList(new String[] { &quot;*&quot; })).withMaxAgeSeconds(3000)
+                .withExposedHeaders(Arrays.asList(new String[] { &quot;x-amz-server-side-encryption&quot; }));
+
+        List&lt;CORSRule&gt; rules = new ArrayList&lt;CORSRule&gt;();
+        rules.add(rule1);
+        rules.add(rule2);
+
+        // Add the rules to a new CORS configuration.
+        BucketCrossOriginConfiguration configuration = new BucketCrossOriginConfiguration();
+        configuration.setRules(rules);
+
+        try {
+            AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
+                    .withCredentials(new ProfileCredentialsProvider())
+                    .withRegion(clientRegion)
+                    .build();
+            
+            // Add the configuration to the bucket.
+            s3Client.setBucketCrossOriginConfiguration(bucketName, configuration);
+    
+            // Retrieve and display the configuration.
+            configuration = s3Client.getBucketCrossOriginConfiguration(bucketName);
+            printCORSConfiguration(configuration);
+    
+            // Add another new rule.
+            List&lt;CORSRule.AllowedMethods&gt; rule3AM = new ArrayList&lt;CORSRule.AllowedMethods&gt;();
+            rule3AM.add(CORSRule.AllowedMethods.HEAD);
+            CORSRule rule3 = new CORSRule().withId(&quot;CORSRule3&quot;).withAllowedMethods(rule3AM)
+                    .withAllowedOrigins(Arrays.asList(new String[] { &quot;http://www.example.com&quot; }));
+    
+            rules = configuration.getRules();
+            rules.add(rule3);
+            configuration.setRules(rules);
+            s3Client.setBucketCrossOriginConfiguration(bucketName, configuration);
+    
+            // Verify that the new rule was added by checking the number of rules in the configuration.
+            configuration = s3Client.getBucketCrossOriginConfiguration(bucketName);
+            System.out.println(&quot;Expected # of rules = 3, found &quot; + configuration.getRules().size());
+    
+            // Delete the configuration.
+            s3Client.deleteBucketCrossOriginConfiguration(bucketName);
+            System.out.println(&quot;Removed CORS configuration.&quot;);
+    
+            // Retrieve and display the configuration to verify that it was
+            // successfully deleted.
+            configuration = s3Client.getBucketCrossOriginConfiguration(bucketName);
+            printCORSConfiguration(configuration);
+        }
+        catch(AmazonServiceException e) {
+            // The call was transmitted successfully, but Amazon S3 couldn&apos;t process 
+            // it, so it returned an error response.
+            e.printStackTrace();
+        }
+        catch(SdkClientException e) {
+            // Amazon S3 couldn&apos;t be contacted for a response, or the client
+            // couldn&apos;t parse the response from Amazon S3.
+            e.printStackTrace();
+        }
+    }
+
+    private static void printCORSConfiguration(BucketCrossOriginConfiguration configuration) {
+        if (configuration == null) {
+            System.out.println(&quot;Configuration is null.&quot;);
+        } else {
+            System.out.println(&quot;Configuration has &quot; + configuration.getRules().size() + &quot; rules\n&quot;);
+
+            for (CORSRule rule : configuration.getRules()) {
+                System.out.println(&quot;Rule ID: &quot; + rule.getId());
+                System.out.println(&quot;MaxAgeSeconds: &quot; + rule.getMaxAgeSeconds());
+                System.out.println(&quot;AllowedMethod: &quot; + rule.getAllowedMethods());
+                System.out.println(&quot;AllowedOrigins: &quot; + rule.getAllowedOrigins());
+                System.out.println(&quot;AllowedHeaders: &quot; + rule.getAllowedHeaders());
+                System.out.println(&quot;ExposeHeader: &quot; + rule.getExposedHeaders());
+                System.out.println();
+            }
+        }
+    }
+}</code></pre></div>
+                     </div>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ManageCorsUsingConsole.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ManageCorsUsingDotNet.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

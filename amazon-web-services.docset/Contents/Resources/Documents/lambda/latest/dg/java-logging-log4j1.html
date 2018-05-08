@@ -1,0 +1,281 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Using Earlier Custom Appender for Log4j&#x2122; 1.2 (Not Recommended) - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="java-programming-model.html" title="Programming Model for Authoring Lambda Functions in Java">
+      <link rel="prev" href="java-exceptions.html" title="Function Errors (Java)">
+      <link rel="next" href="get-started-step4-optional.html" title="(Optional) Create a Lambda Function Authored in
+        Java">
+      <meta name="description" content="AWS Lambda supports Log4j 1.2 by providing a custom appender. You can use the custom Log4j (see Apache log4j 1.2 ) appender provided by Lambda for logging from your lambda functions. Every call to Log4j methods, such as log.debug() or log.error()">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/java-logging-log4j1.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-introduction-function.html">Lambda Functions</a> &#xBB; <a href="lambda-app.html">Building Lambda Functions</a> &#xBB; <a href="programming-model-v2.html">Programming Model</a> &#xBB; <a href="java-programming-model.html">Programming Model for Authoring Lambda Functions in Java</a> &#xBB; <span class="breadcrumb">Using Earlier Custom Appender for Log4j&#x2122; 1.2 (Not Recommended)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="java-logging-log4j1">Using Earlier Custom Appender for Log4j&#x2122; 1.2 (Not Recommended)</h1>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Support for the Log4j v1.2 custom appender is marked for End-Of-Life. It will not
+                           receive ongoing updates and is not recommended for use. For more information, see
+                           <a href="https://logging.apache.org/log4j/1.2/" target="_blank">Log4j 1.2</a></p>
+                     </div>
+                     <p> AWS Lambda supports Log4j 1.2 by providing a custom appender. You can use the
+                        custom Log4j (see <a href="https://logging.apache.org/log4j/1.2/" target="_blank">Apache
+                           log4j 1.2</a>) appender provided by Lambda for logging from your lambda
+                        functions. Every call to Log4j methods, such as <code class="code">log.debug()</code> or
+                        <code class="code">log.error()</code>, will result in a CloudWatch Logs event. The
+                        custom appender is called <code class="code">LambdaAppender</code> and must be used in
+                        the <code class="code">log4j.properties</code> file. You must include the
+                        <code class="code">aws-lambda-java-log4j</code> artifact
+                        (<code class="code">artifactId:aws-lambda-java-log4j</code>) in the deployment
+                        package (.jar file). For an example, see <a href="java-logging-log4j1.html#java-wt-logging-using-log4j">Example: Writing Logs Using Log4J v1.2 (Not Recommended)
+                           </a>.
+                     </p>
+                     <h2 id="java-wt-logging-using-log4j">Example: Writing Logs Using Log4J v1.2 (Not Recommended)
+                        
+                     </h2>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Versions 1.x of Log4j have been marked as end of life. For more information, see <a href="https://logging.apache.org/log4j/1.2/" target="_blank">Log4j 1.2</a></p>
+                     </div>
+                     
+                     <p>The following Java code example writes logs using both the System methods and 
+                        Log4j to illustrate how they differ when AWS Lambda logs information to
+                        CloudWatch.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">package example;
+
+import com.amazonaws.services.lambda.runtime.Context; 
+
+import org.apache.logging.log4j.Logger;
+
+public class Hello {
+    // Initialize the Log4j logger.
+    static final Logger log = Logger.getLogger(Hello.class);
+
+    public String myHandler(String name, Context context) {
+        // System.out: One log statement but with a line break (AWS Lambda writes two events to CloudWatch). 
+        System.out.println(&quot;log data from stdout \n this is continuation of system.out&quot;);
+        
+       // System.err: One log statement but with a line break (AWS Lambda writes two events to CloudWatch).
+        System.err.println(&quot;log data from stderr. \n this is a continuation of system.err&quot;);
+
+        // Use log4j to log the same thing as above and AWS Lambda will log only one event in CloudWatch.
+        log.debug(&quot;log data from log4j debug \n this is continuation of log4j debug&quot;);
+
+        log.error(&quot;log data from log4j err. \n this is a continuation of log4j.err&quot;);
+        
+        // Return will include the log stream name so you can look 
+        // up the log later.
+        return String.format(&quot;Hello %s. log stream = %s&quot;, name, context.getLogStreamName());
+    }
+}</code></pre>
+                     <p>The example uses the following log4j.properties file
+                        (<em class="replaceable"><code>project-dir</code></em>/src/main/resources/
+                        directory).
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">log = .
+log4j.rootLogger = DEBUG, LAMBDA
+
+#Define the LAMBDA appender
+log4j.appender.LAMBDA=com.amazonaws.services.lambda.runtime.log4j.LambdaAppender
+log4j.appender.LAMBDA.layout=org.apache.log4j.PatternLayout
+log4j.appender.LAMBDA.layout.conversionPattern=%d{yyyy-MM-dd HH:mm:ss} &lt;%X{AWSRequestId}&gt; %-5p %c{1}:%m%n</code></pre>
+                     <p>The following is sample of log entries in CloudWatch Logs. </p>
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/logging-java-log4j-10.png">
+                        
+                        
+                     </div>
+                     
+                     <p>Note:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>AWS Lambda parses the log string in each of the
+                                 <code class="code">System.out.println()</code> and
+                                 <code class="code">System.err.println()</code> statements logs as two
+                                 separate events (note the two down  arrows in the screenshot)
+                                 because of the line break.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The Log4j methods (<code class="code">log.debug()</code> and
+                                 <code class="code">log.error()</code>) produce one CloudWatch event.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>AWS Lambda runtime adds the <code class="code">AWSRequestId</code> in the <a href="https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/MDC.html" target="_blank">MDC</a> to the log4j context (see <a href="https://logging.apache.org/log4j/2.x/log4j-api/apidocs/org/apache/logging/log4j/ThreadContext.html" target="_blank">Class MDC for log4j v 1.2 and Class ThreadContext</a>). To get this value in the log as shown, we
+                                 added  <code class="code">%X{AWSRequestId}</code> in the conversion pattern in
+                                 the <code>log4.properties</code> file.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>You can do the following to test the code:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Using the code, create a deployment package. In your project, don&apos;t
+                                 forget to add the <code>log4j.properties</code> file in the
+                                 <em class="replaceable"><code>project-dir</code></em>/src/main/resources/
+                                 directory.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Upload the deployment package to AWS Lambda to create your Lambda
+                                 function. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>To test your Lambda function use a string (&quot;this is a test&quot;) as sample
+                                 event. The handler code receives the sample event but does nothing with it.
+                                 It only shows how to write logs.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>Follow the instructions provided in the Getting Started. For more information,
+                        see 
+                        <a href="get-started-step4-optional.html">(Optional) Create a Lambda Function Authored in
+                           Java</a>. Note the following
+                        differences:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>When you create a deployment package, don&apos;t forget the
+                                 <code class="code">aws-lambda-java-log4j</code> dependency for Log4j 1.2 dependency. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>When you create the Lambda function, specify
+                                 <code class="code">example.Hello::myHandler
+                                    (<em class="replaceable"><code>package</code></em>.<em class="replaceable"><code>class</code></em>::<em class="replaceable"><code>method</code></em>)</code>
+                                 as the handler value.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="java-exceptions.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="get-started-step4-optional.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Example: Writing Logs Using Log4J v1.2 (Not Recommended)
+        "><a class="pagetoc" href="#java-wt-logging-using-log4j">Example: Writing Logs Using Log4J v1.2 (Not Recommended)
+                              </a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

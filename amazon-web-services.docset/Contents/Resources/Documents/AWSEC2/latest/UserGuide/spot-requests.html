@@ -1,0 +1,965 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Spot Instance Requests - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="using-spot-instances.html" title="Spot Instances">
+      <link rel="prev" href="using-spot-instances-history.html" title="Spot Instance Pricing History">
+      <link rel="next" href="spot-request-examples.html" title="Spot Request Example Launch Specifications">
+      <meta name="description" content="Create a Spot Instance request that specifies your Spot Instances, including the maximum price that you are willing to pay per instance hour.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-requests.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="instance-purchasing-options.html">Instance Purchasing Options</a> &#xBB; <a href="using-spot-instances.html">Spot Instances</a> &#xBB; <span class="breadcrumb">Spot Instance Requests</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="spot-requests">Spot Instance Requests</h1>
+                     <p>To use Spot Instances, you create a Spot Instance request that includes the number
+                        of
+                        			instances, the instance type, the Availability Zone, and the maximum price that
+                        you are
+                        			willing to pay per instance hour. If your maximum price exceeds the current Spot
+                        price,
+                        			Amazon EC2 fulfills your request immediately if capacity is available. Otherwise,
+                        Amazon EC2 waits 
+                        			until your request can be fulfilled or until you cancel the request.
+                     </p>
+                     <p>The following illustration shows how Spot requests work. Notice that the action taken
+                        for a
+                        			Spot Instance interruption depends on the request type (one-time or persistent)
+                        and the
+                        			interruption behavior (hibernate, stop, or terminate). If the request is a persistent
+                        request, 
+                        			the request is opened again after your Spot Instance is interrupted.
+                     </p>
+                     <div class="mediaobject">
+                        			
+                        				<img src="../../..//img/spot_lifecycle.png" alt="
+				The Spot lifecycle
+			">
+                        			
+                        			
+                        		
+                     </div>
+                     <div class="highlights">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#creating-spot-request-status">Spot Instance Request States</a></li>
+                           <li><a href="#fixed-duration-spot-instances">Specifying a Duration for Your Spot Instances</a></li>
+                           <li><a href="#spot-instance-tenancy">Specifying a Tenancy for Your Spot Instances</a></li>
+                           <li><a href="#service-linked-roles-spot-instance-requests">Service-Linked Role for Spot Instance Requests</a></li>
+                           <li><a href="#using-spot-instances-request">Creating a Spot Instance Request</a></li>
+                           <li><a href="#using-spot-instances-running">Finding Running Spot Instances</a></li>
+                           <li><a href="#concepts-spot-instances-request-tags">Tagging Spot Instance Requests</a></li>
+                           <li><a href="#using-spot-instances-cancel">Canceling a Spot Instance Request</a></li>
+                           <li><a href="spot-request-examples.html">Spot Request Example Launch Specifications</a></li>
+                        </ul>
+                     </div>
+                     			
+                     <h2 id="creating-spot-request-status">Spot Instance Request States</h2>
+                     			
+                     <p>A Spot Instance request can be in one of the following states:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><code class="code">open</code>&#x2014;The request is waiting to be fulfilled.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">active</code>&#x2014;The request is fulfilled and has an associated Spot
+                                 						Instance.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">failed</code>&#x2014;The request has one or more bad parameters.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">closed</code>&#x2014;The Spot Instance was interrupted or terminated.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">cancelled</code>&#x2014;You cancelled the request, or the request expired.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>The following illustration represents the transitions between the request states.
+                        				Notice that the transitions depend on the request type (one-time or
+                        				persistent).
+                     </p>
+                     			
+                     				
+                     <div class="mediaobject">
+                        					
+                        						<img src="../../..//img/spot_request_states.png" alt="
+						Spot request states
+					">
+                        					
+                        					
+                        				
+                     </div>
+                     			
+                     			
+                     <p>A one-time Spot Instance request remains active until Amazon EC2 launches the Spot
+                        Instance, the request expires,
+                        				or you cancel the request. If the Spot price exceeds your maximum price or capacity
+                        				is not available, your Spot Instance is terminated and the Spot Instance request
+                        is closed.
+                     </p>
+                     			
+                     <p>A persistent Spot Instance request remains active until it expires or you cancel it,
+                        even if the
+                        				request is fulfilled. If the Spot price exceeds your maximum price or capacity
+                        is
+                        				not available, your Spot Instance is interrupted. After your instance is interrupted,
+                        when
+                        				the maximum price exceeds the Spot price or capacity becomes available again,
+                        the
+                        				Spot Instance is started (if stopped), the Spot Instance is resumed (if hibernated),
+                        or the Spot Instance
+                        				request is opened again and Amazon EC2 launches a new Spot Instance (if terminated).
+                     </p>
+                     			
+                     <p>You can track the status of your Spot Instance requests, as well as the status of
+                        the 
+                        				Spot Instances launched, through the status. For more information, see <a href="spot-bid-status.html">Spot Request Status</a>.
+                     </p>
+                     		
+                     			
+                     <h2 id="fixed-duration-spot-instances">Specifying a Duration for Your Spot Instances</h2>
+                     			
+                     			
+                     <p>Amazon EC2 does not terminate Spot Instances with a specified duration (also known
+                        as Spot
+                        				blocks) when the Spot price changes. This makes them ideal for jobs that take
+                        a
+                        				finite time to complete, such as batch processing, encoding and rendering, modeling
+                        				and analysis, and continuous integration.
+                     </p>
+                     			
+                     			
+                     <p>You can specify a duration of 1, 2, 3, 4, 5, or 6 hours. The price that you pay depends
+                        on
+                        				the specified duration. To view the current prices for a 1 hour duration or a
+                        6 hour
+                        				duration, see <a href="https://aws.amazon.com/ec2/spot/pricing/" target="_blank">Spot Instance
+                           					Prices</a>. You can use these prices to estimate the cost of the 2, 3, 4,
+                        				and 5 hour durations. When a request with a duration is fulfilled, the price for
+                        				your Spot Instance is fixed, and this price remains in effect until the instance
+                        				terminates. You are billed at this price for each hour or partial hour that the
+                        				instance is running. <span>A partial instance hour is billed to the nearest second.</span></p>
+                     			
+                     			
+                     <p>When you specify a duration in your Spot request, the duration period for each Spot
+                        				Instance starts as soon as the instance receives its instance ID. The Spot Instance
+                        				runs until you terminate it or the duration period ends. At the end of the duration
+                        				period, Amazon EC2 marks the Spot Instance for termination and provides a Spot
+                        Instance
+                        				termination notice, which gives the instance a two-minute warning before it
+                        				terminates.
+                     </p>
+                     
+                     			
+                     				
+                     <p class="title"><b>To launch Spot Instances with a specified duration using the console</b></p>
+                     				
+                     <p>Select the appropriate request type. For more information, see 
+                        					<a href="spot-requests.html#using-spot-instances-request">Creating a Spot Instance Request</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <p class="title"><b>To launch Spot Instances with a specified duration using the AWS CLI</b></p>
+                     				
+                     <p>To specify a duration for your Spot Instances, include the
+                        						<code class="code">--block-duration-minutes</code> option with the <a href="./cli/latest/reference/ec2/request-spot-instances.html" target="_blank">request-spot-instances</a> command. For example, the following command
+                        					creates a Spot request that launches Spot Instances that run for two
+                        					hours:
+                     </p>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 request-spot-instances --instance-count <em class="replaceable"><code>5</code></em> --block-duration-minutes 120 --type &quot;one-time&quot; --launch-specification file://<em class="replaceable"><code>specification.json</code></em></code></strong></code></pre>
+                     			
+                     			
+                     				<p class="title"><b>To retrieve the cost for Spot Instances with a specified duration using the AWS CLI</b></p>
+                     				
+                     <p>Use the <a href="./cli/latest/reference/ec2/describe-spot-instance-requests.html" target="_blank">describe-spot-instance-requests</a> command to retrieve the fixed cost
+                        					for your Spot Instances with a specified duration. The information is in the
+                        						<code class="code">actualBlockHourlyPrice</code> field.
+                     </p>
+                     			
+                     		
+                     			
+                     <h2 id="spot-instance-tenancy">Specifying a Tenancy for Your Spot Instances</h2>
+                     
+                     			
+                     <p>You can run a Spot Instance on single-tenant hardware. Dedicated Spot Instances are
+                        				physically isolated from instances that belong to other AWS accounts. For more
+                        				information, see <a href="dedicated-instance.html">Dedicated Instances</a> and the <a href="https://aws.amazon.com/ec2/purchasing-options/dedicated-instances/" target="_blank">Amazon EC2
+                           					Dedicated Instances</a> product page.
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        	
+                        <p>To run a Dedicated Spot Instance, do one of the following:</p>
+                        	
+                        	
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              		
+                              <p>Specify a tenancy of <code class="code">dedicated</code> when you create the Spot Instance
+                                 						request. For more information, see <a href="spot-requests.html#using-spot-instances-request">Creating a Spot Instance Request</a>.
+                              </p>
+                              	
+                           </li>
+                           <li class="listitem">
+                              		
+                              <p>Request a Spot Instance in a VPC with an instance tenancy of
+                                 							<code class="code">dedicated</code>. For more information, see <a href="dedicated-instance.html#creatingdedicatedvpc">Creating a VPC with an Instance Tenancy of Dedicated</a>.
+                                 						You cannot request a Spot Instance with a tenancy of <code class="code">default</code> if
+                                 						you request it in a VPC with an instance tenancy of
+                                 						<code class="code">dedicated</code>.
+                              </p>
+                              	
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     			
+                     <p>The following instance types support Dedicated Spot Instances.</p>            		
+                     
+                     			
+                     <div class="itemizedlist">
+                        				
+                        <p class="title"><b>Current Generation</b></p>
+                        				
+                        			    
+                        			    
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><code class="code">c4.8xlarge</code></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">d2.8xlarge</code></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">i3.16xlarge</code></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">m4.10xlarge</code></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">m4.16xlarge</code></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">p2.16xlarge</code></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">r4.16xlarge</code></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">x1.32xlarge</code></p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        <p class="title"><b>Previous Generation</b></p>
+                        
+                        				
+                        				
+                        
+                        
+                        
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><code class="code">c3.8xlarge</code></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">cc2.8xlarge</code></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">cr1.8xlarge</code></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">g2.8xlarge</code></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">i2.8xlarge</code></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">r3.8xlarge</code></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     			
+                     <h2 id="service-linked-roles-spot-instance-requests">Service-Linked Role for Spot Instance Requests</h2>
+                     			
+                     <p>Amazon EC2 creates a service-linked role when you request Spot Instances. A service-linked
+                        role
+                        				includes all the permissions that Amazon EC2 requires to call other AWS services
+                        on your behalf. For more
+                        				information, see <a href="./IAM/latest/UserGuide/using-service-linked-roles.html" target="_blank">Using Service-Linked Roles</a> 
+                        				in the <em>IAM User Guide</em>.
+                     </p>
+                     			
+                     <p>Amazon EC2 uses the service-linked role named <b>AWSServiceRoleForEC2Spot</b>
+                        				to complete the following actions:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:DescribeInstances</code> - Describe Spot Instances
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:StopInstances</code> - Stop Spot Instances
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:StartInstances</code> - Start Spot Instances
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>If you specify encrypted EBS snapshots for your Spot Instances and you use customer
+                        managed CMKs
+                        				for encryption, you must grant the <b>AWSServiceRoleForEC2Spot</b>
+                        				role access to the CMKs so that Amazon EC2 can launch Spot Instances on your behalf.
+                        				The principal is the Amazon Resource Name (ARN) of the <b>AWSServiceRoleForEC2Spot</b> role.
+                        				For more information, see <a href="./kms/latest/developerguide/key-policies.html" target="_blank">Using Key Policies in AWS KMS</a>.
+                     </p>
+                     			
+                     <p>If you had an active Spot Instance request before October 2017, when Amazon EC2 began
+                        supporting this service-linked 
+                        				role, Amazon EC2 created the <b>AWSServiceRoleForEC2Spot</b> role in your AWS account. For more
+                        				information, see <a href="./IAM/latest/UserGuide/troubleshoot_roles.html#troubleshoot_roles_new-role-appeared" target="_blank">A New Role Appeared in My Account</a> in the <em>IAM User Guide</em>.
+                     </p>
+                     			
+                     <p>If you no longer need to use Spot Instances, we recommend that you delete the 
+                        				<b>AWSServiceRoleForEC2Spot</b> role. After this role is deleted from your account,
+                        				Amazon EC2 will create the role again if you request Spot Instances.
+                     </p>
+                     		
+                     			
+                     <h2 id="using-spot-instances-request">Creating a Spot Instance Request</h2>
+                     			
+                     <p>The process for requesting a Spot Instance is similar to the process for launching
+                        an
+                        				On-Demand Instance. You can&apos;t change the parameters of your Spot request, including
+                        				your maximum price, after you&apos;ve submitted the request.
+                     </p>
+                     			
+                     <p>If you request multiple Spot Instances at one time, Amazon EC2 creates separate Spot
+                        Instance
+                        				requests so that you can track the status of each request separately. For more
+                        				information about tracking Spot requests, see <a href="spot-bid-status.html">Spot Request Status</a>.
+                     </p>
+                     			
+                     				
+                     <p class="title"><b>Prerequisites</b></p>
+                     				
+                     <p>Before you begin, decide on your maximum price, how many Spot Instances you&apos;d like,
+                        and 
+                        					what instance type to use. To review Spot price trends, see <a href="using-spot-instances-history.html">Spot Instance Pricing History</a>.
+                     </p>
+                     			
+                     			
+                     <p class="title"><b>To create a Spot Instance request using the console</b></p>
+                     <ol>
+                        <li> 
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p> 
+                        </li>
+                        <li>
+                           					
+                           <p>On the navigation pane, choose <b>Spot Requests</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>If you are new to Spot Instances, you see a welcome page; choose <b>Get
+                                 						started</b>. Otherwise, choose <b>Request Spot Instances</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>For <b>Request type</b>, the default is
+                              							<b>Request</b>,
+                              						which specifies a one-time Spot request created using a Spot Fleet. To use Spot
+                              						blocks instead, choose <b>Reserve for duration</b> and select
+                              						the number of hours for the job to complete.
+                           </p>
+                           					
+                           <p>If you prefer to use
+                              							<b>Request
+                                 							and Maintain</b>, see <a href="spot-fleet-requests.html#create-spot-fleet">Creating a Spot Fleet Request</a>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>For <b>Target capacity</b>, enter the number of units
+                              						to request. You can choose instances or performance characteristics that
+                              						are important to your application workload, such as vCPUs, memory,
+                              						and storage.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>For <b>Requirements</b>, do the following:
+                           </p>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>[Spot Fleet] (Optional) For <b>Launch template</b>, choose a launch template.
+                                    								The launch template must specify an Amazon Machine Image (AMI), as
+                                    								you cannot override the AMI using Spot Fleet if you specify a launch
+                                    								template.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>For <b>AMI</b>, choose one of the basic AMIs
+                                    								provided by AWS, or choose <b>Use custom AMI</b> 
+                                    								to specify your own AMI.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>For <b>Instance type(s)</b>, choose
+                                    								<b>Select</b>. Select the instance types that
+                                    								have the minimum hardware specifications that you need
+                                    								(vCPUs, memory, and storage).
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>For <b>Network</b>, your account supports either the EC2-Classic and EC2-VPC platforms, 
+                                    								or the EC2-VPC platform only. To find out which platforms your account supports,
+                                    see
+                                    								<a href="ec2-supported-platforms.html">Supported Platforms</a>.
+                                 </p>
+                                 							
+                                 <p>[Existing VPC] Select the VPC.</p>
+                                 							
+                                 <p>[New VPC] Choose <b>Create new VPC</b> to go to the Amazon VPC console. When
+                                    								you are done, return to the wizard and refresh the list.
+                                 </p>
+                                 							
+                                 <p>[EC2-Classic] Choose <b>EC2-Classic</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) For <b>Availability Zones</b>, the default is to let AWS
+                                    								choose the Availability Zones for your Spot Instances. If you
+                                    								prefer, you can specify specific Availability Zones.
+                                 </p>
+                                 							
+                                 <p>[EC2-VPC] Select one or more Availability Zones. If you have
+                                    								more than one subnet in an Availability Zone, select the 
+                                    								appropriate subnet from <b>Subnet</b>. To add 
+                                    								subnets, select <b>Create new subnet</b> to go to the
+                                    								Amazon VPC console. When you are done, return to the wizard and 
+                                    								refresh the list.
+                                 </p>
+                                 							
+                                 <p>[EC2-Classic] Choose <b>Select specific zone/subnet</b>, and then select
+                                    								one or more Availability Zones.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) To add storage, specify additional instance store volumes 
+                                    								or EBS volumes, depending on the instance type. You can also enable 
+                                    								EBS optimization.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) By default, basic monitoring is enabled for your instances. To enable
+                                    								detailed monitoring, choose <b>Enable CloudWatch detailed
+                                       									monitoring</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) To run a Dedicated Spot Instance, for <b>Tenancy</b>, choose
+                                    									<b>Dedicated - run a dedicated
+                                       								instance</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>For <b>Security groups</b>, select one or more
+                                    								security groups.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>[EC2-VPC] To connect to your instances in a VPC, enable <b>Auto-assign IPv4
+                                       								Public IP</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) To connect to your instances, specify your key pair for <b>Key pair
+                                       								name</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) To launch your Spot Instances with an IAM role, for <b>IAM instance
+                                       									profile</b>, specify the role.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) To run a start-up script, copy it to <b>User data</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>[Spot Fleet] To add a tag, choose <b>Add new tag</b> and type the key and
+                                    								value for the tag. Repeat for each tag.
+                                 </p>
+                                 						
+                              </li>
+                           </ol>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>For <b>Spot request fulfillment</b>, do the following:
+                           </p>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>[Spot Fleet] For <b>Allocation strategy</b>, choose the strategy that
+                                    								meets your needs. For more information, see <a href="spot-fleet.html#spot-fleet-allocation-strategy">Spot Fleet Allocation Strategy</a>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>[Spot Fleet] For <b>Maximum price</b>, you can use the default maximum price
+                                    								(the On-Demand price) or specify the maximum price that you are
+                                    								willing to pay. If your maximum price is lower than the Spot price
+                                    								for the instance types that you selected, your Spot Instances are not
+                                    								launched.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) To create a request that is valid only during a specific time period, edit
+                                    								the values for <b>Request valid from</b> and
+                                    									<b>Request valid until</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>[Spot Fleet] By default, we terminate your Spot Instances when the request expires.
+                                    To
+                                    								keep them running after your request expires, clear
+                                    								<b>Terminate instances at expiration</b>.
+                                 </p>
+                                 						
+                              </li>
+                           </ol>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>(Optional) To register your Spot Instances with a load balancer, choose
+                              					    <b>Receive traffic from one or more load balancers</b> and select
+                              					    one or more Classic Load Balancers or target groups.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>(Optional) To download a copy of the launch configuration for use with the AWS CLI,
+                              						choose <b>JSON config</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Choose <b>Launch</b>.
+                           </p>
+                           					
+                           <p>[Spot Fleet] The request type is <code class="code">fleet</code>. When the request is fulfilled,
+                              						requests of type <code class="code">instance</code> are added, where the state is
+                              						<code class="code">active</code> and the status is <code class="code">fulfilled</code>.
+                           </p>
+                           					
+                           <p>[Spot block] The request type is <code class="code">block</code> and the initial state 
+                              					    is <code class="code">open</code>. When the request is fulfilled, the state is <code class="code">active</code>
+                              					    and the status is <code class="code">fulfilled</code>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     
+                     			
+                     				
+                     <p class="title"><b>To create a Spot Instance request using the AWS CLI</b></p>
+                     				
+                     <p>Use the following <a href="./cli/latest/reference/ec2/request-spot-instances.html" target="_blank">request-spot-instances</a> command to create a one-time request:
+                     </p>
+                     			
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 request-spot-instances --instance-count <em class="replaceable"><code>5</code></em> --type &quot;one-time&quot; --launch-specification file://<em class="replaceable"><code>specification.json</code></em></code></strong></code></pre>
+                     
+                     			<p>Use the following <a href="./cli/latest/reference/ec2/request-spot-instances.html" target="_blank">request-spot-instances</a> command to create a persistent request:
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 request-spot-instances --instance-count <em class="replaceable"><code>5</code></em> --type &quot;persistent&quot; --launch-specification file://<em class="replaceable"><code>specification.json</code></em></code></strong></code></pre>
+                     			
+                     			<p>For example launch specification files to use with these commands, see <a href="spot-request-examples.html">Spot Request Example Launch Specifications</a>. If you
+                        				download a launch specification file from the console, you must use the <a href="./cli/latest/reference/ec2/request-spot-fleet.html" target="_blank">request-spot-fleet</a>
+                        				command instead (the console specifies a Spot request using a Spot Fleet).
+                     </p>
+                     
+                     			
+                     <p>Amazon EC2 launches your Spot Instance when the maximum price exceeds the Spot price
+                        
+                        				and capacity is available. The Spot Instance runs until it is interrupted
+                        				or you terminate it yourself. Use the following
+                        				<a href="./cli/latest/reference/ec2/describe-spot-instance-requests.html" target="_blank">describe-spot-instance-requests</a> command to monitor your Spot Instance
+                        				request:
+                     </p>
+                     		    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-spot-instance-requests --spot-instance-request-ids <em class="replaceable"><code>sir-08b93456</code></em></code></strong></code></pre>
+                     		
+                     			<h2 id="using-spot-instances-running">Finding Running Spot Instances</h2>
+                     			
+                     <p>Amazon EC2 launches a Spot Instance when the maximum price exceeds the Spot price
+                        and
+                        				capacity is available. A Spot Instance runs until it is interrupted or you terminate
+                        				it yourself. If your maximum price is exactly equal to the Spot price, there is
+                        a chance
+                        				that your Spot Instance will remain running, depending on demand.
+                     </p>
+                     			
+                     <p class="title"><b>To find running Spot Instances using the console</b></p>
+                     <ol>
+                        <li>
+                           					
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the navigation pane, choose <b>Spot Requests</b>.
+                           </p>
+                           					
+                           <p>You can see both Spot Instance requests and Spot Fleet requests. If a Spot Instance
+                              						request has been fulfilled, <b>Capacity</b> is the ID of the
+                              						Spot Instance. For a Spot Fleet, <b>Capacity</b> indicates how
+                              						much of the requested capacity has been fulfilled. To view the IDs of the
+                              						instances in a Spot Fleet, choose the expand arrow, or select the fleet and
+                              						then select the <b>Instances</b> tab.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Alternatively, in the navigation pane, choose <b>Instances</b>. 
+                              						In the top right corner, choose the <b>Show/Hide</b> icon, and then
+                              						select <b>Lifecycle</b>. For each instance, <b>Lifecycle</b> 
+                              						is either <code class="code">normal</code>, <code class="code">spot</code>, or <code class="code">scheduled</code>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     			
+                     				
+                     <p class="title"><b>To find running Spot Instances using the AWS CLI</b></p>
+                     				
+                     <p>To enumerate your Spot Instances, use the <a href="./cli/latest/reference/ec2/describe-spot-instance-requests.html" target="_blank">describe-spot-instance-requests</a> command with the
+                        						<code class="code">--query</code> option as follows:
+                     </p>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-spot-instance-requests --query SpotInstanceRequests[*].{ID:InstanceId}</code></strong></code></pre>
+                     			<p>The following is example output:</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">[
+    {
+        &quot;ID&quot;: &quot;i-1234567890abcdef0&quot;
+    },
+    {
+        &quot;ID&quot;: &quot;i-0598c7d356eba48d7&quot;
+    }
+]</code></pre>
+                     			<p>Alternatively, you can enumerate your Spot Instances using the <a href="./cli/latest/reference/ec2/describe-instances.html" target="_blank">describe-instances</a>
+                        				command with the <code class="code">--filters</code> option as follows:
+                     </p>
+                     		    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-instances --filters &quot;Name=instance-lifecycle,Values=spot&quot;</code></strong></code></pre>
+                     		
+                     			<h2 id="concepts-spot-instances-request-tags">Tagging Spot Instance Requests</h2>
+                     			
+                     <p>To help categorize and manage your Spot Instance requests, you can tag them with metadata
+                        				of your choice. For more information, see <a href="Using_Tags.html">Tagging Your Amazon EC2 Resources</a>.
+                     </p>
+                     			
+                     <p>You can assign a tag to a Spot Instance request after you create it. The tags that
+                        you
+                        				create for your Spot Instance requests only apply to the requests. These tags
+                        are
+                        				not added automatically to the Spot Instance that the Spot service launches to
+                        				fulfill the request. You must add tags to a Spot Instance yourself after the Spot
+                        				Instance is launched.
+                     </p>
+                     			
+                     				
+                     <p class="title"><b>To add a tag to your Spot Instance request or Spot Instance using the AWS CLI</b></p>
+                     				
+                     <p>Use the following <a href="./cli/latest/reference/ec2/create-tags.html" target="_blank">create-tags</a>
+                        					command to tag your resources:
+                     </p>
+                     			
+                     		    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 create-tags --resources <em class="replaceable"><code>sir-08b93456</code></em> <em class="replaceable"><code>i-1234567890abcdef0</code></em> --tags Key=<em class="replaceable"><code>purpose</code></em>,Value=<em class="replaceable"><code>test</code></em></code></strong></code></pre>
+                     		
+                     			<h2 id="using-spot-instances-cancel">Canceling a Spot Instance Request</h2>
+                     			
+                     <p>If you no longer want your Spot request, you can cancel it. You can only cancel Spot
+                        				Instance requests that are <code class="code">open</code> or <code class="code">active</code>. Your Spot
+                        				request is <code class="code">open</code> when your request has not yet been fulfilled and no
+                        				instances have been launched. Your Spot request is <code class="code">active</code> when your
+                        				request has been fulfilled, and Spot Instances have launched as a result. If your
+                        				Spot request is <code class="code">active</code> and has an associated running Spot Instance,
+                        				canceling the request does not terminate the instance; you must terminate the
+                        				running Spot Instance manually.
+                     </p>
+                     			
+                     <p>If the Spot request is a persistent Spot request, it returns to the <code class="code">open</code> state
+                        				so that a new Spot Instance can be launched. To cancel a persistent Spot request
+                        and
+                        				terminate its Spot Instances, you must cancel the Spot request first and then
+                        				terminate the Spot Instances. Otherwise, the Spot request can launch a new
+                        				instance.
+                     </p>
+                     			
+                     <p class="title"><b>To cancel a Spot Instance request using the console</b></p>
+                     <ol>
+                        <li> 
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p> 
+                        </li>
+                        <li>
+                           					
+                           <p>In the navigation pane, choose <b>Spot Requests</b>, and then select the
+                              						Spot request.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           <p>Choose <b>Actions</b>, and then choose <b>Cancel spot
+                                 						request</b>.
+                           </p>
+                        </li>
+                        <li>
+                           					
+                           <p>(Optional) If you are finished with the associated Spot Instances, you can terminate
+                              						them. In the navigation pane, choose <b>Instances</b>, select
+                              						the instance, choose <b>Actions</b>, choose <b>Instance
+                                 							State</b>, and then choose <b>Terminate</b>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     
+                     			
+                     				
+                     <p class="title"><b>To cancel a Spot Instance request using the AWS CLI</b></p>
+                     				
+                     <p>Use the following <a href="./cli/latest/reference/ec2/cancel-spot-instance-requests.html" target="_blank">cancel-spot-instance-requests</a> command to cancel the specified Spot request:
+                     </p>
+                     			
+                     		    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 cancel-spot-instance-requests --spot-instance-request-ids <em class="replaceable"><code>sir-08b93456</code></em></code></strong></code></pre>
+                     		    <p>If you are finished with the associated Spot Instances, you can terminate them manually
+                        				using the following <a href="./cli/latest/reference/ec2/terminate-instances.html" target="_blank">terminate-instances</a> command:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 terminate-instances --instance-ids <em class="replaceable"><code>i-1234567890abcdef0</code></em> <em class="replaceable"><code>i-0598c7d356eba48d7</code></em></code></strong></code></pre>
+                     		</div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="using-spot-instances-history.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="spot-request-examples.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Spot Instance Request States"><a class="pagetoc" href="#creating-spot-request-status">Spot Instance Request States</a></li>
+                        <li class="pagetoc" name="Specifying a Duration for Your Spot Instances"><a class="pagetoc" href="#fixed-duration-spot-instances">Specifying a Duration for Your Spot Instances</a></li>
+                        <li class="pagetoc" name="Specifying a Tenancy for Your Spot Instances"><a class="pagetoc" href="#spot-instance-tenancy">Specifying a Tenancy for Your Spot Instances</a></li>
+                        <li class="pagetoc" name="Service-Linked Role for Spot Instance Requests"><a class="pagetoc" href="#service-linked-roles-spot-instance-requests">Service-Linked Role for Spot Instance Requests</a></li>
+                        <li class="pagetoc" name="Creating a Spot Instance Request"><a class="pagetoc" href="#using-spot-instances-request">Creating a Spot Instance Request</a></li>
+                        <li class="pagetoc" name="Finding Running Spot Instances"><a class="pagetoc" href="#using-spot-instances-running">Finding Running Spot Instances</a></li>
+                        <li class="pagetoc" name="Tagging Spot Instance Requests"><a class="pagetoc" href="#concepts-spot-instances-request-tags">Tagging Spot Instance Requests</a></li>
+                        <li class="pagetoc" name="Canceling a Spot Instance Request"><a class="pagetoc" href="#using-spot-instances-cancel">Canceling a Spot Instance Request</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

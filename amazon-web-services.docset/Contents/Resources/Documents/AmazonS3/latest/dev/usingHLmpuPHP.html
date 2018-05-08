@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Using the AWS PHP SDK for Multipart Upload - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="uploadobjusingmpu.html" title="Uploading Objects Using Multipart Upload API">
+      <link rel="prev" href="LLAbortMPUnet.html" title="Abort Multipart Uploads to an S3 Bucket Using the AWS SDK for .NET
+				(Low-Level)">
+      <link rel="next" href="usingLLmpuPHP.html" title="Using the AWS PHP SDK for Multipart Upload (Low-Level API)">
+      <meta name="description" content="Use the PHP high-level API to upload large files in multiple parts to Amazon S3 with a multipart upload.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/usingHLmpuPHP.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="UsingObjects.html">Working with Amazon S3 Objects</a> &#xBB; <a href="ObjectOperations.html">Operations on Objects</a> &#xBB; <a href="UploadingObjects.html">Uploading Objects</a> &#xBB; <a href="uploadobjusingmpu.html">Uploading Objects Using Multipart Upload API</a> &#xBB; <span class="breadcrumb">Using the AWS PHP SDK for Multipart Upload</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="usingHLmpuPHP">Using the AWS PHP SDK for Multipart Upload</h1>
+                     <p>You can upload large files to Amazon S3 in multiple parts. You must use a multipart
+                        upload for
+                        		files larger than 5 GB. The AWS SDK for PHP exposes the <a href="./aws-sdk-php/v3/api/class-Aws.S3.MultipartUploader.html" target="_blank">MultipartUploader</a> class that simplifies multipart uploads. 
+                     </p>
+                     <p>The <code class="code">upload</code> method of the <code class="code">MultipartUploader</code> class is best used for
+                        		a simple multipart upload. If you need to pause and resume multipart uploads, vary
+                        part
+                        		sizes during the upload, or do not know the size of the data in advance, use the
+                        low-level
+                        		PHP API. For more information, see <a href="usingLLmpuPHP.html">Using the AWS PHP SDK for Multipart Upload (Low-Level API)</a>. 
+                     </p>
+                     <p>For more information about multipart uploads, see <a href="uploadobjusingmpu.html">Uploading Objects Using Multipart Upload API</a>. For information on uploading files that are less
+                        		than 5GB in size, see <a href="UploadObjSingleOpPHP.html">Upload an Object Using the AWS SDK for PHP</a>. 
+                     </p>
+                     <h2 id="HLuploadFilePHP">Upload a File Using the High-Level Multipart Upload</h2>
+                     			
+                     						
+                     			
+                     <p>This topic explains how to use the high-level
+                        				<code class="code">Aws\S3\Model\MultipartUpload\UploadBuilder</code> class from the AWS SDK for PHP for
+                        			multipart file uploads. It assumes that you are already following the instructions
+                        for
+                        				<a href="UsingTheMPphpAPI.html">Using the AWS SDK for PHP and Running PHP Examples</a> and have the
+                        			AWS SDK for PHP properly installed.
+                     </p>
+                     			
+                     			
+                     			
+                     
+                     					
+                     <p>The following PHP example uploads a file to an Amazon S3 bucket. The example demonstrates
+                        how
+                        				to set parameters for the <code class="code">MultipartUploader</code> object. 
+                     </p>
+                     					
+                     <p>For information about running the PHP examples in this guide, 
+                        						see <a href="UsingTheMPphpAPI.html#running-php-samples">Running PHP Examples</a>.
+                     </p>
+                     					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="php ">&lt;?php
+
+require &apos;vendor/autoload.php&apos;;
+
+use Aws\Common\Exception\MultipartUploadException;
+use Aws\S3\MultipartUploader;
+use Aws\S3\S3Client;
+
+$bucket = &apos;*** Your Bucket Name ***&apos;;
+$keyname = &apos;*** Your Object Key ***&apos;;
+                        
+$s3 = new S3Client([
+    &apos;version&apos; =&gt; &apos;latest&apos;,
+    &apos;region&apos;  =&gt; &apos;us-east-1&apos;
+]);
+ 
+// Prepare the upload parameters.
+$uploader = new MultipartUploader($s3, &apos;/path/to/large/file.zip&apos;, [
+    &apos;bucket&apos; =&gt; $bucket,
+    &apos;key&apos;    =&gt; $keyname
+]);
+
+// Perform the upload.
+try {
+    $result = $uploader-&gt;upload();
+    echo &quot;Upload complete: {$result[&apos;ObjectURL&apos;]}&quot; . PHP_EOL;
+} catch (MultipartUploadException $e) {
+    echo $e-&gt;getMessage() . PHP_EOL;
+}
+</code></pre>								
+                     			<h3 id="RelatedResources-HLuploadFilePHP">Related Resources</h3>
+                     				
+                     			
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p><a href="./aws-sdk-php/v3/api/class-Aws.S3.S3Client.html" target="_blank">
+                                    							AWS SDK for PHP for Amazon S3 Aws\S3\S3Client Class</a>
+                                 						
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><a href="./aws-sdk-php/v3/guide/service/s3-multipart-upload.html" target="_blank">
+                                    							Amazon S3 Multipart Uploads</a>
+                                 						
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><a href="http://aws.amazon.com/documentation/sdk-for-php/" target="_blank">AWS SDK for PHP
+                                    							Documentation</a></p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     			
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="LLAbortMPUnet.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="usingLLmpuPHP.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Upload a File Using the High-Level Multipart Upload"><a class="pagetoc" href="#HLuploadFilePHP">Upload a File</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

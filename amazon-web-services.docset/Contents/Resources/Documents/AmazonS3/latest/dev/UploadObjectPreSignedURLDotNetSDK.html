@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Upload an Object to an S3 Bucket Using a Pre-Signed URL
+         (AWS SDK for .NET) - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="PresignedUrlUploadObject.html" title="Uploading Objects Using Pre-Signed URLs">
+      <link rel="prev" href="PresignedUrlUploadObjectJavaSDK.html" title="Upload an Object Using a Pre-Signed URL
+        (AWS SDK for Java)">
+      <link rel="next" href="UploadObjectPreSignedURLRubySDK.html" title="Upload an Object Using a Pre-Signed URL
+        (AWS SDK for Ruby)">
+      <meta name="description" content="A C# code sample that shows how to upload an object to an S3 bucket using a pre-signed URL with the AWS SDK for .NET.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/UploadObjectPreSignedURLDotNetSDK.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="UsingObjects.html">Working with Amazon S3 Objects</a> &#xBB; <a href="ObjectOperations.html">Operations on Objects</a> &#xBB; <a href="UploadingObjects.html">Uploading Objects</a> &#xBB; <a href="PresignedUrlUploadObject.html">Uploading Objects Using Pre-Signed URLs</a> &#xBB; <span class="breadcrumb">Upload an Object to an S3 Bucket Using a Pre-Signed URL
+                                    (AWS SDK for .NET)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="UploadObjectPreSignedURLDotNetSDK">Upload an Object to an S3 Bucket Using a Pre-Signed URL
+                        (AWS SDK for .NET)
+                     </h1>
+                     <p>The following C# example shows how to use the AWS SDK for .NET to upload an object
+                        to an S3 bucket
+                        using a pre-signed URL. For more information about pre-signed URLs, see <a href="PresignedUrlUploadObject.html">Uploading Objects Using Pre-Signed URLs</a>.
+                     </p>
+                     <p>This example generates a pre-signed URL for a specific object and uses it to upload
+                        a
+                        file. For information about the example&apos;s compatibility with a specific version of
+                        the AWS SDK for .NET
+                        and instructions about how to create and test a working sample, see <a href="UsingTheMPDotNetAPI.html#TestingDotNetApiSamples">Running the Amazon S3 .NET Code Examples</a>.
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="csharp ">using Amazon.S3;
+using Amazon.S3.Model;
+using System;
+using System.IO;
+using System.Net;
+
+namespace Amazon.DocSamples.S3
+{
+    class UploadObjectUsingPresignedURLTest
+    {
+        private const string bucketName = &quot;*** provide bucket name ***&quot;;
+        private const string objectKey  = &quot;*** provide the name for the uploaded object ***&quot;;
+        private const string filePath   = &quot;*** provide the full path name of the file to upload ***&quot;;
+        // Specify your bucket region (an example region is shown).
+        private static readonly RegionEndpoint bucketRegion = RegionEndpoint.USWest2; 
+        private static IAmazonS3 s3Client;
+
+        public static void Main()
+        {
+            s3Client = new AmazonS3Client(bucketRegion);
+            var url = GeneratePreSignedURL();
+            UploadObject(url);
+        }
+
+        private static void UploadObject(string url)
+        {
+            HttpWebRequest httpRequest = WebRequest.Create(url) as HttpWebRequest;
+            httpRequest.Method = &quot;PUT&quot;;
+            using (Stream dataStream = httpRequest.GetRequestStream())
+            {
+                var buffer = new byte[8000];
+                using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    int bytesRead = 0;
+                    while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) &gt; 0)
+                    {
+                        dataStream.Write(buffer, 0, bytesRead);
+                    }
+                }
+            }
+            HttpWebResponse response = httpRequest.GetResponse() as HttpWebResponse;
+        }
+
+        private static string GeneratePreSignedURL()
+        {
+            var request = new GetPreSignedUrlRequest
+            {
+                BucketName = bucketName,
+                Key        = objectKey,
+                Verb       = HttpVerb.PUT,
+                Expires    = DateTime.Now.AddMinutes(5)
+            };
+
+           string url = s3Client.GetPreSignedURL(request);
+           return url;
+        }
+    }
+}
+</code></pre>
+                     <h2 id="UploadObjectPreSignedURLDotNetSDK-more-info">More Info</h2>
+                     
+                     <p><a href="https://aws.amazon.com/sdk-for-net/" target="_blank">AWS SDK for .NET</a></p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="PresignedUrlUploadObjectJavaSDK.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="UploadObjectPreSignedURLRubySDK.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="More Info"><a class="pagetoc" href="#UploadObjectPreSignedURLDotNetSDK-more-info">More Info</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

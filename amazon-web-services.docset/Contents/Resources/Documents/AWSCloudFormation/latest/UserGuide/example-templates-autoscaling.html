@@ -1,0 +1,773 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Walkthrough: Create a Scalable, Load-balancing
+         Web Server - AWS CloudFormation
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="CHAP_Using.html" title="Walkthroughs">
+      <link rel="prev" href="walkthrough-crossstackref.html" title="Walkthrough: Refer to Resource Outputs in Another
+    AWS CloudFormation Stack">
+      <link rel="next" href="deploying.applications.html" title="Deploying Applications on Amazon EC2 with AWS CloudFormation">
+      <meta name="description" content="Use this sample template to create a sample web site that uses Auto Scaling with Elastic Load Balancing and CloudWatch alarms.">
+      <meta name="keywords" content="CloudFormation,AWSCloudFormation,resource provisioning,resource configuration,infrastructure management,CloudFormer,CloudFormation Designer,CloudFormation stack,CloudFormation stackset,CloudFormation template,change set">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS CloudFormation">
+      <meta name="guide" content="User Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/example-templates-autoscaling.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudformation">AWS CloudFormation</a> &#xBB; <a href="index.html">User Guide</a> &#xBB; <a href="template-guide.html">Working with AWS CloudFormation Templates</a> &#xBB; <a href="CHAP_Using.html">Walkthroughs</a> &#xBB; <span class="breadcrumb">Walkthrough: Create a Scalable, Load-balancing
+                                    Web Server</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="example-templates-autoscaling">Walkthrough: Create a Scalable, Load-balancing
+                        Web Server
+                     </h1>
+                     <p>This template creates a sample web site that uses Auto Scaling and Elastic Load Balancing
+                        and is configured to use
+                        multiple availability zones. The template also contains CloudWatch alarms that execute
+                        Auto Scaling policies
+                        to add or remove instances from the Auto Scaling group when the defined thresholds
+                        are exceeded.
+                     </p>
+                     <p>This template creates one or more Amazon EC2 instances. You will be billed for the
+                        AWS resources
+                        used if you create a stack from this template.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>The template assumes that your account supports the EC2-VPC platform. In other words,
+                           you
+                           have a default VPC that allows instances to access the Internet. If you don&apos;t have
+                           a default
+                           VPC, you can create one. For more information, see <a href="./AWSEC2/latest/UserGuide/using-vpc.html" target="_blank">Amazon EC2 and Amazon Virtual Private Cloud</a> in the <em>Amazon EC2 User Guide for Linux Instances</em>.
+                        </p>
+                     </div>
+                     <p>You can get the latest version of this sample template at <a href="https://s3.amazonaws.com/cloudformation-templates-us-east-1/AutoScalingMultiAZWithNotifications.template" target="_blank">https://s3.amazonaws.com/cloudformation-templates-us-east-1/AutoScalingMultiAZWithNotifications.template</a>.
+                     </p>
+                     <h2 id="example-templates-autoscaling-template">Auto Scaling Multi-AZ Template</h2>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;AWSTemplateFormatVersion&quot; : &quot;2010-09-09&quot;,
+
+  &quot;Description&quot; : &quot;AWS CloudFormation Sample Template AutoScalingMultiAZWithNotifications: Create a multi-az, load balanced and Auto Scaled sample web site running on an Apache Web Serever. The application is configured to span all Availability Zones in the region and is Auto-Scaled based on the CPU utilization of the web servers. Notifications will be sent to the operator email address on scaling events. The instances are load balanced with a simple health check against the default web page. **WARNING** This template creates one or more Amazon EC2 instances and an Elastic Load Balancer. You will be billed for the AWS resources used if you create a stack from this template.&quot;,
+
+  &quot;Parameters&quot; : {
+    &quot;InstanceType&quot; : {
+      &quot;Description&quot; : &quot;WebServer EC2 instance type&quot;,
+      &quot;Type&quot; : &quot;String&quot;,
+      &quot;Default&quot; : &quot;t2.small&quot;,
+      &quot;AllowedValues&quot; : [ &quot;t1.micro&quot;, &quot;t2.nano&quot;, &quot;t2.micro&quot;, &quot;t2.small&quot;, &quot;t2.medium&quot;, &quot;t2.large&quot;, &quot;m1.small&quot;, &quot;m1.medium&quot;, &quot;m1.large&quot;, &quot;m1.xlarge&quot;, &quot;m2.xlarge&quot;, &quot;m2.2xlarge&quot;, &quot;m2.4xlarge&quot;, &quot;m3.medium&quot;, &quot;m3.large&quot;, &quot;m3.xlarge&quot;, &quot;m3.2xlarge&quot;, &quot;m4.large&quot;, &quot;m4.xlarge&quot;, &quot;m4.2xlarge&quot;, &quot;m4.4xlarge&quot;, &quot;m4.10xlarge&quot;, &quot;c1.medium&quot;, &quot;c1.xlarge&quot;, &quot;c3.large&quot;, &quot;c3.xlarge&quot;, &quot;c3.2xlarge&quot;, &quot;c3.4xlarge&quot;, &quot;c3.8xlarge&quot;, &quot;c4.large&quot;, &quot;c4.xlarge&quot;, &quot;c4.2xlarge&quot;, &quot;c4.4xlarge&quot;, &quot;c4.8xlarge&quot;, &quot;g2.2xlarge&quot;, &quot;g2.8xlarge&quot;, &quot;r3.large&quot;, &quot;r3.xlarge&quot;, &quot;r3.2xlarge&quot;, &quot;r3.4xlarge&quot;, &quot;r3.8xlarge&quot;, &quot;i2.xlarge&quot;, &quot;i2.2xlarge&quot;, &quot;i2.4xlarge&quot;, &quot;i2.8xlarge&quot;, &quot;d2.xlarge&quot;, &quot;d2.2xlarge&quot;, &quot;d2.4xlarge&quot;, &quot;d2.8xlarge&quot;, &quot;hi1.4xlarge&quot;, &quot;hs1.8xlarge&quot;, &quot;cr1.8xlarge&quot;, &quot;cc2.8xlarge&quot;, &quot;cg1.4xlarge&quot;]
+,
+      &quot;ConstraintDescription&quot; : &quot;must be a valid EC2 instance type.&quot;
+    },
+
+    &quot;OperatorEMail&quot;: {
+      &quot;Description&quot;: &quot;EMail address to notify if there are any scaling operations&quot;,
+      &quot;Type&quot;: &quot;String&quot;,
+      &quot;AllowedPattern&quot;: &quot;([a-zA-Z0-9_\\-\\.]+)@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\\]?)&quot;,
+      &quot;ConstraintDescription&quot;: &quot;must be a valid email address.&quot;
+    },
+
+    &quot;KeyName&quot; : {
+      &quot;Description&quot; : &quot;The EC2 Key Pair to allow SSH access to the instances&quot;,
+      &quot;Type&quot; : &quot;AWS::EC2::KeyPair::KeyName&quot;,
+      &quot;ConstraintDescription&quot; : &quot;must be the name of an existing EC2 KeyPair.&quot;
+    },
+
+    &quot;SSHLocation&quot; : {
+      &quot;Description&quot; : &quot;The IP address range that can be used to SSH to the EC2 instances&quot;,
+      &quot;Type&quot;: &quot;String&quot;,
+      &quot;MinLength&quot;: &quot;9&quot;,
+      &quot;MaxLength&quot;: &quot;18&quot;,
+      &quot;Default&quot;: &quot;0.0.0.0/0&quot;,
+      &quot;AllowedPattern&quot;: &quot;(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})&quot;,
+      &quot;ConstraintDescription&quot;: &quot;must be a valid IP CIDR range of the form x.x.x.x/x.&quot;
+    }
+  },
+
+  &quot;Mappings&quot; : {
+    &quot;Region2Examples&quot; : {
+      &quot;us-east-1&quot;      : { &quot;Examples&quot; : &quot;https://s3.amazonaws.com/cloudformation-examples-us-east-1&quot; },
+      &quot;us-west-2&quot;      : { &quot;Examples&quot; : &quot;https://s3-us-west-2.amazonaws.com/cloudformation-examples-us-west-2&quot; },
+      &quot;us-west-1&quot;      : { &quot;Examples&quot; : &quot;https://s3-us-west-1.amazonaws.com/cloudformation-examples-us-west-1&quot; },
+      &quot;eu-west-1&quot;      : { &quot;Examples&quot; : &quot;https://s3-eu-west-1.amazonaws.com/cloudformation-examples-eu-west-1&quot; },
+      &quot;eu-west-2&quot;      : { &quot;Examples&quot; : &quot;https://s3-eu-west-2.amazonaws.com/cloudformation-examples-eu-west-2&quot; },
+      &quot;eu-central-1&quot;   : { &quot;Examples&quot; : &quot;https://s3-eu-central-1.amazonaws.com/cloudformation-examples-eu-central-1&quot; },
+      &quot;ap-southeast-1&quot; : { &quot;Examples&quot; : &quot;https://s3-ap-southeast-1.amazonaws.com/cloudformation-examples-ap-southeast-1&quot; },
+      &quot;ap-northeast-1&quot; : { &quot;Examples&quot; : &quot;https://s3-ap-northeast-1.amazonaws.com/cloudformation-examples-ap-northeast-1&quot; },
+      &quot;ap-northeast-2&quot; : { &quot;Examples&quot; : &quot;https://s3-ap-northeast-2.amazonaws.com/cloudformation-examples-ap-northeast-2&quot; },
+      &quot;ap-southeast-2&quot; : { &quot;Examples&quot; : &quot;https://s3-ap-southeast-2.amazonaws.com/cloudformation-examples-ap-southeast-2&quot; },
+      &quot;ap-south-1&quot;     : { &quot;Examples&quot; : &quot;https://s3-ap-south-1.amazonaws.com/cloudformation-examples-ap-south-1&quot; },
+      &quot;us-east-2&quot;      : { &quot;Examples&quot; : &quot;https://s3-us-east-2.amazonaws.com/cloudformation-examples-us-east-2&quot; },
+      &quot;ca-central-1&quot;   : { &quot;Examples&quot; : &quot;https://s3-ca-central-1.amazonaws.com/cloudformation-examples-ca-central-1&quot; },
+      &quot;sa-east-1&quot;      : { &quot;Examples&quot; : &quot;https://s3-sa-east-1.amazonaws.com/cloudformation-examples-sa-east-1&quot; },
+      &quot;cn-north-1&quot;     : { &quot;Examples&quot; : &quot;https://s3.cn-north-1.amazonaws.com.cn/cloudformation-examples-cn-north-1&quot; }
+    }
+,
+    &quot;AWSInstanceType2Arch&quot; : {
+      &quot;t1.micro&quot;    : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;t2.nano&quot;     : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;t2.micro&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;t2.small&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;t2.medium&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;t2.large&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m1.small&quot;    : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m1.medium&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m1.large&quot;    : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m1.xlarge&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m2.xlarge&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m2.2xlarge&quot;  : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m2.4xlarge&quot;  : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;m3.medium&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m3.large&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m3.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m3.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m4.large&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m4.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m4.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m4.4xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;m4.10xlarge&quot; : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c1.medium&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;c1.xlarge&quot;   : { &quot;Arch&quot; : &quot;PV64&quot;   },
+      &quot;c3.large&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c3.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c3.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c3.4xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c3.8xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c4.large&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c4.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c4.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c4.4xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;c4.8xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;g2.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVMG2&quot;  },
+      &quot;g2.8xlarge&quot;  : { &quot;Arch&quot; : &quot;HVMG2&quot;  },
+      &quot;r3.large&quot;    : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;r3.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;r3.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;r3.4xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;r3.8xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;i2.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;i2.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;i2.4xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;i2.8xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;d2.xlarge&quot;   : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;d2.2xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;d2.4xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;d2.8xlarge&quot;  : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;hi1.4xlarge&quot; : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;hs1.8xlarge&quot; : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;cr1.8xlarge&quot; : { &quot;Arch&quot; : &quot;HVM64&quot;  },
+      &quot;cc2.8xlarge&quot; : { &quot;Arch&quot; : &quot;HVM64&quot;  }
+    },
+
+    &quot;AWSInstanceType2NATArch&quot; : {
+      &quot;t1.micro&quot;    : { &quot;Arch&quot; : &quot;NATPV64&quot;   },
+      &quot;t2.nano&quot;     : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;t2.micro&quot;    : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;t2.small&quot;    : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;t2.medium&quot;   : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;t2.large&quot;    : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;m1.small&quot;    : { &quot;Arch&quot; : &quot;NATPV64&quot;   },
+      &quot;m1.medium&quot;   : { &quot;Arch&quot; : &quot;NATPV64&quot;   },
+      &quot;m1.large&quot;    : { &quot;Arch&quot; : &quot;NATPV64&quot;   },
+      &quot;m1.xlarge&quot;   : { &quot;Arch&quot; : &quot;NATPV64&quot;   },
+      &quot;m2.xlarge&quot;   : { &quot;Arch&quot; : &quot;NATPV64&quot;   },
+      &quot;m2.2xlarge&quot;  : { &quot;Arch&quot; : &quot;NATPV64&quot;   },
+      &quot;m2.4xlarge&quot;  : { &quot;Arch&quot; : &quot;NATPV64&quot;   },
+      &quot;m3.medium&quot;   : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;m3.large&quot;    : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;m3.xlarge&quot;   : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;m3.2xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;m4.large&quot;    : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;m4.xlarge&quot;   : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;m4.2xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;m4.4xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;m4.10xlarge&quot; : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;c1.medium&quot;   : { &quot;Arch&quot; : &quot;NATPV64&quot;   },
+      &quot;c1.xlarge&quot;   : { &quot;Arch&quot; : &quot;NATPV64&quot;   },
+      &quot;c3.large&quot;    : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;c3.xlarge&quot;   : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;c3.2xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;c3.4xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;c3.8xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;c4.large&quot;    : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;c4.xlarge&quot;   : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;c4.2xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;c4.4xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;c4.8xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;g2.2xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVMG2&quot;  },
+      &quot;g2.8xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVMG2&quot;  },
+      &quot;r3.large&quot;    : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;r3.xlarge&quot;   : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;r3.2xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;r3.4xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;r3.8xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;i2.xlarge&quot;   : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;i2.2xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;i2.4xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;i2.8xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;d2.xlarge&quot;   : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;d2.2xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;d2.4xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;d2.8xlarge&quot;  : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;hi1.4xlarge&quot; : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;hs1.8xlarge&quot; : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;cr1.8xlarge&quot; : { &quot;Arch&quot; : &quot;NATHVM64&quot;  },
+      &quot;cc2.8xlarge&quot; : { &quot;Arch&quot; : &quot;NATHVM64&quot;  }
+    }
+,
+    &quot;AWSRegionArch2AMI&quot; : {
+      &quot;us-east-1&quot;        : {&quot;PV64&quot; : &quot;ami-2a69aa47&quot;, &quot;HVM64&quot; : &quot;ami-6869aa05&quot;, &quot;HVMG2&quot; : &quot;ami-a41a3fb3&quot;},
+      &quot;us-west-2&quot;        : {&quot;PV64&quot; : &quot;ami-7f77b31f&quot;, &quot;HVM64&quot; : &quot;ami-7172b611&quot;, &quot;HVMG2&quot; : &quot;ami-caf253aa&quot;},
+      &quot;us-west-1&quot;        : {&quot;PV64&quot; : &quot;ami-a2490dc2&quot;, &quot;HVM64&quot; : &quot;ami-31490d51&quot;, &quot;HVMG2&quot; : &quot;ami-00347e60&quot;},
+      &quot;eu-west-1&quot;        : {&quot;PV64&quot; : &quot;ami-4cdd453f&quot;, &quot;HVM64&quot; : &quot;ami-f9dd458a&quot;, &quot;HVMG2&quot; : &quot;ami-e2f7bd91&quot;},
+      &quot;eu-west-2&quot;        : {&quot;PV64&quot; : &quot;NOT_SUPPORTED&quot;, &quot;HVM64&quot; : &quot;ami-886369ec&quot;, &quot;HVMG2&quot; : &quot;NOT_SUPPORTED&quot;},
+      &quot;eu-central-1&quot;     : {&quot;PV64&quot; : &quot;ami-6527cf0a&quot;, &quot;HVM64&quot; : &quot;ami-ea26ce85&quot;, &quot;HVMG2&quot; : &quot;ami-d2ff04bd&quot;},
+      &quot;ap-northeast-1&quot;   : {&quot;PV64&quot; : &quot;ami-3e42b65f&quot;, &quot;HVM64&quot; : &quot;ami-374db956&quot;, &quot;HVMG2&quot; : &quot;ami-4c78d52d&quot;},
+      &quot;ap-northeast-2&quot;   : {&quot;PV64&quot; : &quot;NOT_SUPPORTED&quot;, &quot;HVM64&quot; : &quot;ami-2b408b45&quot;, &quot;HVMG2&quot; : &quot;NOT_SUPPORTED&quot;},
+      &quot;ap-southeast-1&quot;   : {&quot;PV64&quot; : &quot;ami-df9e4cbc&quot;, &quot;HVM64&quot; : &quot;ami-a59b49c6&quot;, &quot;HVMG2&quot; : &quot;ami-f3f95990&quot;},
+      &quot;ap-southeast-2&quot;   : {&quot;PV64&quot; : &quot;ami-63351d00&quot;, &quot;HVM64&quot; : &quot;ami-dc361ebf&quot;, &quot;HVMG2&quot; : &quot;ami-3a122e59&quot;},
+      &quot;ap-south-1&quot;       : {&quot;PV64&quot; : &quot;NOT_SUPPORTED&quot;, &quot;HVM64&quot; : &quot;ami-ffbdd790&quot;, &quot;HVMG2&quot; : &quot;ami-21a7d34e&quot;},
+      &quot;us-east-2&quot;        : {&quot;PV64&quot; : &quot;NOT_SUPPORTED&quot;, &quot;HVM64&quot; : &quot;ami-f6035893&quot;, &quot;HVMG2&quot; : &quot;NOT_SUPPORTED&quot;},
+      &quot;ca-central-1&quot;     : {&quot;PV64&quot; : &quot;NOT_SUPPORTED&quot;, &quot;HVM64&quot; : &quot;ami-730ebd17&quot;, &quot;HVMG2&quot; : &quot;NOT_SUPPORTED&quot;},
+      &quot;sa-east-1&quot;        : {&quot;PV64&quot; : &quot;ami-1ad34676&quot;, &quot;HVM64&quot; : &quot;ami-6dd04501&quot;, &quot;HVMG2&quot; : &quot;NOT_SUPPORTED&quot;},
+      &quot;cn-north-1&quot;       : {&quot;PV64&quot; : &quot;ami-77559f1a&quot;, &quot;HVM64&quot; : &quot;ami-8e6aa0e3&quot;, &quot;HVMG2&quot; : &quot;NOT_SUPPORTED&quot;}
+    }
+
+  },
+
+  &quot;Resources&quot; : {
+    &quot;NotificationTopic&quot;: {
+      &quot;Type&quot;: &quot;AWS::SNS::Topic&quot;,
+      &quot;Properties&quot;: {
+        &quot;Subscription&quot;: [ { &quot;Endpoint&quot;: { &quot;Ref&quot;: &quot;OperatorEMail&quot; }, &quot;Protocol&quot;: &quot;email&quot; } ]
+      }
+    },
+
+    &quot;WebServerGroup&quot; : {
+      &quot;Type&quot; : &quot;AWS::AutoScaling::AutoScalingGroup&quot;,
+      &quot;Properties&quot; : {
+        &quot;AvailabilityZones&quot; : { &quot;Fn::GetAZs&quot; : &quot;&quot;},
+        &quot;LaunchConfigurationName&quot; : { &quot;Ref&quot; : &quot;LaunchConfig&quot; },
+        &quot;MinSize&quot; : &quot;1&quot;,
+        &quot;MaxSize&quot; : &quot;3&quot;,
+        &quot;LoadBalancerNames&quot; : [ { &quot;Ref&quot; : &quot;ElasticLoadBalancer&quot; } ],
+        &quot;NotificationConfiguration&quot; : {
+          &quot;TopicARN&quot; : { &quot;Ref&quot; : &quot;NotificationTopic&quot; },
+          &quot;NotificationTypes&quot; : [ &quot;autoscaling:EC2_INSTANCE_LAUNCH&quot;,
+                                  &quot;autoscaling:EC2_INSTANCE_LAUNCH_ERROR&quot;,
+                                  &quot;autoscaling:EC2_INSTANCE_TERMINATE&quot;,
+                                  &quot;autoscaling:EC2_INSTANCE_TERMINATE_ERROR&quot;]
+        }
+      },
+      &quot;CreationPolicy&quot; : {
+        &quot;ResourceSignal&quot; : {
+          &quot;Timeout&quot; : &quot;PT15M&quot;,
+          &quot;Count&quot;   : &quot;1&quot;
+        }
+      },
+      &quot;UpdatePolicy&quot;: {
+        &quot;AutoScalingRollingUpdate&quot;: {
+          &quot;MinInstancesInService&quot;: &quot;1&quot;,
+          &quot;MaxBatchSize&quot;: &quot;1&quot;,
+          &quot;PauseTime&quot; : &quot;PT15M&quot;,
+          &quot;WaitOnResourceSignals&quot;: &quot;true&quot;
+        }
+      }
+    },
+
+    &quot;LaunchConfig&quot; : {
+      &quot;Type&quot; : &quot;AWS::AutoScaling::LaunchConfiguration&quot;,
+      &quot;Metadata&quot; : {
+        &quot;Comment&quot; : &quot;Install a simple application&quot;,
+        &quot;AWS::CloudFormation::Init&quot; : {
+          &quot;config&quot; : {
+            &quot;packages&quot; : {
+              &quot;yum&quot; : {
+                &quot;httpd&quot; : []
+              }
+            },
+
+            &quot;files&quot; : {
+              &quot;/var/www/html/index.html&quot; : {
+                &quot;content&quot; : { &quot;Fn::Join&quot; : [&quot;\n&quot;, [
+                  &quot;&lt;img src=\&quot;&quot;, {&quot;Fn::FindInMap&quot; : [&quot;Region2Examples&quot;, {&quot;Ref&quot; : &quot;AWS::Region&quot;}, &quot;Examples&quot;]}, &quot;/cloudformation_graphic.png\&quot; alt=\&quot;AWS CloudFormation Logo\&quot;/&gt;&quot;,
+                  &quot;&lt;h1&gt;Congratulations, you have successfully launched the AWS CloudFormation sample.&lt;/h1&gt;&quot;
+                ]]},
+                &quot;mode&quot;    : &quot;000644&quot;,
+                &quot;owner&quot;   : &quot;root&quot;,
+                &quot;group&quot;   : &quot;root&quot;
+              },
+
+              &quot;/etc/cfn/cfn-hup.conf&quot; : {
+                &quot;content&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [
+                  &quot;[main]\n&quot;,
+                  &quot;stack=&quot;, { &quot;Ref&quot; : &quot;AWS::StackId&quot; }, &quot;\n&quot;,
+                  &quot;region=&quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;
+                ]]},
+                &quot;mode&quot;    : &quot;000400&quot;,
+                &quot;owner&quot;   : &quot;root&quot;,
+                &quot;group&quot;   : &quot;root&quot;
+              },
+
+              &quot;/etc/cfn/hooks.d/cfn-auto-reloader.conf&quot; : {
+                &quot;content&quot;: { &quot;Fn::Join&quot; : [&quot;&quot;, [
+                  &quot;[cfn-auto-reloader-hook]\n&quot;,
+                  &quot;triggers=post.update\n&quot;,
+                  &quot;path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init\n&quot;,
+                  &quot;action=/opt/aws/bin/cfn-init -v &quot;,
+                  &quot;         --stack &quot;, { &quot;Ref&quot; : &quot;AWS::StackName&quot; },
+                  &quot;         --resource LaunchConfig &quot;,
+                  &quot;         --region &quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;,
+                  &quot;runas=root\n&quot;
+                ]]}
+              }
+            },
+
+            &quot;services&quot; : {
+              &quot;sysvinit&quot; : {
+                &quot;httpd&quot;    : { &quot;enabled&quot; : &quot;true&quot;, &quot;ensureRunning&quot; : &quot;true&quot; },
+                &quot;cfn-hup&quot; : { &quot;enabled&quot; : &quot;true&quot;, &quot;ensureRunning&quot; : &quot;true&quot;,
+                              &quot;files&quot; : [&quot;/etc/cfn/cfn-hup.conf&quot;, &quot;/etc/cfn/hooks.d/cfn-auto-reloader.conf&quot;]}
+              }
+            }
+          }
+        }
+      },
+      &quot;Properties&quot; : {
+        &quot;KeyName&quot; : { &quot;Ref&quot; : &quot;KeyName&quot; },
+        &quot;ImageId&quot; : { &quot;Fn::FindInMap&quot; : [ &quot;AWSRegionArch2AMI&quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; },
+                                          { &quot;Fn::FindInMap&quot; : [ &quot;AWSInstanceType2Arch&quot;, { &quot;Ref&quot; : &quot;InstanceType&quot; }, &quot;Arch&quot; ] } ] },
+        &quot;SecurityGroups&quot; : [ { &quot;Ref&quot; : &quot;InstanceSecurityGroup&quot; } ],
+        &quot;InstanceType&quot; : { &quot;Ref&quot; : &quot;InstanceType&quot; },
+        &quot;UserData&quot;       : { &quot;Fn::Base64&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [
+             &quot;#!/bin/bash -xe\n&quot;,
+             &quot;yum update -y aws-cfn-bootstrap\n&quot;,
+
+             &quot;/opt/aws/bin/cfn-init -v &quot;,
+             &quot;         --stack &quot;, { &quot;Ref&quot; : &quot;AWS::StackName&quot; },
+             &quot;         --resource LaunchConfig &quot;,
+             &quot;         --region &quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;,
+
+             &quot;/opt/aws/bin/cfn-signal -e $? &quot;,
+             &quot;         --stack &quot;, { &quot;Ref&quot; : &quot;AWS::StackName&quot; },
+             &quot;         --resource WebServerGroup &quot;,
+             &quot;         --region &quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;
+        ]]}}
+      }
+    },
+
+    &quot;WebServerScaleUpPolicy&quot; : {
+      &quot;Type&quot; : &quot;AWS::AutoScaling::ScalingPolicy&quot;,
+      &quot;Properties&quot; : {
+        &quot;AdjustmentType&quot; : &quot;ChangeInCapacity&quot;,
+        &quot;AutoScalingGroupName&quot; : { &quot;Ref&quot; : &quot;WebServerGroup&quot; },
+        &quot;Cooldown&quot; : &quot;60&quot;,
+        &quot;ScalingAdjustment&quot; : &quot;1&quot;
+      }
+    },
+    &quot;WebServerScaleDownPolicy&quot; : {
+      &quot;Type&quot; : &quot;AWS::AutoScaling::ScalingPolicy&quot;,
+      &quot;Properties&quot; : {
+        &quot;AdjustmentType&quot; : &quot;ChangeInCapacity&quot;,
+        &quot;AutoScalingGroupName&quot; : { &quot;Ref&quot; : &quot;WebServerGroup&quot; },
+        &quot;Cooldown&quot; : &quot;60&quot;,
+        &quot;ScalingAdjustment&quot; : &quot;-1&quot;
+      }
+    },
+
+    &quot;CPUAlarmHigh&quot;: {
+     &quot;Type&quot;: &quot;AWS::CloudWatch::Alarm&quot;,
+     &quot;Properties&quot;: {
+        &quot;AlarmDescription&quot;: &quot;Scale-up if CPU &gt; 90% for 10 minutes&quot;,
+        &quot;MetricName&quot;: &quot;CPUUtilization&quot;,
+        &quot;Namespace&quot;: &quot;AWS/EC2&quot;,
+        &quot;Statistic&quot;: &quot;Average&quot;,
+        &quot;Period&quot;: &quot;300&quot;,
+        &quot;EvaluationPeriods&quot;: &quot;2&quot;,
+        &quot;Threshold&quot;: &quot;90&quot;,
+        &quot;AlarmActions&quot;: [ { &quot;Ref&quot;: &quot;WebServerScaleUpPolicy&quot; } ],
+        &quot;Dimensions&quot;: [
+          {
+            &quot;Name&quot;: &quot;AutoScalingGroupName&quot;,
+            &quot;Value&quot;: { &quot;Ref&quot;: &quot;WebServerGroup&quot; }
+          }
+        ],
+        &quot;ComparisonOperator&quot;: &quot;GreaterThanThreshold&quot;
+      }
+    },
+    &quot;CPUAlarmLow&quot;: {
+     &quot;Type&quot;: &quot;AWS::CloudWatch::Alarm&quot;,
+     &quot;Properties&quot;: {
+        &quot;AlarmDescription&quot;: &quot;Scale-down if CPU &lt; 70% for 10 minutes&quot;,
+        &quot;MetricName&quot;: &quot;CPUUtilization&quot;,
+        &quot;Namespace&quot;: &quot;AWS/EC2&quot;,
+        &quot;Statistic&quot;: &quot;Average&quot;,
+        &quot;Period&quot;: &quot;300&quot;,
+        &quot;EvaluationPeriods&quot;: &quot;2&quot;,
+        &quot;Threshold&quot;: &quot;70&quot;,
+        &quot;AlarmActions&quot;: [ { &quot;Ref&quot;: &quot;WebServerScaleDownPolicy&quot; } ],
+        &quot;Dimensions&quot;: [
+          {
+            &quot;Name&quot;: &quot;AutoScalingGroupName&quot;,
+            &quot;Value&quot;: { &quot;Ref&quot;: &quot;WebServerGroup&quot; }
+          }
+        ],
+        &quot;ComparisonOperator&quot;: &quot;LessThanThreshold&quot;
+      }
+    },
+
+    &quot;ElasticLoadBalancer&quot; : {
+      &quot;Type&quot; : &quot;AWS::ElasticLoadBalancing::LoadBalancer&quot;,
+      &quot;Properties&quot; : {
+        &quot;AvailabilityZones&quot; : { &quot;Fn::GetAZs&quot; : &quot;&quot; },
+        &quot;CrossZone&quot; : &quot;true&quot;,
+        &quot;Listeners&quot; : [ {
+          &quot;LoadBalancerPort&quot; : &quot;80&quot;,
+          &quot;InstancePort&quot; : &quot;80&quot;,
+          &quot;Protocol&quot; : &quot;HTTP&quot;
+        } ],
+        &quot;HealthCheck&quot; : {
+          &quot;Target&quot; : &quot;HTTP:80/&quot;,
+          &quot;HealthyThreshold&quot; : &quot;3&quot;,
+          &quot;UnhealthyThreshold&quot; : &quot;5&quot;,
+          &quot;Interval&quot; : &quot;30&quot;,
+          &quot;Timeout&quot; : &quot;5&quot;
+        }
+      }
+    },
+
+    &quot;InstanceSecurityGroup&quot; : {
+      &quot;Type&quot; : &quot;AWS::EC2::SecurityGroup&quot;,
+      &quot;Properties&quot; : {
+        &quot;GroupDescription&quot; : &quot;Enable SSH access and HTTP from the load balancer only&quot;,
+        &quot;SecurityGroupIngress&quot; : [ {
+          &quot;IpProtocol&quot; : &quot;tcp&quot;,
+          &quot;FromPort&quot; : &quot;22&quot;,
+          &quot;ToPort&quot; : &quot;22&quot;,
+          &quot;CidrIp&quot; : { &quot;Ref&quot; : &quot;SSHLocation&quot;}
+        },
+        {
+          &quot;IpProtocol&quot; : &quot;tcp&quot;,
+          &quot;FromPort&quot; : &quot;80&quot;,
+          &quot;ToPort&quot; : &quot;80&quot;,
+          &quot;SourceSecurityGroupOwnerId&quot; : {&quot;Fn::GetAtt&quot; : [&quot;ElasticLoadBalancer&quot;, &quot;SourceSecurityGroup.OwnerAlias&quot;]},
+          &quot;SourceSecurityGroupName&quot; : {&quot;Fn::GetAtt&quot; : [&quot;ElasticLoadBalancer&quot;, &quot;SourceSecurityGroup.GroupName&quot;]}
+        } ]
+      }
+    }
+  },
+
+  &quot;Outputs&quot; : {
+    &quot;URL&quot; : {
+      &quot;Description&quot; : &quot;The URL of the website&quot;,
+      &quot;Value&quot; :  { &quot;Fn::Join&quot; : [ &quot;&quot;, [ &quot;http://&quot;, { &quot;Fn::GetAtt&quot; : [ &quot;ElasticLoadBalancer&quot;, &quot;DNSName&quot; ]}]]}
+    }
+  }
+}</code></pre>
+                     <h2 id="example-templates-autoscaling-description">Template Walkthrough</h2>
+                     
+                     
+                     <p>The example template contains an Auto Scaling group with a LoadBalancer, a security
+                        group that defines ingress rules, CloudWatch alarms, and Auto Scaling policies.
+                     </p>
+                     
+                     <p>The template has three input parameters: InstanceType is the type of EC2 instance
+                        to use
+                        for the Auto Scaling group and has a default of m1.small; WebServerPort is the TCP
+                        port for
+                        the web server and has a default of 8888; KeyName is the name of an EC2 key pair to
+                        be used
+                        for the Auto Scaling group. KeyName must be specified at stack creation (parameters
+                        with no
+                        default value must be specified at stack creation).
+                     </p>
+                     
+                     <p>The <a href="aws-properties-as-group.html">AWS::AutoScaling::AutoScalingGroup</a>
+                        resource WebServerGroup declares the following Auto Scaling group configuration:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><em>AvailabilityZones</em> specifies the availability zones where
+                                 the auto scaling group&apos;s EC2 instances will be created. The <a href="intrinsic-function-reference-getavailabilityzones.html">Fn::GetAZs</a>
+                                 function call <code class="code">{ &quot;Fn::GetAZs&quot; : &quot;&quot; }</code> specifies all availability zones for
+                                 the region in which the stack is created.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><em>MinSize</em> and <em>MaxSize</em> set the minimum
+                                 and maximum number of EC2 instances in the Auto Scaling group.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><em>LoadBalancerNames</em> lists the LoadBalancers used to route
+                                 traffic to the Auto Scaling group. The LoadBalancer for this group is the
+                                 ElasticLoadBalancer resource.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>The <a href="aws-properties-as-launchconfig.html">AWS::AutoScaling::LaunchConfiguration</a> resource LaunchConfig declares the
+                        following configurations to use for the EC2 instances in the WebServerGroup Auto Scaling
+                        group:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><em>KeyName</em> takes the value of the KeyName input parameter as
+                                 the EC2 key pair to use.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><em>UserData</em> is the Base64 encoded value of the WebServerPort
+                                 parameter, which is passed to an application .
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><em>SecurityGroups</em> is a list of EC2 security groups that
+                                 contain the firewall ingress rules for EC2 instances in the Auto Scaling group. In
+                                 this example, there is only one security group and it is declared as a <a href="aws-properties-ec2-security-group.html">AWS::EC2::SecurityGroup</a>
+                                 resource: InstanceSecurityGroup. This security group contains two ingress rules: 1)
+                                 a
+                                 TCP ingress rule that allows access from all IP addresses (&quot;CidrIp&quot; : &quot;0.0.0.0/0&quot;)
+                                 for port 22 (for SSH access) and 2) a TCP ingress rule that allows access from the
+                                 ElasticLoadBalancer resource for the WebServerPort port by specifying the
+                                 LoadBalancer&apos;s source security group. The <a href="intrinsic-function-reference-getatt.html">GetAtt</a> function is used to
+                                 get the SourceSecurityGroup.OwnerAlias and SourceSecurityGroup.GroupName properties
+                                 from the ElasticLoadBalancer resource. For more information about the Elastic Load
+                                 Balancing security groups, see <a href="./elasticloadbalancing/latest/userguide/using-elb-security-groups.html" target="_blank">Manage Security Groups in Amazon
+                                    EC2-Classic</a> or <a href="./elasticloadbalancing/latest/userguide/USVPC_ApplySG.html" target="_blank">Manage Security Groups in Amazon VPC</a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><em>ImageId</em> is the evaluated value of a set of nested maps. We
+                                 added the maps so that the template contained the logic for choosing the right image
+                                 ID. That logic is based on the instance type that was specified with the InstanceType
+                                 parameter (AWSInstanceType2Arch maps the instance type to an architecture 32 or 64)
+                                 and the region where the stack is created (AWSRegionArch2AMI maps the region and
+                                 architecture to a image ID):
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{ &quot;Fn::FindInMap&quot; : [ &quot;AWSRegionArch2AMI&quot;,
+   { &quot;Ref&quot; : &quot;AWS::Region&quot; },
+   { &quot;Fn::FindInMap&quot; : [ &quot;AWSInstanceType2Arch&quot;,
+      { &quot;Ref&quot; : &quot;InstanceType&quot; },
+      &quot;Arch&quot; ]
+   }
+   ]}</code></pre>
+                              <p>For example, if you use this template to create a stack in the <span><code class="code">us-east-2</code></span>
+                                 region and specify m1.small as InstanceType, AWS CloudFormation would evaluate the
+                                 inner map for AWSInstanceType2Arch as the following:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{ &quot;Fn::FindInMap&quot; : [ &quot;AWSInstanceType2Arch&quot;, &quot;m1.small&quot;, &quot;Arch&quot; ] }</code></pre>
+                              <p>In the AWSInstanceType2Arch mapping, the Arch value for the m1.small key maps
+                                 to 32, which is used as the value for the outer map. The key is the evaluated result
+                                 of the AWS::Region pseudo parameter which is the region where the stack is being
+                                 created. For this example, AWS::Region is us-east-1; therefore, the outer map is
+                                 evaluated as follows:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">Fn::FindInMap&quot; : [ &quot;AWSRegionArch2AMI&quot;, &quot;us-east-1&quot;, &quot;32&quot;]</code></pre>
+                              <p>In the AWSRegionArch2AMI mapping, the value 32 for the key us-east-1 maps to
+                                 ami-6411e20d. This means that ImageId would be ami-6411e20d.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>The <a href="aws-properties-ec2-elb.html">AWS::ElasticLoadBalancing::LoadBalancer</a> resource ElasticLoadBalancer declares
+                        the following LoadBalancer configuration:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><em>AvailabilityZones</em> is a list of availability zones where
+                                 the LoadBalancer will distribute traffic. In this example, the Fn::GetAZs function
+                                 call <code class="code">{ &quot;Fn::GetAZs&quot; : &quot;&quot; }</code> specifies all availability zones for the
+                                 region in which the stack is created.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><em>Listeners</em> is a list of load balancing routing
+                                 configurations that specify the port that the LoadBalancer accepts requests, the port
+                                 on the registered EC2 instances where the LoadBalancer forwards requests, and the
+                                 protocol used to route requests.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><em>HealthCheck</em> is the configuration that Elastic Load
+                                 Balancing uses to check the health of the EC2 instances that the LoadBalancer routes
+                                 traffic to. In this example, the HealthCheck targets the root address of the EC2
+                                 instances using the port specified by WebServerPort over the HTTP protocol. If the
+                                 WebServerPort is 8888, the <code class="code">{ &quot;Fn::Join&quot; : [ &quot;&quot;, [&quot;HTTP:&quot;, { &quot;Ref&quot; :
+                                    &quot;WebServerPort&quot; }, &quot;/&quot;]]}</code> function call is evaluated as the string
+                                 <code class="code">HTTP:8888/</code>. It also specifies that the EC2 instances have an interval
+                                 of 30 seconds between health checks (Interval). The Timeout is defined as the length
+                                 of time Elastic Load Balancing waits for a response from the health check target (5
+                                 seconds in this example). After the Timeout period lapses, Elastic Load Balancing
+                                 marks that EC2 instance&apos;s health check as unhealthy. When an EC2 instance fails 5
+                                 consecutive health checks (UnhealthyThreshold), Elastic Load Balancing stops routing
+                                 traffic to that EC2 instance until that instance has 3 consecutive healthy health
+                                 checks at which point Elastic Load Balancing considers the EC2 instance healthy and
+                                 begins routing traffic to that instance again.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>The <a href="aws-properties-as-policy.html">AWS::AutoScaling::ScalingPolicy</a>
+                        resource WebServerScaleUpPolicy is an Auto Scaling policy that scales up the Auto
+                        Scaling group
+                        WebServerGroup. The <code class="code">AdjustmentType</code> property is set to
+                        ChangeInCapacity. This means that the <code class="code">ScalingAdjustment</code> represents
+                        the number of instances to add (if <code class="code">ScalingAdjustment</code> is positive,
+                        instances are added; if negative, instances are deleted). In this example,
+                        <code class="code">ScalingAdjustment</code> is 1; therefore, the policy increments the
+                        number of EC2 instances in the group by 1 when the policy is executed. The Cooldown
+                        property specifies that Auto Scaling waits 60 seconds before starting any other policy
+                        or trigger
+                        related actions.
+                     </p>
+                     
+                     <p>The <a href="aws-properties-cw-alarm.html">AWS::CloudWatch::Alarm</a> resource
+                        CPUAlarmHigh specifies the scaling policy WebServerScaleUpPolicy as the action to
+                        execute
+                        when the alarm is in an <code class="code">ALARM</code> state (AlarmActions). The alarm
+                        monitors the EC2 instances in the WebServerGroup Auto Scaling group (Dimensions).
+                        The alarm
+                        measures the average (Statistic) EC2 instance CPU utilization (Namespace and MetricName)
+                        of
+                        the instances in the WebServerGroup (Dimensions) over a 300 second interval (Period).
+                        When
+                        this value (average CPU utilization over 300 seconds) remains greater than 90 percent
+                        (ComparisonOperator and Threshold) for 2 consecutive periods (EvaluationPeriod), the
+                        alarm
+                        will go into an <code class="code">ALARM</code> state and CloudWatch will execute the
+                        WebServerScaleUpPolicy policy (AlarmActions) described above scale up the
+                        WebServerGroup.
+                     </p>
+                     
+                     <p>The CPUAlarmLow alarm measures the same metrics but has an alarm that triggers when
+                        CPU
+                        utilization is less than 75 percent (ComparisonOperator and Threshold) and executes
+                        the
+                        WebServerScaleDownPolicy policy to remove 1 EC2 instance from the Auto Scaling group
+                        WebServerGroup.
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="walkthrough-crossstackref.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="deploying.applications.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Auto Scaling Multi-AZ Template"><a class="pagetoc" href="#example-templates-autoscaling-template">Auto Scaling Multi-AZ Template</a></li>
+                        <li class="pagetoc" name="Template Walkthrough"><a class="pagetoc" href="#example-templates-autoscaling-description">Template Walkthrough</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS CloudFormation';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

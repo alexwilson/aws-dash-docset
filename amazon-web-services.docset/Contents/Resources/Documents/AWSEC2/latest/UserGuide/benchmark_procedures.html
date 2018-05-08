@@ -1,0 +1,517 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Benchmark EBS Volumes - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="EBSPerformance.html" title="Amazon EBS Volume Performance on Linux Instances">
+      <link rel="prev" href="raid-config.html" title="RAID Configuration on Linux">
+      <link rel="next" href="ebs-cloud-watch-events.html" title="Amazon CloudWatch Events for Amazon EBS">
+      <meta name="description" content="Test the performance of io1, st1, and sc1 volumes by simulating workloads with benchmark testing.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/benchmark_procedures.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Storage.html">Storage</a> &#xBB; <a href="AmazonEBS.html">Amazon Elastic Block Store (Amazon EBS)</a> &#xBB; <a href="EBSPerformance.html">Amazon EBS Volume Performance on Linux Instances</a> &#xBB; <span class="breadcrumb">Benchmark EBS Volumes</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="benchmark_procedures">Benchmark EBS Volumes</h1>
+                     <p>This section demonstrates how you can test the performance of Amazon EBS volumes by
+                        simulating
+                        I/O workloads. The process is as follows:
+                     </p>
+                     <div class="orderedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ol>
+                           <li>
+                              
+                              <p>Launch an EBS-optimized instance.</p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>Create new EBS volumes.</p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>Attach the volumes to your EBS-optimized instance.</p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>Configure and mount the block device.</p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>Install a tool to benchmark I/O performance.</p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>Benchmark the I/O performance of your volumes.</p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>Delete your volumes and terminate your instance so that you don&apos;t continue to incur
+                                 charges.
+                              </p>
+                              
+                           </li>
+                        </ol>
+                     </div>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Some of the procedures described in this topic will result in the destruction of
+                           existing data on the EBS volumes you benchmark. The benchmarking procedures are intended
+                           for
+                           use on volumes specially created for testing purposes, not production volumes.
+                        </p>
+                     </div>
+                     <h2 id="set_up_instance">Set Up Your Instance</h2>
+                     
+                     
+                     <p>To get optimal performance from EBS volumes, we recommend that you use an EBS-optimized
+                        instance. EBS-optimized instances deliver dedicated throughput between Amazon EC2
+                        and Amazon EBS, with
+                        instance. EBS-optimized instances deliver dedicated bandwidth between Amazon EC2 and
+                        Amazon EBS, with
+                        options between 425 and 14,000 Mbps, depending on the instance
+                        type.
+                     </p>
+                     
+                     <p>To create an EBS-optimized instance, choose <b>Launch as an EBS-Optimized
+                           instance</b> when launching the instance using the Amazon EC2 console, or specify
+                        <b>--ebs-optimized</b> when using the command line. Be sure that you launch a
+                        current-generation instance that supports this option. For more information, see <a href="EBSOptimized.html">Amazon EBS&#x2013;Optimized Instances</a>.
+                     </p>
+                     
+                     <h3 id="setupPIOPS">Setting up Provisioned IOPS SSD (<code class="code">io1</code>) volumes
+                     </h3>
+                     
+                     
+                     <p>To create an <code class="code">io1</code> volume, choose <b>Provisioned IOPS SSD</b> when creating the
+                        volume using the Amazon EC2 console, or, at the command line, specify <b>--type io1
+                           --iops</b>
+                        <em>n</em> where <em>n</em> is an integer between
+                        100 and 32000. For information about creating EBS volumes, see <a href="ebs-creating-volume.html">Creating an Amazon EBS Volume</a>. For information
+                        about attaching these volumes to your instance, see <a href="ebs-attaching-volume.html">Attaching an Amazon EBS Volume to an Instance</a>.
+                     </p>
+                     
+                     <p>For the example tests, we recommend that you create a RAID array with 6 volumes, which
+                        offers a high level of performance. Because you are charged by gigabytes provisioned
+                        (and
+                        the number of provisioned IOPS for <code class="code">io1</code> volumes), not the number of volumes, there is no
+                        additional cost for creating multiple, smaller volumes and using them to create a
+                        stripe
+                        set. If you&apos;re using Oracle Orion to benchmark your volumes, it can simulate striping
+                        the
+                        same way that Oracle ASM does, so we recommend that you let Orion do the striping.
+                        If you
+                        are using a different benchmarking tool, you need to stripe the volumes yourself.
+                     </p>
+                     
+                     <p>To create a six-volume stripe set on Amazon Linux, use a command such as the
+                        following:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><b>sudo mdadm --create /dev/md0 --level=0 --chunk=64 --raid-devices=6</b> /dev/sdf /dev/sdg /dev/sdh /dev/sdi /dev/sdj /dev/sdk</code></pre>
+                     <p>For this example, the file system is XFS. Use the file system that meets
+                        your requirements. Use the following command to install XFS file system support:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><b>sudo yum install -y xfsprogs</b></code></pre>
+                     <p>Then, use these commands to create, mount, and assign ownership to the XFS
+                        file system:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo mkdir -p /mnt/p_iops_vol0 &amp;&amp; sudo mkfs.xfs /dev/md0</code></strong>
+<code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo mount -t xfs /dev/md0 /mnt/p_iops_vol0</code></strong>
+<code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo chown ec2-user:ec2-user /mnt/p_iops_vol0/</code></strong></code></pre>
+                     
+                     <h3 id="set_up_hdd">Setting up Throughput Optimized HDD (<code class="code">st1</code>) or Cold HDD (<code class="code">sc1</code>)
+                        volumes
+                     </h3>
+                     
+                     
+                     <p>To create an <code class="code">st1</code> volume, choose <b>Throughput Optimized HDD</b> when creating the
+                        volume using the Amazon EC2 console, or specify <b>--type <code class="code">st1</code></b> when
+                        using the command line. To create an <code class="code">sc1</code> volume, choose Cold HDD when creating the volume
+                        using the Amazon EC2 console, or specify <b>--type <code class="code">sc1</code></b> when using the command
+                        line. For information about creating EBS volumes, see <a href="ebs-creating-volume.html">Creating an Amazon EBS Volume</a>. For information about attaching these volumes to
+                        your instance, see <a href="ebs-attaching-volume.html">Attaching an Amazon EBS Volume to an Instance</a>.
+                     </p>
+                     
+                     <p>AWS provides a JSON template for use with AWS CloudFormation that simplifies this
+                        setup procedure.
+                        Access the <a href="https://s3.amazonaws.com/cloudformation-examples/community/st1_cloudformation_template.json" target="_blank">template</a> and save it as a JSON file. AWS CloudFormation allows you to configure your own SSH
+                        keys and offers an easy way to set up a performance test environment to evaluate <code class="code">st1</code>
+                        volumes. The template creates a current-generation instance and a 2 TiB <code class="code">st1</code> volume, and
+                        attaches the volume to the instance at <code class="code">/dev/xvdf</code>. 
+                     </p>
+                     
+                     <p class="title"><b>To create an HDD volume with the template</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the AWS CloudFormation console at
+                              <a href="https://console.aws.amazon.com/cloudformation/" target="_blank">https://console.aws.amazon.com/cloudformation</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Create Stack</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Upload a Template to Amazon S3</b> and select the JSON
+                              template you previously obtained.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Give your stack a name like &#x201C;ebs-perf-testing&#x201D;, and select an instance type (the
+                              default is r3.8xlarge) and SSH key.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Next</b> twice, and then choose <b>Create
+                                 Stack</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>After the status for your new stack moves from
+                              <b>CREATE_IN_PROGRESS</b> to <b>COMPLETE</b>, choose
+                              <b>Outputs</b> to get the public DNS entry for your new instance,
+                              which will have a 2 TiB <code class="code">st1</code> volume attached to it.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Connect using SSH to your new stack as user <strong class="userinput"><code>ec2-user</code></strong>, with
+                              the hostname obtained from the DNS entry in the previous step. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Proceed to <a href="benchmark_procedures.html#install_tools">Install Benchmark Tools</a>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <h2 id="install_tools">Install Benchmark Tools</h2>
+                     
+                     
+                     <p>The following table lists some of the possible tools you can use to benchmark the
+                        performance of EBS volumes.
+                     </p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac23c29c27c17c11b4">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Tool</th>
+                                 
+                                 <th>Description</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>fio</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>For benchmarking I/O performance. (Note that <b>fio</b> has a
+                                       dependency on <code>libaio-devel</code>.)
+                                    </p>
+                                    
+                                    <p>To install <b>fio</b> on Amazon Linux, run the following command:
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo yum install -y fio</code></strong></code></pre>
+                                    <p>To install <b>fio</b> on Ubuntu, run the following command:
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>sudo apt-get install -y fio</code></strong></code></pre>
+                                    </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><a href="https://docs.oracle.com/cd/E18283_01/server.112/e16638/iodesign.htm#BABFCFBC" target="_blank">Oracle Orion Calibration Tool</a></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>For calibrating the I/O performance of storage systems to be used with Oracle
+                                       databases.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <p>These benchmarking tools support a wide variety of test parameters. You should use
+                        commands that approximate the workloads your volumes will support. These commands
+                        provided
+                        below are intended as examples to help you get started.
+                     </p>
+                     
+                     <h2 id="UnderstandingQueueLength">Choosing the Volume Queue Length</h2>
+                     
+                     
+                     <p>Choosing the best volume queue length based on your workload and volume type.</p>
+                     
+                     <h3 id="SSD_queue">Queue Length on SSD-backed Volumes</h3>
+                     
+                     
+                     <p>To determine the optimal queue length for your workload on SSD-backed volumes, we
+                        recommend that you target a queue length of 1 for every 500 IOPS available (baseline
+                        for
+                        <code class="code">gp2</code> volumes and the provisioned amount for <code class="code">io1</code> volumes). Then you can monitor your
+                        application performance and tune that value based on your application requirements.
+                     </p>
+                     
+                     <p>Increasing the queue length is beneficial until you achieve the provisioned IOPS,
+                        throughput or optimal system queue length value, which is currently set to 32. For
+                        example, a volume with 1,000 provisioned IOPS should target a queue length of 2. You
+                        should experiment with tuning these values up or down to see what performs best for
+                        your
+                        application.
+                     </p>
+                     
+                     
+                     <h3 id="HDD_queue">Queue Length on HDD-backed Volumes</h3>
+                     
+                     
+                     <p>To determine the optimal queue length for your workload on HDD-backed volumes, we
+                        recommend that you target a queue length of at least 4 while performing 1MiB sequential
+                        I/Os. Then you can monitor your application performance and tune that value based
+                        on your
+                        application requirements. For example, a 2 TiB <code class="code">st1</code> volume with burst throughput of 500
+                        MiB/s and IOPS of 500 should target a queue length of 4, 8, or 16 while performing
+                        1,024
+                        KiB, 512 KiB, or 256 KiB sequential I/Os respectively. You should experiment with
+                        tuning
+                        these values value up or down to see what performs best for your application.
+                     </p>
+                     
+                     
+                     <h2 id="perform_benchmarking">Perform Benchmarking</h2>
+                     
+                     
+                     <p>The following procedures describe benchmarking commands for various EBS volume types.
+                        
+                     </p>
+                     
+                     <p>Run the following commands on an EBS-optimized instance with attached EBS volumes.
+                        If
+                        the EBS volumes were restored from snapshots, be sure to initialize them before
+                        benchmarking. For more information, see <a href="ebs-initialize.html">Initializing Amazon EBS Volumes</a>.
+                     </p>
+                     
+                     <p>When you are finished testing your volumes, see the following topics for help cleaning
+                        up: <a href="ebs-deleting-volume.html">Deleting an Amazon EBS Volume</a> and <a href="terminating-instances.html">Terminate Your Instance</a>.
+                     </p>
+                     
+                     <h3 id="piops_benchmarking">Benchmarking io1 Volumes</h3>
+                     
+                     
+                     <p>Run <b>fio</b> on the stripe set that you created.
+                     </p>
+                     
+                     <p>The following command performs 16 KB random write operations.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code>sudo fio <code class="code" copy="true">--directory=/mnt/</code><em class="replaceable"><code>p_iops_vol0</code></em> <code class="code" copy="true">--name </code><em class="replaceable"><code>fio_test_file</code></em> <code class="code" copy="true">--direct=1 --rw=randwrite --bs=16k --size=1G --numjobs=16 --time_based --runtime=180 --group_reporting --norandommap</code></code></pre>
+                     <p>The following command performs 16 KB random read operations.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code>sudo fio <code class="code" copy="true">--directory=/mnt/</code><em class="replaceable"><code>p_iops_vol0</code></em> <code class="code" copy="true">--name </code><em class="replaceable"><code>fio_test_file</code></em> <code class="code" copy="true">--direct=1 --rw=randread --bs=16k --size=1G --numjobs=16 --time_based --runtime=180 --group_reporting --norandommap</code> </code></pre>
+                     <p>For more information about interpreting the results, see this tutorial: <a href="https://www.linux.com/learn/tutorials/442451-inspecting-disk-io-performance-with-fio/" target="_blank">Inspecting disk IO performance with fio</a>.
+                     </p>
+                     
+                     
+                     
+                     <h3 id="hdd_benchmarking">Benchmarking <code class="code">st1</code> and <code class="code">sc1</code> Volumes
+                     </h3>
+                     
+                     
+                     <p>Run <b>fio</b> on your <code class="code">st1</code> or <code class="code">sc1</code> volume.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Prior to running these tests, set buffered I/O on your instance as described in
+                           <a href="EBSPerformance.html#read_ahead">Increase Read-Ahead for High-Throughput, Read-Heavy Workloads on
+                              <code class="code">st1</code> and <code class="code">sc1</code></a>. 
+                        </p>
+                     </div>
+                     
+                     <p>The following command performs 1 MiB sequential read operations against an attached
+                        <code class="code">st1</code> block device (e.g., <code class="code">/dev/xvdf</code>):
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><b>sudo fio</b> <code class="code" copy="true">--filename=/dev/</code><em class="replaceable"><code>&lt;device&gt;</code></em> <code class="code" copy="true">--direct=1 --rw=read</code> <code class="code" copy="true">--randrepeat=0 --ioengine=libaio --bs=1024k --iodepth=8 --time_based=1 --runtime=180</code> <code class="code" copy="true">--name=fio_direct_read_test</code></code></pre>
+                     <p>The following command performs 1 MiB sequential write operations against an attached
+                        <code class="code">st1</code> block device:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><b>sudo fio</b> <code class="code" copy="true">--filename=/dev/</code><em class="replaceable"><code>&lt;device&gt;</code></em> <code class="code" copy="true">--direct=1 --rw=write</code> <code class="code" copy="true">--randrepeat=0 --ioengine=libaio --bs=1024k --iodepth=8 --time_based=1 --runtime=180</code> <code class="code" copy="true">--name=fio_direct_write_test</code> </code></pre>
+                     <p>Some workloads perform a mix of sequential reads and sequential writes to different
+                        parts of the block device. To benchmark such a workload, we recommend that you use
+                        separate, simultaneous <b>fio</b> jobs for reads and writes, and use the
+                        <b>fio</b>
+                        <code class="code">offset_increment</code> option to target different block device locations for each
+                        job. 
+                     </p>
+                     
+                     <p>Running this workload is a bit more complicated than a sequential-write or
+                        sequential-read workload. Use a text editor to create a fio job file,
+                        called <code>fio_rw_mix.cfg</code> in this example, that contains the following:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">[global] 
+clocksource=clock_gettime
+randrepeat=0
+runtime=180
+offset_increment=100g
+ 
+[sequential-write]
+bs=1M
+ioengine=libaio
+direct=1
+iodepth=8
+filename=/dev/<em class="replaceable"><code>&lt;device&gt;</code></em>
+do_verify=0
+rw=write
+rwmixread=0
+rwmixwrite=100 
+
+[sequential-read] 
+bs=1M
+ioengine=libaio
+direct=1
+iodepth=8
+filename=/dev/<em class="replaceable"><code>&lt;device&gt;</code></em>
+do_verify=0
+rw=read
+rwmixread=100
+rwmixwrite=0</code></pre>
+                     <p>Then run the following command: </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code>sudo fio <strong class="userinput"><code>fio_rw_mix.cfg</code></strong></code></pre>
+                     <p>For more information about interpreting the results, see the <a href="https://www.linux.com/learn/tutorials/442451-inspecting-disk-io-performance-with-fio/" target="_blank">Inspecting disk I/O performance with <b>fio</b></a> tutorial. 
+                     </p>
+                     
+                     <p>Multiple <b>fio</b> jobs for direct I/O, even though using sequential read
+                        or write operations, can result in lower than expected throughput for <code class="code">st1</code> and <code class="code">sc1</code>
+                        volumes. We recommend that you use one direct I/O job and use the <code class="code">iodepth</code>
+                        parameter to control the number of concurrent I/O operations. 
+                     </p>
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="raid-config.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ebs-cloud-watch-events.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Set Up Your Instance"><a class="pagetoc" href="#set_up_instance">Set Up Your Instance</a></li>
+                        <li class="pagetoc" name="Install Benchmark Tools"><a class="pagetoc" href="#install_tools">Install Benchmark Tools</a></li>
+                        <li class="pagetoc" name="Choosing the Volume Queue Length"><a class="pagetoc" href="#UnderstandingQueueLength">Choosing the Volume Queue Length</a></li>
+                        <li class="pagetoc" name="Perform Benchmarking"><a class="pagetoc" href="#perform_benchmarking">Perform Benchmarking</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

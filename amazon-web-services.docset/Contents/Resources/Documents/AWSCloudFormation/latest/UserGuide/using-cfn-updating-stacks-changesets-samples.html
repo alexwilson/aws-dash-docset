@@ -1,0 +1,605 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Example
+         Change Sets - AWS CloudFormation
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="using-cfn-updating-stacks-changesets.html" title="Updating Stacks Using
+    Change Sets">
+      <link rel="prev" href="using-cfn-updating-stacks-changesets-delete.html" title="Deleting a
+      Change Set">
+      <link rel="next" href="using-cfn-updating-stacks-direct.html" title="Updating Stacks Directly">
+      <meta name="description" content="Learn from example AWS CloudFormation change sets.">
+      <meta name="keywords" content="CloudFormation,AWSCloudFormation,resource provisioning,resource configuration,infrastructure management,CloudFormer,CloudFormation Designer,CloudFormation stack,CloudFormation stackset,CloudFormation template,change set">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS CloudFormation">
+      <meta name="guide" content="User Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-changesets-samples.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudformation">AWS CloudFormation</a> &#xBB; <a href="index.html">User Guide</a> &#xBB; <a href="stacks.html">Working with Stacks</a> &#xBB; <a href="using-cfn-updating-stacks.html">AWS CloudFormation Stacks Updates</a> &#xBB; <a href="using-cfn-updating-stacks-changesets.html">Updating Stacks Using
+                                    Change Sets</a> &#xBB; <span class="breadcrumb">Example
+                                    Change Sets</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="using-cfn-updating-stacks-changesets-samples">Example
+                        Change Sets
+                     </h1>
+                     <p>This section provides examples of the change sets that AWS CloudFormation would
+                        create for common stack changes. They show how to edit a template
+                        directly; modify a single input parameter; plan for resource recreation
+                        (replacements), which prevents you from losing data that wasn&apos;t backed up
+                        or interrupting applications that are running in your stack; and add and
+                        remove resources. To illustrate how change sets work, we&apos;ll walk through
+                        the changes that were submitted and discuss the resulting change set.
+                        Because each example builds on and assumes that you understand the
+                        previous example, we recommend that you read them in order. For a
+                        description of each field in a change set, see the <a href="./AWSCloudFormation/latest/APIReference/API_Change.html" target="_blank">Change</a> data type in the
+                        <em>AWS CloudFormation API Reference</em>.
+                     </p>
+                     <p>You can use the <a href="using-cfn-updating-stacks-changesets-view.html">console</a>, AWS
+                        CLI, or AWS CloudFormation <a href="./AWSCloudFormation/latest/APIReference/API_DescribeChangeSet.html" target="_blank">API</a> to view change set details.
+                     </p>
+                     <p>We generated each of the following change sets from a stack with the
+                        following <a href="https://s3.amazonaws.com/cloudformation-examples/user-guide/changesets/ec2-instance.txt" target="_blank">sample
+                           template</a>:
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;AWSTemplateFormatVersion&quot; : &quot;2010-09-09&quot;,
+  &quot;Description&quot; : &quot;A sample EC2 instance template for testing change sets.&quot;,
+  &quot;Parameters&quot; : {
+    &quot;Purpose&quot; : {
+      &quot;Type&quot; : &quot;String&quot;,
+      &quot;Default&quot; : &quot;testing&quot;,
+      &quot;AllowedValues&quot; : [&quot;testing&quot;, &quot;production&quot;],
+      &quot;Description&quot; : &quot;The purpose of this instance.&quot;
+    },
+    &quot;KeyPairName&quot; : {
+      &quot;Type&quot;: &quot;AWS::EC2::KeyPair::KeyName&quot;,
+      &quot;Description&quot; : &quot;Name of an existing EC2 KeyPair to enable SSH access to the instance&quot;
+    },
+    &quot;InstanceType&quot; : {
+      &quot;Type&quot; : &quot;String&quot;,
+      &quot;Default&quot; : &quot;t2.micro&quot;,
+      &quot;AllowedValues&quot; : [&quot;t2.micro&quot;, &quot;t2.small&quot;, &quot;t2.medium&quot;],
+      &quot;Description&quot; : &quot;The EC2 instance type.&quot;
+    }
+  },
+  &quot;Resources&quot; : {
+    &quot;MyEC2Instance&quot; : {
+      &quot;Type&quot; : &quot;AWS::EC2::Instance&quot;,
+      &quot;Properties&quot; : {
+        &quot;KeyName&quot; : { &quot;Ref&quot; : &quot;KeyPairName&quot; },
+        &quot;InstanceType&quot; : { &quot;Ref&quot; : &quot;InstanceType&quot; },
+        &quot;ImageId&quot; : &quot;ami-8fcee4e5&quot;,
+        &quot;Tags&quot; : [
+          {
+            &quot;Key&quot; : &quot;Purpose&quot;,
+            &quot;Value&quot; : { &quot;Ref&quot; : &quot;Purpose&quot; }
+          }
+        ]
+      }
+    }
+  }
+}</code></pre>
+                     <h2 id="using-cfn-updating-stacks-changesets-samples-directly-editing-a-template">Directly Editing a Template</h2>
+                     
+                     
+                     <p>When you directly modify resources in the stack&apos;s template to
+                        generate a change set, AWS CloudFormation classifies the change as a direct
+                        modification, as opposed to changes trigged by an updated parameter
+                        value. The following change set, which added a new tag to the
+                        <code class="code">i-1abc23d4</code> instance, is an example of a direct
+                        modification. All other input values, such as the parameter values and
+                        capabilities, are unchanged, so we&apos;ll focus on the <code class="code">Changes</code>
+                        structure.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+    &quot;StackId&quot;: &quot;arn:aws:cloudformation:us-east-1:123456789012:stack/SampleStack/1a2345b6-0000-00a0-a123-00abc0abc000&quot;,
+    &quot;Status&quot;: &quot;CREATE_COMPLETE&quot;,
+    &quot;ChangeSetName&quot;: &quot;SampleChangeSet-direct&quot;,
+    &quot;Parameters&quot;: [
+        {
+            &quot;ParameterValue&quot;: &quot;testing&quot;,
+            &quot;ParameterKey&quot;: &quot;Purpose&quot;
+        },
+        {
+            &quot;ParameterValue&quot;: &quot;MyKeyName&quot;,
+            &quot;ParameterKey&quot;: &quot;KeyPairName&quot;
+        },
+        {
+            &quot;ParameterValue&quot;: &quot;t2.micro&quot;,
+            &quot;ParameterKey&quot;: &quot;InstanceType&quot;
+        }
+    ],
+    &quot;Changes&quot;: [
+        {
+            &quot;ResourceChange&quot;: {
+                &quot;ResourceType&quot;: &quot;AWS::EC2::Instance&quot;,
+                &quot;PhysicalResourceId&quot;: &quot;i-1abc23d4&quot;,
+                &quot;Details&quot;: [
+                    {
+                        &quot;ChangeSource&quot;: &quot;DirectModification&quot;,
+                        &quot;Evaluation&quot;: &quot;Static&quot;,
+                        &quot;Target&quot;: {
+                            &quot;Attribute&quot;: &quot;Tags&quot;,
+                            &quot;RequiresRecreation&quot;: &quot;Never&quot;
+                        }
+                    }
+                ],
+                &quot;Action&quot;: &quot;Modify&quot;,
+                &quot;Scope&quot;: [
+                    &quot;Tags&quot;
+                ],
+                &quot;LogicalResourceId&quot;: &quot;MyEC2Instance&quot;,
+                &quot;Replacement&quot;: &quot;False&quot;
+            },
+            &quot;Type&quot;: &quot;Resource&quot;
+        }
+    ],
+    &quot;CreationTime&quot;: &quot;2016-03-17T23:35:25.813Z&quot;,
+    &quot;Capabilities&quot;: [],
+    &quot;StackName&quot;: &quot;SampleStack&quot;,
+    &quot;NotificationARNs&quot;: [],
+    &quot;ChangeSetId&quot;: &quot;arn:aws:cloudformation:us-east-1:123456789012:changeSet/SampleChangeSet-direct/1a2345b6-0000-00a0-a123-00abc0abc000&quot;
+}</code></pre>
+                     <p>In the <code class="code">Changes</code> structure, there&apos;s only one
+                        <code class="code">ResourceChange</code> structure. This structure describes
+                        information such as the type of resource AWS CloudFormation will change, the action
+                        AWS CloudFormation will take, the ID of the resource, the scope of the change, and
+                        whether the change requires a replacement (where AWS CloudFormation creates a new
+                        resource and then deletes the old one). In the example, the change set
+                        indicates that AWS CloudFormation will modify the <code class="code">Tags</code> attribute of the
+                        <code class="code">i-1abc23d4</code> EC2 instance, and doesn&apos;t require the instance
+                        to be replaced.
+                     </p>
+                     
+                     <p>In the <code class="code">Details</code> structure, AWS CloudFormation labels this change as a
+                        direct modification that will never require the instance to be recreated
+                        (replaced). You can confidently execute this change, knowing that AWS CloudFormation
+                        won&apos;t replace the instance.
+                     </p>
+                     
+                     <p>AWS CloudFormation shows this change as a <code class="code">Static</code> evaluation. A
+                        static evaluation means that AWS CloudFormation can determine the tag&apos;s value before
+                        executing the change set. In some cases, AWS CloudFormation can determine a value
+                        only after you execute a change set. AWS CloudFormation labels those changes as
+                        <code class="code">Dynamic</code> evaluations. For example, if you reference an
+                        updated resource that is conditionally replaced, AWS CloudFormation can&apos;t determine
+                        whether the reference to the updated resource will change.
+                     </p>
+                     
+                     
+                     <h2 id="using-cfn-updating-stacks-changesets-samples-modifying-a-single-input-parameter-value">Modifying an Input Parameter Value</h2>
+                     
+                     
+                     <p>When you modify an input parameter value, AWS CloudFormation generates two
+                        changes for each resource that uses the updated parameter value. In this
+                        example, we want to highlight what those changes look like and which
+                        information you should focus on. The following example was generated by
+                        changing the value of the <code class="code">Purpose</code> input parameter only. 
+                     </p>
+                     
+                     <p>The <code class="code">Purpose</code> parameter specifies a tag key value for the
+                        EC2 instance. In the example, the parameter value was changed from
+                        <code class="code">testing</code> to <code class="code">production</code>. The new value is
+                        shown in the <code class="code">Parameters</code> structure.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+    &quot;StackId&quot;: &quot;arn:aws:cloudformation:us-east-1:123456789012:stack/SampleStack/1a2345b6-0000-00a0-a123-00abc0abc000&quot;,
+    &quot;Status&quot;: &quot;CREATE_COMPLETE&quot;,
+    &quot;ChangeSetName&quot;: &quot;SampleChangeSet&quot;,
+    &quot;Parameters&quot;: [
+        {
+            &quot;ParameterValue&quot;: &quot;production&quot;,
+            &quot;ParameterKey&quot;: &quot;Purpose&quot;
+        },
+        {
+            &quot;ParameterValue&quot;: &quot;MyKeyName&quot;,
+            &quot;ParameterKey&quot;: &quot;KeyPairName&quot;
+        },
+        {
+            &quot;ParameterValue&quot;: &quot;t2.micro&quot;,
+            &quot;ParameterKey&quot;: &quot;InstanceType&quot;
+        }
+    ],
+    &quot;Changes&quot;: [
+        {
+            &quot;ResourceChange&quot;: {
+                &quot;ResourceType&quot;: &quot;AWS::EC2::Instance&quot;,
+                &quot;PhysicalResourceId&quot;: &quot;i-1abc23d4&quot;,
+                &quot;Details&quot;: [
+                    {
+                        &quot;ChangeSource&quot;: &quot;DirectModification&quot;,
+                        &quot;Evaluation&quot;: &quot;Dynamic&quot;,
+                        &quot;Target&quot;: {
+                            &quot;Attribute&quot;: &quot;Tags&quot;,
+                            &quot;RequiresRecreation&quot;: &quot;Never&quot;
+                        }
+                    },
+                    {
+                        &quot;CausingEntity&quot;: &quot;Purpose&quot;,
+                        &quot;ChangeSource&quot;: &quot;ParameterReference&quot;,
+                        &quot;Evaluation&quot;: &quot;Static&quot;,
+                        &quot;Target&quot;: {
+                            &quot;Attribute&quot;: &quot;Tags&quot;,
+                            &quot;RequiresRecreation&quot;: &quot;Never&quot;
+                        }
+                    }
+                ],
+                &quot;Action&quot;: &quot;Modify&quot;,
+                &quot;Scope&quot;: [
+                    &quot;Tags&quot;
+                ],
+                &quot;LogicalResourceId&quot;: &quot;MyEC2Instance&quot;,
+                &quot;Replacement&quot;: &quot;False&quot;
+            },
+            &quot;Type&quot;: &quot;Resource&quot;
+        }
+    ],
+    &quot;CreationTime&quot;: &quot;2016-03-16T23:59:18.447Z&quot;,
+    &quot;Capabilities&quot;: [],
+    &quot;StackName&quot;: &quot;SampleStack&quot;,
+    &quot;NotificationARNs&quot;: [],
+    &quot;ChangeSetId&quot;: &quot;arn:aws:cloudformation:us-east-1:123456789012:changeSet/SampleChangeSet/1a2345b6-0000-00a0-a123-00abc0abc000&quot;
+}</code></pre>
+                     <p>The <code class="code">Changes</code> structure functions similar to way it does
+                        in the <a href="using-cfn-updating-stacks-changesets-samples.html#using-cfn-updating-stacks-changesets-samples-directly-editing-a-template">Directly Editing a Template</a> example. There&apos;s only one
+                        <code class="code">ResourceChange</code> structure; it describes a change to the
+                        <code class="code">Tags</code> attribute of the <code class="code">i-1abc23d4</code> EC2
+                        instance.
+                     </p>
+                     
+                     <p>However, in the <code class="code">Details</code> structure, the change set shows
+                        two changes for the <code class="code">Tags</code> attribute, even though only a
+                        single parameter value was changed. Resources that reference a changed
+                        parameter value (using the <code class="code">Ref</code> intrinsic function) always
+                        result in two changes: one with a <code class="code">Dynamic</code> evaluation and
+                        another with a <code class="code">Static</code> evaluation. You can see these types
+                        of changes by viewing the following fields:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>For the <code class="code">Static</code> evaluation change, view the
+                                 <code class="code">ChangeSource</code> field. In this example, the
+                                 <code class="code">ChangeSource</code> field equals
+                                 <code class="code">ParameterReference</code>, meaning that this change is a
+                                 result of an updated parameter reference value. The change set
+                                 must contain a similar <code class="code">Dynamic</code> evaluation
+                                 change.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>You can find the matching <code class="code">Dynamic</code> evaluation
+                                 change by comparing the <code class="code">Target</code> structure for both
+                                 changes, which will contain the same information. In this example,
+                                 the <code class="code">Target</code> structures for both changes contain the
+                                 same values for the <code class="code">Attribute</code> and
+                                 <code class="code">RequireRecreation</code> fields.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>For these types of changes, focus on the static evaluation, which
+                        gives you the most detailed information about the change. In this
+                        example, the static evaluation shows that the change is the result of a
+                        change in a parameter reference value (<code class="code">ParameterReference</code>).
+                        The exact parameter that was changed is indicated by the
+                        <code class="code">CauseEntity</code> field (the <code class="code">Purpose</code>
+                        parameter).
+                     </p>
+                     
+                     <h2 id="using-cfn-updating-stacks-changesets-samples-determining-the-value-of-the-replacement-field">Determining the Value of the Replacement Field</h2>
+                     
+                     
+                     <p>The <code class="code">Replacement</code> field in a <code class="code">ResourceChange</code>
+                        structure indicates whether AWS CloudFormation will recreate the resource. Planning
+                        for resource recreation (replacements) prevents you from losing data
+                        that wasn&apos;t backed up or interrupting applications that are running in
+                        your stack.
+                     </p>
+                     
+                     <p>The value in the <code class="code">Replacement</code> field depends on whether a
+                        change requires a replacement, indicated by the
+                        <code class="code">RequiresRecreation</code> field in a change&apos;s
+                        <code class="code">Target</code> structure. For example, if the
+                        <code class="code">RequiresRecreation</code> field is <code class="code">Never</code>, the
+                        <code class="code">Replacement</code> field is <code class="code">False</code>. However, if
+                        there are multiple changes on a single resource and each change has a
+                        different value for the <code class="code">RequiresRecreation</code> field, AWS CloudFormation
+                        updates the resource using the most intrusive behavior. In other words,
+                        if only one of the many changes requires a replacement, AWS CloudFormation must
+                        replace the resource and, therefore, sets the <code class="code">Replacement</code>
+                        field to <code class="code">True</code>.
+                     </p>
+                     
+                     <p>The following change set was generated by changing the values for
+                        every parameter (<code class="code">Purpose</code>, <code class="code">InstanceType</code>, and
+                        <code class="code">KeyPairName</code>), which are all used by the EC2 instance.
+                        With these changes, AWS CloudFormation will be required to be replace the instance
+                        because the <code class="code">Replacement</code> field is equal to
+                        <code class="code">True</code>.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+    &quot;StackId&quot;: &quot;arn:aws:cloudformation:us-east-1:123456789012:stack/SampleStack/1a2345b6-0000-00a0-a123-00abc0abc000&quot;,
+    &quot;Status&quot;: &quot;CREATE_COMPLETE&quot;,
+    &quot;ChangeSetName&quot;: &quot;SampleChangeSet-multiple&quot;,
+    &quot;Parameters&quot;: [
+        {
+            &quot;ParameterValue&quot;: &quot;production&quot;,
+            &quot;ParameterKey&quot;: &quot;Purpose&quot;
+        },
+        {
+            &quot;ParameterValue&quot;: &quot;MyNewKeyName&quot;,
+            &quot;ParameterKey&quot;: &quot;KeyPairName&quot;
+        },
+        {
+            &quot;ParameterValue&quot;: &quot;t2.small&quot;,
+            &quot;ParameterKey&quot;: &quot;InstanceType&quot;
+        }
+    ],
+    &quot;Changes&quot;: [
+        {
+            &quot;ResourceChange&quot;: {
+                &quot;ResourceType&quot;: &quot;AWS::EC2::Instance&quot;,
+                &quot;PhysicalResourceId&quot;: &quot;i-7bef86f8&quot;,
+                &quot;Details&quot;: [
+                    {
+                        &quot;ChangeSource&quot;: &quot;DirectModification&quot;,
+                        &quot;Evaluation&quot;: &quot;Dynamic&quot;,
+                        &quot;Target&quot;: {
+                            &quot;Attribute&quot;: &quot;Properties&quot;,
+                            &quot;Name&quot;: &quot;KeyName&quot;,
+                            &quot;RequiresRecreation&quot;: &quot;Always&quot;
+                        }
+                    },
+                    {
+                        &quot;ChangeSource&quot;: &quot;DirectModification&quot;,
+                        &quot;Evaluation&quot;: &quot;Dynamic&quot;,
+                        &quot;Target&quot;: {
+                            &quot;Attribute&quot;: &quot;Properties&quot;,
+                            &quot;Name&quot;: &quot;InstanceType&quot;,
+                            &quot;RequiresRecreation&quot;: &quot;Conditionally&quot;
+                        }
+                    },
+                    {
+                        &quot;ChangeSource&quot;: &quot;DirectModification&quot;,
+                        &quot;Evaluation&quot;: &quot;Dynamic&quot;,
+                        &quot;Target&quot;: {
+                            &quot;Attribute&quot;: &quot;Tags&quot;,
+                            &quot;RequiresRecreation&quot;: &quot;Never&quot;
+                        }
+                    },
+                    {
+                        &quot;CausingEntity&quot;: &quot;KeyPairName&quot;,
+                        &quot;ChangeSource&quot;: &quot;ParameterReference&quot;,
+                        &quot;Evaluation&quot;: &quot;Static&quot;,
+                        &quot;Target&quot;: {
+                            &quot;Attribute&quot;: &quot;Properties&quot;,
+                            &quot;Name&quot;: &quot;KeyName&quot;,
+                            &quot;RequiresRecreation&quot;: &quot;Always&quot;
+                        }
+                    },
+                    {
+                        &quot;CausingEntity&quot;: &quot;InstanceType&quot;,
+                        &quot;ChangeSource&quot;: &quot;ParameterReference&quot;,
+                        &quot;Evaluation&quot;: &quot;Static&quot;,
+                        &quot;Target&quot;: {
+                            &quot;Attribute&quot;: &quot;Properties&quot;,
+                            &quot;Name&quot;: &quot;InstanceType&quot;,
+                            &quot;RequiresRecreation&quot;: &quot;Conditionally&quot;
+                        }
+                    },
+                    {
+                        &quot;CausingEntity&quot;: &quot;Purpose&quot;,
+                        &quot;ChangeSource&quot;: &quot;ParameterReference&quot;,
+                        &quot;Evaluation&quot;: &quot;Static&quot;,
+                        &quot;Target&quot;: {
+                            &quot;Attribute&quot;: &quot;Tags&quot;,
+                            &quot;RequiresRecreation&quot;: &quot;Never&quot;
+                        }
+                    }
+                ],
+                &quot;Action&quot;: &quot;Modify&quot;,
+                &quot;Scope&quot;: [
+                    &quot;Tags&quot;,
+                    &quot;Properties&quot;
+                ],
+                &quot;LogicalResourceId&quot;: &quot;MyEC2Instance&quot;,
+                &quot;Replacement&quot;: &quot;True&quot;
+            },
+            &quot;Type&quot;: &quot;Resource&quot;
+        }
+    ],
+    &quot;CreationTime&quot;: &quot;2016-03-17T00:39:35.974Z&quot;,
+    &quot;Capabilities&quot;: [],
+    &quot;StackName&quot;: &quot;SampleStack&quot;,
+    &quot;NotificationARNs&quot;: [],
+    &quot;ChangeSetId&quot;: &quot;arn:aws:cloudformation:us-east-1:123456789012:changeSet/SampleChangeSet-multiple/1a2345b6-0000-00a0-a123-00abc0abc000&quot;
+}</code></pre>
+                     <p>Identify the change that requires the resource to be replaced by
+                        viewing each change (the static evaluations in the <code class="code">Details</code>
+                        structure). In this example, each change has a different value for the
+                        <code class="code">RequireRecreation</code> field, but the change to the
+                        <code class="code">KeyName</code> property has the most intrusive update behavior,
+                        always requiring a recreation. AWS CloudFormation will replace the instance because
+                        the key name was changed.
+                     </p>
+                     
+                     <p>If the key name were unchanged, the change to the
+                        <code class="code">InstanceType</code> property would have the most intrusive
+                        update behavior (<code class="code">Conditionally</code>), so the
+                        <code class="code">Replacement</code> field would be <code class="code">Conditionally</code>. To
+                        find the conditions in which AWS CloudFormation replaces the instance, view the
+                        update behavior for the <a href="./AWSCloudFormation/latest/UserGuide/aws-properties-ec2-instance.html#cfn-ec2-instance-instancetype" target="_blank"><code class="code">InstanceType</code></a> property.
+                     </p>
+                     
+                     <h2 id="using-cfn-updating-stacks-changesets-samples-adding-and-removing-resources">Adding and Removing Resources</h2>
+                     
+                     
+                     <p>The following example was generated by submitting a modified
+                        template that removes the EC2 instance and adds an Auto Scaling group and launch
+                        configuration.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+    &quot;StackId&quot;: &quot;arn:aws:cloudformation:us-east-1:123456789012:stack/SampleStack/1a2345b6-0000-00a0-a123-00abc0abc000&quot;,
+    &quot;Status&quot;: &quot;CREATE_COMPLETE&quot;,
+    &quot;ChangeSetName&quot;: &quot;SampleChangeSet-addremove&quot;,
+    &quot;Parameters&quot;: [
+        {
+            &quot;ParameterValue&quot;: &quot;testing&quot;,
+            &quot;ParameterKey&quot;: &quot;Purpose&quot;
+        },
+        {
+            &quot;ParameterValue&quot;: &quot;MyKeyName&quot;,
+            &quot;ParameterKey&quot;: &quot;KeyPairName&quot;
+        },
+        {
+            &quot;ParameterValue&quot;: &quot;t2.micro&quot;,
+            &quot;ParameterKey&quot;: &quot;InstanceType&quot;
+        }
+    ],
+    &quot;Changes&quot;: [
+        {
+            &quot;ResourceChange&quot;: {
+                &quot;Action&quot;: &quot;Add&quot;,
+                &quot;ResourceType&quot;: &quot;AWS::AutoScaling::AutoScalingGroup&quot;,
+                &quot;Scope&quot;: [],
+                &quot;Details&quot;: [],
+                &quot;LogicalResourceId&quot;: &quot;AutoScalingGroup&quot;
+            },
+            &quot;Type&quot;: &quot;Resource&quot;
+        },
+        {
+            &quot;ResourceChange&quot;: {
+                &quot;Action&quot;: &quot;Add&quot;,
+                &quot;ResourceType&quot;: &quot;AWS::AutoScaling::LaunchConfiguration&quot;,
+                &quot;Scope&quot;: [],
+                &quot;Details&quot;: [],
+                &quot;LogicalResourceId&quot;: &quot;LaunchConfig&quot;
+            },
+            &quot;Type&quot;: &quot;Resource&quot;
+        },
+        {
+            &quot;ResourceChange&quot;: {
+                &quot;ResourceType&quot;: &quot;AWS::EC2::Instance&quot;,
+                &quot;PhysicalResourceId&quot;: &quot;i-1abc23d4&quot;,
+                &quot;Details&quot;: [],
+                &quot;Action&quot;: &quot;Remove&quot;,
+                &quot;Scope&quot;: [],
+                &quot;LogicalResourceId&quot;: &quot;MyEC2Instance&quot;
+            },
+            &quot;Type&quot;: &quot;Resource&quot;
+        }
+    ],
+    &quot;CreationTime&quot;: &quot;2016-03-18T01:44:08.444Z&quot;,
+    &quot;Capabilities&quot;: [],
+    &quot;StackName&quot;: &quot;SampleStack&quot;,
+    &quot;NotificationARNs&quot;: [],
+    &quot;ChangeSetId&quot;: &quot;arn:aws:cloudformation:us-east-1:123456789012:changeSet/SampleChangeSet-addremove/1a2345b6-0000-00a0-a123-00abc0abc000&quot;
+}</code></pre>
+                     <p>In the <code class="code">Changes</code> structure, there are three
+                        <code class="code">ResourceChange</code> structures, one for each resource. For
+                        each resource, the <code class="code">Action</code> field indicates whether AWS CloudFormation
+                        adds or removes the resource. The <code class="code">Scope</code> and
+                        <code class="code">Details</code> fields are empty because they apply only to
+                        modified resources.
+                     </p>
+                     
+                     <p>For new resources, AWS CloudFormation can&apos;t determine the value of some fields
+                        until you execute the change set. For example, AWS CloudFormation doesn&apos;t provide
+                        the
+                        physical IDs of the Auto Scaling group and launch configuration because they
+                        don&apos;t exist yet. AWS CloudFormation creates the new resources when you execute the
+                        change set.
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="using-cfn-updating-stacks-changesets-delete.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="using-cfn-updating-stacks-direct.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Directly Editing a Template"><a class="pagetoc" href="#using-cfn-updating-stacks-changesets-samples-directly-editing-a-template">Directly Editing a Template</a></li>
+                        <li class="pagetoc" name="Modifying an Input Parameter Value"><a class="pagetoc" href="#using-cfn-updating-stacks-changesets-samples-modifying-a-single-input-parameter-value">Modifying an Input Parameter Value</a></li>
+                        <li class="pagetoc" name="Determining the Value of the Replacement Field"><a class="pagetoc" href="#using-cfn-updating-stacks-changesets-samples-determining-the-value-of-the-replacement-field">Determining the Value of the Replacement Field</a></li>
+                        <li class="pagetoc" name="Adding and Removing Resources"><a class="pagetoc" href="#using-cfn-updating-stacks-changesets-samples-adding-and-removing-resources">Adding and Removing Resources</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS CloudFormation';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

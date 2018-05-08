@@ -1,0 +1,249 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Step 3: Add an Event Source
+         				(Create a Kinesis Stream and Associate It with Your Lambda Function) - AWS Lambda
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="with-kinesis-example.html" title="Tutorial: Using AWS Lambda with Kinesis">
+      <link rel="prev" href="with-kinesis-example-upload-deployment-pkg.html" title="Step 2.3: Create the Lambda Function and Test It Manually">
+      <link rel="next" href="with-kinesis-example-use-app-spec.html" title="Step 4: Deploy With AWS SAM and AWS CloudFormation">
+      <meta name="description" content="In this section, you create a Kinesis stream, and then you add an event source in AWS Lambda to associate the Kinesis stream with your Lambda function.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/with-kinesis-example-configure-event-source.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="use-cases.html">Examples of How to Use AWS Lambda</a> &#xBB; <a href="with-kinesis.html">Using AWS Lambda with Kinesis</a> &#xBB; <a href="with-kinesis-example.html">Tutorial: Using AWS Lambda with Kinesis</a> &#xBB; <span class="breadcrumb">Step 3: Add an Event Source
+                                    				(Create a Kinesis Stream and Associate It with Your Lambda Function)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="with-kinesis-example-configure-event-source">Step 3: Add an Event Source
+                        				(Create a Kinesis Stream and Associate It with Your Lambda Function)
+                     </h1>
+                     <p> In this section, you create a Kinesis stream, and then you add an event
+                        				source in AWS Lambda to associate the Kinesis stream with your Lambda function.
+                        
+                     </p>
+                     <p>After you create an event source, AWS Lambda starts polling the stream. You
+                        				then test the setup by adding events to the stream and verify that AWS Lambda
+                        				executed your Lambda function on your behalf:
+                     </p>
+                     <h2 id="with-kinesis-example-configure-event-source-create">Step 3.1:
+                        					Create a Kinesis Stream
+                     </h2>
+                     				
+                     				
+                     				
+                     <p>Use the following Kinesis <code class="code">create-stream </code> CLI command to create a
+                        					stream.
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">$ aws kinesis create-stream \
+--stream-name <em class="replaceable"><code>examplestream</code></em> \
+--shard-count <em class="replaceable"><code>1</code></em> \
+--region <em class="replaceable"><code>region</code></em> \
+--profile <em class="replaceable"><code>adminuser</code></em></code></pre>
+                     				<p>Run the following Kinesis <code class="code">describe-stream</code> AWS CLI command to get the
+                        					stream ARN. 
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">$ aws kinesis describe-stream \
+--stream-name examplestream \
+--region <em class="replaceable"><code>region</code></em> \
+--profile adminuser</code></pre>
+                     				<p>You need the stream ARN in the next step to associate the stream with your
+                        					Lambda function. The stream is of the form:
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">arn:aws:kinesis:<em class="replaceable"><code>aws-region</code></em>:<em class="replaceable"><code>account-id</code></em>:stream/<em class="replaceable"><code>stream-name</code></em></code></pre>
+                     				
+                     				
+                     			<h2 id="with-kinesis-example-configure-event-source-add-event-source">Step
+                        					3.2: Add an Event Source in AWS Lambda
+                     </h2>
+                     				
+                     				
+                     				
+                     <p>Run the following AWS CLI <code class="code">add-event-source</code> command. After the
+                        					command executes, note down the UUID. You&apos;ll need this UUID to refer to the
+                        					event source in any commands (for example, when deleting the event
+                        					source).
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">$ aws lambda create-event-source-mapping \
+--region <em class="replaceable"><code>region</code></em> \
+--function-name ProcessKinesisRecords \
+--event-source  <em class="replaceable"><code>kinesis-stream-arn</code></em> \
+--batch-size 100 \
+--starting-position TRIM_HORIZON \
+--profile adminuser</code></pre>
+                     				<p>You can get a list of event source mappings by running the following command.</p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">$ aws lambda list-event-source-mappings \
+--region <em class="replaceable"><code>region</code></em> \
+--function-name ProcessKinesisRecords \
+--event-source <em class="replaceable"><code>kinesis-stream-arn</code></em> \
+--profile adminuser \
+--debug</code></pre>
+                     				<p>In the response, you can verify the status value is <code class="code">enabled</code>. 
+                     </p>
+                     				
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>If you disable the event source mapping, AWS Lambda stops polling the Kinesis stream.
+                           If
+                           							you re-enable event source mapping, it will resume polling from the sequence
+                           number where it stopped, 
+                           							so each record is processed either before you disabled the mapping or after
+                           you enabled it. 
+                           							If the sequence number falls behind <code class="code">TRIM_HORIZON</code>, when you re-enable it 
+                           							polling will start from <code class="code">TRIM_HORIZON</code>. However, if you create a new event 
+                           							source mapping, polling will always start from <code class="code">TRIM_HORIZON</code>, <code class="code">LATEST</code> or <code class="code">AT_TIMESTAMP</code>, 
+                           							depending on the starting position you specify. This applies even if you delete
+                           an event source 
+                           							mapping and create a new one with the same configuration as the deleted one.
+                           
+                        </p>
+                     </div>
+                     			
+                     <h2 id="with-kinesis-example-configure-event-source-test-end-to-end">Step
+                        					3.3: Test the Setup
+                     </h2>
+                     				
+                     				
+                     <p>You&apos;re all done! Now <em>adminuser</em> can test the setup as
+                        					follows:
+                     </p>
+                     				
+                     <div class="orderedlist">
+                        					
+                        					
+                        					
+                        				
+                        <ol>
+                           <li>
+                              						
+                              <p>Using the following AWS CLI command, add event records to your Kinesis
+                                 							stream. The <code class="code">--data</code> value is a base64-encoded value of the
+                                 							<code class="code">&quot;Hello, this is a test.&quot;</code> string. You can run the same command more than
+                                 							once to add multiple records to the stream.
+                                 							
+                              </p>
+                              						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">$ aws kinesis put-record \
+--stream-name examplestream \
+--data &quot;This is a test. final&quot; \
+--partition-key shardId-000000000000 \
+--region <em class="replaceable"><code>region</code></em> \
+--profile adminuser</code></pre>
+                              					</li>
+                           <li>
+                              						
+                              <p>AWS Lambda polls the stream and, when it detects updates to the stream,
+                                 							it invokes your Lambda function by passing in the event data from 
+                                 							the stream.
+                              </p>
+                              						
+                              <p>AWS Lambda assumes the execution role to poll the stream. You have
+                                 							granted the role permissions for the necessary Kinesis actions so that
+                                 							AWS Lambda can poll the stream and read events from the stream.
+                              </p>
+                              					
+                           </li>
+                           <li>
+                              						
+                              <p>Your function executes and adds logs to the log group that corresponds
+                                 							to the Lambda function in Amazon CloudWatch. 
+                              </p>
+                              						
+                              <p>The <b>adminuser</b> can also verify the logs reported
+                                 							in the Amazon CloudWatch console. Make sure you are checking for logs in the
+                                 same
+                                 							AWS region where you created the Lambda function. 
+                              </p>
+                              					
+                           </li>
+                        </ol>
+                     </div>
+                     			
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="with-kinesis-example-upload-deployment-pkg.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="with-kinesis-example-use-app-spec.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Step 3.1:
+					Create a Kinesis Stream"><a class="pagetoc" href="#with-kinesis-example-configure-event-source-create">Step 3.1:
+                              					Create a Kinesis Stream</a></li>
+                        <li class="pagetoc" name="Step
+					3.2: Add an Event Source in AWS Lambda"><a class="pagetoc" href="#with-kinesis-example-configure-event-source-add-event-source">Step
+                              					3.2: Add an Event Source in AWS Lambda</a></li>
+                        <li class="pagetoc" name="Step
+					3.3: Test the Setup"><a class="pagetoc" href="#with-kinesis-example-configure-event-source-test-end-to-end">Step
+                              					3.3: Test the Setup</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

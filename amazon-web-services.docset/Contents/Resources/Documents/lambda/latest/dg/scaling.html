@@ -1,0 +1,414 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Understanding Scaling Behavior - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="invoking-lambda-functions.html" title="Invoking Lambda Functions">
+      <link rel="prev" href="retries-on-errors.html" title="Understanding Retry Behavior">
+      <link rel="next" href="invoking-lambda-function.html" title="Supported Event Sources">
+      <meta name="description" content="Concurrent executions refers to the number of executions of your function code that are happening at any given time. You can estimate the concurrent execution count, but the concurrent execution count will differ depending on whether or not your Lambda function is processing events from a stream-based event source.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/scaling.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="invoking-lambda-functions.html">Invoking Lambda Functions</a> &#xBB; <span class="breadcrumb">Understanding Scaling Behavior</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="scaling">Understanding Scaling Behavior</h1>
+                     <p>Concurrent executions refers to the number of executions of your function code that
+                        are happening at any given time. You can estimate the concurrent execution count,
+                        but the concurrent execution count will differ depending on whether or not your Lambda
+                        function is processing events from a stream-based event source.
+                        
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><b>Stream-based event sources</b> for Lambda functions that process Kinesis or DynamoDB streams the number of shards
+                                 is the unit of concurrency. If your stream has 100 active shards, 
+                                 there will be at most 100 Lambda function invocations running concurrently. This is
+                                 because Lambda processes each shard&#x2019;s events in sequence. 
+                              </p>
+                              
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Event sources that aren&apos;t stream-based</b> &#x2013; 
+                                 If you create a Lambda function to process events from event sources that aren&apos;t stream-based
+                                 (for example, Lambda can process every event from other sources, like Amazon S3 or
+                                 API Gateway), each published event is a unit of work, in parallel, up to your account
+                                 limits. 
+                                 Therefore, the number of events (or requests) these event sources publish influences
+                                 the concurrency.  
+                                 You can use the this formula to estimate your concurrent Lambda function invocations:
+                              </p>
+                              
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">events (or requests) per second * function duration</code></pre>
+                              <p>For example, consider a Lambda function that processes Amazon S3 events. Suppose that
+                                 the
+                                 Lambda function takes on average three seconds and Amazon S3 publishes 10 events per
+                                 second. Then, you will have 30 concurrent executions of your Lambda
+                                 function.
+                              </p>
+                              
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <h2 id="concurrent-executions-request-rate">Request Rate</h2>
+                     
+                     
+                     
+                     <p>Request rate refers to the rate at which your Lambda function is invoked. For all
+                        services except the stream-based services, the request rate is the rate at which the
+                        event sources generate the events. For stream-based services, AWS Lambda calculates
+                        the
+                        request rate as follow:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">request rate = number of concurrent executions / function duration</code></pre>
+                     <p>For example, if there are five active shards on a stream (that is, you have five Lambda
+                        functions running in parallel) and your Lambda function takes about two seconds, the
+                        request rate is 2.5 requests/second.
+                     </p>
+                     
+                     
+                     <h2 id="scaling-behavior">Scaling</h2>
+                     
+                     
+                     <p>AWS Lambda will dynamically scale capacity in response to increased traffic, subject
+                        to your account&apos;s <a href="concurrent-executions.html#concurrent-execution-safety-limit">Account Level Concurrent Execution Limit</a>. 
+                        To handle any burst in traffic, Lambda will immediately increase your concurrently
+                        executing functions by a predetermined amount, dependent on which
+                        region it&apos;s executed (see table below).
+                     </p>
+                     <p> If the default <b>Immediate Concurrency Increase</b> value, as noted in the table below, is not sufficient to accommodate the traffic
+                        surge,
+                        Lambda will continue to increase the number of concurrent function executions by 500
+                        per minute until your account safety limit has been reached or the number of concurrently
+                        executing functions is sufficient to successfully process the increased load.
+                     </p>
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Because Lambda depends on Amazon EC2 to provide Elastic Network Interfaces for VPC-enabled
+                           Lambda functions, 
+                           these functions are also subject to Amazon EC2&apos;s rate limits as they scale. If your
+                           Amazon EC2 rate limits
+                           prevent VPC-enabled functions from adding 500 concurrent invocations per minute, please
+                           request
+                           a limit increase by following the instructions in the preceding section under <b>To request a limit increase for concurrent executions</b>.
+                        </p>
+                        <p>Beyond this rate (i.e. for applications taking advantage of the full Immediate concurrency
+                           increase), your application should handle Amazon EC2 throttling (502 EC2ThrottledException)
+                           through client-side retry and backoff.
+                           For more details, see <a href="./general/latest/gr/api-retries.html" target="_blank">Error Retries and Exponential Backoff in AWS</a>.
+                        </p>
+                     </div>
+                     
+                     <p>The table below outlines the immediate concurrency increase per region:</p> 
+                     
+                     
+                     <div class="table">
+                        <p class="title"><b></b></p>
+                        <div class="table-contents">
+                           <table id="w326aac13c23b8b9">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Region</th>
+                                 
+                                 <th>Immediate Concurrency Increase (function executions)</th>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              
+                              
+                              <tr>
+                                 
+                                 <td>Asia Pacific (Tokyo)</td>
+                                 
+                                 <td>1000</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>Asia Pacific (Seoul)</td>
+                                 
+                                 <td>500</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>Asia Pacific (Mumbai)</td>
+                                 
+                                 <td>500</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>Asia Pacific (Singapore)</td>
+                                 
+                                 <td>500</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>Asia Pacific (Sydney)</td>
+                                 
+                                 <td>500</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>China (Beijing)</td>
+                                 
+                                 <td>500</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>Canada (Central)</td>
+                                 
+                                 <td>500</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>EU (Frankfurt)</td>
+                                 
+                                 <td>1000</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>EU (London)</td>
+                                 
+                                 <td>500</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>EU (Ireland)</td>
+                                 
+                                 <td>3000</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>EU (Paris)</td>
+                                 
+                                 <td>500</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>AWS GovCloud (US)</td>
+                                 
+                                 <td>500</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              
+                              
+                              
+                              
+                              <tr>
+                                 
+                                 <td>US East (Ohio)</td>
+                                 
+                                 <td>500</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>US West (N. California)</td>
+                                 
+                                 <td>500</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>US West (Oregon)</td>
+                                 
+                                 <td>3000</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>US East (N. Virginia)</td>
+                                 
+                                 <td>3000</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>South America (S&#xE3;o Paulo)</td>
+                                 
+                                 <td>500</td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>AWS GovCloud (US) </td>
+                                 
+                                 <td>500 </td>
+                                 
+                                 
+                                 
+                              </tr>
+                              
+                              
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <p>To learn how to view and manage the concurrent executions for your function, see <a href="concurrent-executions.html">Managing Concurrency</a></p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="retries-on-errors.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="invoking-lambda-function.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Request Rate"><a class="pagetoc" href="#concurrent-executions-request-rate">Concurrent Execution Request Rate</a></li>
+                        <li class="pagetoc" name="Scaling"><a class="pagetoc" href="#scaling-behavior">Scaling</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

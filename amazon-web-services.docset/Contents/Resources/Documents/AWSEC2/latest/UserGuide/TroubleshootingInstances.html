@@ -1,0 +1,3567 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Troubleshooting Instances with Failed Status
+         Checks - Amazon Elastic Compute Cloud
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ec2-instance-troubleshoot.html" title="Troubleshooting Instances">
+      <link rel="prev" href="TroubleshootingInstanceRecovery.html" title="Troubleshooting Instance Recovery
+   Failures">
+      <link rel="next" href="instance-capacity.html" title="Troubleshooting Instance Capacity">
+      <meta name="description" content="Troubleshoot issues when your instance fails a status check.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstances.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="ec2-instance-troubleshoot.html">Troubleshooting Instances</a> &#xBB; <span class="breadcrumb">Troubleshooting Instances with Failed Status
+                                    Checks</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="TroubleshootingInstances">Troubleshooting Instances with Failed Status
+                        Checks
+                     </h1>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#InitialSteps">Initial Steps </a></li>
+                           <li><a href="#troubleshooting-retrieve-system-logs">Retrieving System Logs</a></li>
+                           <li><a href="#system-log-errors-linux">Troubleshooting System Log Errors for Linux-Based
+                                 Instances</a></li>
+                           <li><a href="#MemoryOOM">Out of memory: kill process</a></li>
+                           <li><a href="#MemoryMMU">ERROR: mmu_update failed (Memory management update failed)</a></li>
+                           <li><a href="#DeviceBlock">I/O Error (Block Device Failure)</a></li>
+                           <li><a href="#DeviceDistributed">I/O ERROR: neither local nor remote disk (Broken distributed
+                                 block device)</a></li>
+                           <li><a href="#KernelLoop">request_module: runaway loop modprobe (Looping legacy kernel
+                                 modprobe on older Linux versions)</a></li>
+                           <li><a href="#KernelOld">&quot;FATAL: kernel too old&quot; and &quot;fsck: No such file or
+                                 directory while trying to open /dev&quot; (Kernel and AMI mismatch) </a></li>
+                           <li><a href="#KernelMissing">&quot;FATAL: Could not load /lib/modules&quot; or
+                                 &quot;BusyBox&quot; (Missing kernel modules)</a></li>
+                           <li><a href="#KernelInvalid">ERROR Invalid kernel (EC2 incompatible kernel)</a></li>
+                           <li><a href="#FilesystemUnknown">request_module: runaway loop modprobe (Looping legacy kernel
+                                 modprobe on older Linux versions)</a></li>
+                           <li><a href="#FilesystemFschk">fsck: No such file or directory while trying to open... (File
+                                 system not found)</a></li>
+                           <li><a href="#FilesystemGeneral">General error mounting filesystems (Failed mount)</a></li>
+                           <li><a href="#FilesystemKernel">VFS: Unable to mount root fs on unknown-block (Root filesystem
+                                 mismatch)</a></li>
+                           <li><a href="#FilesystemError">Error: Unable to determine major/minor number of root device...
+                                 (Root file system/device mismatch) </a></li>
+                           <li><a href="#FilesystemXenbus">XENBUS: Device with no driver...</a></li>
+                           <li><a href="#FilesystemCheck">... days without being checked, check forced (File system check
+                                 required)</a></li>
+                           <li><a href="#FilesystemFschkDied">fsck died with exit status... (Missing device)</a></li>
+                           <li><a href="#OpSystemGrub">GRUB prompt (grubdom&gt;)</a></li>
+                           <li><a href="#OpSystemBringing">Bringing up interface eth0: Device eth0 has different MAC
+                                 address than expected, ignoring. (Hard-coded MAC address) </a></li>
+                           <li><a href="#OpSystemUnable">Unable to load SELinux Policy. Machine is in enforcing mode.
+                                 Halting now. (SELinux misconfiguration)</a></li>
+                           <li><a href="#OpSystemXenbus">XENBUS: Timeout connecting to devices (Xenbus timeout)</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="InitialSteps">Initial Steps </h2>
+                     
+                     
+                     <p>If your instance fails a status check, first determine whether your applications are
+                        exhibiting any problems. If you verify that the instance is not running your applications
+                        as
+                        expected, follow these steps:
+                     </p>
+                     
+                     <p class="title"><b>To investigate impaired instances using the Amazon EC2 console</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>In the navigation pane, choose <b>Instances</b>, and then select your
+                              instance.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the details pane, choose <b>Status Checks</b> to see the individual
+                              results for all <b>System Status Checks</b> and <b>Instance Status
+                                 Checks</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p>If a system status check has failed, you can try one of the following options:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Create an instance recovery alarm. For more information, see <a href="./AmazonCloudWatch/latest/DeveloperGuide/UsingAlarmActions.html" target="_blank">Create Alarms That Stop, Terminate, or Recover an
+                                    Instance</a> in the <em>Amazon CloudWatch User Guide</em>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>For an instance using an Amazon EBS-backed AMI, stop and restart the instance.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>For an instance using an instance-store backed AMI, terminate the instance and launch
+                                 a
+                                 replacement.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Wait for Amazon EC2 to resolve the issue.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Post your issue to the <a href="https://forums.aws.amazon.com/forum.jspa?forumID=30" target="_blank">Amazon EC2 forum</a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Retrieve the system log and look for errors. </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="troubleshooting-retrieve-system-logs">Retrieving System Logs</h2>
+                     
+                     
+                     <p>If an instance status check fails, you can reboot the instance and retrieve the system
+                        logs. The logs may reveal an error that can help you troubleshoot the issue. Rebooting
+                        clears
+                        unnecessary information from the logs.
+                     </p>
+                     
+                     <p class="title"><b>To reboot an instance and retrieve the system log</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>In the navigation pane, choose <b>Instances</b>, and select your
+                              instance.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Actions</b>, <b>Instance State</b>,
+                              <b>Reboot</b>. It may take a few minutes for your instance to reboot.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Verify that the problem still exists; in some cases, rebooting may resolve the
+                              problem.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>When the instance is in the <code class="code">running</code> state, choose
+                              <b>Actions</b>, <b>Instance Settings</b>, <b>Get System
+                                 Log</b>. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Review the log that appears on the screen, and use the list of known system log error
+                              statements below to troubleshoot your issue.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>If your experience differs from our check results, or if you are having an issue with
+                              your instance that our checks did not detect, choose <b>Submit feedback</b> on
+                              the <b>Status Checks</b> tab to help us improve our detection tests.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>If your issue is not resolved, you can post your issue to the <a href="https://forums.aws.amazon.com/forum.jspa?forumID=30" target="_blank">Amazon EC2 forum</a>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="system-log-errors-linux">Troubleshooting System Log Errors for Linux-Based
+                        Instances
+                     </h2>
+                     
+                     
+                     <p>For Linux-based instances that have failed an instance status check, such as the instance
+                        reachability check, verify that you followed the steps above to retrieve the system
+                        log. The
+                        following list contains some common system log errors and suggested actions you can
+                        take to
+                        resolve the issue for each error.
+                     </p>
+                     
+                     <p><b>Memory Errors</b></p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#MemoryOOM">Out of memory: kill process</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#MemoryMMU">ERROR: mmu_update failed (Memory management update failed)</a></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p><b>Device Errors</b></p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#DeviceBlock">I/O Error (Block Device Failure)</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#DeviceDistributed">I/O ERROR: neither local nor remote disk (Broken distributed
+                                    block device)</a></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p><b>Kernel Errors</b></p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#KernelLoop">request_module: runaway loop modprobe (Looping legacy kernel
+                                    modprobe on older Linux versions)</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#KernelOld">&quot;FATAL: kernel too old&quot; and &quot;fsck: No such file or
+                                    directory while trying to open /dev&quot; (Kernel and AMI mismatch) </a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#KernelMissing">&quot;FATAL: Could not load /lib/modules&quot; or
+                                    &quot;BusyBox&quot; (Missing kernel modules)</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#KernelInvalid">ERROR Invalid kernel (EC2 incompatible kernel)</a></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p><b>File System Errors</b></p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#FilesystemUnknown">request_module: runaway loop modprobe (Looping legacy kernel
+                                    modprobe on older Linux versions)</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#FilesystemFschk">fsck: No such file or directory while trying to open... (File
+                                    system not found)</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#FilesystemGeneral">General error mounting filesystems (Failed mount)</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#FilesystemKernel">VFS: Unable to mount root fs on unknown-block (Root filesystem
+                                    mismatch)</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#FilesystemError">Error: Unable to determine major/minor number of root device...
+                                    (Root file system/device mismatch) </a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#FilesystemXenbus">XENBUS: Device with no driver...</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#FilesystemCheck">... days without being checked, check forced (File system check
+                                    required)</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#FilesystemFschkDied">fsck died with exit status... (Missing device)</a></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p><b>Operating System Errors</b></p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#OpSystemGrub">GRUB prompt (grubdom&gt;)</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#OpSystemBringing">Bringing up interface eth0: Device eth0 has different MAC
+                                    address than expected, ignoring. (Hard-coded MAC address) </a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#OpSystemUnable">Unable to load SELinux Policy. Machine is in enforcing mode.
+                                    Halting now. (SELinux misconfiguration)</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="TroubleshootingInstances.html#OpSystemXenbus">XENBUS: Timeout connecting to devices (Xenbus timeout)</a></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="MemoryOOM">Out of memory: kill process</h2>
+                     
+                     
+                     <p>An out-of-memory error is indicated by a system log entry similar to the one shown
+                        below.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">[115879.769795] <em class="replaceable"><code>Out of memory: kill process</code></em> 20273 (httpd) score 1285879
+or a child 
+[115879.769795] Killed process 1917 (php-cgi) vsz:467184kB, anon-
+rss:101196kB, file-rss:204kB</code></pre>
+                     <h3 id="MemoryOOM-potential-cause">Potential Cause</h3>
+                     
+                     
+                     <p>Exhausted memory</p>
+                     
+                     
+                     <h3 id="MemoryOOM-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c13b8b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Do one of the following:</p>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>Stop the instance, and modify the instance to use a different instance type, and
+                                                start the instance again. For example, a larger or a memory-optimized instance
+                                                type.
+                                             </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Reboot the instance to return it to a non-impaired status. The problem will
+                                                probably occur again unless you change the instance type.
+                                             </p>
+                                             
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Do one of the following: </p>
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p> Terminate the instance and launch a new instance, specifying a different instance
+                                                type. For example, a larger or a memory-optimized instance type.
+                                             </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p> Reboot the instance to return it to an unimpaired status. The problem will
+                                                probably occur again unless you change the instance type.
+                                             </p>
+                                             
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="MemoryMMU">ERROR: mmu_update failed (Memory management update failed)</h2>
+                     
+                     
+                     <p>Memory management update failures are indicated by a system log entry similar to the
+                        following:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">...
+Press `ESC&apos; to enter the menu... 0   [H[J  Booting &apos;Amazon Linux 2011.09 (2.6.35.14-95.38.amzn1.i686)&apos;
+
+
+root (hd0)
+
+ Filesystem type is ext2fs, using whole disk
+
+kernel /boot/vmlinuz-2.6.35.14-95.38.amzn1.i686 root=LABEL=/ console=hvc0 LANG=
+
+en_US.UTF-8 KEYTABLE=us
+
+initrd /boot/initramfs-2.6.35.14-95.38.amzn1.i686.img
+
+<em class="replaceable"><code>ERROR: mmu_update failed with rc=-22</code></em></code></pre>
+                     <h3 id="MemoryMMU-potential-cause">Potential Cause</h3>
+                     
+                     
+                     <p>Issue with Amazon Linux</p>
+                     
+                     
+                     <h3 id="MemoryMMU-suggested-actions">Suggested Action</h3>
+                     
+                     
+                     <p>Post your issue to the <a href="https://forums.aws.amazon.com/" target="_blank">Developer Forums</a> or contact <a href="https://aws.amazon.com/premiumsupport/" target="_blank">AWS Support</a>.
+                     </p>
+                     
+                     
+                     <h2 id="DeviceBlock">I/O Error (Block Device Failure)</h2>
+                     
+                     
+                     <p>An input/output error is indicated by a system log entry similar to the following
+                        example:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">[9943662.053217] end_request: <em class="replaceable"><code>I/O error</code></em>, dev sde, <em class="replaceable"><code>sector 52428288</code></em>
+[9943664.191262] end_request: I/O error, dev sde, sector 52428168
+[9943664.191285] Buffer I/O error on device md0, logical block 209713024
+[9943664.191297] Buffer I/O error on device md0, logical block 209713025
+[9943664.191304] Buffer I/O error on device md0, logical block 209713026
+[9943664.191310] Buffer I/O error on device md0, logical block 209713027
+[9943664.191317] Buffer I/O error on device md0, logical block 209713028
+[9943664.191324] Buffer I/O error on device md0, logical block 209713029
+[9943664.191332] Buffer I/O error on device md0, logical block 209713030
+[9943664.191339] Buffer I/O error on device md0, logical block 209713031
+[9943664.191581] end_request: I/O error, dev sde, sector 52428280
+[9943664.191590] Buffer I/O error on device md0, logical block 209713136
+[9943664.191597] Buffer I/O error on device md0, logical block 209713137
+[9943664.191767] end_request: I/O error, dev sde, sector 52428288
+[9943664.191970] end_request: I/O error, dev sde, sector 52428288
+[9943664.192143] end_request: I/O error, dev sde, sector 52428288
+[9943664.192949] end_request: I/O error, dev sde, sector 52428288
+[9943664.193112] end_request: I/O error, dev sde, sector 52428288
+[9943664.193266] end_request: I/O error, dev sde, sector 52428288
+...</code></pre>
+                     <h3 id="DeviceBlock-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c19b6b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Instance type </th>
+                                 
+                                 <th>Potential cause</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>A failed Amazon EBS volume </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>A failed physical drive </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h3 id="DeviceBlock-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c19b8b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Stop the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Detach the volume.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Attempt to recover the volume.</p>
+                                             
+                                             <div class="aws-note">
+                                                <p class="aws-note">Note</p>
+                                                <p>It&apos;s good practice to snapshot your Amazon EBS volumes often. This dramatically
+                                                   decreases the risk of data loss as a result of failure.
+                                                </p>
+                                             </div>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p> Re-attach the volume to the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Detach the volume.</p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p> Terminate the instance and launch a new instance.</p>
+                                    
+                                    <div class="aws-note">
+                                       <p class="aws-note">Note</p>
+                                       <p>Data cannot be recovered. Recover from backups.</p>
+                                    </div>
+                                    
+                                    <div class="aws-note">
+                                       <p class="aws-note">Note</p>
+                                       <p>It&apos;s a good practice to use either Amazon S3 or Amazon EBS for backups. Instance store
+                                          volumes
+                                          are directly tied to single host and single disk failures.
+                                       </p>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="DeviceDistributed">I/O ERROR: neither local nor remote disk (Broken distributed
+                        block device)
+                     </h2>
+                     
+                     
+                     <p>An input/output error on the device is indicated by a system log entry similar to
+                        the
+                        following example:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">...
+block drbd1: Local IO failed in request_timer_fn. Detaching...
+
+Aborting journal on device drbd1-8.
+
+block drbd1: <em class="replaceable"><code>IO ERROR: neither local nor remote disk</code></em>
+
+Buffer I/O error on device drbd1, logical block 557056
+
+lost page write due to I/O error on drbd1
+
+JBD2: I/O error detected when updating journal superblock for drbd1-8.</code></pre>
+                     <h3 id="DeviceDistributed-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c21b6b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Instance type </th>
+                                 
+                                 <th>Potential cause</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>A failed Amazon EBS volume </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>A failed physical drive </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h3 id="DeviceDistributed-suggested-actions">Suggested Action</h3>
+                     
+                     
+                     <p>Terminate the instance and launch a new instance. </p>
+                     
+                     <p>For an Amazon EBS-backed instance you can recover data from a recent snapshot by creating
+                        an
+                        image from it. Any data added after the snapshot cannot be recovered.
+                     </p>
+                     
+                     
+                     <h2 id="KernelLoop">request_module: runaway loop modprobe (Looping legacy kernel
+                        modprobe on older Linux versions)
+                     </h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below. Using
+                        an
+                        unstable or old Linux kernel (for example, 2.6.16-xenU) can cause an interminable
+                        loop condition
+                        at startup.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Linux version <em class="replaceable"><code>2.6.16-xenU</code></em> (builder@xenbat.amazonsa) (gcc version 4.0.1 
+20050727 (Red Hat 4.0.1-5)) #1 SMP Mon May 28 03:41:49 SAST 2007
+
+BIOS-provided physical RAM map:
+
+ Xen: 0000000000000000 - 0000000026700000 (usable)
+
+0MB HIGHMEM available.
+...
+
+<em class="replaceable"><code>request_module: runaway loop modprobe binfmt-464c</code></em>
+
+request_module: runaway loop modprobe binfmt-464c
+
+request_module: runaway loop modprobe binfmt-464c
+
+request_module: runaway loop modprobe binfmt-464c
+
+request_module: runaway loop modprobe binfmt-464c</code></pre>
+                     <h3 id="KernelLoop-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c25b6b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use a newer kernel, either GRUB-based or static, using one of the following
+                                       options:
+                                    </p>
+                                    
+                                    <p>Option 1: Terminate the instance and launch a new instance, specifying the
+                                       <code class="code">&#x2013;kernel</code> and <code class="code">&#x2013;ramdisk</code> parameters.
+                                    </p>
+                                    
+                                    <p>Option 2:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Stop the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Modify the kernel and ramdisk attributes to use a newer kernel.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Start the instance.</p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Terminate the instance and launch a new instance, specifying the <code class="code">&#x2013;kernel</code>
+                                       and <code class="code">&#x2013;ramdisk</code> parameters. 
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="KernelOld">&quot;FATAL: kernel too old&quot; and &quot;fsck: No such file or
+                        directory while trying to open /dev&quot; (Kernel and AMI mismatch) 
+                     </h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Linux version 2.6.16.33-xenU (root@dom0-0-50-45-1-a4-ee.z-2.aes0.internal) 
+(gcc version 4.1.1 20070105 (Red Hat 4.1.1-52)) #2 SMP Wed Aug 15 17:27:36 SAST 2007
+...
+<em class="replaceable"><code>FATAL: kernel too old</code></em>
+Kernel panic - not syncing: Attempted to kill init!</code></pre>
+                     <h3 id="KernelOld-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <p>Incompatible kernel and userland</p>
+                     
+                     
+                     <h3 id="KernelOld-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c27b8b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Stop the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Modify the configuration to use a newer kernel.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Start the instance.</p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Create an AMI that uses a newer kernel.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Terminate the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Start a new instance from the AMI you created.</p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="KernelMissing">&quot;FATAL: Could not load /lib/modules&quot; or
+                        &quot;BusyBox&quot; (Missing kernel modules)
+                     </h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">[    0.370415] Freeing unused kernel memory: 1716k freed 
+Loading, please wait...
+WARNING: Couldn&apos;t open directory /lib/modules/2.6.34-4-virtual: No such file or directory
+FATAL: Could not open /lib/modules/2.6.34-4-virtual/modules.dep.temp for writing: No such file or directory
+FATAL: Could not load /lib/modules/2.6.34-4-virtual/modules.dep: No such file or directory
+Couldn&apos;t get a file descriptor referring to the console
+Begin: Loading essential drivers... ...
+FATAL: Could not load /lib/modules/2.6.34-4-virtual/modules.dep: No such file or directory
+FATAL: Could not load /lib/modules/2.6.34-4-virtual/modules.dep: No such file or directory
+Done.
+Begin: Running /scripts/init-premount ...
+Done.
+Begin: Mounting root file system... ...
+Begin: Running /scripts/local-top ...
+Done.
+Begin: Waiting for root file system... ...
+Done.
+Gave up waiting for root device.  Common problems:
+ - Boot args (cat /proc/cmdline)
+   - Check rootdelay= (did the system wait long enough?)
+   - Check root= (did the system wait for the right device?)
+ - Missing modules (cat /proc/modules; ls /dev)
+FATAL: Could not load /lib/modules/2.6.34-4-virtual/modules.dep: No such file or directory
+<em class="replaceable"><code>FATAL: Could not load /lib/modules/</code></em>2.6.34-4-virtual/modules.dep: No such file or directory
+ALERT! /dev/sda1 does not exist. Dropping to a shell!
+
+
+<em class="replaceable"><code>BusyBox</code></em> v1.13.3 (Ubuntu 1:1.13.3-1ubuntu5) built-in shell (ash)
+Enter &apos;help&apos; for a list of built-in commands.
+
+(initramfs)</code></pre>
+                     <h3 id="KernelMissing-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <p>One or more of the following conditions can cause this problem:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Missing ramdisk </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Missing correct modules from ramdisk</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Amazon EBS root volume not correctly attached as <code>/dev/sda1</code></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="KernelMissing-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c29b8b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Select corrected ramdisk for the Amazon EBS volume.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Stop the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Detach the volume and repair it.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Attach the volume to the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Start the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Modify the AMI to use the corrected ramdisk.</p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Terminate the instance and launch a new instance with the correct ramdisk. </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Create a new AMI with the correct ramdisk.</p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="KernelInvalid">ERROR Invalid kernel (EC2 incompatible kernel)</h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">...
+root (hd0)
+
+ Filesystem type is ext2fs, using whole disk
+
+kernel /vmlinuz root=/dev/sda1 ro
+
+initrd /initrd.img
+
+<em class="replaceable"><code>ERROR Invalid kernel: elf_xen_note_check: ERROR: Will only load images 
+built for the generic loader or Linux images
+xc_dom_parse_image returned -1</code></em>
+
+Error 9: Unknown boot failure
+
+  Booting &apos;Fallback&apos;
+  
+root (hd0)
+
+ Filesystem type is ext2fs, using whole disk
+
+kernel /vmlinuz.old root=/dev/sda1 ro
+
+Error 15: File not found</code></pre>
+                     <h3 id="KernelInvalid-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <p>One or both of the following conditions can cause this problem:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Supplied kernel is not supported by GRUB </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Fallback kernel does not exist </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="KernelInvalid-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c31b8b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Stop the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Replace with working kernel.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Install a fallback kernel.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Modify the AMI by correcting the kernel.</p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Terminate the instance and launch a new instance with the correct kernel.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Create an AMI with the correct kernel.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>(Optional) Seek technical assistance for data recovery using <a href="https://aws.amazon.com/premiumsupport/" target="_blank">AWS Support</a>.
+                                             </p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="FilesystemUnknown">request_module: runaway loop modprobe (Looping legacy kernel
+                        modprobe on older Linux versions)
+                     </h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below. Using
+                        an
+                        unstable or old Linux kernel (for example, 2.6.16-xenU) can cause an interminable
+                        loop condition
+                        at startup.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Linux version <em class="replaceable"><code>2.6.16-xenU</code></em> (builder@xenbat.amazonsa) (gcc version 4.0.1 
+20050727 (Red Hat 4.0.1-5)) #1 SMP Mon May 28 03:41:49 SAST 2007
+
+BIOS-provided physical RAM map:
+
+ Xen: 0000000000000000 - 0000000026700000 (usable)
+
+0MB HIGHMEM available.
+...
+
+<em class="replaceable"><code>request_module: runaway loop modprobe binfmt-464c</code></em>
+
+request_module: runaway loop modprobe binfmt-464c
+
+request_module: runaway loop modprobe binfmt-464c
+
+request_module: runaway loop modprobe binfmt-464c
+
+request_module: runaway loop modprobe binfmt-464c</code></pre>
+                     <h3 id="FilesystemUnknown-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c35b6b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use a newer kernel, either GRUB-based or static, using one of the following
+                                       options:
+                                    </p>
+                                    
+                                    <p>Option 1: Terminate the instance and launch a new instance, specifying the
+                                       <code class="code">&#x2013;kernel</code> and <code class="code">&#x2013;ramdisk</code> parameters.
+                                    </p>
+                                    
+                                    <p>Option 2:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Stop the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Modify the kernel and ramdisk attributes to use a newer kernel.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Start the instance.</p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Terminate the instance and launch a new instance, specifying the <code class="code">&#x2013;kernel</code>
+                                       and <code class="code">&#x2013;ramdisk</code> parameters. 
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="FilesystemFschk">fsck: No such file or directory while trying to open... (File
+                        system not found)
+                     </h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">		Welcome to Fedora 
+		Press &apos;I&apos; to enter interactive startup.
+Setting clock : Wed Oct 26 05:52:05 EDT 2011 [  OK  ]
+
+Starting udev: [  OK  ]
+
+Setting hostname localhost:  [  OK  ]
+
+No devices found
+Setting up Logical Volume Management: File descriptor 7 left open
+  No volume groups found
+[  OK  ]
+
+Checking filesystems
+Checking all file systems.
+[/sbin/fsck.ext3 (1) -- /] fsck.ext3 -a /dev/sda1 
+/dev/sda1: clean, 82081/1310720 files, 2141116/2621440 blocks
+[/sbin/fsck.ext3 (1) -- /mnt/dbbackups] fsck.ext3 -a /dev/sdh 
+<em class="replaceable"><code>fsck</code></em>.ext3: <em class="replaceable"><code>No such file or directory</code></em> while trying to open /dev/sdh
+
+/dev/sdh: 
+The superblock could not be read or does not describe a correct ext2
+filesystem.  If the device is valid and it really contains an ext2
+filesystem (and not swap or ufs or something else), then the superblock
+is corrupt, and you might try running e2fsck with an alternate superblock:
+    e2fsck -b 8193 &lt;device&gt;
+
+[FAILED]
+
+
+*** An error occurred during the file system check.
+*** Dropping you to a shell; the system will reboot
+*** when you leave the shell.
+Give root password for maintenance
+(or type Control-D to continue):</code></pre>
+                     <h3 id="FilesystemFschk-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>A bug exists in ramdisk filesystem definitions /etc/fstab</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Misconfigured filesystem definitions in /etc/fstab</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Missing/failed drive</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="FilesystemFschk-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c37b8b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Stop the instance, detach the root volume, repair/modify /etc/fstab the volume,
+                                                attach the volume to the instance, and start the instance.
+                                             </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Fix ramdisk to include modified /etc/fstab (if applicable).</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Modify the AMI to use a newer ramdisk.</p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                    <p>The sixth field in the fstab defines availability requirements of the mount &#x2013; a
+                                       nonzero value implies that an fsck will be done on that volume and
+                                       <em>must</em> succeed. Using this field can be problematic in Amazon EC2 because a
+                                       failure typically results in an interactive console prompt that is not currently available
+                                       in Amazon EC2. Use care with this feature and read the Linux man page for fstab.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Terminate the instance and launch a new instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Detach any errant Amazon EBS volumes and the reboot instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>(Optional) Seek technical assistance for data recovery using <a href="https://aws.amazon.com/premiumsupport/" target="_blank">AWS Support</a>.
+                                             </p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="FilesystemGeneral">General error mounting filesystems (Failed mount)</h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Loading xenblk.ko module 
+xen-vbd: registered block device major 8
+
+Loading ehci-hcd.ko module
+Loading ohci-hcd.ko module
+Loading uhci-hcd.ko module
+USB Universal Host Controller Interface driver v3.0
+
+Loading mbcache.ko module
+Loading jbd.ko module
+Loading ext3.ko module
+Creating root device.
+Mounting root filesystem.
+kjournald starting.  Commit interval 5 seconds
+
+EXT3-fs: mounted filesystem with ordered data mode.
+
+Setting up other filesystems.
+Setting up new root fs
+no fstab.sys, mounting internal defaults
+Switching to new root and running init.
+unmounting old /dev
+unmounting old /proc
+unmounting old /sys
+mountall:/proc: unable to mount: Device or resource busy
+mountall:/proc/self/mountinfo: No such file or directory
+mountall: root filesystem isn&apos;t mounted
+init: mountall main process (221) terminated with status 1
+
+<em class="replaceable"><code>General error mounting filesystems</code></em>.
+A maintenance shell will now be started.
+CONTROL-D will terminate this shell and re-try.
+Press enter for maintenance
+(or type Control-D to continue):</code></pre>
+                     <h3 id="FilesystemGeneral-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c39b6b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Instance type </th>
+                                 
+                                 <th>Potential cause</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>Detached or failed Amazon EBS volume. </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Corrupted filesystem. </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Mismatched ramdisk and AMI combination (such as Debian ramdisk with a SUSE AMI). </p>
+                                             
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>A failed drive. </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>A corrupted file system. </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>A mismatched ramdisk and combination (for example, a Debian ramdisk with a SUSE
+                                                AMI). 
+                                             </p>
+                                             
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h3 id="FilesystemGeneral-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c39b8b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Stop the instance. </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Detach the root volume. </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Attach the root volume to a known working instance. </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Run filesystem check (fsck &#x2013;a /dev/...). </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Fix any errors. </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Detach the volume from the known working instance. </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Attach the volume to the stopped instance. </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Start the instance. </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Recheck the instance status. </p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Try one of the following:</p>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>Start a new instance. </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>(Optional) Seek technical assistance for data recovery using <a href="https://aws.amazon.com/premiumsupport/" target="_blank">AWS Support</a>.
+                                             </p>
+                                             
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="FilesystemKernel">VFS: Unable to mount root fs on unknown-block (Root filesystem
+                        mismatch)
+                     </h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Linux version 2.6.16-xenU (builder@xenbat.amazonsa) (gcc version 4.0.1 
+ 20050727 (Red Hat 4.0.1-5)) #1 SMP Mon May 28 03:41:49 SAST 2007
+...
+Kernel command line:  root=/dev/sda1 ro 4
+...
+Registering block device major 8
+...
+<em class="replaceable"><code>Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(8,1)</code></em></code></pre>
+                     <h3 id="FilesystemKernel-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c41b6b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Instance type </th>
+                                 
+                                 <th>Potential cause</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       
+                                       										
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>Device not attached correctly.</p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Root device not attached at correct device point. </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Filesystem not in expected format. </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Use of legacy kernel (such as 2.6.16-XenU). </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             											
+                                             <p>A recent kernel update on your instance (faulty
+                                                												update, or an update bug)
+                                             </p>
+                                             										
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Hardware device failure.</p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h3 id="FilesystemKernel-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c41b8b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Do one of the following:</p>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       										
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>Stop and then restart the instance.</p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Modify root volume to attach at the correct device point, possible /dev/sda1
+                                                instead of /dev/sda.
+                                             </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Stop and modify to use modern kernel.</p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             											
+                                             <p>Refer to the documentation for your Linux
+                                                												distribution to check for known update bugs. Change
+                                                												or reinstall the kernel.
+                                             </p>
+                                             										
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Terminate the instance and launch a new instance using a modern kernel. </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="FilesystemError">Error: Unable to determine major/minor number of root device...
+                        (Root file system/device mismatch) 
+                     </h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">...
+XENBUS: Device with no driver: device/vif/0
+XENBUS: Device with no driver: device/vbd/2048
+drivers/rtc/hctosys.c: unable to open rtc device (rtc0)
+Initializing network drop monitor service
+Freeing unused kernel memory: 508k freed
+:: Starting udevd...
+done.
+:: Running Hook [udev]
+:: Triggering uevents...&lt;30&gt;udevd[65]: starting version 173
+done.
+Waiting 10 seconds for device /dev/xvda1 ...
+Root device &apos;/dev/xvda1&apos; doesn&apos;t exist. Attempting to create it.
+<em class="replaceable"><code>ERROR: Unable to determine major/minor number of root device &apos;/dev/xvda1&apos;</code></em>.
+You are being dropped to a recovery shell
+    Type &apos;exit&apos; to try and continue booting
+sh: can&apos;t access tty; job control turned off
+<em class="replaceable"><code>[ramfs /]#</code></em></code></pre>
+                     <h3 id="FilesystemError-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Missing or incorrectly configured virtual block device driver</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Device enumeration clash (sda versus xvda or sda instead of sda1)</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Incorrect choice of instance kernel</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="FilesystemError-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c43b8b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Stop the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Detach the volume.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Fix the device mapping problem.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Start the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Modify the AMI to address device mapping issues.</p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Create a new AMI with the appropriate fix (map block device correctly).</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Terminate the instance and launch a new instance from the AMI you created. </p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="FilesystemXenbus">XENBUS: Device with no driver...</h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">XENBUS: Device with no driver: device/vbd/2048
+drivers/rtc/hctosys.c: unable to open rtc device (rtc0)
+Initalizing network drop monitor service
+Freeing unused kernel memory: 508k freed
+:: Starting udevd...
+done.
+:: Running Hook [udev]
+:: Triggering uevents...&lt;30&gt;udevd[65]: starting version 173
+done.
+Waiting 10 seconds for device /dev/xvda1 ...
+Root device &apos;/dev/xvda1&apos; doesn&apos;t exist. Attempting to create it.
+<em class="replaceable"><code>ERROR: Unable to determine major/minor number of root device &apos;/dev/xvda1&apos;.</code></em>
+You are being dropped to a recovery shell
+    Type &apos;exit&apos; to try and continue booting
+sh: can&apos;t access tty; job control turned off
+<em class="replaceable"><code>[ramfs /]#</code></em></code></pre>
+                     <h3 id="FilesystemXenbus-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Missing or incorrectly configured virtual block device driver</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Device enumeration clash (sda versus xvda)</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Incorrect choice of instance kernel</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="FilesystemXenbus-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c45b8b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Stop the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Detach the volume.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Fix the device mapping problem.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Start the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Modify the AMI to address device mapping issues.</p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Create an AMI with the appropriate fix (map block device correctly).</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Terminate the instance and launch a new instance using the AMI you created. </p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="FilesystemCheck">... days without being checked, check forced (File system check
+                        required)
+                     </h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">...
+Checking filesystems
+Checking all file systems.
+[/sbin/fsck.ext3 (1) -- /] fsck.ext3 -a /dev/sda1 
+/dev/sda1 has gone 361 <em class="replaceable"><code>days without being checked, check forced</code></em></code></pre>
+                     <h3 id="FilesystemCheck-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <p>Filesystem check time passed; a filesystem check is being forced.</p>
+                     
+                     
+                     <h3 id="FilesystemCheck-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Wait until the filesystem check completes. A filesystem check can take a long time
+                                 depending on the size of the root filesystem. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p> Modify your filesystems to remove the filesystem check (fsck) enforcement using tune2fs
+                                 or tools appropriate for your filesystem. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h2 id="FilesystemFschkDied">fsck died with exit status... (Missing device)</h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Cleaning up ifupdown....
+Loading kernel modules...done.
+...
+Activating lvm and md swap...done.
+Checking file systems...fsck from util-linux-ng 2.16.2
+/sbin/fsck.xfs: /dev/sdh does not exist
+<em class="replaceable"><code>fsck died with exit status</code></em> 8
+[31mfailed (code 8).[39;49m</code></pre>
+                     <h3 id="FilesystemFschkDied-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Ramdisk looking for missing drive</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Filesystem consistency check forced</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Drive failed or detached</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="FilesystemFschkDied-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c49b8b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Try one or more of the following to resolve the issue:</p>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>Stop the instance, attach the volume to an existing running instance.</p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Manually run consistency checks.</p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Fix ramdisk to include relevant utilities.</p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Modify filesystem tuning parameters to remove consistency requirements (not
+                                                recommended).
+                                             </p>
+                                             
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Try one or more of the following to resolve the issue:</p>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>Rebundle ramdisk with correct tooling.</p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Modify file system tuning parameters to remove consistency requirements (not
+                                                recommended).
+                                             </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Terminate the instance and launch a new instance.</p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>(Optional) Seek technical assistance for data recovery using <a href="https://aws.amazon.com/premiumsupport/" target="_blank">AWS Support</a>.
+                                             </p>
+                                             
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="OpSystemGrub">GRUB prompt (grubdom&gt;)</h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below. </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">    GNU GRUB  version 0.97  (629760K lower / 0K upper memory)
+
+       [ Minimal BASH-like line editing is supported.   For
+
+         the   first   word,  TAB  lists  possible  command
+
+         completions.  Anywhere else TAB lists the possible
+
+         completions of a device/filename. ]
+
+<em class="replaceable"><code>grubdom&gt; </code></em></code></pre>
+                     <h3 id="OpSystem-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c53b6b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Instance type </th>
+                                 
+                                 <th>Potential causes</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>Missing GRUB configuration file.</p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Incorrect GRUB image used, expecting GRUB configuration file at a different
+                                                location.
+                                             </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Unsupported filesystem used to store your GRUB configuration file (for example,
+                                                converting your root file system to a type that is not supported by an earlier version
+                                                of GRUB).
+                                             </p>
+                                             
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>Missing GRUB configuration file.</p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Incorrect GRUB image used, expecting GRUB configuration file at a different
+                                                location.
+                                             </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Unsupported filesystem used to store your GRUB configuration file (for example,
+                                                converting your root file system to a type that is not supported by an earlier version
+                                                of GRUB).
+                                             </p>
+                                             
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     
+                     <h3 id="OpSystem-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c53c10b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Option 1: Modify the AMI and relaunch the instance:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Modify the source AMI to create a GRUB configuration file at the standard location
+                                                (/boot/grub/menu.lst). 
+                                             </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Verify that your version of GRUB supports the underlying file system type and
+                                                upgrade GRUB if necessary.
+                                             </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Pick the appropriate GRUB image, (hd0-1st drive or hd00 &#x2013; 1st drive, 1st
+                                                partition). 
+                                             </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Terminate the instance and launch a new one using the AMI that you created. </p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                    <p>Option 2: Fix the existing instance:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Stop the instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Detach the root filesystem.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Attach the root filesystem to a known working instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Mount filesystem.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Create a GRUB configuration file.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Verify that your version of GRUB supports the underlying file system type and
+                                                upgrade GRUB if necessary.
+                                             </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Detach filesystem.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Attach to the original instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Modify kernel attribute to use the appropriate GRUB image (1st disk or 1st
+                                                partition on 1st disk).
+                                             </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Start the instance.</p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Option 1: Modify the AMI and relaunch the instance:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Create the new AMI with a GRUB configuration file at the standard location
+                                                (/boot/grub/menu.lst). 
+                                             </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Pick the appropriate GRUB image, (hd0-1st drive or hd00 &#x2013; 1st drive, 1st
+                                                partition). 
+                                             </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Verify that your version of GRUB supports the underlying file system type and
+                                                upgrade GRUB if necessary.
+                                             </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Terminate the instance and launch a new instance using the AMI you created. </p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                    <p>Option 2: Terminate the instance and launch a new instance, specifying the correct
+                                       kernel.
+                                    </p>
+                                    
+                                    <div class="aws-note">
+                                       <p class="aws-note">Note</p>
+                                       <p>To recover data from the existing instance, contact <a href="https://aws.amazon.com/premiumsupport/" target="_blank">AWS
+                                             Support</a>.
+                                       </p>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="OpSystemBringing">Bringing up interface eth0: Device eth0 has different MAC
+                        address than expected, ignoring. (Hard-coded MAC address) 
+                     </h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">... 
+Bringing up loopback interface:  [  OK  ]
+
+<em class="replaceable"><code>Bringing up interface eth0:  Device eth0 has different MAC address than expected, ignoring.
+[FAILED]</code></em>
+
+Starting auditd: [  OK  ]</code></pre>
+                     <h3 id="OpSystemBringing-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <p>There is a hardcoded interface MAC in the AMI configuration</p>
+                     
+                     
+                     <h3 id="OpSystemBringing-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c55b8b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Do one of the following:</p>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>Modify the AMI to remove the hardcoding and relaunch the instance. </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Modify the instance to remove the hardcoded MAC address. </p>
+                                             
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                    <p>OR</p>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Stop the instance. </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Detach the root volume. </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Attach the volume to another instance and modify the volume to remove the hardcoded
+                                                MAC address. 
+                                             </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Attach the volume to the original instance. </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Start the instance. </p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Do one of the following:</p>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>Modify the instance to remove the hardcoded MAC address. </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Terminate the instance and launch a new instance.</p>
+                                             
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="OpSystemUnable">Unable to load SELinux Policy. Machine is in enforcing mode.
+                        Halting now. (SELinux misconfiguration)
+                     </h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">audit(1313445102.626:2): enforcing=1 old_enforcing=0 auid=4294967295
+<em class="replaceable"><code>Unable to load SELinux Policy. Machine is in enforcing mode. Halting now.
+Kernel panic - not syncing: Attempted to kill init!</code></em></code></pre>
+                     <h3 id="OpSystemUnable-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <p>SELinux has been enabled in error:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Supplied kernel is not supported by GRUB</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Fallback kernel does not exist</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="OpSystemUnable-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c57b8b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Stop the failed instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Detach the failed instance&apos;s root volume.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Attach the root volume to another running Linux instance (later referred to as a
+                                                recovery instance).
+                                             </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Connect to the recovery instance and mount the failed instance&apos;s root
+                                                volume.
+                                             </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Disable SELinux on the mounted root volume. This process varies across Linux
+                                                distributions; for more information, consult your OS-specific documentation.
+                                             </p>
+                                             
+                                             <div class="aws-note">
+                                                <p class="aws-note">Note</p>
+                                                <p>On some systems, you disable SELinux by setting <code class="code">SELINUX=disabled</code> in
+                                                   the <code>/<em class="replaceable"><code>mount_point</code></em>/etc/sysconfig/selinux</code>
+                                                   file, where <code><em class="replaceable"><code>mount_point</code></em></code> is the location
+                                                   that you mounted the volume on your recovery instance.
+                                                </p>
+                                             </div>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Unmount and detach the root volume from the recovery instance and reattach it to
+                                                the original instance.
+                                             </p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>Start the instance.</p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use the following procedure:</p>
+                                    
+                                    <div class="orderedlist">
+                                       
+                                       
+                                       
+                                       <ol>
+                                          <li>
+                                             
+                                             <p>Terminate the instance and launch a new instance.</p>
+                                             
+                                          </li>
+                                          <li>
+                                             
+                                             <p>(Optional) Seek technical assistance for data recovery using <a href="https://aws.amazon.com/premiumsupport/" target="_blank">AWS Support</a>.
+                                             </p>
+                                             
+                                          </li>
+                                       </ol>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <h2 id="OpSystemXenbus">XENBUS: Timeout connecting to devices (Xenbus timeout)</h2>
+                     
+                     
+                     <p>This condition is indicated by a system log similar to the one shown below.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Linux version 2.6.16-xenU (builder@xenbat.amazonsa) (gcc version 4.0.1 
+20050727 (Red Hat 4.0.1-5)) #1 SMP Mon May 28 03:41:49 SAST 2007
+...
+<em class="replaceable"><code>XENBUS: Timeout connecting to devices!</code></em>
+...
+Kernel panic - not syncing: No init found.  Try passing init= option to kernel.</code></pre>
+                     <h3 id="OpSystemXenbus-potential-cause">Potential Causes</h3>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>The block device not is connected to the instance</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>This instance is using an old instance kernel</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="OpSystemXenbus-suggested-actions">Suggested Actions</h3>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac29c21c59b8b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>For this instance type </th>
+                                 
+                                 <th>Do this</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Amazon EBS-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Do one of the following:</p>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>Modify the AMI and instance to use a modern kernel and relaunch the
+                                                instance.
+                                             </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Reboot the instance.</p>
+                                             
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>Instance store-backed</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Do one of the following:</p>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>Terminate the instance.</p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Modify the AMI to use a modern kernel, and launch a new instance using this
+                                                AMI.
+                                             </p>
+                                             
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="TroubleshootingInstanceRecovery.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="instance-capacity.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Initial Steps "><a class="pagetoc" href="#InitialSteps">Initial Steps </a></li>
+                        <li class="pagetoc" name="Retrieving System Logs"><a class="pagetoc" href="#troubleshooting-retrieve-system-logs">Retrieving System Logs</a></li>
+                        <li class="pagetoc" name="Troubleshooting System Log Errors for Linux-Based
+    Instances"><a class="pagetoc" href="#system-log-errors-linux">Troubleshooting System Log Errors for Linux-Based
+                              Instances</a></li>
+                        <li class="pagetoc" name="Out of memory: kill process"><a class="pagetoc" href="#MemoryOOM">Out of memory: kill process</a></li>
+                        <li class="pagetoc" name="ERROR: mmu_update failed (Memory management update failed)"><a class="pagetoc" href="#MemoryMMU">ERROR: mmu_update failed (Memory management update failed)</a></li>
+                        <li class="pagetoc" name="I/O Error (Block Device Failure)"><a class="pagetoc" href="#DeviceBlock">I/O Error (Block Device Failure)</a></li>
+                        <li class="pagetoc" name="I/O ERROR: neither local nor remote disk (Broken distributed
+     block device)"><a class="pagetoc" href="#DeviceDistributed">I/O ERROR: neither local nor remote disk (Broken distributed
+                              block device)</a></li>
+                        <li class="pagetoc" name="request_module: runaway loop modprobe (Looping legacy kernel
+    modprobe on older Linux versions)"><a class="pagetoc" href="#KernelLoop">request_module: runaway loop modprobe (Looping legacy kernel
+                              modprobe on older Linux versions)</a></li>
+                        <li class="pagetoc" name="&quot;FATAL: kernel too old&quot; and &quot;fsck: No such file or
+    directory while trying to open /dev&quot; (Kernel and AMI mismatch) "><a class="pagetoc" href="#KernelOld">&quot;FATAL: kernel too old&quot; and &quot;fsck: No such file or
+                              directory while trying to open /dev&quot; (Kernel and AMI mismatch) </a></li>
+                        <li class="pagetoc" name="&quot;FATAL: Could not load /lib/modules&quot; or
+    &quot;BusyBox&quot; (Missing kernel modules)"><a class="pagetoc" href="#KernelMissing">&quot;FATAL: Could not load /lib/modules&quot; or
+                              &quot;BusyBox&quot; (Missing kernel modules)</a></li>
+                        <li class="pagetoc" name="ERROR Invalid kernel (EC2 incompatible kernel)"><a class="pagetoc" href="#KernelInvalid">ERROR Invalid kernel (EC2 incompatible kernel)</a></li>
+                        <li class="pagetoc" name="request_module: runaway loop modprobe (Looping legacy kernel
+    modprobe on older Linux versions)"><a class="pagetoc" href="#FilesystemUnknown">request_module: runaway loop modprobe (Looping legacy kernel
+                              modprobe on older Linux versions)</a></li>
+                        <li class="pagetoc" name="fsck: No such file or directory while trying to open... (File
+    system not found)"><a class="pagetoc" href="#FilesystemFschk">fsck: No such file or directory while trying to open... (File
+                              system not found)</a></li>
+                        <li class="pagetoc" name="General error mounting filesystems (Failed mount)"><a class="pagetoc" href="#FilesystemGeneral">General error mounting filesystems (Failed mount)</a></li>
+                        <li class="pagetoc" name="VFS: Unable to mount root fs on unknown-block (Root filesystem
+    mismatch)"><a class="pagetoc" href="#FilesystemKernel">VFS: Unable to mount root fs on unknown-block (Root filesystem
+                              mismatch)</a></li>
+                        <li class="pagetoc" name="Error: Unable to determine major/minor number of root device...
+    (Root file system/device mismatch) "><a class="pagetoc" href="#FilesystemError">Error: Unable to determine major/minor number of root device...
+                              (Root file system/device mismatch) </a></li>
+                        <li class="pagetoc" name="XENBUS: Device with no driver..."><a class="pagetoc" href="#FilesystemXenbus">XENBUS: Device with no driver...</a></li>
+                        <li class="pagetoc" name="... days without being checked, check forced (File system check
+    required)"><a class="pagetoc" href="#FilesystemCheck">... days without being checked, check forced (File system check
+                              required)</a></li>
+                        <li class="pagetoc" name="fsck died with exit status... (Missing device)"><a class="pagetoc" href="#FilesystemFschkDied">fsck died with exit status... (Missing device)</a></li>
+                        <li class="pagetoc" name="GRUB prompt (grubdom&gt;)"><a class="pagetoc" href="#OpSystemGrub">GRUB prompt (grubdom&gt;)</a></li>
+                        <li class="pagetoc" name="Bringing up interface eth0: Device eth0 has different MAC
+    address than expected, ignoring. (Hard-coded MAC address) "><a class="pagetoc" href="#OpSystemBringing">Bringing up interface eth0: Device eth0 has different MAC
+                              address than expected, ignoring. (Hard-coded MAC address) </a></li>
+                        <li class="pagetoc" name="Unable to load SELinux Policy. Machine is in enforcing mode.
+    Halting now. (SELinux misconfiguration)"><a class="pagetoc" href="#OpSystemUnable">Unable to load SELinux Policy. Machine is in enforcing mode.
+                              Halting now. (SELinux misconfiguration)</a></li>
+                        <li class="pagetoc" name="XENBUS: Timeout connecting to devices (Xenbus timeout)"><a class="pagetoc" href="#OpSystemXenbus">XENBUS: Timeout connecting to devices (Xenbus timeout)</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

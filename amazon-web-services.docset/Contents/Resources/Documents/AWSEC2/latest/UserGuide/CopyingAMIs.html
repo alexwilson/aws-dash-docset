@@ -1,0 +1,746 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Copying an AMI - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="AMIs.html" title="Amazon Machine Images (AMI)">
+      <link rel="prev" href="AMIEncryption.html" title="AMIs with Encrypted Snapshots">
+      <link rel="next" href="deregister-ami.html" title="Deregistering Your Linux AMI">
+      <meta name="description" content="Copy an AMI to another region, or to create a version backed by encrypted Amazon EBS snapshots.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/CopyingAMIs.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="AMIs.html">Amazon Machine Images (AMI)</a> &#xBB; <span class="breadcrumb">Copying an AMI</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="CopyingAMIs">Copying an AMI</h1>
+                     <p>You can copy an Amazon Machine Image (AMI) within or across an AWS region using the
+                        AWS Management Console, the AWS
+                        		command line tools or SDKs, or the Amazon EC2 API, all of which support the
+                        			<code class="code">CopyImage</code> action. You can copy both Amazon EBS-backed AMIs and instance
+                        		store-backed AMIs. You can copy encrypted AMIs and AMIs with encrypted snapshots.
+                     </p>
+                     <p>Copying a source AMI results in an identical but distinct target AMI with its own
+                        unique
+                        		identifier. In the case of an Amazon EBS-backed AMI, each of its backing snapshots
+                        is, by
+                        		default, copied to an identical but distinct target snapshot. (The one exception
+                        is when you
+                        		choose to encrypt the snapshot.) You can change or deregister the source AMI with
+                        no 
+                        		effect on the target AMI. The reverse is also true.
+                     </p>
+                     <p>There are no charges for copying an AMI. However, standard storage and data transfer
+                        		rates apply.
+                     </p>
+                     <p>AWS does not copy launch permissions, user-defined tags, or Amazon S3 bucket permissions
+                        from
+                        		the source AMI to the new AMI. After the copy operation is complete, you can apply
+                        		launch permissions, user-defined tags, and Amazon S3 bucket permissions to the new
+                        AMI.
+                     </p>
+                     <h2 id="copy-ami-permissions">Permissions for Copying an Instance Store-Backed AMI</h2>
+                     		
+                     		
+                     <p>If you use an IAM user to copy an instance store-backed AMI, the user must have the
+                        			following Amazon S3 permissions: <code class="code">s3:CreateBucket</code>, <code class="code">s3:GetBucketAcl</code>,
+                        				<code class="code">s3:ListAllMyBuckets</code>, <code class="code">s3:GetObject</code>,
+                        				<code class="code">s3:PutObject</code>, and <code class="code">s3:PutObjectAcl</code>.
+                     </p>
+                     		
+                     <p>The following example policy allows the user to copy the AMI source in the specified
+                        bucket
+                        			to the specified region.
+                     </p>
+                     		<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [
+        {
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: &quot;s3:ListAllMyBuckets&quot;,
+            &quot;Resource&quot;: [
+                &quot;arn:aws:s3:::*&quot;
+            ]
+        },
+        {
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: &quot;s3:GetObject&quot;,
+            &quot;Resource&quot;: [
+                &quot;arn:aws:s3:::<em class="replaceable"><code>ami-source-bucket</code></em>/*&quot;
+            ]
+        },
+        {
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: [
+              &quot;s3:CreateBucket&quot;,
+              &quot;s3:GetBucketAcl&quot;,
+              &quot;s3:PutObjectAcl&quot;,
+              &quot;s3:PutObject&quot;
+            ],
+            &quot;Resource&quot;: [
+                &quot;arn:aws:s3:::amis-for-<em class="replaceable"><code>123456789012</code></em>-in-<em class="replaceable"><code>us-east-1</code></em>*&quot;
+            ]
+        }
+    ]
+}</code></pre>
+                     		<p>To find the Amazon Resource Name (ARN) of the AMI source bucket, open the Amazon EC2
+                        console at <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>, in the navigation pane choose
+                        				<b>AMIs</b>, and locate the bucket name in the
+                        				<b>Source</b> column.
+                     </p>
+                     	
+                     		
+                     <h2 id="copy-amis-across-regions">Cross-Region AMI Copy</h2>
+                     		
+                     <p>Copying an AMI across geographically diverse regions provides the following
+                        			benefits:
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>Consistent global deployment: Copying an AMI from one region to another
+                                 					enables you to launch consistent instances in different regions based on the
+                                 					same AMI.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Scalability: You can more easily design and build global applications that meet the
+                                 needs
+                                 					of your users, regardless of their location.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Performance: You can increase performance by distributing your application, as
+                                 					well as locating critical components of your application in closer proximity
+                                 to
+                                 					your users. You can also take advantage of region-specific features, such as
+                                 					instance types or other AWS services.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>High availability: You can design and deploy applications across AWS
+                                 					regions, to increase availability.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <p>The following diagram shows the relations among a source AMI and two copied AMIs
+                        			in different regions, as well as the EC2 instances launched from each. When you
+                        launch
+                        			an instance from an AMI, it resides in the same region where the AMI resides. If
+                        you
+                        			make changes to the source AMI and want those changes to be reflected in the AMIs
+                        in
+                        			the target regions, you must recopy the source AMI to the target regions. 
+                     </p>
+                     		
+                     <div class="mediaobject">
+                        			
+                        				<img src="../../..//img/ami_copy.png" alt="
+				AMIs copied in different regions
+			">
+                        			
+                        			
+                        		
+                     </div>
+                     		
+                     <p>When you first copy an instance store-backed AMI to a region, we create an Amazon
+                        S3
+                        			bucket for the AMIs copied to that region. All instance store-backed AMIs that
+                        you
+                        			copy to that region are stored in this bucket. The bucket names have the following
+                        			format:
+                        				amis-for-<em class="replaceable"><code>account</code></em>-in-<em class="replaceable"><code>region</code></em>-<em class="replaceable"><code>hash</code></em>.
+                        			For example:
+                        				<code>amis-for-123456789012-in-us-east-2-yhjmxvp6</code>.
+                     </p>
+                     		
+                     			
+                     <p class="title"><b>Prerequisite</b></p>
+                     			
+                     <p>Prior to copying an AMI, you must ensure that the contents of the source AMI
+                        				are updated to support running in a different region. For example, you should
+                        update
+                        				any database connection strings or similar application configuration data to point
+                        				to the appropriate resources. Otherwise, instances launched from the new AMI in
+                        				the destination region may still use the resources from the source region, which
+                        can
+                        				impact performance and cost.
+                     </p>
+                     		
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>Limits</b></p>
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Destination regions are limited to 50 concurrent AMI copies at a time, with no more
+                                 than
+                                 				25 of those coming from a single source region.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>The EU (Paris) Region does not support PV AMIs; therefore, you cannot copy a PV AMI
+                                 to the EU
+                                 					(Paris) Region. 
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                     <h2 id="copy-ami-across-accounts">Cross-Account AMI Copy</h2>
+                     		
+                     		
+                     		
+                     <p>You can share an AMI with another AWS account. Sharing an AMI does not affect the
+                        ownership 
+                        			of the AMI. The owning account is charged for the storage in the region. For more
+                        information, 
+                        			see <a href="sharingamis-explicit.html">Sharing an AMI with Specific AWS Accounts</a>.
+                     </p> 
+                     
+                     		
+                     <p>If you copy an AMI that has been shared with your account, you are the owner of the
+                        target 
+                        			AMI in your account. The owner of the source AMI is charged standard Amazon EBS
+                        or Amazon S3 transfer 
+                        			fees, and you are charged for the storage of the target AMI in the destination
+                        region.
+                     </p>
+                     
+                     		
+                     			
+                     <p class="title"><b>Resource Permissions</b></p>
+                     			
+                     <p>To copy an AMI that was shared with you from another account, the owner of the source
+                        AMI 
+                        				must grant you read permissions for the storage that backs the AMI, either the
+                        associated
+                        				EBS snapshot (for an Amazon EBS-backed AMI) or an associated S3 bucket (for an
+                        instance store-backed AMI).
+                     </p>
+                     		
+                     		
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>Limits</b></p>
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>You can&apos;t copy an encrypted AMI that was shared with you from another account. 
+                                 					Instead, if the underlying snapshot and encryption key were shared with you,
+                                 you 
+                                 					can copy the snapshot while re-encrypting it with a key of your own. You own
+                                 the
+                                 					copied snapshot, and can register it as a new AMI.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>You can&apos;t copy an AMI with an associated <code class="code">billingProduct</code> code that was shared
+                                 					with you from another account. This includes Windows AMIs and AMIs from the
+                                 					AWS Marketplace. To copy a shared AMI with a <code class="code">billingProduct</code> code, launch an
+                                 					EC2 instance in your account using the shared AMI and then create an AMI from
+                                 					the instance. For more information, see <a href="creating-an-ami-ebs.html">Creating an Amazon EBS-Backed Linux AMI</a>.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                     <h2 id="ami-copy-encryption">Encryption and AMI Copy</h2>
+                     		
+                     		
+                     <p>Encrypting during AMI copy applies only to Amazon EBS-backed AMIs. Because an instance
+                        			store-backed AMI does not rely on snapshots, you cannot use AMI copy to change
+                        its
+                        			encryption status.
+                     </p>
+                     		
+                     <p>You can use AMI copy to create a new AMI backed by encrypted Amazon EBS snapshots.
+                        If you
+                        			invoke encryption while copying an AMI, each snapshot taken of its associated Amazon
+                        EBS
+                        			volumes&#x2014;including the root volume&#x2014;is encrypted using a key that you specify. For
+                        more
+                        			information about using AMIs with encrypted snapshots, see <a href="AMIEncryption.html">AMIs with Encrypted Snapshots</a>.
+                     </p>
+                     		
+                     <p>By default, the backing snapshot of an AMI is copied with its original encryption
+                        status.
+                        			Copying an AMI backed by an unencrypted snapshot results in an identical target
+                        			snapshot that is also unencrypted. If the source AMI is backed by an encrypted
+                        			snapshot, copying it results in a target snapshot encrypted to the specified key.
+                        			Copying an AMI backed by multiple snapshots preserves the source encryption status
+                        in
+                        			each target snapshot. For more information about copying AMIs with multiple snapshots,
+                        			see <a href="AMIEncryption.html">AMIs with Encrypted Snapshots</a>.
+                     </p>
+                     		
+                     <p>The following table shows encryption support for various scenarios. Note that while
+                        it
+                        			is possible to copy an unencrypted snapshot to yield an encrypted snapshot, you
+                        cannot
+                        			copy an encrypted snapshot to yield an unencrypted one.
+                     </p>
+                     		
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac15c35c17c10">
+                              					
+                              <tbody><tr>
+                                 						
+                                 <th>Scenario</th>
+                                 						
+                                 <th>Description</th>
+                                 						
+                                 <th>Supported</th>
+                                 					
+                              </tr>
+                              				
+                              					
+                              <tr>
+                                 						
+                                 <td>1</td>
+                                 						
+                                 <td>Unencrypted-to-unencrypted</td>
+                                 						
+                                 <td>Yes</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>2</td>
+                                 						
+                                 <td>Encrypted-to-encrypted</td>
+                                 						
+                                 <td>Yes</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>3</td>
+                                 						
+                                 <td>Unencrypted-to-encrypted</td>
+                                 						
+                                 <td>Yes</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>4</td>
+                                 						
+                                 <td>Encrypted-to-unencrypted</td>
+                                 						
+                                 <td>No</td>
+                                 					
+                              </tr>
+                              				
+                           </tbody></table>
+                        </div>
+                     </div>
+                     		
+                     		
+                     			
+                     <p class="title"><b>Copy an unencrypted source AMI to an unencrypted target AMI</b></p>
+                     			
+                     <p>In this scenario, a copy of an AMI with an unencrypted single backing
+                        				snapshot is created in the specified geographical region (not shown).
+                        				Although this diagram shows an AMI with a single backing snapshot, you
+                        				can also copy an AMI with multiple snapshots. The encryption status of 
+                        				each snapshot is preserved. Therefore, an unencrypted snapshot in the
+                        				source AMI results in an unencrypted snapshot in the target AMI, and an
+                        				encrypted shapshot in the source AMI results in an encrypted snapshot in
+                        				the target AMI.
+                     </p>
+                     		
+                     		
+                     			
+                     <div class="mediaobject">
+                        				
+                        					<img src="../../..//img/ami-to-ami-unencrypted.png" alt="
+					Copy an unencrypted source AMI
+				">
+                        				
+                        				
+                        			
+                     </div>
+                     		
+                     		
+                     		
+                     			
+                     <p class="title"><b>Copy an encrypted source AMI to an encrypted target AMI</b></p>
+                     			
+                     <p>Although this scenario involves encrypted snapshots, it is functionally equivalent
+                        				to the previous scenario. If you apply encryption while copying a multi-snapshot
+                        AMI, 
+                        				all of the target snapshots are encrypted using the specified key or the default
+                        key if
+                        				none is specified.
+                     </p>
+                     		
+                     		
+                     			
+                     <div class="mediaobject">
+                        				
+                        					<img src="../../..//img/ami-to-ami-encrypted.png" alt="
+					Copy an encrypted source AMI
+				">
+                        				
+                        				
+                        			
+                     </div>
+                     		
+                     		
+                     		
+                     			
+                     <p class="title"><b>Copy an unencrypted source AMI to an encrypted target AMI </b></p>
+                     			
+                     <p>In this scenario, copying an AMI changes the encryption status of the 
+                        				destination image, for instance, by encrypting an unencrypted snapshot, 
+                        				or re-encrypting an encrypted snapshot with a different key. To apply
+                        				encryption during the copy, you must provide an encryption flag and key.
+                        				Volumes created from the target snapshot are accessible only using this key.
+                     </p>
+                     		
+                     		
+                     			
+                     <div class="mediaobject">
+                        				
+                        					<img src="../../..//img/ami-to-ami-convert.png" alt="
+					Copy an unencrypted source AMI to encrypted target AMI
+				">
+                        				
+                        				
+                        			
+                     </div>
+                     		
+                     	
+                     <h2 id="ami-copy-steps">Copying an AMI</h2>
+                     		
+                     
+                     		
+                     <p>You can copy an AMI as follows.</p>
+                     
+                     
+                     	
+                     <p class="title"><b>Prerequisite</b></p>
+                     	
+                     <p>Create or obtain an AMI backed by an Amazon EBS snapshot. 
+                        		Note that you can use the Amazon EC2 console to search a wide variety of AMIs provided
+                        by AWS.
+                        		For more information, see <a href="creating-an-ami-ebs.html">Creating an Amazon EBS-Backed Linux AMI</a> and
+                        		<a href="finding-an-ami.html">Finding a <span>Linux</span> AMI</a>.
+                     </p>
+                     
+                     
+                     		
+                     <p class="title"><b>To copy an AMI using the console</b></p>
+                     <ol>
+                        <li> 
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p> 
+                        </li>
+                        <li>
+                           				
+                           <p>From the console navigation bar, select the region that contains the AMI.
+                              					In the navigation pane, choose <b>Images</b>, <b>AMIs</b>
+                              					to display the list of AMIs available to you in the region.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Select the AMI to copy and choose <b>Actions</b>,
+                              					<b>Copy AMI</b>.
+                           </p>				
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the <b>Copy AMI</b> dialog box, specify the following information and
+                              					then choose <b>Copy AMI</b>:
+                           </p>
+                           				
+                           <div class="itemizedlist">
+                              					
+                              					
+                              					
+                              					
+                              					
+                              				
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    						
+                                    <p><b>Destination region</b>: The region in which to copy the AMI.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li class="listitem">
+                                    						
+                                    <p><b>Name</b>: A name for the new AMI. You can include
+                                       							operating system information in the name, as we do not provide this
+                                       							information when displaying details about the AMI.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li class="listitem">
+                                    						
+                                    <p><b>Description</b>: By default, the description includes
+                                       							information about the source AMI so that you can distinguish a copy
+                                       							from its original. You can change this description as needed.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li class="listitem">
+                                    						
+                                    <p><b>Encryption</b>: Select this field to encrypt the
+                                       							target snapshots, or to re-encrypt them using a different key.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li class="listitem">
+                                    						
+                                    <p><b>Master Key</b>: The KMS key to used to
+                                       							encrypt the target snapshots.
+                                    </p>
+                                    					
+                                 </li>
+                              </ul>
+                           </div>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>We display a confirmation page to let you know that the copy operation has
+                              					been initiated and to provide you with the ID of the new AMI.
+                           </p>
+                           				
+                           <p>To check on the progress of the copy operation immediately, follow the
+                              					provided link. To check on the progress later, choose <b>Done</b>,
+                              					and then when you are ready, use the navigation bar to switch to the target
+                              					region (if applicable) and locate your AMI in the list of AMIs.
+                           </p>
+                           				
+                           <p>The initial status of the target AMI is <code class="code">pending</code> and the
+                              					operation is complete when the status is <code class="code">available</code>.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     
+                     		
+                     			
+                     <p class="title"><b>To copy an AMI using the AWS CLI</b></p>
+                     			
+                     <p>You can copy an AMI using the <a href="./cli/latest/reference/ec2/copy-image.html" target="_blank">copy-image</a> command.
+                        				You must specify both the source and destination regions. 
+                        				You specify the source region using the <code class="code">--source-region</code> parameter. 
+                        				You can specify the destination region using either the <code class="code">--region</code>
+                        				parameter or an environment variable. For more information, see <a href="./cli/latest/userguide/cli-chap-getting-started.html" target="_blank">Configuring the AWS
+                           				Command Line Interface</a>.
+                     </p>
+                     		
+                     		
+                     <p>When you encrypt a target snapshot during copying, you must specify these
+                        			additional parameters: <code class="code">--encrypted</code> and <code class="code">--kms-key-id</code>.
+                     </p>
+                     
+                     		
+                     			
+                     <p class="title"><b>To copy an AMI using the Tools for Windows PowerShell</b></p>
+                     			
+                     <p>You can copy an AMI using the <a href="./powershell/latest/reference/items/Copy-EC2Image.html" target="_blank">Copy-EC2Image</a> command.
+                        				You must specify both the source and destination regions. 
+                        				You specify the source region using the <code class="code">-SourceRegion</code> parameter. 
+                        				You can specify the destination region using either the <code class="code">-Region</code>
+                        				parameter or the <code class="code">Set-AWSDefaultRegion</code> command. For more information,
+                        				see <a href="./powershell/latest/userguide/pstools-installing-specifying-region.html" target="_blank">Specifying AWS Regions</a>.
+                     </p>
+                     		
+                     		
+                     <p>When you encrypt a target snapshot during copying, you must specify these
+                        			additional parameters: <code class="code">-Encrypted</code> and <code class="code">-KmsKeyId</code>.
+                     </p>
+                     	
+                     <h2 id="ami-copy-stop">Stopping a Pending AMI Copy Operation</h2>
+                     		
+                     
+                     		
+                     <p>You can stop a pending AMI copy as follows.</p>
+                     		
+                     <p class="title"><b>To stop an AMI copy operation using the console</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           				
+                           <p>From the navigation bar, select the destination region from the region
+                              					selector.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the navigation pane, choose <b>AMIs</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Select the AMI to stop copying and choose <b>Actions</b>,
+                              						<b>Deregister</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>When asked for confirmation, choose <b>Continue</b>.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>To stop an AMI copy operation using the command line</b></p>
+                        			
+                        <p>You can use one of the following commands. For more information about these
+                           				command line interfaces, see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p><a href="./cli/latest/reference/ec2/deregister-image.html" target="_blank">deregister-image</a>
+                                 					(AWS CLI)
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><a href="./powershell/latest/reference/items/Unregister-EC2Image.html" target="_blank">Unregister-EC2Image</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="AMIEncryption.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="deregister-ami.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Permissions for Copying an Instance Store-Backed AMI"><a class="pagetoc" href="#copy-ami-permissions">Permissions for Copying an Instance Store-Backed AMI</a></li>
+                        <li class="pagetoc" name="Cross-Region AMI Copy"><a class="pagetoc" href="#copy-amis-across-regions">Cross-Region AMI Copy</a></li>
+                        <li class="pagetoc" name="Cross-Account AMI Copy"><a class="pagetoc" href="#copy-ami-across-accounts">Cross-Account AMI Copy</a></li>
+                        <li class="pagetoc" name="Encryption and AMI Copy"><a class="pagetoc" href="#ami-copy-encryption">Encryption and AMI Copy</a></li>
+                        <li class="pagetoc" name="Copying an AMI"><a class="pagetoc" href="#ami-copy-steps">Copying an AMI</a></li>
+                        <li class="pagetoc" name="Stopping a Pending AMI Copy Operation"><a class="pagetoc" href="#ami-copy-stop">Stopping a Pending AMI Copy Operation</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

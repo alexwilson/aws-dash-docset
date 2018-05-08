@@ -1,0 +1,174 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Go - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="downstream-tracing.html" title="Emitting Trace Segments from a Lambda
+                Function">
+      <link rel="prev" href="python-tracing.html" title="Python">
+      <link rel="next" href="lambda-x-ray-daemon.html" title="The AWS X-Ray Daemon in the Lambda Environment">
+      <meta name="description" content="You can use the X-Ray SDK for Go with your Lambda function. If your handler includes as its first argument, that object can be passed to the X-Ray SDK. Lambda passes values through this context that the SDK can use to attach subsegments to the Lambda invoke service segment. Subsegments created with the SDK will appear as a part of your Lambda traces.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/go-tracing.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="troubleshooting.html">Monitoring and Troubleshooting Lambda-based Applications</a> &#xBB; <a href="lambda-x-ray.html">Using AWS X-Ray</a> &#xBB; <a href="downstream-tracing.html">Emitting Trace Segments from a Lambda
+                                    Function</a> &#xBB; <span class="breadcrumb">Go</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="go-tracing">Go</h1>
+                     <p>You can use the <a href="https://github.com/aws/aws-xray-sdk-go" target="_blank">X-Ray SDK for Go</a> with your Lambda function.  If your handler includes <a href="go-programming-model-context.html">The Context Object (Go)
+                           </a> as its first argument, 
+                        that object can be passed to the X-Ray SDK. Lambda passes values through this context
+                        that the SDK can use to attach subsegments to the Lambda invoke service segment. Subsegments
+                        created with the SDK will appear as a part of your Lambda traces. 
+                     </p>
+                     <h2 id="go-tracing-installing-sdk">Installing the X-Ray SDK for Go</h2>
+                     
+                     <p>Use the following command to install the X-Ray SDK for Go. (The SDK&apos;s non-testing
+                        dependencies will be included).
+                     </p>
+                     <code class="code">go get -u github.com/aws/aws-xray-sdk-go/...</code>
+                     
+                     <p>If you want to include the test dependencies, use the following command:</p>
+                     <code class="code">go get -u -t github.com/aws/aws-xray-sdk-go/...</code>
+                     
+                     <p>You can also use <a href="https://github.com/Masterminds/glide/blob/master/README.md" target="_blank">Glide</a> to manage dependencies.
+                     </p>
+                     <code class="code">glide install</code>
+                     
+                     <h2 id="go-tracing-configuring-sdk">Configuring the X-Ray SDK for Go</h2>
+                     
+                     <p>The following code sample illustrates how to configure the X-Ray SDK for Go in your
+                        Lambda function:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">import (
+  &quot;github.com/aws/aws-xray-sdk-go/xray&quot;
+) 
+func myHandlerFunction(ctx context.Context, sample string) {
+  xray.Configure(xray.Config{    
+    LogLevel:         &quot;info&quot;,           // default
+    ServiceVersion:   &quot;1.2.3&quot;,
+  })
+   ... //remaining handler code
+}
+</code></pre>                
+                     <h2 id="go-tracing-create-segment">Create a subsegment</h2>   
+                     
+                     <p>The following code illustrates how to start a subsegment:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">// Start a subsegment
+  ctx, subSeg := xray.BeginSubsegment(ctx, &quot;subsegment-name&quot;)
+  // ...
+  // Add metadata or annotation here if necessary
+  // ...
+  subSeg.Close(nil)
+  </code></pre>
+                     <h2 id="go-tracing-capture">Capture</h2>   
+                     
+                     <p>The following code illustrates how to trace and capture a critical code path:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">func criticalSection(ctx context.Context) {
+  // This example traces a critical code path using a custom subsegment
+  xray.Capture(ctx, &quot;MyService.criticalSection&quot;, func(ctx1 context.Context) error {
+    var err error
+
+    section.Lock()
+    result := <em class="replaceable"><code>someLockedResource</code></em>.Go()
+    section.Unlock()
+
+    xray.AddMetadata(ctx1, &quot;ResourceResult&quot;, result)
+  })
+}</code></pre>
+                     <h2 id="go-tracing-use-client-method">Tracing HTTP Requests</h2>    
+                     
+                     <p>You can also use the <code class="code">xray.Client()</code> method if you want to trace an HTTP client, as shown below:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">func myFunction (ctx context.Context) ([]byte, error) {
+    resp, err := ctxhttp.Get(ctx, xray.Client(nil), &quot;https://aws.amazon.com&quot;)
+    if err != nil {
+      return nil, err
+    }
+    return ioutil.ReadAll(resp.Body), nil
+}</code></pre>
+                     </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="python-tracing.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="lambda-x-ray-daemon.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Installing the X-Ray SDK for Go"><a class="pagetoc" href="#go-tracing-installing-sdk">Installing the X-Ray SDK for Go</a></li>
+                        <li class="pagetoc" name="Configuring the X-Ray SDK for Go"><a class="pagetoc" href="#go-tracing-configuring-sdk">Configuring the X-Ray SDK for Go</a></li>
+                        <li class="pagetoc" name="Create a subsegment"><a class="pagetoc" href="#go-tracing-create-segment">Create a subsegment</a></li>
+                        <li class="pagetoc" name="Capture"><a class="pagetoc" href="#go-tracing-capture">Capture</a></li>
+                        <li class="pagetoc" name="Tracing HTTP Requests"><a class="pagetoc" href="#go-tracing-use-client-method">Tracing HTTP Requests</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

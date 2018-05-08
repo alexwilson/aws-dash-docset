@@ -1,0 +1,1655 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>ClassicLink - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="using-vpc.html" title="Amazon EC2 and Amazon Virtual Private Cloud">
+      <link rel="prev" href="ec2-supported-platforms.html" title="Supported Platforms">
+      <link rel="next" href="vpc-migrate.html" title="Migrating from a Linux Instance in EC2-Classic to a Linux Instance in a VPC">
+      <meta name="description" content="Use ClassicLink to allow your EC2-Classic instances to communicate with instances in a VPC over private IP.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-classiclink.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="EC2_Network_and_Security.html">Network and Security</a> &#xBB; <a href="using-vpc.html">Amazon EC2 and Amazon Virtual Private Cloud</a> &#xBB; <span class="breadcrumb">ClassicLink</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="vpc-classiclink">ClassicLink</h1>
+                     <p>ClassicLink allows you to link your EC2-Classic instance to a VPC in your account,
+                        within
+                        		the same region. This allows you to associate the VPC security groups with the EC2-Classic
+                        		instance, enabling communication between your EC2-Classic instance and instances
+                        in your
+                        		VPC using private IPv4 addresses. ClassicLink removes the need to make use of public
+                        IPv4
+                        		addresses or Elastic IP addresses to enable communication between instances in these
+                        		platforms. For more information about private and public IPv4 addresses, see <a href="./AmazonVPC/latest/UserGuide/vpc-ip-addressing.html" target="_blank">IP Addressing in Your VPC</a>.
+                     </p>
+                     <p>ClassicLink is available to all users with accounts that support the EC2-Classic platform,
+                        		and can be used with any EC2-Classic instance. To find out which platform your account
+                        		supports, see <a href="ec2-supported-platforms.html">Supported Platforms</a>.
+                        		For more information about the benefits of using a VPC, see <a href="using-vpc.html">Amazon EC2 and Amazon Virtual Private Cloud</a>. For more information about migrating your resources to a VPC, see
+                        		<a href="vpc-migrate.html">Migrating from a <span>Linux</span> Instance in EC2-Classic to a <span>Linux</span> Instance in a VPC</a>.
+                     </p>
+                     <p>There is no additional charge for using ClassicLink. Standard charges for data transfer
+                        and
+                        		instance usage apply.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>EC2-Classic instances cannot be enabled for IPv6 communication. You can associate
+                           an IPv6 CIDR
+                           		block with your VPC and assign IPv6 address to resources in your VPC, however,
+                           		communication between a ClassicLinked instance and resources in the VPC is over
+                           IPv4
+                           		only.
+                        </p>
+                     </div>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#classiclink-basics">ClassicLink Basics</a></li>
+                           <li><a href="#classiclink-limitations">ClassicLink Limitations</a></li>
+                           <li><a href="#working-with-classiclink">Working with ClassicLink</a></li>
+                           <li><a href="#classiclink-api-cli">API and CLI Overview</a></li>
+                           <li><a href="#classiclink-security-groups-example">Example: ClassicLink Security Group
+                                 Configuration for a Three-Tier Web Application</a></li>
+                        </ul>
+                     </div>
+                     	
+                     <h2 id="classiclink-basics">ClassicLink Basics</h2>
+                     
+                     		
+                     <p>There are two steps to linking an EC2-Classic instance to a VPC using ClassicLink.
+                        First,
+                        			you must enable the VPC for ClassicLink. By default, all VPCs in your account are
+                        not
+                        			enabled for ClassicLink, to maintain their isolation. After you&apos;ve enabled the
+                        VPC for
+                        			ClassicLink, you can then link any running EC2-Classic instance in the same region
+                        in your
+                        			account to that VPC. Linking your instance includes selecting security groups from
+                        the VPC to
+                        			associate with your EC2-Classic instance. After you&apos;ve linked the instance, it
+                        can
+                        			communicate with instances in your VPC using their private IP addresses, provided
+                        the VPC
+                        			security groups allow it. Your EC2-Classic instance does not lose its private IP
+                        address when
+                        			linked to the VPC.
+                     </p>
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Linking your instance to a VPC is sometimes referred to as <em>attaching</em> your instance.
+                        </p>
+                     </div>
+                     		
+                     <p>A linked EC2-Classic instance can communicate with instances in a VPC, but it does
+                        not form
+                        			part of the VPC. If you list your instances and filter by VPC, for example, through
+                        the
+                        			<code class="code">DescribeInstances</code> API request, or by using the <b>Instances</b>
+                        			screen in the Amazon EC2 console, the results do not return any EC2-Classic instances
+                        that are linked 
+                        			to the VPC. For more information about viewing your linked EC2-Classic instances,
+                        see <a href="vpc-classiclink.html#classiclink-describe-vpcs-instances">Viewing Your ClassicLink-Enabled VPCs and
+                           				Linked EC2-Classic Instances</a>.
+                     </p>
+                     
+                     <p>By default, if you use a public DNS hostname to address an instance in a VPC from
+                        a linked
+                        EC2-Classic instance, the hostname resolves to the instance&apos;s public IP address. The
+                        same
+                        occurs if you use a public DNS hostname to address a linked EC2-Classic instance from
+                        an
+                        instance in the VPC. If you want the public DNS hostname to resolve to the private
+                        IP address,
+                        you can enable ClassicLink DNS support for the VPC. For more information, see  <a href="vpc-classiclink.html#classiclink-enable-dns-support">Enabling ClassicLink DNS Support</a>.
+                     </p>
+                     		
+                     <p>If you no longer require a ClassicLink connection between your instance and the VPC,
+                        you
+                        			can unlink the EC2-Classic instance from the VPC. This disassociates the VPC security
+                        			groups from the EC2-Classic instance. A linked EC2-Classic instance is automatically
+                        			unlinked from a VPC when it&apos;s stopped. After you&apos;ve unlinked all linked EC2-Classic
+                        			instances from the VPC, you can disable ClassicLink for the VPC.
+                     </p>
+                     
+                     	
+                     		
+                     <h3 id="classiclink-other-services">Using Other AWS Services in Your VPC With ClassicLink</h3>
+                     			
+                     			
+                     <p>Linked EC2-Classic instances can access the following AWS services in the VPC: 
+                        				Amazon Redshift, Amazon ElastiCache, Elastic Load Balancing, and Amazon RDS. 
+                        				However, instances in the VPC cannot access the AWS services provisioned
+                        				by the EC2-Classic platform using ClassicLink.
+                     </p>
+                     
+                     		
+                     <p>If you use Elastic Load Balancing, you can register your linked EC2-Classic instances
+                        with the load balancer.
+                        			You must create your load balancer in the ClassicLink-enabled VPC and enable the
+                        
+                        				Availability Zone in which the instance runs. If you terminate the linked EC2-Classic
+                        instance, 
+                        				the load balancer deregisters the instance.
+                     </p>
+                     			
+                     <p>If you use Amazon EC2 Auto Scaling, you can create an Amazon EC2 Auto Scaling group
+                        with instances that are automatically
+                        				linked to a specified ClassicLink-enabled VPC at launch. For more information,
+                        see <a href="./autoscaling/latest/userguide/asg-in-vpc.html#as-ClassicLink" target="_blank">Linking EC2-Classic Instances to a VPC</a> 
+                        				in the <em>Amazon EC2 Auto Scaling User Guide</em>.
+                     </p>
+                     			
+                     			
+                     <p>If you use Amazon RDS instances or Amazon Redshift clusters in your VPC, and they
+                        are publicly accessible
+                        (accessible from the Internet), the endpoint you use to address those resources from
+                        a
+                        linked EC2-Classic instance by default resolves to a public IP address. If those resources
+                        are not publicly accessible, the endpoint resolves to a private IP address. To address
+                        a
+                        publicly accessible RDS instance or Redshift cluster over private IP using ClassicLink,
+                        you must use their private IP address or private DNS hostname, or you must enable
+                        ClassicLink DNS support for the VPC.
+                     </p>
+                     			
+                     <p>If you use a private DNS hostname or a private IP address to address an RDS instance,
+                        				the linked EC2-Classic instance cannot use the failover support available for
+                        Multi-AZ
+                        				deployments.
+                     </p>
+                     			
+                     <p>You can use the Amazon EC2 console to find the private IP addresses of your Amazon
+                        Redshift, Amazon ElastiCache,
+                        				or Amazon RDS resources.
+                     </p>
+                     			
+                     <p class="title"><b>To locate the private IP addresses of AWS resources in your VPC</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           					
+                           <p>In the navigation pane, choose <b>Network Interfaces</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Check the descriptions of the network interfaces in the <b>Description</b>
+                              						column. A network interface that&apos;s used by Amazon Redshift, Amazon ElastiCache,
+                              or Amazon RDS will have the name
+                              						of the service in the description. For example, a network interface that&apos;s attached
+                              to
+                              						an Amazon RDS instance will have the following description:
+                              						<code class="code">RDSNetworkInterface</code>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Select the required network interface. </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the details pane, get the private IP address from the <b>Primary private IPv4
+                                 							IP</b> field. 
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     		
+                     
+                     	
+                     		    
+                     <h3 id="classiclink-iam">Controlling the Use of ClassicLink</h3>
+                     		
+                     		    
+                     <p>By default, IAM users do not have permission to work with ClassicLink. You can create
+                        an
+                        				IAM policy that grants users permissions to enable or disable a VPC for ClassicLink,
+                        				link or unlink an instance to a ClassicLink-enabled VPC, and to view ClassicLink-enabled
+                        				VPCs and linked EC2-Classic instances. For more information about IAM policies
+                        for Amazon EC2,
+                        				see <a href="iam-policies-for-amazon-ec2.html">IAM Policies for Amazon EC2</a>. 
+                     </p>
+                     		    
+                     <p>For more information about policies for working with ClassicLink, see the following
+                        		        example: <a href="ExamplePolicies_EC2.html#iam-example-classiclink">7. Working with ClassicLink</a>.
+                     </p>
+                     	    
+                     		
+                     			
+                     <h3 id="classiclink-security-groups">Security Groups in ClassicLink</h3>
+                     			
+                     			
+                     <p>Linking your EC2-Classic instance to a VPC does not affect your EC2-Classic security
+                        groups. They continue to control all traffic to and from the instance. This excludes
+                        traffic
+                        to and from instances in the VPC, which is controlled by the VPC security groups that
+                        you
+                        associated with the EC2-Classic instance. EC2-Classic instances that are linked to
+                        the
+                        same VPC cannot communicate with each other through the VPC; regardless of whether
+                        they are
+                        associated with the same VPC security group. Communication between EC2-Classic instances
+                        is
+                        controlled by the EC2-Classic security groups associated with those instances. For
+                        an
+                        example of a security group configuration, see <a href="vpc-classiclink.html#classiclink-security-groups-example">Example: ClassicLink Security Group
+                           Configuration for a Three-Tier Web Application</a>.
+                     </p>
+                     			
+                     <p>After you&apos;ve linked your instance to a VPC, you cannot change which VPC security groups
+                        are
+                        				associated with the instance. To associate different security groups with your
+                        instance, you
+                        				must first unlink the instance, and then link it to the VPC again, choosing the
+                        required
+                        				security groups.
+                     </p>
+                     		
+                     		
+                     			
+                     <h3 id="classiclink-routing">Routing for ClassicLink</h3>
+                     			
+                     			
+                     <p>When you enable a VPC for ClassicLink, a static route is added to all of the VPC route
+                        				tables with a destination of <code class="code">10.0.0.0/8</code> and a target of <code class="code">local</code>.
+                        				This allows communication between instances in the VPC and any EC2-Classic instances
+                        that
+                        				are then linked to the VPC. If you add a custom route table to a ClassicLink-enabled
+                        VPC,
+                        				a static route is automatically added with a destination of <code class="code">10.0.0.0/8</code> and a
+                        				target of <code class="code">local</code>. When you disable ClassicLink for a VPC, this route is
+                        				automatically deleted in all of the VPC route tables.
+                     </p>
+                     			
+                     <p>VPCs that are in the <code class="code">10.0.0.0/16</code> and <code class="code">10.1.0.0/16</code> IP address
+                        				ranges can be enabled for ClassicLink only if they do not have any existing static
+                        routes
+                        				in route tables in the <code class="code">10.0.0.0/8</code> IP address range, excluding the local routes
+                        				that were automatically added when the VPC was created. Similarly, if you&apos;ve enabled
+                        a VPC
+                        				for ClassicLink, you may not be able to add any more specific routes to your route
+                        tables
+                        				within the <code class="code">10.0.0.0/8</code> IP address range.  
+                     </p>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>If your VPC CIDR block is a publicly routable IP address range, consider the security
+                           					implications before you link an EC2-Classic instance to your VPC. For example,
+                           					if your linked EC2-Classic instance receives an incoming Denial of Service
+                           					(DoS) request flood attack from a source IP address that falls within the VPC&#x2019;s
+                           					IP address range, the response traffic is sent into your VPC. We strongly
+                           					recommend that you create your VPC using a private IP address range as specified
+                           					in <a href="http://www.faqs.org/rfcs/rfc1918.html" target="_blank">RFC 1918</a>.
+                        </p>
+                     </div>
+                     			
+                     			
+                     <p>For more information about route tables and routing in your VPC, see <a href="./AmazonVPC/latest/UserGuide/VPC_Route_Tables.html" target="_blank">Route Tables</a> in the
+                        					<em>Amazon VPC User Guide</em>.
+                     </p>
+                     		
+                     
+                     	
+                     <h3 id="classiclink-peering">Enabling a VPC Peering Connection for ClassicLink</h3>
+                     
+                     
+                     <p>If you have a VPC peering connection between two VPCs, and there are one or more
+                        EC2-Classic instances that are linked to one or both of the VPCs via ClassicLink,
+                        you can
+                        extend the VPC peering connection to enable communication between the EC2-Classic
+                        instances
+                        and the instances in the VPC on the other side of the VPC peering connection. This
+                        enables
+                        the EC2-Classic instances and the instances in the VPC to communicate using private
+                        IP
+                        addresses. To do this, you can enable a local VPC to communicate with a linked EC2-Classic
+                        instance in a peer VPC, or you can enable a local linked EC2-Classic instance to
+                        communicate with instances in a peer VPC.
+                     </p>
+                     
+                     <p>If you enable a local VPC to communicate with a linked EC2-Classic instance in a peer
+                        VPC, a static route is automatically added to your route tables with a destination
+                        of
+                        <code class="code">10.0.0.0/8</code> and a target of <code class="code">local</code>. 
+                     </p>
+                     
+                     <p>For more information and examples, see <a href="./AmazonVPC/latest/PeeringGuide/peering-configurations-classiclink.html" target="_blank">Configurations With
+                           ClassicLink</a> in the <em>Amazon VPC Peering Guide</em>.
+                     </p>
+                     
+                     
+                     		
+                     <h2 id="classiclink-limitations">ClassicLink Limitations</h2>
+                     		
+                     		
+                     <p>To use the ClassicLink feature, you need to be aware of the following limitations:</p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        			
+                        			
+                        			
+                        			
+                        			
+                        			
+                        
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>You can link an EC2-Classic instance to only one VPC at a time.</p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>If you stop your linked EC2-Classic instance, it&apos;s automatically unlinked from the
+                                 					VPC and the VPC security groups are no longer associated with the instance. You
+                                 can link
+                                 					your instance to the VPC again after you&apos;ve restarted it.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>You cannot link an EC2-Classic instance to a VPC that&apos;s in a different region or a
+                                 					different AWS account.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>VPCs configured for dedicated hardware tenancy cannot be enabled for ClassicLink.
+                                 					Contact AWS support to request that your dedicated tenancy VPC be allowed to
+                                 be enabled
+                                 					for ClassicLink.
+                              </p>
+                              				
+                              <div class="aws-note">
+                                 <p class="aws-note">Important</p>
+                                 <p>EC2-Classic instances are run on shared hardware. If you&apos;ve set the tenancy of your
+                                    VPC to
+                                    						<code class="code">dedicated</code> because of regulatory or security requirements, then linking an
+                                    						EC2-Classic instance to your VPC may not conform to those requirements, as you
+                                    will be
+                                    						allowing a shared tenancy resource to address your isolated resources directly
+                                    using
+                                    						private IP addresses. If you want to enable your dedicated VPC for ClassicLink,
+                                    						provide a detailed motivation in your request to AWS support.
+                                 </p>
+                              </div>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>VPCs with routes that conflict with the EC2-Classic private IP address range of
+                                 					<code class="code">10/8</code> cannot be enabled for ClassicLink. This does not include VPCs with
+                                 					<code class="code">10.0.0.0/16</code> and <code class="code">10.1.0.0/16</code> IP address ranges that already
+                                 					have local routes in their route tables. For more information, see <a href="vpc-classiclink.html#classiclink-routing">Routing for ClassicLink</a>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>You cannot associate a VPC Elastic IP address with a linked EC2-Classic instance.</p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>ClassicLink does not support transitive relationships out of the VPC. Your linked
+                                 EC2-Classic instance will not have access to any VPN connection, VPC endpoint, or
+                                 Internet gateway associated with the VPC. Similarly, resources on the other side of
+                                 a VPN
+                                 connection, or an Internet gateway will not have access to a linked EC2-Classic instance.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>You cannot use ClassicLink to link a VPC instance to a different VPC, or to a
+                                 					EC2-Classic resource. To establish a private connection between VPCs, you can
+                                 use a VPC
+                                 					peering connection. For more information, see the <a href="./AmazonVPC/latest/PeeringGuide/" target="_blank">Amazon VPC Peering Guide</a>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>If you link your EC2-Classic instance to a VPC in the <code class="code">172.16.0.0/16</code> range,
+                                 					and you have a DNS server running on the <code class="code">172.16.0.23/32</code> IP address within the
+                                 					VPC, then your linked EC2-Classic instance will not be able to access the VPC
+                                 DNS server.
+                                 					To work around this issue, run your DNS server on a different IP address within
+                                 the
+                                 					VPC.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>You cannot use ClassicLink to link an EC2-Classic instance to a C5 or M5
+                                 instance in a VPC.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                     		
+                     <h2 id="working-with-classiclink">Working with ClassicLink</h2>
+                     		
+                     		
+                     <p>You can use the Amazon EC2 and Amazon VPC consoles to work with the ClassicLink feature.
+                        You can enable
+                        			or disable a VPC for ClassicLink, and link and unlink EC2-Classic instances to
+                        a
+                        			VPC.
+                     </p>
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>The ClassicLink features are only visible in the consoles for accounts and regions
+                           that
+                           				support EC2-Classic. 
+                        </p>
+                     </div>
+                     		
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Tasks</strong></p>
+                        <ul>
+                           <li><a href="#classiclink-enable-vpc">Enabling a VPC for ClassicLink</a></li>
+                           <li><a href="#classiclink-link-instance">Linking an Instance to a VPC</a></li>
+                           <li><a href="#classiclink-vpc-wizard">Creating a VPC with ClassicLink Enabled</a></li>
+                           <li><a href="#classiclink-launch-wizard">Linking an EC2-Classic Instance to a VPC at Launch</a></li>
+                           <li><a href="#classiclink-describe-vpcs-instances">Viewing Your ClassicLink-Enabled VPCs and
+                                 				Linked EC2-Classic Instances</a></li>
+                           <li><a href="#classiclink-enable-dns-support">Enabling ClassicLink DNS Support</a></li>
+                           <li><a href="#classiclink-disable-dns-support">Disabling ClassicLink DNS Support</a></li>
+                           <li><a href="#classiclink-unlink-instance">Unlinking a EC2-Classic Instance from a
+                                 VPC</a></li>
+                           <li><a href="#classiclink-disable-vpc">Disabling ClassicLink for a VPC</a></li>
+                        </ul>
+                     </div>
+                     		
+                     			
+                     <h3 id="classiclink-enable-vpc">Enabling a VPC for ClassicLink</h3>
+                     			
+                     			
+                     <p>To link an EC2-Classic instance to a VPC, you must first enable the VPC for ClassicLink.
+                        				You cannot enable a VPC for ClassicLink if the VPC has routing that conflicts
+                        with the
+                        				EC2-Classic private IP address range. For more information, see <a href="vpc-classiclink.html#classiclink-routing">Routing for ClassicLink</a>.
+                     </p>
+                     			
+                     <p class="title"><b>To enable a VPC for ClassicLink</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon VPC console at
+                              <a href="https://console.aws.amazon.com/vpc/" target="_blank">https://console.aws.amazon.com/vpc/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           <p>In the navigation pane, choose <b>Your VPCs</b>.
+                           </p>
+                        </li>
+                        <li>
+                           					
+                           <p>Choose a VPC, and then choose <b>Actions</b>, <b>Enable
+                                 ClassicLink</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the confirmation dialog box, choose <b>Yes, Enable</b>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     		
+                     		
+                     <h3 id="classiclink-link-instance">Linking an Instance to a VPC</h3>
+                     			
+                     			
+                     <p>After you&apos;ve enabled a VPC for ClassicLink, you can link an EC2-Classic instance to
+                        				it.
+                     </p>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You can only link a running EC2-Classic instance to a VPC. You cannot link an instance
+                           that&apos;s
+                           					in the <code class="code">stopped</code> state.
+                        </p>
+                     </div>
+                     			
+                     			
+                     <p class="title"><b>To link an instance to a VPC</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           <p>In the navigation pane, choose <b>Instances</b>. 
+                           </p>
+                        </li>
+                        <li>
+                           					
+                           <p>Select the running EC2-Classic instance, choose <b>Actions</b>,
+                              <b>ClassicLink</b>, <b>Link to VPC</b>. You can select
+                              more than one instance to link to the same VPC.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the dialog box that displays, select a VPC from the list. Only VPCs that have been
+                              						enabled for ClassicLink are displayed.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Select one or more of the VPC security groups to associate with your instance. When
+                              you
+                              are done, choose <b>Link to VPC</b>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     		
+                     		
+                     <h3 id="classiclink-vpc-wizard">Creating a VPC with ClassicLink Enabled</h3>
+                     			
+                     			
+                     <p>You can create a new VPC and immediately enable it for ClassicLink by using the VPC
+                        				wizard in the Amazon VPC console.
+                     </p>
+                     			
+                     <p class="title"><b>To create a VPC with ClassicLink enabled</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon VPC console at
+                              <a href="https://console.aws.amazon.com/vpc/" target="_blank">https://console.aws.amazon.com/vpc/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           					
+                           <p>From the Amazon VPC dashboard, choose <b>Start VPC Wizard</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Select one of the VPC configuration options and choose <b>Select</b>. 
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>On the next page of the wizard, choose <b>Yes</b> for <b>Enable
+                                 ClassicLink</b>. Complete the rest of the steps in the wizard to create your
+                              VPC. For more information about using the VPC wizard, see <a href="./AmazonVPC/latest/UserGuide/VPC_Scenarios.html" target="_blank">Scenarios for Amazon VPC</a> in the
+                              <em>Amazon VPC User Guide</em>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     		
+                     		
+                     <h3 id="classiclink-launch-wizard">Linking an EC2-Classic Instance to a VPC at Launch</h3>
+                     			
+                     			
+                     <p>You can use the launch wizard in the Amazon EC2 console to launch an EC2-Classic instance
+                        and
+                        				immediately link it to a ClassicLink-enabled VPC.
+                     </p>
+                     			
+                     <p class="title"><b>To link an instance to a VPC at launch</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           					
+                           <p>From the Amazon EC2 dashboard, choose <b>Launch Instance</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Select an AMI, and then choose an instance type. On the <b>Configure Instance Details</b> page, ensure that you select <b>Launch
+                                 							into EC2-Classic</b> from the <b>Network</b> list.
+                           </p>
+                           					
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>Some instance types, such as T2 instance types, can only be launched into a VPC. Ensure
+                                 that
+                                 							you select an instance type that can be launched into EC2-Classic.
+                              </p>
+                           </div>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the <b>Link to VPC (ClassicLink)</b> section, select a VPC from
+                              <b>Link to VPC</b>. Only ClassicLink-enabled VPCs are displayed.
+                              Select the security groups from the VPC to associate with the instance. Complete the
+                              other configuration options on the page, and then complete the rest of the steps in
+                              the
+                              wizard to launch your instance. For more information about using the launch wizard,
+                              see
+                              <a href="launching-instance.html#launch-instance-console">Launching Your Instance from an AMI</a>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     		
+                     		
+                     <h3 id="classiclink-describe-vpcs-instances">Viewing Your ClassicLink-Enabled VPCs and
+                        				Linked EC2-Classic Instances
+                     </h3>
+                     			
+                     			
+                     <p>You can view all of your ClassicLink-enabled VPCs in the Amazon VPC console, and your
+                        				linked EC2-Classic instances in the Amazon EC2 console.
+                     </p>
+                     			
+                     <p class="title"><b>To view your ClassicLink-enabled VPCs</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon VPC console at
+                              <a href="https://console.aws.amazon.com/vpc/" target="_blank">https://console.aws.amazon.com/vpc/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           					
+                           <p>In the navigation pane, choose <b>Your VPCs</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Select a VPC, and in the <b>Summary</b> tab, look for the
+                              							<b>ClassicLink</b> field. A value of <b>Enabled</b>
+                              						indicates that the VPC is enabled for ClassicLink.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Alternatively, look for the <b>ClassicLink</b> column, and view the value
+                              that&apos;s displayed for each VPC (<b>Enabled</b> or
+                              <b>Disabled</b>). If the column is not visible, choose <b>Edit
+                                 Table Columns</b> (the gear-shaped icon), select the
+                              <b>ClassicLink</b> attribute, and then choose
+                              <b>Close</b>. 
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     			
+                     <p class="title"><b>To view your linked EC2-Classic instances</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           					
+                           <p>In the navigation pane, choose <b>Instances</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Select an EC2-Classic instance, and in the <b>Description</b> tab, look
+                              						for the <b>ClassicLink</b> field. If the instance is linked to a VPC,
+                              						the field displays the ID of the VPC to which the instance is linked. If the
+                              instance is
+                              						not linked to any VPC, the field displays <b>Unlinked</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           <p>Alternatively, you can filter your instances to display only linked EC2-Classic instances
+                              for a
+                              						specific VPC or security group. In the search bar, start typing
+                              							<code class="code">ClassicLink</code>, select the relevant ClassicLink resource attribute, and
+                              						then select the security group ID or the VPC ID.
+                           </p>
+                        </li>
+                     </ol>
+                     		
+                     	  
+                     <h3 id="classiclink-enable-dns-support">Enabling ClassicLink DNS Support</h3>
+                     	    
+                     	    
+                     <p>You can enable ClassicLink DNS support for your VPC so that DNS hostnames that are
+                        addressed between linked EC2-Classic instances and instances in the VPC resolve to
+                        private
+                        IP addresses and not public IP addresses.  For this feature to work, your VPC must
+                        be
+                        enabled for DNS hostnames and DNS resolution.
+                     </p>
+                     	    
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>If you enable ClassicLink DNS support for your VPC, your linked EC2-Classic instance
+                           can
+                           access any private hosted zone associated with the VPC. For more information, see
+                           <a href="./Route53/latest/DeveloperGuide/hosted-zones-private.html" target="_blank">Working with Private Hosted Zones</a>
+                           in the <em>Amazon Route&#xA0;53 Developer Guide</em>. 
+                        </p>
+                     </div>
+                     	    
+                     <p class="title"><b>To enable ClassicLink DNS support</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon VPC console at
+                              <a href="https://console.aws.amazon.com/vpc/" target="_blank">https://console.aws.amazon.com/vpc/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           <p>In the navigation pane, choose <b>Your VPCs</b>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>Select your VPC, and choose <b>Actions</b>, <b>Edit ClassicLink
+                                 DNS Support</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Yes</b> to enable ClassicLink DNS support, and choose
+                              <b>Save</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     	  
+                     	  
+                     <h3 id="classiclink-disable-dns-support">Disabling ClassicLink DNS Support</h3>
+                     	    
+                     	    
+                     <p>You can disable ClassicLink DNS support for your VPC so that DNS hostnames that are
+                        addressed between linked EC2-Classic instances and instances in the VPC resolve to
+                        public IP
+                        addresses and not private IP addresses. 
+                     </p>
+                     	    
+                     <p class="title"><b>To disable ClassicLink DNS support</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon VPC console at
+                              <a href="https://console.aws.amazon.com/vpc/" target="_blank">https://console.aws.amazon.com/vpc/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           <p>In the navigation pane, choose <b>Your VPCs</b>.
+                           </p>
+                        </li>
+                        <li>
+                           	        
+                           <p>Select your VPC, and choose <b>Actions</b>, <b>Edit ClassicLink
+                                 DNS Support</b>.
+                           </p>
+                           	      
+                        </li>
+                        <li>
+                           	        
+                           <p>Choose <b>No</b> to disable ClassicLink DNS support, and choose
+                              <b>Save</b>.
+                           </p>
+                           	      
+                        </li>
+                     </ol>
+                     	  
+                     		
+                     <h3 id="classiclink-unlink-instance">Unlinking a EC2-Classic Instance from a
+                        VPC
+                     </h3>
+                     			
+                     			
+                     <p>If you no longer require a ClassicLink connection between your EC2-Classic instance
+                        and
+                        				your VPC, you can unlink the instance from the VPC. Unlinking the instance disassociates
+                        the
+                        				VPC security groups from the instance.
+                     </p>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>A stopped instance is automatically unlinked from a VPC.</p>
+                     </div>
+                     			
+                     <p class="title"><b>To unlink an instance from a VPC</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           <p>In the navigation pane, choose <b>Instances</b>, and select your
+                              instance.
+                           </p>
+                        </li>
+                        <li>
+                           					
+                           <p>In the <b>Actions</b> list, select <b>ClassicLink</b>,
+                              <b>Unlink Instance</b>. You can select more than one instance to unlink
+                              from the same VPC. 
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Choose <b>Yes</b> in the confirmation dialog box.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     		
+                     		
+                     <h3 id="classiclink-disable-vpc">Disabling ClassicLink for a VPC</h3>
+                     			
+                     			
+                     <p>If you no longer require a connection between EC2-Classic instances and your VPC,
+                        you can
+                        				disable ClassicLink on the VPC. You must first unlink all linked EC2-Classic instances
+                        that are
+                        				linked to the VPC.
+                     </p>
+                     			
+                     <p class="title"><b>To disable ClassicLink for a VPC</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon VPC console at
+                              <a href="https://console.aws.amazon.com/vpc/" target="_blank">https://console.aws.amazon.com/vpc/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           					
+                           <p>In the navigation pane, choose <b>Your VPCs</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Select your VPC, then choose <b>Actions</b>, <b>Disable
+                                 ClassicLink</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the confirmation dialog box, choose <b>Yes, Disable</b>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     		
+                     	
+                     <h2 id="classiclink-api-cli">API and CLI Overview</h2>
+                     		
+                     		
+                     <p>You can perform the tasks described on this page using the command line or the Query
+                        API.
+                        			For more information about the command line interfaces and a list of available
+                        API actions,
+                        			see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                     </p>
+                     		
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>Enable a VPC for ClassicLink</b></p>
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/enable-vpc-classic-link.html" target="_blank">enable-vpc-classic-link</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Enable-EC2VpcClassicLink.html" target="_blank">Enable-EC2VpcClassicLink</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./AWSEC2/latest/APIReference/ApiReference-query-EnableVpcClassicLink.html" target="_blank">EnableVpcClassicLink</a> (Amazon EC2 Query API)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>Link (attach) an EC2-Classic instance to a VPC</b></p>
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/attach-classic-link-vpc.html" target="_blank">attach-classic-link-vpc</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Add-EC2ClassicLinkVpc.html" target="_blank">Add-EC2ClassicLinkVpc</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./AWSEC2/latest/APIReference/ApiReference-query-AttachClassicLinkVpc.html" target="_blank">AttachClassicLinkVpc</a> (Amazon EC2 Query API)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>Unlink (detach) an EC2-Classic instance from a VPC</b></p>
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/detach-classic-link-vpc.html" target="_blank">detach-classic-link-vpc</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Dismount-EC2ClassicLinkVpc.html" target="_blank">Dismount-EC2ClassicLinkVpc</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./AWSEC2/latest/APIReference/ApiReference-query-DetachClassicLinkVpc.html" target="_blank">DetachClassicLinkVpc</a> (Amazon EC2 Query API)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>Disable ClassicLink for a VPC</b></p>
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/disable-vpc-classic-link.html" target="_blank">disable-vpc-classic-link</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Disable-EC2VpcClassicLink.html" target="_blank">Disable-EC2VpcClassicLink</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./AWSEC2/latest/APIReference/ApiReference-query-DisableVpcClassicLink.html" target="_blank">DisableVpcClassicLink</a> (Amazon EC2 Query API)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>Describe the ClassicLink status of VPCs</b></p>
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/describe-vpc-classic-link.html" target="_blank">describe-vpc-classic-link</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Get-EC2VpcClassicLink.html" target="_blank">Get-EC2VpcClassicLink</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./AWSEC2/latest/APIReference/ApiReference-query-DescribeVpcClassicLink.html" target="_blank">DescribeVpcClassicLink</a> (Amazon EC2 Query API)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>Describe linked EC2-Classic instances</b></p>
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/describe-classic-link-instances.html" target="_blank">describe-classic-link-instances</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Get-EC2ClassicLinkInstance.html" target="_blank">Get-EC2ClassicLinkInstance</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./AWSEC2/latest/APIReference/ApiReference-query-DescribeClassicLinkInstances.html" target="_blank">DescribeClassicLinkInstances</a> (Amazon EC2 Query API)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     	  
+                     <div class="itemizedlist">
+                        	    
+                        	    
+                        <p class="title"><b>Enable a VPC peering connection for ClassicLink</b></p>
+                        	    
+                        	  	
+                        	    
+                        	  
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p><a href="./cli/latest/reference/ec2/modify-vpc-peering-connection-options.html" target="_blank">modify-vpc-peering-connection-options</a> (AWS CLI)
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Edit-EC2VpcPeeringConnectionOption.html" target="_blank">Edit-EC2VpcPeeringConnectionOption</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./AWSEC2/latest/APIReference/ApiReference-query-ModifyVpcPeeringConnectionOptions.html" target="_blank">ModifyVpcPeeringConnectionOptions</a>(Amazon EC2 Query API)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     	  
+                     <div class="itemizedlist">
+                        	  
+                        <p class="title"><b>Enable a VPC for ClassicLink DNS support</b></p>
+                        	  
+                        	    
+                        	    
+                        	  
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/enable-vpc-classic-link-dns-support.html" target="_blank">enable-vpc-classic-link-dns-support</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Enable-EC2VpcClassicLink.html" target="_blank">Enable-EC2VpcClassicLinkDnsSupport</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./AWSEC2/latest/APIReference/ApiReference-query-EnableVpcClassicLinkDnsSupport.html" target="_blank">EnableVpcClassicLinkDnsSupport</a> (Amazon EC2 Query API)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     	  
+                     <div class="itemizedlist">
+                        	    
+                        <p class="title"><b>Disable a VPC for ClassicLink DNS support</b></p>
+                        	   
+                        	    
+                        	    
+                        	  
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/disable-vpc-classic-link-dns-support.html" target="_blank">disable-vpc-classic-link-dns-support</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Disable-EC2VpcClassicLinkDnsSupport.html" target="_blank">Disable-EC2VpcClassicLinkDnsSupport</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./AWSEC2/latest/APIReference/ApiReference-query-DisableVpcClassicLinkDnsSupport.html" target="_blank">DisableVpcClassicLinkDnsSupport</a> (Amazon EC2 Query API)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     	  
+                     <div class="itemizedlist">
+                        	    
+                        <p class="title"><b>Describe ClassicLink DNS support for VPCs</b></p>
+                        
+                        	    
+                        	    
+                        	  
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/describe-vpc-classic-link-dns-support.html" target="_blank">describe-vpc-classic-link-dns-support</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Get-EC2VpcClassicLinkDnsSupport.html" target="_blank">Get-EC2VpcClassicLinkDnsSupport</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./AWSEC2/latest/APIReference/ApiReference-query-DescribeVpcClassicLinkDnsSupport.html" target="_blank">DescribeVpcClassicLinkDnsSupport</a> (Amazon EC2 Query API)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                     <h2 id="classiclink-security-groups-example">Example: ClassicLink Security Group
+                        Configuration for a Three-Tier Web Application
+                     </h2>
+                     
+                     
+                     <p>In this example, you have an application with three instances: a public-facing web
+                        server,
+                        an application server, and a database server. Your web server accepts HTTPS traffic
+                        from the
+                        Internet, and then communicates with your application server over TCP port 6001. Your
+                        application server then communicates with your database server over TCP port 6004.
+                        You&apos;re in
+                        the process of migrating your entire application to a VPC in your account. You&apos;ve
+                        already
+                        migrated your application server and your database server to your VPC. Your web server
+                        is
+                        still in EC2-Classic and linked to your VPC via ClassicLink. 
+                     </p>
+                     
+                     <p>You want a security group configuration that allows traffic to flow only between these
+                        instances. You have four security groups: two for your web server (<code class="code">sg-1a1a1a1a</code>
+                        and <code class="code">sg-2b2b2b2b</code>), one for your application server (<code class="code">sg-3c3c3c3c</code>), and
+                        one for your database server (<code class="code">sg-4d4d4d4d</code>).
+                     </p>
+                     
+                     <p>The following diagram displays the architecture of your instances, and their security
+                        group configuration.
+                     </p>     
+                     
+                     
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/classiclink-security-groups-example-diagram.png" alt="
+          Security group configuration using ClassicLink.
+        ">
+                        
+                        
+                        
+                     </div>
+                     
+                     
+                     	
+                     <p class="title"><b>Security Groups for Your Web Server (<code class="code">sg-1a1a1a1a</code> and
+                           <code class="code">sg-2b2b2b2b</code>)</b></p>
+                     
+                     <p>You have one security group in EC2-Classic, and the other in your VPC. You associated
+                        the VPC security group with your web server instance when you linked the instance
+                        to your VPC
+                        via ClassicLink. The VPC security group enables you to control the outbound traffic
+                        from
+                        your web server to your application server.
+                     </p>
+                     
+                     
+                     <p>The following are the security group rules for the EC2-Classic security group
+                        (<code class="code">sg-1a1a1a1a</code>).
+                     </p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac21c21c21c21c14">
+                              
+                              <tbody><tr bgcolor="#eeeeee">
+                                 
+                                 
+                                 
+                                 <td colspan="4" align="left" style="text-align: left;"><b>Inbound</b></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <b>Source</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Type</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Port Range</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Comments</b>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>0.0.0.0/0</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>HTTPS</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>443</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Allows Internet traffic to reach your web server.</p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>		
+                     
+                     
+                     
+                     <p>The following are the security group rules for the VPC security group
+                        (<code class="code">sg-2b2b2b2b</code>).
+                     </p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac21c21c21c21c18">
+                              
+                              <tbody><tr bgcolor="#eeeeee">
+                                 
+                                 
+                                 
+                                 <td colspan="4" align="left" style="text-align: left;"><b>Outbound</b></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <b>Destination</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Type</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Port Range</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Comments</b>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>sg-3c3c3c3c</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>TCP</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>6001</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Allows outbound traffic from your web server to your application server in
+                                       your VPC (or to any other instance associated with
+                                       <code class="code">sg-3c3c3c3c</code>).
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>	
+                     
+                     
+                     	
+                     <p class="title"><b>Security Group for Your Application Server (<code class="code">sg-3c3c3c3c</code>)</b></p>
+                     
+                     <p>The following are the security group rules for the VPC security group that&apos;s associated
+                        with your application server.
+                     </p>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac21c21c21c21c22">
+                              
+                              <tbody><tr bgcolor="#eeeeee">
+                                 
+                                 
+                                 
+                                 <td colspan="4" align="left" style="text-align: left;"><b>Inbound</b></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <b>Source</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Type</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Port Range</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Comments</b>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>sg-2b2b2b2b</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>TCP</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>6001</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Allows the specified type of traffic from your web server (or any other
+                                       instance associated with <code class="code">sg-2b2b2b2b</code>) to reach your application
+                                       server.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr bgcolor="#eeeeee">
+                                 
+                                 
+                                 
+                                 <td colspan="4"><b>Outbound</b></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <b>Destination</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Type</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Port Range</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Comments</b>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>sg-4d4d4d4d</td>
+                                 
+                                 <td>TCP</td>
+                                 
+                                 <td>6004</td>
+                                 
+                                 <td>Allows outbound traffic from the application server to the database server
+                                    (or to any other instance associated with <code class="code">sg-4d4d4d4d</code>).
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     	
+                     <p class="title"><b>Security Group for Your Database Server
+                           (<code class="code">sg-4d4d4d4d</code>)</b></p>
+                     
+                     
+                     <p>The following are the security group rules for the VPC security group that&apos;s associated
+                        with your database server.
+                     </p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac21c21c21c21c26">
+                              
+                              <tbody><tr bgcolor="#eeeeee">
+                                 
+                                 
+                                 
+                                 <td colspan="4" align="left" style="text-align: left;"><b>Inbound</b></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <b>Source</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Type</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Port Range</b>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <b>Comments</b>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>sg-3c3c3c3c</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>TCP</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>6004</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Allows the specified type of traffic from your application server (or any
+                                       other instance associated with <code class="code">sg-3c3c3c3c</code>) to reach your database
+                                       server.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>	
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ec2-supported-platforms.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="vpc-migrate.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="ClassicLink Basics"><a class="pagetoc" href="#classiclink-basics">ClassicLink Basics</a></li>
+                        <li class="pagetoc" name="ClassicLink Limitations"><a class="pagetoc" href="#classiclink-limitations">ClassicLink Limitations</a></li>
+                        <li class="pagetoc" name="Working with ClassicLink"><a class="pagetoc" href="#working-with-classiclink">Working with ClassicLink</a></li>
+                        <li class="pagetoc" name="API and CLI Overview"><a class="pagetoc" href="#classiclink-api-cli">API and CLI Overview</a></li>
+                        <li class="pagetoc" name="Example: ClassicLink Security Group
+      Configuration for a Three-Tier Web Application"><a class="pagetoc" href="#classiclink-security-groups-example">Example: ClassicLink Security Group
+                              Configuration for a Three-Tier Web Application</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,478 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Invocation Types - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="invoking-lambda-functions.html" title="Invoking Lambda Functions">
+      <link rel="prev" href="invoking-lambda-functions.html" title="Invoking Lambda Functions">
+      <link rel="next" href="retries-on-errors.html" title="Understanding Retry Behavior">
+      <meta name="description" content="AWS Lambda supports synchronous and asynchronous invocation of a Lambda function. You can control the invocation type only when you invoke a Lambda function (referred to as on-demand invocation ). The following examples illustrate on-demand invocations:">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/invocation-options.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="invoking-lambda-functions.html">Invoking Lambda Functions</a> &#xBB; <span class="breadcrumb">Invocation Types</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="invocation-options">Invocation Types</h1>
+                     <p>AWS Lambda supports synchronous and asynchronous invocation of a Lambda function.
+                        You can control the invocation type only when you invoke a Lambda function (referred
+                        to 
+                        as <em>on-demand invocation</em>). 
+                        The following examples illustrate on-demand invocations:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Your custom application invokes a Lambda function.</p>
+                              
+                              <p>&#xA0;</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>You manually invoke a Lambda function (for example, using the AWS CLI) for
+                                 testing purposes.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <p>In both cases, you invoke your Lambda function using the 
+                        <a href="API_Invoke.html">Invoke</a> operation, and you can specify the
+                        invocation type as synchronous or asynchronous. 
+                     </p>
+                     <p>However, when you are using AWS services as event sources, the invocation type is
+                        predetermined for each of these services. You don&apos;t have any control over the
+                        invocation type that these event sources use when they invoke your Lambda function.
+                        For example, Amazon S3 always invokes a Lambda function asynchronously and Amazon
+                        Cognito always
+                        invokes a Lambda function synchronously. For stream-based AWS services  (Amazon
+                        Kinesis Streams and Amazon DynamoDB Streams), AWS Lambda polls the stream and
+                        invokes your Lambda function synchronously.
+                     </p>
+                     <h2 id="intro-invocation-modes">Event Source Mapping</h2>
+                     
+                     
+                     
+                     <p>In AWS Lambda, Lambda functions and event sources are the core components in AWS Lambda.
+                         An event
+                        source is the entity that publishes events, and a Lambda function is the custom code
+                        that processes the events. Supported event sources refer to those AWS services
+                        that can be preconfigured to work with AWS Lambda. The configuration is referred to
+                        as
+                        <em>event source mapping</em>, which maps an event source to a Lambda function. It enables
+                        automatic invocation of your Lambda function when events occur. 
+                     </p>
+                     
+                     <p>Each event source mapping identifies the type of events to publish and the Lambda
+                        function to
+                        invoke when events occur. The specific Lambda function then receives the event
+                        information as a parameter, your Lambda function code can then process the event.
+                        
+                     </p>
+                     
+                     <p>Note the following about the event sources. These event sources can be any of the
+                        following:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><b>AWS services</b> &#x2013; These are the supported AWS services that can be
+                                 preconfigured to work with AWS Lambda. You can group these services as
+                                 regular AWS services or stream-based services. Amazon Kinesis Data Streams and Amazon
+                                 DynamoDB Streams  
+                                 are stream-based event sources, all others AWS services do not use stream-based event
+                                 sources. 
+                                 Where you maintain the event source mapping and how the Lambda function is
+                                 invoked depends on whether or not you&apos;re using a stream-based event source.
+                              </p>
+                              
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Custom applications</b> &#x2013; You can have your custom applications publish
+                                 events and invoke a Lambda function.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>You may be wondering&#x2014;where do I keep the event mapping information? Do I
+                        keep it within the event source or within AWS Lambda? The following sections explain
+                        event source mapping for each of these event source
+                        categories. These sections also explain how the Lambda function is invoked and how
+                        you
+                        manage permissions to allow invocation of your Lambda function. 
+                     </p>
+                     
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#non-streaming-event-source-mapping">Event Source Mapping for AWS
+                                 Services </a></li>
+                           <li><a href="#streaming-event-source-mapping">Event Source Mapping for AWS
+                                 Stream-Based Services</a></li>
+                           <li><a href="#custom-app-event-source-mapping">Event Source Mapping for Custom
+                                 Applications</a></li>
+                        </ul>
+                     </div>
+                     
+                     <h3 id="non-streaming-event-source-mapping">Event Source Mapping for AWS
+                        Services 
+                     </h3>
+                     
+                     
+                     <p>Except for the stream-based AWS services (Amazon Kinesis Data Streams and
+                        DynamoDB streams), other supported AWS services publish events and can also invoke
+                        your Lambda function (referred to as the <em>push model</em>). In the push model,
+                        note the following:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Event source mappings are maintained within the event source. Relevant API
+                                 support in the event sources enables you to create and manage event
+                                 source mappings. For example, Amazon S3 provides the bucket notification configuration
+                                 API. Using
+                                 this API, you can configure an event source mapping that identifies the bucket
+                                 events to publish and the Lambda function to invoke.
+                              </p>
+                              
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Because the event sources invoke your Lambda function, you need to grant the
+                                 event source the necessary permissions using a resource-based policy (referred to
+                                 as the <em>Lambda
+                                    function policy</em>). For more information, see <a href="intro-permission-model.html">AWS Lambda Permissions Model</a>.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>The following example illustrates how this model works.</p>
+                     
+                     <div class="example">
+                        <p class="title"><b>Example  &#x2013; Amazon S3 Pushes Events and Invokes a Lambda Function</b></p>
+                        <div class="example-contents">
+                           <p>Suppose that you want your AWS Lambda function invoked for each <em>object created</em>
+                              bucket event. You add the necessary event source mapping in the bucket
+                              notification configuration. 
+                           </p>
+                           <div class="mediaobject">
+                              
+                              <img src="../../..//img/push-s3-example-10.png">
+                              
+                              
+                           </div>
+                           <p>The diagram illustrates the flow: </p>
+                           <div class="orderedlist">
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              <ol>
+                                 <li>
+                                    
+                                    <p>The user creates an object in a bucket.</p>
+                                    
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Amazon S3 detects the object created event.</p>
+                                    
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Amazon S3 invokes your Lambda function according to the event source mapping
+                                       described in the bucket notification configuration. 
+                                    </p>
+                                    
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>AWS Lambda verifies the permissions policy attached to the Lambda
+                                       function to ensure that Amazon S3 has the necessary permissions. For more information
+                                       on permissions policies, see <a href="lambda-auth-and-access-control.html">Authentication and Access Control for
+                                          AWS Lambda</a></p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Once AWS Lambda verifies the attached permissions policy, it executes the
+                                       Lambda function. Remember that your Lambda function receives the event as
+                                       a parameter.
+                                    </p>
+                                    
+                                 </li>
+                              </ol>
+                           </div>
+                        </div>
+                     </div>
+                     
+                     
+                     <h3 id="streaming-event-source-mapping">Event Source Mapping for AWS
+                        Stream-Based Services
+                     </h3>
+                     
+                     
+                     <p>The Amazon Kinesis Data Streams and DynamoDB streams are the
+                        stream-based services that you can preconfigure to use with AWS Lambda. After you
+                        do the
+                        necessary event source mapping, AWS Lambda polls the streams and invokes your Lambda
+                        function (referred to as the <em>pull model</em>). In the pull model, note the
+                        following:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>The event source mappings are maintained within the AWS Lambda. AWS Lambda provides
+                                 the relevant APIs to create and manage event source mappings. For more information,
+                                 see
+                                 <a href="API_CreateEventSourceMapping.html">CreateEventSourceMapping</a>. 
+                              </p>
+                              
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>AWS Lambda needs your permission to poll the stream and read records.
+                                 You grant these permissions via the execution role, using the permissions
+                                 policy associated with role that you specify when you create
+                                 your Lambda function. AWS Lambda does not need any permissions to invoke
+                                 your Lambda function. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>The following example illustrates how this model works.</p>
+                     
+                     <div class="example">
+                        <p class="title"><b>Example  &#x2013; AWS Lambda Pulls Events from an Kinesis Stream and Invokes a Lambda
+                              Function</b></p>
+                        <div class="example-contents">
+                           <p>The following diagram shows a custom application that writes records to an
+                              Kinesis stream and how AWS Lambda polls the stream. When AWS Lambda detects a new
+                              record on the stream, it invokes your Lambda function.
+                           </p>
+                           <p>Suppose you have a custom application that writes records to a Kinesis stream.
+                              You want to invoke a Lambda function when new records are detected on the
+                              stream. You create a Lambda function and the necessary event source mapping in
+                              AWS Lambda. 
+                           </p>
+                           <div class="mediaobject">
+                              
+                              <img src="../../..//img/kinesis-pull-10.png">
+                              
+                              
+                           </div>
+                           <p>The diagram illustrates the following sequence:</p>
+                           <div class="orderedlist">
+                              
+                              
+                              
+                              
+                              <ol>
+                                 <li>
+                                    
+                                    <p>The custom application writes records to an Kinesis stream.</p>
+                                    
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>AWS Lambda continuously polls the stream, and invokes the Lambda
+                                       function when the service detects new records on the stream. 
+                                       AWS Lambda knows which stream to poll and which Lambda function to
+                                       invoke based on the event source mapping you create in AWS Lambda.
+                                       
+                                    </p>
+                                    
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Assuming the attached permission policy, which allows AWS Lambda to poll the stream,
+                                       is verified, AWS Lambda then executes the Lambda function. 
+                                       For more information on permissions policies, see <a href="lambda-auth-and-access-control.html">Authentication and Access Control for
+                                          AWS Lambda</a></p>
+                                    
+                                 </li>
+                              </ol>
+                           </div>
+                           <p>The example uses a Kinesis stream but the same applies when working with a
+                              DynamoDB stream.
+                           </p>
+                        </div>
+                     </div>
+                     
+                     
+                     <h3 id="custom-app-event-source-mapping">Event Source Mapping for Custom
+                        Applications
+                     </h3>
+                     
+                     
+                     <p>If you have custom applications that publish and process events, you can 
+                        create a Lambda function to process these events. In this case, there is no
+                        preconfiguration required&#x2014;you don&apos;t have to set up an event source mapping. 
+                        Instead, the event source uses the AWS Lambda <code class="code">Invoke</code> API. If the application 
+                        and Lambda function are owned by different AWS accounts, the AWS account that owns
+                        
+                        the Lambda function must allow cross-account permissions in the permissions policy
+                        associated 
+                        with the Lambda function.
+                     </p>
+                     
+                     
+                     <p>The following example illustrates how this works.</p>
+                     
+                     
+                     <div class="example">
+                        <p class="title"><b>Example  &#x2013; Custom Application Publishes Events and Invokes a Lambda Function</b></p>
+                        <div class="example-contents">
+                           <p>The following diagram shows how a custom application in your account can invoke a
+                              
+                              Lambda function. In this example, the custom application is using the same
+                              account credentials as the account that owns the Lambda function, and, therefore,
+                              does not require additional permissions to invoke the function.
+                           </p>
+                           <div class="mediaobject">
+                              
+                              <img src="../../..//img/push-user-app-example-10.png">
+                              
+                              
+                           </div>
+                           <p>In the following example, the user application and Lambda function are owned by
+                              different AWS accounts. In this case, the AWS account that owns the Lambda
+                              function must have cross-account permissions in the permissions policy associated
+                              with
+                              the Lambda function. For more information, see <a href="intro-permission-model.html">AWS Lambda Permissions Model</a>. 
+                           </p>
+                           <div class="mediaobject">
+                              
+                              <img src="../../..//img/push-user-cross-account-app-example-10.png">
+                              
+                              
+                           </div>
+                        </div>
+                     </div>
+                     
+                     
+                     
+                     
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="invoking-lambda-functions.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="retries-on-errors.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Event Source Mapping"><a class="pagetoc" href="#intro-invocation-modes">Event Source Mapping</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

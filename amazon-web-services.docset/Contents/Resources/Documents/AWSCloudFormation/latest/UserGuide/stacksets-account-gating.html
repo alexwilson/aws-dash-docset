@@ -1,0 +1,239 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Configuring a target account gate in AWS CloudFormation StackSets - AWS CloudFormation</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="what-is-cfnstacksets.html" title="Working with AWS CloudFormation StackSets">
+      <link rel="prev" href="stacksets-delete.html" title="Delete Stack Sets">
+      <link rel="next" href="stacksets-bestpractices.html" title="Best Practices">
+      <meta name="description" content="An account gate is an optional feature that lets you specify an AWS Lambda function to verify that a target account meets certain requirements before AWS CloudFormation StackSets begins stack operations in that account. A common example of an account gate is verifying that there are no CloudWatch alarms active or unresolved on the target account. StackSets invokes the function each time you start stack operations in the target account, and only continues if the function returns a">
+      <meta name="keywords" content="CloudFormation,AWSCloudFormation,resource provisioning,resource configuration,infrastructure management,CloudFormer,CloudFormation Designer,CloudFormation stack,CloudFormation stackset,CloudFormation template,change set">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS CloudFormation">
+      <meta name="guide" content="User Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-account-gating.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudformation">AWS CloudFormation</a> &#xBB; <a href="index.html">User Guide</a> &#xBB; <a href="what-is-cfnstacksets.html">Working with AWS CloudFormation StackSets</a> &#xBB; <span class="breadcrumb">Configuring a target account gate in AWS CloudFormation StackSets</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="stacksets-account-gating">Configuring a target account gate in AWS CloudFormation StackSets</h1>
+                     <p>An account gate is an optional feature that lets you specify an <a href="./lambda/latest/dg/lambda-introduction-function.html" target="_blank">AWS Lambda</a> function to verify that a target account meets certain requirements
+                        before AWS CloudFormation StackSets begins stack operations in that account. A common
+                        example of an account gate
+                        is verifying that there are no CloudWatch alarms active or unresolved on the target
+                        account.
+                        StackSets invokes the function each time you start stack operations in the target
+                        account, and only continues if the function returns a <code class="code">SUCCEEDED</code> code. If the
+                        Lambda function returns a status of <code class="code">FAILED</code>, StackSets does not continue with
+                        your requested operation. If you do not have an account gating Lambda function configured,
+                        StackSets skips the check, and continues with your operation.
+                     </p>
+                     <p>If your target account fails an account gate check, the failed operation counts toward
+                        your specified failure tolerance number or percentage of stacks. For more information
+                        about
+                        failure tolerance, see <a href="stacksets-concepts.html#stackset-ops-options">Stack set operation options</a>.
+                     </p>
+                     <p>Account gating is only available for StackSets operations. This functionality is not
+                        available for other AWS CloudFormation operations outside of StackSets.
+                     </p>
+                     <h2 id="stacksets-accountgating_reqs">Setup Requirements</h2>
+                     
+                     
+                     <p>The following list describes setup requirements for account gating.</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>To work with the StackSets account gating functionality, your Lambda
+                                 function must be named
+                                 <b>AWSCloudFormationStackSetAccountGate</b>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The <b>AWSCloudFormationStackSetExecutionRole</b> needs
+                                 permissions to invoke your Lambda function. Without these permissions,
+                                 StackSets skips the account gating check, and continues with stack
+                                 operations.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The Lambda <code class="code">InvokeFunction</code> permission must be added to target
+                                 accounts for account gating to work. The target account trust policy must have a
+                                 trust relationship with the administrator account. The following is an example
+                                 of a policy statement that grants Lambda <code class="code">invokefunction</code>
+                                 permissions.
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [
+        {
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: [
+                &quot;lambda:InvokeFunction&quot;
+            ],
+            &quot;Resource&quot;: &quot;*&quot;
+        }
+    ]
+}</code></pre>
+                              </li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="stacksets-sample-accountgate">Sample Lambda Account Gating Functions</h2>
+                     
+                     
+                     <p>The following sample AWS CloudFormation templates are available for you to create
+                        Lambda
+                        <b>AWSCloudFormationStackSetAccountGate</b> functions. For more
+                        information about how to create a new stack using either of these templates, see <a href="./AWSCloudFormation/latest/UserGuide/cfn-console-create-stack.html" target="_blank">Creating a Stack</a> in this guide.
+                     </p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w327ab1c19c17c10b4">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>
+                                    
+                                    <p>Template Location</p>
+                                    
+                                 </th>
+                                 
+                                 <th>
+                                    
+                                    <p>Description</p>
+                                    
+                                 </th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><a href="https://s3.amazonaws.com/cloudformation-stackset-templates-us-east-1/cloudformation-stack-set-accountgate-succeeded.template" target="_blank">https://s3.amazonaws.com/cloudformation-stackset-templates-us-east-1/cloudformation-stack-set-accountgate-succeeded.template</a></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Creates a stack that implements a Lambda account gate function that
+                                       will return a status of <code class="code">SUCCEEDED</code>.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><a href="https://s3.amazonaws.com/cloudformation-stackset-templates-us-east-1/cloudformation-stack-set-accountgate-failed.template" target="_blank">https://s3.amazonaws.com/cloudformation-stackset-templates-us-east-1/cloudformation-stack-set-accountgate-failed.template</a></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Creates a stack that implements a Lambda account gate function that
+                                       will return a status of <code class="code">FAILED</code>.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="stacksets-delete.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="stacksets-bestpractices.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Setup Requirements"><a class="pagetoc" href="#stacksets-accountgating_reqs">Setup Requirements</a></li>
+                        <li class="pagetoc" name="Sample Lambda Account Gating Functions"><a class="pagetoc" href="#stacksets-sample-accountgate">Sample Lambda Account Gating Functions</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS CloudFormation';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

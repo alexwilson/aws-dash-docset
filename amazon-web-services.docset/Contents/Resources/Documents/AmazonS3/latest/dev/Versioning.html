@@ -1,0 +1,425 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Using Versioning - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="DataDurability.html" title="Protecting Data in Amazon S3">
+      <link rel="prev" href="UsingClientSideEncryption.html" title="Protecting Data Using Client-Side
+			Encryption">
+      <link rel="next" href="manage-versioning-examples.html" title="Examples of Enabling Bucket Versioning">
+      <meta name="description" content="Use versioning to keep multiple variants of an object in the same bucket.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/Versioning.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="DataDurability.html">Protecting Data in Amazon S3</a> &#xBB; <span class="breadcrumb">Using Versioning</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="Versioning">Using Versioning</h1>
+                     <p>Versioning is a means of keeping multiple variants of an object in the same bucket.
+                        You
+                        		can use versioning to preserve, retrieve, and restore every version of every object
+                        stored
+                        		in your Amazon S3 bucket. With versioning, you can easily recover from both unintended
+                        user
+                        		actions and application failures. 
+                     </p>
+                     <p>In one bucket, for example, you can have two objects with the same key, but different
+                        		version IDs, such as <code>photo.gif</code> (version 111111) and <code>photo.gif
+                           		</code>(version 121212). 
+                     </p>
+                     <div class="mediaobject">
+                        			
+                        				<img src="../../..//img/versioning_Enabled.png">
+                        			
+                        			
+                        			
+                        		
+                     </div>
+                     <p>Versioning-enabled buckets enable you to recover objects from accidental deletion
+                        or
+                        		overwrite. For example:
+                     </p>
+                     <div class="itemizedlist">
+                        		
+                        		
+                        	
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              			
+                              <p>If you delete an object, instead of removing it permanently, Amazon S3 inserts a delete
+                                 				marker, which becomes the current object version. You can always restore the
+                                 				previous version. For more information, see <a href="DeletingObjectVersions.html">Deleting Object Versions</a>.
+                              </p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p>If you overwrite an object, it results in a new object version in the bucket. You
+                                 				can always restore the previous version.
+                              </p>
+                              		
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>If you have an object expiration lifecycle policy in your non-versioned bucket 
+                           and you want to maintain the same permanent delete behavior when you enable versioning,
+                           you
+                           must add a noncurrent expiration policy. The noncurrent expiration lifecycle policy
+                           will 
+                           manage the deletes of the noncurrent object versions in the version-enabled bucket.
+                           
+                           (A version-enabled bucket maintains one current and zero or more noncurrent object
+                           versions.)
+                           For more information, see
+                           <a href="./AmazonS3/latest/user-guide/create-lifecycle.html" target="_blank">
+                              How Do I Create a Lifecycle Policy for an S3 Bucket?</a> in the
+                           <em>Amazon Simple Storage Service Console User Guide</em>. 
+                        </p>
+                     </div>
+                     <p>Buckets can be in one of three states: unversioned (the default), versioning-enabled,
+                        or
+                        		versioning-suspended.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Once you version-enable a bucket, it can never return to an unversioned state. You
+                           			can, however, suspend versioning on that bucket.
+                        </p>
+                     </div>
+                     <p>The versioning state applies to all (never some) of the objects in that bucket. The
+                        first
+                        		time you enable a bucket for versioning, objects in it are thereafter always versioned
+                        and
+                        		given a unique version ID. Note the following:
+                     </p>
+                     <div class="itemizedlist">
+                        		
+                        		
+                        	
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              			
+                              <p>Objects stored in your bucket before you set the versioning state have a version
+                                 				ID of <code class="code">null</code>. When you enable versioning, existing objects in your bucket
+                                 				do not change. What changes is how Amazon S3 handles the objects in future requests.
+                                 For
+                                 				more information, see <a href="manage-objects-versioned-bucket.html">Managing Objects in a Versioning-Enabled
+                                    			Bucket</a>.
+                              </p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p>The bucket owner (or any user with appropriate permissions) can suspend versioning
+                                 				to stop accruing object versions. When you suspend versioning, existing objects
+                                 in
+                                 				your bucket do not change. What changes is how Amazon S3 handles objects in future
+                                 				requests. For more information, see <a href="VersionSuspendedBehavior.html">Managing Objects in a Versioning-Suspended
+                                    			Bucket</a>.
+                              </p>
+                              		
+                           </li>
+                        </ul>
+                     </div>
+                     <h2 id="how-to-enable-disable-versioning-intro">How to Configure Versioning on a
+                        			Bucket
+                     </h2>
+                     		
+                     		
+                     <p>You can configure bucket versioning using any of the following methods:</p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>Configure versioning using the Amazon S3 console.</p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Configure versioning programmatically using the AWS SDKs</p>
+                              				
+                              <p>Both the console and the SDKs call the REST API Amazon S3 provides to manage
+                                 					versioning. 
+                              </p>
+                              				
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>If you need to, you can also make the Amazon S3 REST API calls directly from
+                                    						your code. However, this can be cumbersome because it requires you to write
+                                    						code to authenticate your requests. 
+                                 </p>
+                              </div>
+                              				
+                              <p>Each bucket you create has a <em>versioning</em> subresource (see
+                                 						<a href="UsingBucket.html#bucket-config-options-intro">Bucket Configuration Options</a>) associated with it. By
+                                 					default, your bucket is unversioned, and accordingly the versioning subresource
+                                 					stores empty versioning configuration.
+                              </p>
+                              				
+                              					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;VersioningConfiguration xmlns=&quot;http://s3.amazonaws.com/doc/2006-03-01/&quot;&gt; 
+&lt;/VersioningConfiguration&gt;</code></pre>
+                              				
+                              				<p>To enable versioning, you send a request to Amazon S3 with a versioning
+                                 					configuration that includes a status. 
+                              </p>
+                              				
+                              					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;VersioningConfiguration xmlns=&quot;http://s3.amazonaws.com/doc/2006-03-01/&quot;&gt; 
+  &lt;Status&gt;Enabled&lt;/Status&gt; 
+&lt;/VersioningConfiguration&gt;</code></pre>
+                              				
+                              				<p>To suspend versioning, you set the status value to <code class="code">Suspended</code>.
+                                 				
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <p>The bucket owner, an AWS account that created the bucket (root account), and
+                        			authorized users can configure the versioning state of a bucket. For more information
+                        			about permissions, see <a href="s3-access-control.html">Managing Access Permissions to Your Amazon S3 Resources</a>. 
+                     </p>
+                     		
+                     <p>For an example of configuring versioning, see <a href="manage-versioning-examples.html">Examples of Enabling Bucket Versioning</a>.
+                     </p>
+                     	
+                     		
+                     <h2 id="MultiFactorAuthenticationDelete">MFA Delete</h2>
+                     		
+                     		
+                     <p>You can optionally add another layer of security by configuring a bucket to enable
+                        MFA
+                        			(Multi-Factor Authentication) Delete, which requires additional authentication
+                        for
+                        			either of the following operations.
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>Change the versioning state of your bucket</p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Permanently delete an object version</p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <p> MFA Delete requires two forms of authentication together:</p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>Your security credentials</p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>The concatenation of a valid serial number, a space, and the six-digit code
+                                 					displayed on an approved authentication device
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <p>MFA Delete thus provides added security in the event, for example, your security
+                        			credentials are compromised. 
+                     </p>
+                     		
+                     <p>To enable or disable MFA delete, you use the same API that you use to configure
+                        			versioning on a bucket. Amazon S3 stores the MFA Delete configuration in the same
+                        				<em>versioning</em> subresource that stores the bucket&apos;s versioning
+                        			status.
+                     </p>
+                     	
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&lt;VersioningConfiguration xmlns=&quot;http://s3.amazonaws.com/doc/2006-03-01/&quot;&gt; 
+  &lt;Status&gt;<em class="replaceable"><code>VersioningState</code></em>&lt;/Status&gt;
+  &lt;MfaDelete&gt;<em class="replaceable"><code>MfaDeleteState</code></em>&lt;/MfaDelete&gt;  
+&lt;/VersioningConfiguration&gt;</code></pre>
+                     		
+                     		<p>To use MFA Delete, you can use either a hardware or virtual MFA device to generate
+                        an
+                        			authentication code. The following example shows a generated authentication code
+                        			displayed on a hardware device.
+                     </p>
+                     		
+                     			
+                     <div class="mediaobject">
+                        				
+                        					<img src="../../..//img/MFADevice.png">
+                        				
+                        				
+                        				
+                        			
+                     </div>
+                     		
+                     
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>MFA Delete and MFA-protected API access are features intended to provide
+                           				protection for different scenarios. You configure MFA Delete on a bucket to ensure
+                           				that data in your bucket cannot be accidentally deleted. MFA-protected API access
+                           is
+                           				used to enforce another authentication factor (MFA code) when accessing sensitive
+                           				Amazon S3 resources. You can require any operations against these Amazon S3 resources
+                           be done
+                           				with temporary credentials created using MFA. For an example, see <a href="example-bucket-policies.html#example-bucket-policies-use-case-7">Adding a Bucket Policy to Require MFA</a>.
+                        </p>
+                     </div>
+                     		
+                     <p>For more information on how to purchase and activate an authentication device, see
+                        			<a href="https://aws.amazon.com/iam/details/mfa/" target="_blank">https://aws.amazon.com/iam/details/mfa/</a>. 
+                     </p>
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>The bucket owner, the AWS account that created the bucket (root account), and all
+                           				authorized IAM users can enable versioning, but only the bucket owner (root account)
+                           				can enable MFA delete.
+                        </p>
+                     </div>
+                     		
+                     	
+                     <h2 id="versioning-related-topics">Related Topics</h2>
+                     		
+                     		
+                     <p>For more information, see the following topics:</p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p><a href="manage-versioning-examples.html">Examples of Enabling Bucket Versioning</a></p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><a href="manage-objects-versioned-bucket.html">Managing Objects in a Versioning-Enabled
+                                    			Bucket</a></p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><a href="VersionSuspendedBehavior.html">Managing Objects in a Versioning-Suspended
+                                    			Bucket</a></p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><a href="troubleshooting.html#troubleshooting-by-symptom-increase-503-reponses">Significant Increases in
+                                    HTTP 503 Responses to Amazon S3 Requests to Buckets with Versioning Enabled</a>
+                                 				
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="UsingClientSideEncryption.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="manage-versioning-examples.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="How to Configure Versioning on a
+			Bucket"><a class="pagetoc" href="#how-to-enable-disable-versioning-intro">How to Configure Versioning on a
+                              			Bucket</a></li>
+                        <li class="pagetoc" name="MFA Delete"><a class="pagetoc" href="#MultiFactorAuthenticationDelete">MFA Delete</a></li>
+                        <li class="pagetoc" name="Related Topics"><a class="pagetoc" href="#versioning-related-topics">Related Topics</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

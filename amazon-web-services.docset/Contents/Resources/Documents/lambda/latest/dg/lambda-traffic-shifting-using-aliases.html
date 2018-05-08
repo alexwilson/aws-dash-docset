@@ -1,0 +1,264 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Traffic Shifting Using Aliases - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="versioning-aliases.html" title="AWS Lambda Function Versioning and Aliases">
+      <link rel="prev" href="how-to-manage-versioning.html" title="Managing Versioning Using the AWS Management Console, the AWS CLI, or
+				Lambda API Operations">
+      <link rel="next" href="serverless_app.html" title="Using the AWS Serverless Application Model (AWS SAM)">
+      <meta name="description" content="By default, an alias points to a single Lambda function version. When the alias is updated to point to a different function version, incoming request traffic in turn instantly points to the updated version. This exposes that alias to any potential instabilities introduced by the new version. To minimize this impact, you can implement the">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/lambda-traffic-shifting-using-aliases.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="deploying-lambda-apps.html">Deploying Lambda-based Applications</a> &#xBB; <a href="versioning-aliases.html">AWS Lambda Function Versioning and Aliases</a> &#xBB; <span class="breadcrumb">Traffic Shifting Using Aliases</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="lambda-traffic-shifting-using-aliases">Traffic Shifting Using Aliases</h1>
+                     <p>By default, an alias points to a single Lambda function version. When the alias is
+                        updated
+                        			to point to a different function version, incoming request traffic in turn instantly
+                        			points to the updated version. This exposes that alias to any potential
+                        			instabilities introduced by the new version. To minimize this impact, you can
+                        			implement the <code class="code">routing-config</code> parameter of the Lambda alias that allows
+                        			you to point to two different versions of the Lambda function and dictate what
+                        			percentage of incoming traffic is sent to each version.
+                     </p>
+                     <p>For example, you can specify that only 2 percent of incoming traffic is routed to
+                        the new
+                        			version while you analyze its readiness for a production environment, while the
+                        			remaining 98 percent is routed to the original version. As the new version matures,
+                        			you can gradually update the ratio as necessary until you have determined the new
+                        			version is stable. You can then update the alias to route all traffic to the new
+                        			version. 
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You can point an alias to a maximum of two Lambda function versions. In addition:
+                           			
+                           		
+                        </p>
+                        <div class="itemizedlist">
+                           				
+                           				
+                           				
+                           				
+                           			
+                           <ul class="itemizedlist" type="disc">
+                              <li class="listitem">
+                                 <p>Both versions should have the same <a href="dlq.html">Dead Letter Queues</a> configuration (or no DLQ configuration).
+                                 </p>
+                              </li>
+                              <li class="listitem">
+                                 <p>Both versions should have the same IAM execution role.</p>
+                              </li>
+                              <li class="listitem">
+                                 <p>When pointing an alias to more than one version, the alias cannot point to <code class="code">$LATEST</code>.
+                                 </p>
+                              </li>
+                           </ul>
+                        </div>
+                     </div>
+                     <h2 id="lambda-weighted-aliases-cli">Traffic Shifting Using an Alias (CLI)</h2>
+                     			
+                     <p>To configure an alias to shift traffic between two function versions based on weights
+                        by
+                        				using the <a href="API_CreateAlias.html">CreateAlias</a>
+                        				operation, you need to configure the <code class="code">routing-config</code> parameter. The
+                        				example following points an alias to two different Lambda function versions, with
+                        				version 2 receiving 2 percent of the invocation traffic and the remaining 98
+                        				percent invoking version 1. 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws lambda create-alias --name <em class="replaceable"><code>alias name</code></em> --function-name <em class="replaceable"><code>function-name</code></em> \ --function-version 1
+--routing-config AdditionalVersionWeights={&quot;2&quot;=0.02}</code></pre>
+                     			
+                     			<p>You can update the percentage of incoming traffic to your new version (version 2)
+                        by using
+                        				the <a href="API_UpdateAlias.html">UpdateAlias</a> operation.
+                        				For example, you can boost the invocation traffic to your new version to 5
+                        				percent, as shown following.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws lambda update-alias --name <em class="replaceable"><code>alias name</code></em> --function-name <em class="replaceable"><code>function-name</code></em> \
+--routing-config AdditionalVersionWeights={&quot;2&quot;=0.05}</code></pre>      
+                     			
+                     			
+                     			<p>To route all traffic to version 2, again use the <code class="code">UpdateAlias</code> operation to
+                        				change the <code class="code">function-version</code> property to point to version 2. Then
+                        				set the <code class="code">routing-config</code> parameter to an empty string, as shown
+                        				following.
+                     </p>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws lambda update-alias --name <em class="replaceable"><code>alias name</code></em> --function-name <em class="replaceable"><code>function-name</code></em> \ 
+--function-version 2 --routing-config &apos;&apos; </code></pre>       
+                     		<h2 id="lambda-traffic-shifting-aliases-console">Traffic Shifting Using an Alias (Console)</h2>
+                     			
+                     <p>You can configure traffic shifting with an alias by using the Lambda console as described
+                        				below:
+                     </p>
+                     			
+                     <ol>
+                        <li>
+                           <p>Open your Lambda function and verify that you have at least two previously published
+                              versions. 
+                              					Otherwise, you can go to <a href="versioning-intro.html">Introduction to AWS Lambda Versioning</a> 
+                              					to learn more about versioning, and publish your first function version.
+                           </p>
+                        </li>
+                        <li>
+                           <p>For <b>Actions</b>, choose <b>Create alias</b>.
+                           </p>
+                        </li>
+                        <li>
+                           <p>In the <b>Create a new alias</b> window, specify a value for
+                              					<b>Name*</b>, optionally for
+                              					<b>Description</b>, and for
+                              					<b>Version*</b> of the Lambda function that the alias
+                              					will point to. Here the version is <code class="code">1</code>.
+                           </p>
+                        </li>
+                        <li>
+                           <p>Under <b>Additional version</b>, specify the following:
+                           </p> 
+                           					
+                           <ol>
+                              <li>
+                                 <p>Specify a second Lambda function version.</p>
+                              </li>
+                              <li>
+                                 <p>Type a weight value for the function. <em>Weight</em> is the percentage of traffic
+                                    							that is assigned to that version when the alias is invoked. The first
+                                    							version receives the residual weight. For example, if you specify 10
+                                    							percent to <b>Additional version</b>, the first version
+                                    							automatically is assigned 90 percent.
+                                 </p>
+                              </li>
+                           </ol>
+                        </li>
+                        <li>
+                           <p>Choose <b>Create</b>.
+                           </p>
+                        </li>
+                     </ol>
+                     <h2 id="lambda-traffic-shifting-analysis">Determining Which Version Has Been
+                        			Invoked
+                     </h2>
+                     			
+                     <p>When your alias is shifting traffic between two function versions, there are two ways
+                        to determine which Lambda function version has been invoked:
+                     </p>
+                     			
+                     <div class="orderedlist">
+                        				
+                        				
+                        			
+                        <ol>
+                           <li>
+                              <p><b>CloudWatch Logs</b> &#x2013; Lambda automatically emits a <code class="code">START</code>
+                                 					log entry that contains the invoked version ID to CloudWatch Logs for every
+                                 					function invocation. An example follows.
+                              </p>
+                              					
+                              <p><code class="code">19:44:37
+                                    						START RequestId: <em class="replaceable"><code>request id</code></em> Version: $<em class="replaceable"><code>version</code></em> </code>
+                                 					
+                                 					
+                              </p>
+                              					
+                              <p>Lambda uses the <code class="code">Executed Version</code> dimension to filter the metric data by the executed version. This only applies to
+                                 alias invocations. For more information, see <a href="monitoring-functions-metrics.html#lambda-cloudwatch-dimensions">AWS Lambda CloudWatch Dimensions</a>.
+                              </p>
+                           </li>
+                           <li>
+                              <p><b>Response payload (synchronous invocations)</b> &#x2013; Responses
+                                 					to synchronous function invocations include an
+                                 					<code class="code">x-amz-executed-version</code> header to indicate which
+                                 					function version has been invoked.
+                              </p>
+                           </li>
+                        </ol>
+                     </div>
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="how-to-manage-versioning.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="serverless_app.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Traffic Shifting Using an Alias (CLI)"><a class="pagetoc" href="#lambda-weighted-aliases-cli">Traffic Shifting Using an Alias (CLI)</a></li>
+                        <li class="pagetoc" name="Traffic Shifting Using an Alias (Console)"><a class="pagetoc" href="#lambda-traffic-shifting-aliases-console">Traffic Shifting Using an Alias (Console)</a></li>
+                        <li class="pagetoc" name="Determining Which Version Has Been
+			Invoked"><a class="pagetoc" href="#lambda-traffic-shifting-analysis">Determining Which Version Has Been
+                              			Invoked</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

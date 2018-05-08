@@ -1,0 +1,1030 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>User Provided Kernels - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="AMIs.html" title="Amazon Machine Images (AMI)">
+      <link rel="prev" href="amazon-linux-2-virtual-machine.html" title="Running Amazon Linux 2 as a Virtual Machine On-Premises">
+      <link rel="next" href="Instances.html" title="Amazon EC2 Instances">
+      <meta name="description" content="Use custom kernels with your Linux instances.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/UserProvidedKernels.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="AMIs.html">Amazon Machine Images (AMI)</a> &#xBB; <span class="breadcrumb">User Provided Kernels</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="UserProvidedKernels">User Provided Kernels</h1>
+                     <p>If you have a need for a custom kernel on your Amazon EC2 instances, you can start
+                        with an
+                        AMI that is close to what you want, compile the custom kernel on your instance, and
+                        modify
+                        the <code>menu.lst</code> file to point to the new kernel. This process varies
+                        depending on the virtualization type that your AMI uses. For more information, see
+                        <a href="virtualization_types.html">Linux AMI Virtualization Types</a>.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#HVM_instances">HVM AMIs (GRUB)</a></li>
+                           <li><a href="#Paravirtual_instances">Paravirtual AMIs (PV-GRUB)</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="HVM_instances">HVM AMIs (GRUB)</h2>
+                     
+                     
+                     <p>HVM instance volumes are treated like actual physical disks. The boot process is
+                        similar to that of a bare metal operating system with a partitioned disk and bootloader,
+                        which allows it to work with all currently supported Linux distributions. The most
+                        common bootloader is GRUB, and the following section describes configuring GRUB to
+                        use a
+                        custom kernel.
+                     </p>
+                     
+                     <h3 id="configuringGRUB-HVM">Configuring GRUB for HVM AMIs</h3>
+                     
+                     
+                     <p>The following is an example of a <code>menu.lst</code> configuration file
+                        for an HVM AMI. In this example, there are two kernel entries to choose from:
+                        Amazon Linux 2018.03 (the original kernel for this AMI) and Vanilla
+                        Linux 4.16.4 (a newer version of the Vanilla Linux kernel
+                        from <a href="https://www.kernel.org/" target="_blank">https://www.kernel.org/</a>). The
+                        Vanilla entry was copied from the original entry for this AMI, and the
+                        <code>kernel</code> and <code>initrd</code> paths were updated
+                        to the new locations. The <code class="code">default 0</code> parameter points the bootloader to
+                        the first entry that it sees (in this case, the Vanilla entry), and the
+                        <code class="code">fallback 1</code> parameter points the bootloader to the next entry if
+                        there is a problem booting the first.
+                     </p>
+                     
+                     <p>By default, GRUB does not send its output to the instance console because it
+                        creates an extra boot delay. For more information, see <a href="instance-console.html#instance-console-console-output">Instance Console Output</a>. If you are installing a
+                        custom kernel, you should consider enabling GRUB output by deleting the
+                        <code class="code">hiddenmenu</code> line and adding <code class="code">serial</code> and
+                        <code class="code">terminal</code> lines to <code>/boot/grub/menu.lst</code> as shown
+                        in the example below.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Avoid printing large amounts of debug information during the boot process; the
+                           serial console does not support high rate data transfer.
+                        </p>
+                     </div>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">default=0
+fallback=1
+timeout=5
+<em class="replaceable"><code>serial --unit=0 --speed=9600</code></em>
+<em class="replaceable"><code>terminal --dumb --timeout=5 serial console</code></em>
+
+title Vanilla Linux 4.16.4
+root (hd0)
+kernel /boot/vmlinuz-4.16.4 root=LABEL=/ console=tty1 console=ttyS0
+initrd /boot/initrd.img-4.16.4
+
+title Amazon Linux 2018.03 (4.14.26-46.32.amzn1.x86_64)
+root (hd0,0)
+kernel /boot/vmlinuz-4.14.26-46.32.amzn1.x86_64 root=LABEL=/ console=tty1 console=ttyS0
+initrd /boot/initramfs-4.14.26-46.32.amzn1.x86_64.img</code></pre>
+                     <p>You don&apos;t need to specify a fallback kernel in your <code>menu.lst</code>
+                        file, but we recommend that you have a fallback when you test a new kernel. GRUB can
+                        fall back to another kernel in the event that the new kernel fails. Having a
+                        fallback kernel allows the instance to boot even if the new kernel isn&apos;t
+                        found.
+                     </p>
+                     
+                     <p>If your new Vanilla Linux kernel fails, the output will be similar to the example
+                        below.
+                     </p>
+                     <pre class="screen">^M Entry 0 will be booted automatically in 3 seconds. ^M Entry 0 will be booted automatically in 2 seconds. ^M Entry 0 will be booted automatically in 1 seconds.
+
+Error 13: Invalid or unsupported executable format
+[ 0.000000] Initializing cgroup subsys cpuset</pre>
+                     
+                     <h2 id="Paravirtual_instances">Paravirtual AMIs (PV-GRUB)</h2>
+                     
+                     
+                     <p>Amazon Machine Images that use paravirtual (PV) virtualization use a system called
+                        <em>PV-GRUB</em> during the boot process. PV-GRUB is a paravirtual
+                        bootloader that runs a patched version of GNU GRUB 0.97. When you start an instance,
+                        PV-GRUB starts the boot process and then chain loads the kernel specified by your
+                        image&apos;s <code>menu.lst</code> file.
+                     </p>
+                     
+                     <p>PV-GRUB understands standard <code>grub.conf</code> or
+                        <code>menu.lst</code> commands, which allows it to work with all currently
+                        supported Linux distributions. Older distributions such as Ubuntu 10.04 LTS, Oracle
+                        Enterprise Linux or CentOS 5.x require a special &quot;ec2&quot; or &quot;xen&quot; kernel package, while
+                        newer distributions include the required drivers in the default kernel package.
+                     </p>
+                     
+                     <p>Most modern paravirtual AMIs use a PV-GRUB AKI by default (including all of the
+                        paravirtual Linux AMIs available in the Amazon EC2 Launch Wizard Quick Start menu),
+                        so there
+                        are no additional steps that you need to take to use a different kernel on your
+                        instance, provided that the kernel you want to use is compatible with your distribution.
+                        The best way to run a custom kernel on your instance is to start with an AMI that
+                        is
+                        close to what you want and then to compile the custom kernel on your instance and
+                        modify
+                        the <code>menu.lst</code> file as shown in <a href="UserProvidedKernels.html#configuringGRUB">Configuring GRUB</a> to boot with that kernel.
+                     </p>
+                     
+                     <p>You can verify that the kernel image for an AMI is a PV-GRUB AKI by executing the
+                        following <a href="./cli/latest/reference/ec2/describe-images.html" target="_blank">describe-images</a>
+                        command with the Amazon EC2 command line tools (substituting the kernel image ID you
+                        want to
+                        check:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-images --filters Name=image-id,Values=<em class="replaceable"><code>aki-880531cd</code></em></code></strong></code></pre>
+                     <p>Check whether the <code class="code">Name</code> field starts with <code class="code">pv-grub</code>.
+                     </p>
+                     
+                     
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#pv-grub-limitations">Limitations of PV-GRUB</a></li>
+                           <li><a href="#configuringGRUB">Configuring GRUB for Paravirtual AMIs</a></li>
+                           <li><a href="#AmazonKernelImageIDs">Amazon PV-GRUB Kernel Image IDs</a></li>
+                           <li><a href="#UpdatingPV-GRUB">Updating PV-GRUB</a></li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="pv-grub-limitations">Limitations of PV-GRUB</h3>
+                     
+                     
+                     <p>PV-GRUB has the following limitations:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>You can&apos;t use the 64-bit version of PV-GRUB to start a 32-bit kernel or
+                                 vice versa.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>You can&apos;t specify an Amazon ramdisk image (ARI) when using a PV-GRUB
+                                 AKI.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>AWS has tested and verified that PV-GRUB works with these file system
+                                 formats: EXT2, EXT3, EXT4, JFS, XFS, and ReiserFS. Other file system formats
+                                 might not work.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>PV-GRUB can boot kernels compressed using the gzip, bzip2, lzo, and xz
+                                 compression formats.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Cluster AMIs don&apos;t support or need PV-GRUB, because they use full hardware
+                                 virtualization (HVM). While paravirtual instances use PV-GRUB to boot, HVM
+                                 instance volumes are treated like actual disks, and the boot process is
+                                 similar to the boot process of a bare metal operating system with a
+                                 partitioned disk and bootloader. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>PV-GRUB versions 1.03 and earlier don&apos;t support GPT partitioning; they
+                                 support MBR partitioning only.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>If you plan to use a logical volume manager (LVM) with Amazon EBS volumes, you
+                                 need a separate boot partition outside of the LVM. Then you can create
+                                 logical volumes with the LVM.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="configuringGRUB">Configuring GRUB for Paravirtual AMIs</h3>
+                     
+                     
+                     <p>To boot PV-GRUB, a GRUB <code>menu.lst</code> file must exist in the
+                        image; the most common location for this file is
+                        <code>/boot/grub/menu.lst</code>.
+                     </p>
+                     
+                     <p>The following is an example of a <code>menu.lst</code> configuration file
+                        for booting an AMI with a PV-GRUB AKI. In this example, there are two kernel entries
+                        to choose from: Amazon Linux 2018.03 (the original kernel for this
+                        AMI), and Vanilla Linux 4.16.4 (a newer version of the
+                        Vanilla Linux kernel from <a href="https://www.kernel.org/" target="_blank">https://www.kernel.org/</a>). The Vanilla entry was copied from the
+                        original entry for this AMI, and the <code>kernel</code> and
+                        <code>initrd</code> paths were updated to the new locations. The
+                        <code class="code">default 0</code> parameter points the bootloader to the first entry it
+                        sees (in this case, the Vanilla entry), and the <code class="code">fallback 1</code> parameter
+                        points the bootloader to the next entry if there is a problem booting the
+                        first.
+                     </p>
+                     <pre class="screen">default 0
+fallback 1
+timeout 0
+hiddenmenu
+
+title Vanilla Linux 4.16.4
+root (hd0)
+kernel /boot/vmlinuz-4.16.4 root=LABEL=/ console=hvc0
+initrd /boot/initrd.img-4.16.4
+
+title Amazon Linux 2018.03 (4.14.26-46.32.amzn1.x86_64)
+root (hd0)
+kernel /boot/vmlinuz-4.14.26-46.32.amzn1.x86_64 root=LABEL=/ console=hvc0
+initrd /boot/initramfs-4.14.26-46.32.amzn1.x86_64.img</pre>
+                     <p>You don&apos;t need to specify a fallback kernel in your <code>menu.lst</code>
+                        file, but we recommend that you have a fallback when you test a new kernel. PV-GRUB
+                        can fall back to another kernel in the event that the new kernel fails. Having a
+                        fallback kernel allows the instance to boot even if the new kernel isn&apos;t found. 
+                     </p>
+                     
+                     <p>PV-GRUB checks the following locations for <code>menu.lst</code>, using
+                        the first one it finds:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>
+                                 <code>(hd0)/boot/grub</code>
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <code>(hd0,0)/boot/grub</code>
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <code>(hd0,0)/grub</code>
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <code>(hd0,1)/boot/grub</code>
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <code>(hd0,1)/grub</code>
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <code>(hd0,2)/boot/grub</code>
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <code>(hd0,2)/grub</code>
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <code>(hd0,3)/boot/grub</code>
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <code>(hd0,3)/grub</code>
+                                 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>Note that PV-GRUB 1.03 and earlier only check one of the first two locations in
+                        this list.
+                     </p>
+                     
+                     
+                     
+                     <h3 id="AmazonKernelImageIDs">Amazon PV-GRUB Kernel Image IDs</h3>
+                     
+                     
+                     <p>PV-GRUB AKIs are available in all Amazon EC2 regions. There are AKIs for both 32-bit
+                        and 64-bit architecture types. Most modern AMIs use a PV-GRUB AKI by default.
+                     </p>
+                     
+                     <p>We recommend that you always use the latest version of the PV-GRUB AKI, as not all
+                        versions of the PV-GRUB AKI are compatible with all instance types. Use the
+                        following <a href="./cli/latest/reference/ec2/describe-images.html" target="_blank">describe-images</a>
+                        command to get a list of the PV-GRUB AKIs for the current region:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-images --owners amazon --filters Name=name,Values=pv-grub-*.gz</code></strong></code></pre>
+                     
+                     <p>Note that PV-GRUB is the only AKI available in the <code class="code">ap-southeast-2</code>
+                        region. You should verify that any AMI you want to copy to this region is using a
+                        version of PV-GRUB that is available in this region.
+                     </p>
+                     
+                     
+                     <p>The following are the current AKI IDs for each region. Register new AMIs using an
+                        hd0 AKI.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>We continue to provide hd00 AKIs for backward compatibility in regions where
+                           they were previously available.
+                        </p>
+                     </div>
+                     
+                     
+                     <div class="table">
+                        <p class="title"><b>ap-northeast-1, Asia Pacific (Tokyo)</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac15c41b9c20c14">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Image ID</th>
+                                 
+                                 <th>Image Name</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-f975a998</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-i386.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-7077ab11</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-x86_64.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <div class="table">
+                        <p class="title"><b>ap-southeast-1, Asia Pacific (Singapore) Region</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac15c41b9c20c16">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Image ID</th>
+                                 
+                                 <th>Image Name</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-17a40074</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-i386.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-73a50110</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-x86_64.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <div class="table">
+                        <p class="title"><b>ap-southeast-2, Asia Pacific (Sydney)</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac15c41b9c20c18">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Image ID</th>
+                                 
+                                 <th>Image Name</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-ba5665d9</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-i386.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-66506305</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-x86_64.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <div class="table">
+                        <p class="title"><b>eu-central-1, EU (Frankfurt)</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac15c41b9c20c20">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Image ID</th>
+                                 
+                                 <th>Image Name</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-1419e57b</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-i386.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-931fe3fc</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-x86_64.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <div class="table">
+                        <p class="title"><b>eu-west-1, EU (Ireland)</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac15c41b9c20c22">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Image ID</th>
+                                 
+                                 <th>Image Name</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-1c9fd86f</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-i386.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-dc9ed9af</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-x86_64.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <div class="table">
+                        <p class="title"><b>sa-east-1, South America (S&#xE3;o Paulo)</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac15c41b9c20c24">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Image ID</th>
+                                 
+                                 <th>Image Name</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-7cd34110</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-i386.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-912fbcfd</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-x86_64.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <div class="table">
+                        <p class="title"><b>us-east-1, US East (N. Virginia)</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac15c41b9c20c26">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Image ID</th>
+                                 
+                                 <th>Image Name</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-04206613</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-i386.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-5c21674b</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-x86_64.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <div class="table">
+                        <p class="title"><b>us-gov-west-1, AWS GovCloud (US)</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac15c41b9c20c28">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Image ID</th>
+                                 
+                                 <th>Image Name</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-5ee9573f</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-i386.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-9ee55bff</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-x86_64.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <div class="table">
+                        <p class="title"><b>us-west-1, US West (N. California)</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac15c41b9c20c30">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Image ID</th>
+                                 
+                                 <th>Image Name</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-43cf8123</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-i386.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-59cc8239</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-x86_64.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <div class="table">
+                        <p class="title"><b>us-west-2, US West (Oregon)</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac15c41b9c20c32">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Image ID</th>
+                                 
+                                 <th>Image Name</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-7a69931a</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-i386.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <code class="code">aki-70cb0e10</code>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    <code>pv-grub-hd0_1.05-x86_64.gz</code>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     
+                     
+                     <h3 id="UpdatingPV-GRUB">Updating PV-GRUB</h3>
+                     
+                     
+                     <p>We recommend that you always use the latest version of the PV-GRUB AKI, as not all
+                        versions of the PV-GRUB AKI are compatible with all instance types. Also, older
+                        versions of PV-GRUB are not available in all regions, so if you copy an AMI that
+                        uses an older version to a region that does not support that version, you will be
+                        unable to boot instances launched from that AMI until you update the kernel image.
+                        Use the following procedures to check your instance&apos;s version of PV-GRUB and update
+                        it if necessary.
+                     </p>
+                     
+                     <p class="title"><b>To check your PV-GRUB version</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Find the kernel ID for your instance.</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-instance-attribute --instance-id <em class="replaceable"><code>instance_id</code></em> --attribute kernel --region <em class="replaceable"><code>region</code></em></code></strong>
+<code class="computeroutput" copy="false">
+{
+    &quot;InstanceId&quot;: &quot;<em class="replaceable"><code>instance_id</code></em>&quot;, 
+    &quot;KernelId&quot;: &quot;aki-70cb0e10&quot;
+}</code></code></pre>
+                           <p>The kernel ID for this instance is <code class="code">aki-70cb0e10</code>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>View the version information of that kernel ID.</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-images --image-ids <em class="replaceable"><code>aki-70cb0e10</code></em> --region <em class="replaceable"><code>region</code></em></code></strong>
+<code class="computeroutput" copy="false">
+{
+    &quot;Images&quot;: [
+        {
+            &quot;VirtualizationType&quot;: &quot;paravirtual&quot;, 
+            &quot;Name&quot;: &quot;pv-grub-hd0_1.05-x86_64.gz&quot;, 
+            ...
+            &quot;Description&quot;: &quot;PV-GRUB release 1.05, 64-bit&quot;
+        }
+    ]
+}</code></code></pre>
+                           <p>This kernel image is PV-GRUB 1.05. If your PV-GRUB version is not the
+                              newest version (as shown in <a href="UserProvidedKernels.html#AmazonKernelImageIDs">Amazon PV-GRUB Kernel Image IDs</a>), you should update it using the
+                              following procedure.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p class="title"><b>To update your PV-GRUB version</b></p>
+                     <p>If your instance is using an older version of PV-GRUB, you should update it to
+                        the latest version.
+                     </p>
+                     <ol>
+                        <li>
+                           
+                           <p>Identify the latest PV-GRUB AKI for your region and processor architecture
+                              from <a href="UserProvidedKernels.html#AmazonKernelImageIDs">Amazon PV-GRUB Kernel Image IDs</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Stop your instance. Your instance must be stopped to modify the kernel
+                              image used.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 stop-instances --instance-ids <em class="replaceable"><code>instance_id</code></em> --region <em class="replaceable"><code>region</code></em></code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Modify the kernel image used for your instance.</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 modify-instance-attribute --instance-id <em class="replaceable"><code>instance_id</code></em> --kernel <em class="replaceable"><code>kernel_id</code></em> --region <em class="replaceable"><code>region</code></em></code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Restart your instance.</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 start-instances --instance-ids <em class="replaceable"><code>instance_id</code></em> --region <em class="replaceable"><code>region</code></em> </code></strong></code></pre>
+                           </li>
+                     </ol>
+                     
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="amazon-linux-2-virtual-machine.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="Instances.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="HVM AMIs (GRUB)"><a class="pagetoc" href="#HVM_instances">HVM AMIs (GRUB)</a></li>
+                        <li class="pagetoc" name="Paravirtual AMIs (PV-GRUB)"><a class="pagetoc" href="#Paravirtual_instances">Paravirtual AMIs (PV-GRUB)</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

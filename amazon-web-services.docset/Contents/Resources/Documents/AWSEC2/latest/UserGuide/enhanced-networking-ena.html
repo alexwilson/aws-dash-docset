@@ -1,0 +1,1023 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Enabling Enhanced Networking with the Elastic
+         Network Adapter (ENA) on Linux Instances in a VPC - Amazon Elastic Compute Cloud
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="enhanced-networking.html" title="Enhanced Networking on Linux">
+      <link rel="prev" href="sriov-networking.html" title="Enabling Enhanced Networking with the Intel 82599 VF
+            Interface on Linux Instances in a VPC">
+      <link rel="next" href="troubleshooting-ena.html" title="Troubleshooting the Elastic Network Adapter (ENA)">
+      <meta name="description" content="Enable enhanced networking capabilities with the Elastic Network Adapter (ENA) on supported Linux instances in a VPC.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking-ena.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="EC2_Network_and_Security.html">Network and Security</a> &#xBB; <a href="enhanced-networking.html">Enhanced Networking on Linux</a> &#xBB; <span class="breadcrumb">Enabling Enhanced Networking with the Elastic
+                                    Network Adapter (ENA) on Linux Instances in a VPC</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="enhanced-networking-ena">Enabling Enhanced Networking with the Elastic
+                        Network Adapter (ENA) on <span>Linux</span> Instances in a VPC
+                     </h1>
+                     <p>Amazon EC2 provides enhanced networking capabilities to C5, F1, G3, H1, I3, <code class="code">m4.16xlarge</code>, 
+                        M5, P2, P3, R4, and X1 instances through the Elastic Network Adapter (ENA).
+                     </p>
+                     <p>To prepare for enhanced networking using the ENA, set up your instance as follows:</p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Launch the instance from an HVM AMI using Linux kernel version of 3.2 or
+                                 later. The latest Amazon Linux HVM AMIs have the modules required for enhanced
+                                 networking installed and have the required attributes set. Therefore, if you
+                                 launch an Amazon EBS&#x2013;backed, enhanced networking&#x2013;supported instance
+                                 using a current Amazon Linux HVM AMI, ENA enhanced networking is already enabled for
+                                 your instance. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Launch the instance in a VPC. (You can&apos;t enable enhanced networking if the
+                                 instance is in EC2-Classic.)
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Install and configure the <a href="./cli/latest/userguide/cli-chap-getting-set-up.html" target="_blank">AWS CLI</a> or the
+                                 <a href="./powershell/latest/userguide/" target="_blank">AWS Tools for Windows PowerShell</a> on any computer you choose,
+                                 preferably your local desktop or laptop. For more information, see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>. Enhanced networking
+                                 cannot be managed from the Amazon EC2 console. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>If you have important data on the instance that you want to preserve, you
+                                 should back that data up now by creating an AMI from your instance. Updating
+                                 kernels and kernel modules, as well as enabling the <code class="code">enaSupport</code>
+                                 attribute, may render incompatible instances or operating systems
+                                 unreachable; if you have a recent backup, your data will still be retained
+                                 if this happens.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#test-enhanced-networking-ena">Testing Whether Enhanced Networking with
+                                 ENA Is Enabled</a></li>
+                           <li><a href="#enable-enhanced-networking-ena-AL">Enabling Enhanced Networking with ENA
+                                 on Amazon Linux</a></li>
+                           <li><a href="#enhanced-networking-ena-ubuntu">Enabling Enhanced Networking with ENA on Ubuntu</a></li>
+                           <li><a href="#enhanced-networking-ena-linux">Enabling Enhanced Networking with ENA on
+                                 Other Linux Distributions</a></li>
+                           <li><a href="#enhanced-networking-ena-troubleshooting">Troubleshooting</a></li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="test-enhanced-networking-ena">Testing Whether Enhanced Networking with
+                        ENA Is Enabled
+                     </h2>
+                     
+                     
+                     <p>To test whether enhanced networking with ENA is already
+                        enabled, verify that the <span><code>ena</code> module</span>
+                        is installed on your instance<span> and that
+                           the <code class="code">enaSupport</code> attribute is set</span>. <span>If
+                           your instance satisfies these two conditions, then the <b>ethtool -i
+                              eth<em class="replaceable"><code>n</code></em></b> command should show that the
+                           module is in use on the network interface.</span></p>
+                     
+                     
+                     <p class="title"><b>Kernel Module (ena)</b></p>
+                     
+                     <p>To verify that the <code>ena</code> module is installed, use the
+                        <b>modinfo</b> command as follows:
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>modinfo ena</code></strong><code class="computeroutput" copy="false">
+filename:       /lib/modules/4.4.11-23.53.amzn1.x86_64/kernel/drivers/amazon/net/ena/ena.ko
+version:        0.6.6
+license:        GPL
+description:    Elastic Network Adapter (ENA)
+author:         Amazon.com, Inc. or its affiliates
+srcversion:     3141E47566402C79D6B8284
+alias:          pci:v00001D0Fd0000EC21sv*sd*bc*sc*i*
+alias:          pci:v00001D0Fd0000EC20sv*sd*bc*sc*i*
+alias:          pci:v00001D0Fd00001EC2sv*sd*bc*sc*i*
+alias:          pci:v00001D0Fd00000EC2sv*sd*bc*sc*i*
+depends:
+intree:         Y
+vermagic:       4.4.11-23.53.amzn1.x86_64 SMP mod_unload modversions
+parm:           debug:Debug level (0=none,...,16=all) (int)
+parm:           push_mode:Descriptor / header push mode (0=automatic,1=disable,3=enable)
+			  0 - Automatically choose according to device capability (default)
+			  1 - Don&apos;t push anything to device memory
+			  3 - Push descriptors and header buffer to device memory (int)
+parm:           enable_wd:Enable keepalive watchdog (0=disable,1=enable,default=1) (int)
+parm:           enable_missing_tx_detection:Enable missing Tx completions. (default=1) (int)
+parm:           numa_node_override_array:Numa node override map
+ (array of int)
+parm:           numa_node_override:Enable/Disable numa node override (0=disable)
+ (int)</code></code></pre>
+                     <p>In the above Amazon Linux case, the <code>ena</code> module is
+                        installed.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>modinfo ena</code></strong><code class="computeroutput" copy="false">
+ERROR: modinfo: could not find module ena</code></code></pre>
+                     <p>In the above Ubuntu instance, the module is not installed, so you must
+                        first install it. For more information, see <a href="enhanced-networking-ena.html#enhanced-networking-ena-ubuntu">Enabling Enhanced Networking with ENA on Ubuntu</a>.
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        <p class="title"><b>Instance Attribute (enaSupport)</b></p>
+                        
+                        <p>To check whether an instance has the enhanced networking <code class="code">enaSupport</code> 
+                           attribute set, use one of the following commands. If the attribute is set, the 
+                           response is true.
+                        </p>
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./cli/latest/reference/ec2/describe-instances.html" target="_blank">describe-instances</a> (AWS CLI)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-instances --instance-ids <em class="replaceable"><code>instance_id</code></em> --query &apos;Reservations[].Instances[].EnaSupport&apos;</code></strong></code></pre>
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>Some command prompts require double quotes (&quot;). For more information, see <a href="./cli/latest/userguide/cli-using-param.html" target="_blank">Specifying Parameter Values
+                                       for the AWS Command Line Interface</a> in the
+                                    <em>AWS Command Line Interface User Guide</em>.
+                                 </p>
+                              </div>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="./powershell/latest/reference/items/Get-EC2Instance.html" target="_blank">Get-EC2Instance</a> (Tools for Windows PowerShell)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>(Get-EC2Instance -InstanceId <em class="replaceable"><code>instance-id</code></em>).Instances.EnaSupport</code></strong></code></pre>
+                              </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     <p class="title"><b>Image Attribute (enaSupport)</b></p>
+                     
+                     <p>To check whether an AMI has the enhanced networking <code class="code">enaSupport</code> 
+                        attribute set, use one of the following commands. If the attribute is set, the 
+                        response is true.
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./cli/latest/reference/ec2/describe-images.html" target="_blank">describe-images</a> (AWS CLI)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-images --image-id <em class="replaceable"><code>ami_id</code></em> --query &apos;Images[].EnaSupport&apos;</code></strong></code></pre>
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>Some command prompts require double quotes (&quot;). For more information, see <a href="./cli/latest/userguide/cli-using-param.html" target="_blank">Specifying Parameter Values
+                                       for the AWS Command Line Interface</a> in the
+                                    <em>AWS Command Line Interface User Guide</em>.
+                                 </p>
+                              </div>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="./powershell/latest/reference/items/Get-EC2Image.html" target="_blank">Get-EC2Image</a> (Tools for Windows PowerShell)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>(Get-EC2Image -ImageId <em class="replaceable"><code>ami_id</code></em>).EnaSupport</code></strong></code></pre>
+                              </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     <p class="title"><b>Network Interface Driver</b></p>
+                     
+                     <p>Use the following command to verify that the <code>ena</code> module is
+                        being used on a particular interface, substituting the interface name that you
+                        wish to check. If you are using a single interface (default), it will be
+                        <code class="code">eth0</code>.
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>ethtool -i eth<em class="replaceable"><code>0</code></em></code></strong><code class="computeroutput" copy="false">
+driver: vif
+version:
+firmware-version:
+bus-info: vif-0
+supports-statistics: yes
+supports-test: no
+supports-eeprom-access: no
+supports-register-dump: no
+supports-priv-flags: no</code></code></pre>
+                     <p>In the above case, the <code>ena</code> module is not loaded,
+                        because the listed driver is <code>vif</code>.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>ethtool -i eth<em class="replaceable"><code>0</code></em></code></strong><code class="computeroutput" copy="false">
+driver: ena
+version: 0.6.6
+firmware-version:
+bus-info: 0000:00:03.0
+supports-statistics: yes
+supports-test: no
+supports-eeprom-access: no
+supports-register-dump: no
+supports-priv-flags: no</code></code></pre>
+                     <p>In this case, the <code>ena</code> module is loaded and at the
+                        minimum recommended version. This instance has enhanced networking properly
+                        configured.
+                     </p>
+                     
+                     
+                     <h2 id="enable-enhanced-networking-ena-AL">Enabling Enhanced Networking with ENA
+                        on Amazon Linux
+                     </h2>
+                     
+                     
+                     <p>The latest Amazon Linux HVM AMIs have the module required for enhanced
+                        networking with ENA installed and have the required <code class="code">enaSupport</code>
+                        attribute set. Therefore, if you launch an instance with the latest Amazon Linux HVM
+                        AMI on
+                        a supported instance type, enhanced networking with ENA is already enabled for your
+                        instance. For more information, see <a href="enhanced-networking-ena.html#test-enhanced-networking-ena">Testing Whether Enhanced Networking with
+                           ENA Is Enabled</a>.
+                     </p>
+                     
+                     <p>If you launched your instance using an older Amazon Linux AMI and it does not
+                        have enhanced networking enabled already, use the following procedure to enable
+                        enhanced networking.
+                     </p>           
+                     
+                     <p class="title"><b>To enable enhanced networking with ENA (EBS-backed instances)</b></p>
+                     <ol>
+                        <li><a id="amazon-linux-enhanced-networking-ena-start-step-AL"></a>
+                           
+                           <p>Connect to your instance.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From the instance, run the following command to update your instance with
+                              the newest kernel and kernel modules, including
+                              <code>ena</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code><b>sudo yum</b> update</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>From your local computer, reboot your instance using the Amazon EC2 console or
+                              one of the following commands: <a href="./cli/latest/reference/ec2/reboot-instances.html" target="_blank">reboot-instances</a>
+                              (AWS CLI),  <a href="./powershell/latest/reference/items/Restart-EC2Instance.html" target="_blank">Restart-EC2Instance</a> (AWS Tools for Windows PowerShell).
+                           </p>
+                           
+                        </li>
+                        <li><a id="amazon-linux-enhanced-networking-ena-stop-step-AL"></a>
+                           
+                           <p>Connect to your instance again and verify that the <code>ena</code>
+                              module is installed and at the minimum recommended version using the
+                              <b>modinfo ena</b> command from <a href="enhanced-networking-ena.html#test-enhanced-networking-ena">Testing Whether Enhanced Networking with
+                                 ENA Is Enabled</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, stop the instance using the Amazon EC2 console or one
+                              of the following commands: <a href="./cli/latest/reference/ec2/stop-instances.html" target="_blank">stop-instances</a> (AWS CLI), <a href="./powershell/latest/reference/items/Stop-EC2Instance.html" target="_blank">Stop-EC2Instance</a>
+                              (AWS Tools for Windows PowerShell). If your instance is managed by AWS OpsWorks, you
+                              should stop the
+                              instance in the AWS OpsWorks console so that the instance state remains in
+                              sync.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If you are using an instance store-backed instance, you can&apos;t stop the
+                                 instance. Instead, proceed to <a href="enhanced-networking-ena.html#enhanced-networking-ena-instance-store-AL">To enable enhanced
+                                    networking with ENA (instance store-backed instances)</a>.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, enable the enhanced networking attribute using
+                              one of the following commands:
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/modify-instance-attribute.html" target="_blank">modify-instance-attribute</a> (AWS CLI)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 modify-instance-attribute --instance-id <em class="replaceable"><code>instance_id</code></em> --ena-support</code></strong></code></pre>
+                                    </li>
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./powershell/latest/reference/items/Edit-EC2InstanceAttribute.html" target="_blank">Edit-EC2InstanceAttribute</a> (Tools for Windows PowerShell)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>Edit-EC2InstanceAttribute -InstanceId <em class="replaceable"><code>instance-id</code></em> -EnaSupport $true</code></strong></code></pre>
+                                    </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Create an AMI from the instance, as described in <a href="creating-an-ami-ebs.html">Creating an Amazon EBS-Backed Linux AMI</a>. The AMI
+                              inherits the enhanced networking <code class="code">enaSupport</code> attribute
+                              from the instance. Therefore, you can use this AMI to launch another
+                              instance with enhanced networking with ENA enabled by default.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, start the instance using the Amazon EC2 console or
+                              one of the following commands: <a href="./cli/latest/reference/ec2/start-instances.html" target="_blank">start-instances</a>
+                              (AWS CLI), <a href="./powershell/latest/reference/items/Start-EC2Instance.html" target="_blank">Start-EC2Instance</a> (AWS Tools for Windows PowerShell). If your instance is managed by
+                              AWS OpsWorks, you should start the instance in the AWS OpsWorks console so that the
+                              instance state remains in sync.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Connect to your instance and verify that the <code>ena</code> module
+                              is installed and loaded on your network interface using the <b>ethtool
+                                 -i eth<em class="replaceable"><code>n</code></em></b> command from <a href="enhanced-networking-ena.html#test-enhanced-networking-ena">Testing Whether Enhanced Networking with
+                                 ENA Is Enabled</a>.
+                           </p>
+                           
+                           <p>If you are unable to connect to your instance after
+                              enabling enhanced networking with ENA, see <a href="troubleshooting-ena.html">Troubleshooting the Elastic Network Adapter (ENA)</a>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <p class="title"><b>To enable enhanced
+                           networking with ENA (instance store-backed instances)</b></p>
+                     
+                     <p>If your instance is an instance store&#x2013;backed instance, follow <a href="enhanced-networking-ena.html#amazon-linux-enhanced-networking-ena-start-step-AL">Step&#xA0;1</a> through
+                        <a href="enhanced-networking-ena.html#amazon-linux-enhanced-networking-ena-stop-step-AL">Step&#xA0;4</a> in the
+                        previous procedure, and then  create a new AMI as described in
+                        <a href="./AWSEC2/latest/UserGuide/creating-an-ami-instance-store.html" target="_blank">Creating an Instance Store-Backed Linux AMI</a>. Be sure
+                        to enable the enhanced networking <code class="code">enaSupport</code> attribute when
+                        you register the AMI.
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./cli/latest/reference/ec2/register-image.html" target="_blank">register-image</a>
+                                 (AWS CLI)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 register-image --ena-support<code class="code" copy="false"> ...</code></code></strong></code></pre>
+                              </li>
+                           <li class="listitem">
+                              
+                              <p><a href="./powershell/latest/reference/items/Register-EC2Image.html" target="_blank">Register-EC2Image</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>Register-EC2Image -EnaSupport $true<code class="code" copy="false"> ...</code></code></strong></code></pre>
+                              </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h2 id="enhanced-networking-ena-ubuntu">Enabling Enhanced Networking with ENA on Ubuntu</h2>
+                     
+                     <p>The latest Ubuntu HVM AMIs have the module required for enhanced networking with
+                        ENA installed and have the required <code class="code">enaSupport</code> attribute set.
+                        Therefore, if you launch an instance with the latest Ubuntu HVM AMI on a supported
+                        instance type, enhanced networking with ENA is already enabled for your instance.
+                        For more information, see <a href="enhanced-networking-ena.html#test-enhanced-networking-ena">Testing Whether Enhanced Networking with
+                           ENA Is Enabled</a>.
+                     </p>
+                     
+                     
+                     <p>If you launched your instance using an older AMI and it does not have enhanced
+                        networking enabled already, the following are the general steps to enable enhanced
+                        networking with ENA on an Ubuntu instance.
+                     </p>
+                     <a id="ubuntu-enhanced-networking-ena-procedure"></a><p class="title"><b>To enable enhanced
+                           networking with ENA on Ubuntu (EBS-backed instances)</b></p>
+                     <ol>
+                        <li><a id="ubuntu-enhanced-networking-ena-start-step"></a>
+                           
+                           <p>Connect to your instance.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Update the package cache and packages.</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo apt-get update &amp;&amp; sudo apt-get upgrade -y</code></strong></code></pre>
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If during the update process you are prompted to install
+                                 <code>grub</code>, use <code>/dev/xvda</code> to
+                                 install <code>grub</code> onto, and then choose to keep the
+                                 current version of <code>/boot/grub/menu.lst</code>.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li><a id="ena_start_step"></a>
+                           
+                           <p>Install the <code>build-essential</code> packages to compile the
+                              kernel module and the <code>dkms</code> package so that your
+                              <code>ena</code> module is rebuilt every time your kernel is
+                              updated.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo apt-get install -y build-essential dkms</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Clone the source code for the <code>ena</code> module on your
+                              instance from GitHub at <a href="https://github.com/amzn/amzn-drivers" target="_blank">https://github.com/amzn/amzn-drivers</a>.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>git clone https://github.com/amzn/amzn-drivers</code></strong></code></pre>
+                           </li>
+                        <li><a id="enhanced-networking-ena-dkms-start-step"></a>
+                           
+                           <p>Move the <code>amzn-drivers</code> package to the
+                              <code>/usr/src/</code> directory so <b>dkms</b> can
+                              find it and build it for each kernel update. Append the version number (you
+                              can find the current version number in the release notes) of the source code
+                              to the directory name. For example, version <code class="code">1.0.0</code> is
+                              shown in the example below.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo mv amzn-drivers /usr/src/amzn-drivers-<em class="replaceable"><code>1.0.0</code></em></code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Create the <b>dkms</b> configuration file with the following
+                              values, substituting your version of <code>ena</code>.
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>Create the file.</p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo touch /usr/src/amzn-drivers-<em class="replaceable"><code>1.0.0</code></em>/dkms.conf</code></strong></code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>Edit the file and add the following values.</p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo vim /usr/src/amzn-drivers-<em class="replaceable"><code>1.0.0</code></em>/dkms.conf</code></strong><code class="computeroutput" copy="false">
+PACKAGE_NAME=&quot;ena&quot;
+PACKAGE_VERSION=&quot;<em class="replaceable"><code>1.0.0</code></em>&quot;
+CLEAN=&quot;make -C kernel/linux/ena clean&quot;
+MAKE=&quot;make -C kernel/linux/ena/ BUILD_KERNEL=${kernelver}&quot;
+BUILT_MODULE_NAME[0]=&quot;ena&quot;
+BUILT_MODULE_LOCATION=&quot;kernel/linux/ena&quot;
+DEST_MODULE_LOCATION[0]=&quot;/updates&quot;
+DEST_MODULE_NAME[0]=&quot;ena&quot;
+AUTOINSTALL=&quot;yes&quot;</code></code></pre>
+                                 </li>
+                           </ol>
+                           
+                        </li>
+                        <li><a id="enhanced-networking-ena-dkms-stop-step"></a>
+                           
+                           <p>Add, build, and install the <code>ena</code> module on your instance
+                              using <b>dkms</b>.
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>Add the module to <b>dkms</b>.
+                                 </p> 
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo dkms add -m amzn-drivers -v <em class="replaceable"><code>1.0.0</code></em></code></strong></code></pre>
+                                 </li>
+                              <li><a id="ubuntu_ena_build_step"></a>
+                                 
+                                 <p>Build the module using <b>dkms</b>.
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo dkms build -m amzn-drivers -v <em class="replaceable"><code>1.0.0</code></em></code></strong></code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>Install the module using <b>dkms</b>.
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo dkms install -m amzn-drivers -v <em class="replaceable"><code>1.0.0</code></em></code></strong></code></pre>
+                                 </li>
+                           </ol>
+                           
+                        </li>
+                        <li><a id="ena_stop_step"></a>
+                           
+                           <p>Rebuild <code>initramfs</code> so the correct module is loaded at boot time.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo update-initramfs -c -k all</code></strong></code></pre>
+                           </li>
+                        <li><a id="ubuntu-enhanced-networking-ena-stop-step"></a>
+                           
+                           <p>Verify that the <code>ena</code> module is installed using the
+                              <b>modinfo ena</b> command from <a href="enhanced-networking-ena.html#test-enhanced-networking-ena">Testing Whether Enhanced Networking with
+                                 ENA Is Enabled</a>.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>modinfo ena</code></strong><code class="computeroutput" copy="false">
+filename:       /lib/modules/3.13.0-74-generic/updates/dkms/ena.ko
+version:        1.0.0
+license:        GPL
+description:    Elastic Network Adapter (ENA)
+author:         Amazon.com, Inc. or its affiliates
+srcversion:     9693C876C54CA64AE48F0CA
+alias:          pci:v00001D0Fd0000EC21sv*sd*bc*sc*i*
+alias:          pci:v00001D0Fd0000EC20sv*sd*bc*sc*i*
+alias:          pci:v00001D0Fd00001EC2sv*sd*bc*sc*i*
+alias:          pci:v00001D0Fd00000EC2sv*sd*bc*sc*i*
+depends:
+vermagic:       3.13.0-74-generic SMP mod_unload modversions
+parm:           debug:Debug level (0=none,...,16=all) (int)
+parm:           push_mode:Descriptor / header push mode (0=automatic,1=disable,3=enable)
+			  0 - Automatically choose according to device capability (default)
+			  1 - Don&apos;t push anything to device memory
+			  3 - Push descriptors and header buffer to device memory (int)
+parm:           enable_wd:Enable keepalive watchdog (0=disable,1=enable,default=1) (int)
+parm:           enable_missing_tx_detection:Enable missing Tx completions. (default=1) (int)
+parm:           numa_node_override_array:Numa node override map
+ (array of int)
+parm:           numa_node_override:Enable/Disable numa node override (0=disable)
+ (int)</code></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>From your local computer, stop the instance using the Amazon EC2 console or one
+                              of the following commands: <a href="./cli/latest/reference/ec2/stop-instances.html" target="_blank">stop-instances</a> (AWS CLI), <a href="./powershell/latest/reference/items/Stop-EC2Instance.html" target="_blank">Stop-EC2Instance</a>
+                              (AWS Tools for Windows PowerShell). If your instance is managed by AWS OpsWorks, you
+                              should stop the
+                              instance in the AWS OpsWorks console so that the instance state remains in
+                              sync.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If you are using an instance store-backed instance, you can&apos;t stop the
+                                 instance. Instead, proceed to <a href="enhanced-networking-ena.html#ubuntu-enhanced-networking-ena-instance-store">To enable enhanced
+                                    networking with ENA on Ubuntu (instance store-backed instances)</a>.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, enable the enhanced networking attribute using
+                              one of the following commands:
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/modify-instance-attribute.html" target="_blank">modify-instance-attribute</a> (AWS CLI)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 modify-instance-attribute --instance-id <em class="replaceable"><code>instance_id</code></em> --ena-support</code></strong></code></pre>
+                                    </li>
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./powershell/latest/reference/items/Edit-EC2InstanceAttribute.html" target="_blank">Edit-EC2InstanceAttribute</a> (Tools for Windows PowerShell)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>Edit-EC2InstanceAttribute -InstanceId <em class="replaceable"><code>instance-id</code></em> -EnaSupport $true</code></strong></code></pre>
+                                    </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Create an AMI from the instance, as described in <a href="creating-an-ami-ebs.html">Creating an Amazon EBS-Backed Linux AMI</a>
+                              . The AMI
+                              inherits the enhanced networking attribute from the instance. Therefore, you
+                              can use this AMI to launch another instance with enhanced networking enabled
+                              by default.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, start the instance using the Amazon EC2 console or
+                              one of the following commands: <a href="./cli/latest/reference/ec2/start-instances.html" target="_blank">start-instances</a>
+                              (AWS CLI), <a href="./powershell/latest/reference/items/Start-EC2Instance.html" target="_blank">Start-EC2Instance</a> (AWS Tools for Windows PowerShell). If your instance is managed by
+                              AWS OpsWorks, you should start the instance in the AWS OpsWorks console so that the
+                              instance state remains in sync.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Connect to your instance and verify that the module is installed.</p>
+                           
+                           <p>If you are unable to connect to your instance after enabling
+                              enhanced networking with ENA, see <a href="troubleshooting-ena.html">Troubleshooting the Elastic Network Adapter (ENA)</a>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <p class="title"><b>To enable enhanced
+                           networking with ENA on Ubuntu (instance store-backed instances)</b></p>
+                     
+                     <p>If your instance is an instance store-backed instance, follow <a href="enhanced-networking-ena.html#ubuntu-enhanced-networking-ena-start-step">Step&#xA0;1</a> through <a href="enhanced-networking-ena.html#ubuntu-enhanced-networking-ena-stop-step">Step&#xA0;9</a> in the previous
+                        procedure, and then create a new AMI as described in <a href="creating-an-ami-instance-store.html">Creating an Instance Store-Backed Linux AMI</a>. Be sure to enable the
+                        enhanced networking <code class="code">enaSupport</code> attribute when you register
+                        the AMI.
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./cli/latest/reference/ec2/register-image.html" target="_blank">register-image</a>
+                                 (AWS CLI)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 register-image --ena-support<code class="code" copy="false"> ...</code></code></strong></code></pre>
+                              </li>
+                           <li class="listitem">
+                              
+                              <p><a href="./powershell/latest/reference/items/Register-EC2Image.html" target="_blank">Register-EC2Image</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>Register-EC2Image -EnaSupport $true<code class="code" copy="false"> ...</code></code></strong></code></pre>
+                              </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h2 id="enhanced-networking-ena-linux">Enabling Enhanced Networking with ENA on
+                        Other Linux Distributions
+                     </h2>
+                     
+                     <p>The following procedure provides the general steps for enabling enhanced
+                        networking with ENA on a Linux distribution other than Amazon Linux or Ubuntu. Before
+                        you
+                        begin, see <a href="enhanced-networking-ena.html#test-enhanced-networking-ena">Testing Whether Enhanced Networking with
+                           ENA Is Enabled</a> to check if your instance is
+                        already enabled for enhanced networking. For more information, such as detailed
+                        syntax for commands, file locations, or package and tool support, see the specific
+                        documentation for your Linux distribution.
+                     </p>
+                     
+                     <p class="title"><b>To enable enhanced networking with ENA on Linux (EBS-backed
+                           instances)</b></p>
+                     <ol>
+                        <li><a id="other-linux-enhanced-networking-ena-start-step"></a>
+                           
+                           <p>Connect to your instance.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Clone the source code for the <code>ena</code> module on your
+                              instance from GitHub at <a href="https://github.com/amzn/amzn-drivers" target="_blank">https://github.com/amzn/amzn-drivers</a>.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>git clone https://github.com/amzn/amzn-drivers</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Compile and install the <code>ena</code> module on your instance. 
+                           </p>
+                           
+                           <p>If your distribution supports <b>dkms</b>, then you should
+                              consider configuring <b>dkms</b> to recompile the
+                              <code>ena</code> module whenever your system&apos;s kernel is
+                              updated. If your distribution does not support <b>dkms</b>
+                              natively, you can find it in the EPEL repository (<a href="https://fedoraproject.org/wiki/EPEL" target="_blank">https://fedoraproject.org/wiki/EPEL</a>) for Red Hat Enterprise
+                              Linux (RHEL) variants, or you can download the software at <a href="https://linux.dell.com/dkms/" target="_blank">https://linux.dell.com/dkms/</a>.
+                              Use <a href="enhanced-networking-ena.html#enhanced-networking-ena-dkms-start-step">Step&#xA0;5</a> through <a href="enhanced-networking-ena.html#enhanced-networking-ena-dkms-stop-step">Step&#xA0;7</a> in <a href="enhanced-networking-ena.html#ubuntu-enhanced-networking-ena-procedure">To enable enhanced
+                                 networking with ENA on Ubuntu (EBS-backed instances)</a> for help
+                              configuring <b>dkms</b>.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>For RHEL/CentOS 7 distributions, install <b>dkms</b> version 2.5 or later. Earlier
+                                 versions might not recompile the latest installed
+                                 <code>ena</code> module on your instance.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Run the <b>sudo depmod</b> command to update module
+                              dependencies.
+                           </p>
+                           
+                        </li>
+                        <li><a id="other-linux-enhanced-networking-ena-stop-step"></a>
+                           
+                           <p>Update <code>initramfs</code> on your instance to ensure that the
+                              new module loads at boot time. For example, if your distribution supports
+                              <b>dracut</b>, you can use the following command:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>dracut -f -v</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Determine if your system uses predictable network interface names by
+                              default. Systems that use <b>systemd</b> or
+                              <b>udev</b> versions 197 or greater can rename Ethernet
+                              devices and they do not guarantee that a single network interface will be
+                              named <code class="code">eth0</code>. This behavior can cause problems connecting
+                              to your instance. For more information and to see other configuration
+                              options, see <a href="https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/" target="_blank">Predictable Network Interface Names</a> on the freedesktop.org
+                              website.
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>You can check the <b>systemd</b> or
+                                    <b>udev</b> versions on RPM-based systems with the
+                                    following command:
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>rpm -qa | grep -e &apos;^systemd-[0-9]\+\|^udev-[0-9]\+&apos;</code></strong><code class="computeroutput" copy="false">
+systemd-208-11.el7_0.2.x86_64</code></code></pre>
+                                 <p>In the above Red Hat Enterprise Linux 7 example, the <b>systemd</b> version
+                                    is 208, so predictable network interface names must be disabled.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>Disable predictable network interface names by adding the
+                                    <code class="code">net.ifnames=0</code> option to the
+                                    <code class="code">GRUB_CMDLINE_LINUX</code> line in
+                                    <code>/etc/default/grub</code>.
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>sudo sed -i &apos;/^GRUB\_CMDLINE\_LINUX/s/\&quot;$/\ net\.ifnames\=0\&quot;/&apos; /etc/default/grub</code></strong></code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>Rebuild the grub configuration file.</p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>sudo grub2-mkconfig -o /boot/grub2/grub.cfg</code></strong></code></pre>
+                                 </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, stop the instance using the Amazon EC2 console or one
+                              of the following commands: <a href="./cli/latest/reference/ec2/stop-instances.html" target="_blank">stop-instances</a> (AWS CLI), <a href="./powershell/latest/reference/items/Stop-EC2Instance.html" target="_blank">Stop-EC2Instance</a>
+                              (AWS Tools for Windows PowerShell). If your instance is managed by AWS OpsWorks, you
+                              should stop the
+                              instance in the AWS OpsWorks console so that the instance state remains in
+                              sync.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If you are using an instance store-backed instance, you can&apos;t stop the
+                                 instance. Instead, proceed to <a href="enhanced-networking-ena.html#other-linux-enhanced-networking-ena-instance-store">To enable                     enhanced networking with ENA (instance store&#x2013;backed
+                                    instances)</a>.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, enable the enhanced networking
+                              <code class="code">enaSupport</code> attribute using one of the following
+                              commands:
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/modify-instance-attribute.html" target="_blank">modify-instance-attribute</a> (AWS CLI)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 modify-instance-attribute --instance-id <em class="replaceable"><code>instance_id</code></em> --ena-support</code></strong></code></pre>
+                                    </li>
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./powershell/latest/reference/items/Edit-EC2InstanceAttribute.html" target="_blank">Edit-EC2InstanceAttribute</a> (Tools for Windows PowerShell)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>Edit-EC2InstanceAttribute -InstanceId <em class="replaceable"><code>instance-id</code></em> -EnaSupport $true</code></strong></code></pre>
+                                    </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Create an AMI from the instance, as described in <a href="creating-an-ami-ebs.html">Creating an Amazon EBS-Backed Linux AMI</a>
+                              . The AMI
+                              inherits the enhanced networking <code class="code">enaSupport</code> attribute from
+                              the instance. Therefore, you can use this AMI to launch another instance
+                              with enhanced networking enabled by default.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If your instance operating system contains an
+                                 <code>/etc/udev/rules.d/70-persistent-net.rules</code>
+                                 file, you must delete it before creating the AMI. This file
+                                 contains the MAC address for the Ethernet adapter of the original
+                                 instance. If another instance boots with this file, the operating
+                                 system will be unable to find the device and <code class="code">eth0</code>
+                                 may fail, causing boot issues. This file is regenerated at the next
+                                 boot cycle, and any instances launched from the AMI create their
+                                 own version of the file.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, start the instance using the Amazon EC2 console or
+                              one of the following commands: <a href="./cli/latest/reference/ec2/start-instances.html" target="_blank">start-instances</a>
+                              (AWS CLI), <a href="./powershell/latest/reference/items/Start-EC2Instance.html" target="_blank">Start-EC2Instance</a> (AWS Tools for Windows PowerShell). If your instance is managed by
+                              AWS OpsWorks, you should start the instance in the AWS OpsWorks console so that the
+                              instance state remains in sync.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Connect to your instance and verify that the module is installed.</p>
+                           
+                           <p>If you are unable to connect to your instance after enabling
+                              enhanced networking with ENA, see <a href="troubleshooting-ena.html">Troubleshooting the Elastic Network Adapter (ENA)</a>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <p class="title"><b><a id="other-linux-enhanced-networking-ena-instance-store"></a>To enable
+                           enhanced networking with ENA (instance store&#x2013;backed instances)</b></p>
+                     
+                     <p>If your instance is an instance store&#x2013;backed instance, follow the <a href="enhanced-networking-ena.html#other-linux-enhanced-networking-ena-start-step">Step&#xA0;1</a> through the <a href="enhanced-networking-ena.html#other-linux-enhanced-networking-ena-stop-step">Step&#xA0;5</a> in the previous
+                        procedure, and then create a new AMI as described in <a href="creating-an-ami-instance-store.html">Creating an Instance Store-Backed Linux AMI</a>. Be sure to enable the
+                        enhanced networking <code class="code">enaSupport</code> attribute when you register
+                        the AMI.
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./cli/latest/reference/ec2/register-image.html" target="_blank">register-image</a>
+                                 (AWS CLI)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 register-image --ena-support<code class="code" copy="false"> ...</code></code></strong></code></pre>
+                              </li>
+                           <li class="listitem">
+                              
+                              <p><a href="./powershell/latest/reference/items/Register-EC2Image.html" target="_blank">Register-EC2Image</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code><b>Register-EC2Image</b> -EnaSupport<code class="code" copy="false"> ...</code></code></strong></code></pre>
+                              </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h2 id="enhanced-networking-ena-troubleshooting">Troubleshooting</h2>
+                     
+                     
+                     <p>For additional information about troubleshooting your ENA adapter, see 
+                        <a href="troubleshooting-ena.html">Troubleshooting the Elastic Network Adapter (ENA)</a>.
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="sriov-networking.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="troubleshooting-ena.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Testing Whether Enhanced Networking with
+                ENA Is Enabled"><a class="pagetoc" href="#test-enhanced-networking-ena">Testing Whether Enhanced Networking with
+                              ENA Is Enabled</a></li>
+                        <li class="pagetoc" name="Enabling Enhanced Networking with ENA
+                on Amazon Linux"><a class="pagetoc" href="#enable-enhanced-networking-ena-AL">Enabling Enhanced Networking with ENA
+                              on Amazon Linux</a></li>
+                        <li class="pagetoc" name="Enabling Enhanced Networking with ENA on Ubuntu"><a class="pagetoc" href="#enhanced-networking-ena-ubuntu">Enabling Enhanced Networking with ENA on Ubuntu</a></li>
+                        <li class="pagetoc" name="Enabling Enhanced Networking with ENA on
+                Other Linux Distributions"><a class="pagetoc" href="#enhanced-networking-ena-linux">Enabling Enhanced Networking with ENA on
+                              Other Linux Distributions</a></li>
+                        <li class="pagetoc" name="Troubleshooting"><a class="pagetoc" href="#enhanced-networking-ena-troubleshooting">Troubleshooting</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,263 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Request Redirection and the REST API - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="RESTAPI.html" title="Making Requests Using the REST API">
+      <link rel="prev" href="VirtualHosting.html" title="Virtual Hosting of Buckets">
+      <link rel="next" href="UsingBucket.html" title="Working with Amazon S3 Buckets">
+      <meta name="description" content="Process HTTP redirects by using the Amazon S3 REST API.">
+      <meta name="keywords" content="request redirection,access policy,redirection">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/RESTRedirect.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="MakingRequests.html">Making Requests</a> &#xBB; <a href="RESTAPI.html">Making Requests Using the REST API</a> &#xBB; <span class="breadcrumb">Request Redirection and the REST API</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="RESTRedirect">Request Redirection and the REST API</h1>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#RESTRedirectHTTPUserAgents">Redirects and HTTP User-Agents</a></li>
+                           <li><a href="#RESTRedirect100Continue">Redirects and 100-Continue</a></li>
+                           <li><a href="#RESTRedirectExample">Redirect Example</a></li>
+                        </ul>
+                     </div>
+                     <p>This section describes how to handle HTTP redirects by using the Amazon S3 REST API.
+                        For general information
+                        about Amazon S3 redirects, see <a href="Redirects.html">Request Redirection and the REST API</a> in the Amazon Simple Storage Service API Reference. 
+                     </p>
+                     <h2 id="RESTRedirectHTTPUserAgents">Redirects and HTTP User-Agents</h2>
+                     
+                     
+                     
+                     <p> Programs that use the Amazon S3 REST API should handle redirects either at the application
+                        layer or the HTTP layer. Many HTTP client libraries and user agents can be configured
+                        to
+                        correctly handle redirects automatically; however, many others have incorrect or
+                        incomplete redirect implementations. 
+                     </p>
+                     
+                     <p> Before you rely on a library to fulfill the redirect requirement, test the following
+                        cases: 
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Verify all HTTP request headers are correctly included in the
+                                 redirected request (the second request after receiving a redirect)
+                                 including HTTP standards such as Authorization and Date.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Verify non-GET redirects, such as PUT and DELETE, work
+                                 correctly.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Verify large PUT requests follow redirects correctly.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Verify PUT requests follow redirects correctly if the 100-continue
+                                 response takes a long time to arrive.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p> HTTP user-agents that strictly conform to RFC 2616 might require explicit confirmation
+                        before following a redirect when the HTTP request method is not GET or HEAD. It is
+                        generally safe to follow redirects generated by Amazon S3 automatically, as the system
+                        will
+                        issue redirects only to hosts within the amazonaws.com domain and the effect of the
+                        redirected request will be the same as that of the original request. 
+                     </p>
+                     
+                     <h2 id="RESTRedirect100Continue">Redirects and 100-Continue</h2>
+                     
+                     
+                     
+                     <p> To simplify redirect handling, improve efficiencies, and avoid the costs associated
+                        with sending a redirected request body twice, configure your application to use
+                        100-continues for PUT operations. When your application uses 100-continue, it does
+                        not
+                        send the request body until it receives an acknowledgement. If the message is rejected
+                        based on the headers, the body of the message is not sent. For more information about
+                        100-continue, go to <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec8.html#sec8.2.3" target="_blank">RFC 2616
+                           Section 8.2.3</a>
+                        
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p> According to RFC 2616, when using <code class="code">Expect: Continue</code> with an
+                           unknown HTTP server, you should not wait an indefinite period before sending the
+                           request body. This is because some HTTP servers do not recognize 100-continue.
+                           However, Amazon S3 does recognize if your request contains an <code class="code">Expect:
+                              Continue</code> and will respond with a provisional 100-continue status or a
+                           final status code. Additionally, no redirect error will occur after receiving the
+                           provisional 100 continue go-ahead. This will help you avoid receiving a redirect
+                           response while you are still writing the request body. 
+                        </p>
+                     </div>
+                     
+                     <h2 id="RESTRedirectExample">Redirect Example</h2>
+                     
+                     
+                     <p> This section provides an example of client-server interaction using HTTP redirects
+                        and 100-continue. 
+                     </p>
+                     
+                     <p>Following is a sample PUT to the <code class="code">quotes.s3.amazonaws.com</code> bucket.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">
+PUT /nelson.txt HTTP/1.1
+Host: quotes.s3.amazonaws.com
+Date: Mon, 15 Oct 2007 22:18:46 +0000
+
+Content-Length: 6
+Expect: 100-continue
+</code></pre>
+                     <p>Amazon S3 returns the following:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">HTTP/1.1 307 Temporary Redirect
+Location: http://quotes.s3-4c25d83b.amazonaws.com/nelson.txt?rk=8d47490b
+Content-Type: application/xml
+Transfer-Encoding: chunked
+Date: Mon, 15 Oct 2007 22:18:46 GMT
+
+Server: AmazonS3
+
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;Error&gt;
+  &lt;Code&gt;TemporaryRedirect&lt;/Code&gt;
+  &lt;Message&gt;Please re-send this request to the
+  specified temporary endpoint. Continue to use the
+  original request endpoint for future requests.
+  &lt;/Message&gt;
+  &lt;Endpoint&gt;quotes.s3-4c25d83b.amazonaws.com&lt;/Endpoint&gt;
+  &lt;Bucket&gt;quotes&lt;/Bucket&gt;
+&lt;/Error&gt;
+</code></pre>
+                     <p>The client follows the redirect response and issues a new request to the
+                        <code class="code">quotes.s3-4c25d83b.amazonaws.com</code> temporary endpoint.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">PUT /nelson.txt?rk=8d47490b HTTP/1.1
+Host: quotes.s3-4c25d83b.amazonaws.com
+Date: Mon, 15 Oct 2007 22:18:46 +0000
+
+Content-Length: 6
+Expect: 100-continue
+</code></pre>
+                     <p>Amazon S3 returns a 100-continue indicating the client should proceed with sending
+                        the
+                        request body.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">HTTP/1.1 100 Continue
+</code></pre>
+                     <p>The client sends the request body.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">ha ha\n
+</code></pre>
+                     <p>Amazon S3 returns the final response.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">HTTP/1.1 200 OK
+Date: Mon, 15 Oct 2007 22:18:48 GMT
+
+ETag: &quot;a2c8d6b872054293afd41061e93bc289&quot;
+Content-Length: 0
+Server: AmazonS3
+</code></pre>
+                     </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="VirtualHosting.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="UsingBucket.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Redirects and HTTP User-Agents"><a class="pagetoc" href="#RESTRedirectHTTPUserAgents">Redirects and HTTP User-Agents</a></li>
+                        <li class="pagetoc" name="Redirects and 100-Continue"><a class="pagetoc" href="#RESTRedirect100Continue">Redirects and 100-Continue</a></li>
+                        <li class="pagetoc" name="Redirect Example"><a class="pagetoc" href="#RESTRedirectExample">Redirect Example</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

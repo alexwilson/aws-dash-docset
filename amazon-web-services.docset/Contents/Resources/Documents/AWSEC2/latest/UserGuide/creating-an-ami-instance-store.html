@@ -1,0 +1,301 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Creating an Instance Store-Backed Linux AMI - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="AMIs.html" title="Amazon Machine Images (AMI)">
+      <link rel="prev" href="creating-an-ami-ebs.html" title="Creating an Amazon EBS-Backed Linux AMI">
+      <link rel="next" href="set-up-ami-tools.html" title="Setting Up the AMI Tools">
+      <meta name="description" content="Create your own AMI from your customized instance store-backed Linux instance.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/creating-an-ami-instance-store.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="AMIs.html">Amazon Machine Images (AMI)</a> &#xBB; <span class="breadcrumb">Creating an Instance Store-Backed Linux AMI</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="creating-an-ami-instance-store">Creating an Instance Store-Backed Linux AMI</h1>
+                     <p>To create an instance store-backed Linux AMI, start from an instance that you&apos;ve launched
+                        		from an existing instance store-backed Linux AMI. After you&apos;ve customized the instance
+                        to
+                        		suit your needs, bundle the volume and register a new AMI, which you can use to
+                        launch new
+                        		instances with these customizations.
+                     </p>
+                     <p>The AMI creation process is different for Amazon EBS-backed AMIs. For more information
+                        about the
+                        		differences between Amazon EBS-backed and instance store-backed instances, and how
+                        to determine
+                        		the root device type for your instance, see <a href="ComponentsAMIs.html#storage-for-the-root-device">Storage for the Root Device</a>. If you need to create an Amazon EBS-backed
+                        		Linux AMI, see <a href="creating-an-ami-ebs.html">Creating an Amazon EBS-Backed Linux AMI</a>.
+                     </p>
+                     		
+                     <h2 id="process-creating-an-ami-instance-store">Overview of the Creation Process
+                        			for Instance Store-Backed AMIs
+                     </h2>
+                     		
+                     		
+                     <p>The following diagram summarizes the process of creating an AMI from an instance
+                        			store-backed instance.
+                     </p>
+                     
+                     		
+                     <div class="mediaobject">
+                        			
+                        				<img src="../../..//img/ami_create_instance_store.png" alt="
+				Creating an instance store-backed AMI
+			">
+                        			
+                        			
+                        		
+                     </div>
+                     
+                     		
+                     <p>First, launch an instance from an AMI that&apos;s similar to the AMI that you&apos;d like to
+                        			create. You can connect to your instance and customize it. When the instance is
+                        set up
+                        			the way you want it, you can bundle it. It takes several minutes for the bundling
+                        			process to complete. After the process completes, you have a bundle, which consists
+                        of
+                        			an image manifest (<code>image.manifest.xml</code>) and files
+                        				(<code>image.part.</code><em>xx</em>) that contain a template
+                        			for the root volume. Next you upload the bundle to your Amazon S3 bucket and then
+                        register
+                        			your AMI.
+                     </p>
+                     		
+                     <p>When you launch an instance using the new AMI, we create the root volume for the
+                        			instance using the bundle that you uploaded to Amazon S3. The storage space used
+                        by the
+                        			bundle in Amazon S3 incurs charges to your account until you delete it. For more
+                        information,
+                        			see <a href="deregister-ami.html">Deregistering Your Linux AMI</a>.
+                     </p>
+                     		
+                     <p>If you add instance store volumes to your instance in addition to the root device
+                        			volume, the block device mapping for the new AMI contains information for these
+                        			volumes, and the block device mappings for instances that you launch from the new
+                        AMI
+                        			automatically contain information for these volumes. For more information, see
+                        <a href="block-device-mapping-concepts.html">Block Device Mapping</a>.
+                     </p>
+                     	
+                     <h2 id="bundle-ami-prerequisites">Prerequisites</h2>
+                     		
+                     		
+                     <p>Before you can create an AMI, you must complete the following tasks:</p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        			
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>Install the AMI tools. For more information, see <a href="set-up-ami-tools.html">Setting Up the AMI Tools</a>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Install the AWS CLI. For more information, see <a href="./cli/latest/userguide/cli-chap-getting-set-up.html" target="_blank">Getting Set Up with the
+                                    						AWS Command Line Interface</a>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Ensure that you have an Amazon S3 bucket for the bundle. To create an Amazon S3 bucket,
+                                 					open the Amazon S3 console and click <b>Create Bucket</b>.
+                                 					Alternatively, you can use the AWS CLI <a href="./cli/latest/reference/s3/mb.html" target="_blank">mb</a> command.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Ensure that you have your AWS account ID. For more information, see <a href="./general/latest/gr/acct-identifiers.html" target="_blank">AWS Account Identifiers</a> in
+                                 					the <em>AWS General Reference</em>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Ensure that you have your access key ID and secret access key. For more
+                                 					information, see <a href="./general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys" target="_blank">Access Keys</a> in the <em>AWS General Reference</em>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Ensure that you have an X.509 certificate and corresponding private
+                                 					key.
+                              </p>
+                              				
+                              <div class="itemizedlist">
+                                 					
+                                 					
+                                 					
+                                 				
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       						
+                                       <p>If you need to create an X.509 certificate, see <a href="set-up-ami-tools.html#ami-tools-managing-certs">Managing Signing Certificates</a>. The X.509 certificate
+                                          							and private key are used to encrypt and decrypt your AMI.
+                                       </p>
+                                       					
+                                    </li>
+                                    <li class="listitem">
+                                       						
+                                       <p>[China (Beijing)] Use the
+                                          								<code>$EC2_AMITOOL_HOME/etc/ec2/amitools/cert-ec2-cn-north-1.pem</code>
+                                          							certificate.
+                                       </p>
+                                       					
+                                    </li>
+                                    <li class="listitem">
+                                       						
+                                       <p>[AWS GovCloud (US)] Use the
+                                          								<code>$EC2_AMITOOL_HOME/etc/ec2/amitools/cert-ec2-gov.pem</code>
+                                          							certificate.
+                                       </p>
+                                       					
+                                    </li>
+                                 </ul>
+                              </div>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Connect to your instance and customize it. For example, you can install
+                                 					software and applications, copy data, delete temporary files, and modify the
+                                 					Linux configuration.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>Tasks</b></p>
+                        			
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p><a href="set-up-ami-tools.html">Setting Up the AMI Tools</a></p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><a href="create-instance-store-ami.html#amazon_linux_instructions">Creating an AMI from an Instance
+                                    				Store-Backed Amazon Linux Instance</a></p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><a href="create-instance-store-ami.html#ubuntu_instructions">Creating an AMI from an Instance Store-Backed
+                                    				Ubuntu Instance</a></p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><a href="Using_ConvertingS3toEBS.html">Converting your Instance Store-Backed AMI to an
+                                    			Amazon EBS-Backed AMI</a></p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="creating-an-ami-ebs.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="set-up-ami-tools.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Overview of the Creation Process
+			for Instance Store-Backed AMIs"><a class="pagetoc" href="#process-creating-an-ami-instance-store">Overview of the Creation Process
+                              			for Instance Store-Backed AMIs</a></li>
+                        <li class="pagetoc" name="Prerequisites"><a class="pagetoc" href="#bundle-ami-prerequisites">Prerequisites</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

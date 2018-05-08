@@ -1,0 +1,185 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Set up Stage Variable for API Deployment - Amazon API Gateway</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="set-up-stages.html" title="Set up a Stage in API Gateway">
+      <link rel="prev" href="set-up-logging.html" title="Set up API Logging in API Gateway">
+      <link rel="next" href="how-to-set-stage-variables-aws-console.html" title="Set Stage Variables Using the
+      Amazon API Gateway Console">
+      <meta name="description" content="Learn how to work with stage variables in Amazon API Gateway.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon API Gateway">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/apigateway/latest/developerguide/stage-variables.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/apigateway">Amazon API Gateway</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="how-to-deploy-api.html">Deploying an API in Amazon API Gateway</a> &#xBB; <a href="set-up-stages.html">Set up a Stage in API Gateway</a> &#xBB; <span class="breadcrumb">Set up Stage Variable for API Deployment</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="stage-variables">Set up Stage Variable for API Deployment</h1>
+                     <p>Stage variables are name-value pairs that you can define as configuration attributes
+                        associated with a deployment stage of an API. They act like environment
+                        variables and can be used in your API setup and mapping templates.
+                     </p>
+                     <p>For example, you can define a stage variable in a stage configuration, and then set
+                        its
+                        value as the URL string of an HTTP integration for a method in your API. Later, you
+                        can
+                        reference the URL string using the associated stage variable name from the API setup.
+                        This way,
+                        you can use the same API setup with a different endpoint at each stage by resetting
+                        the stage
+                        variable value to the corresponding URLs. You can also access stage variables in the
+                        mapping
+                        templates, or pass configuration parameters to your AWS Lambda or HTTP backend.
+                     </p>
+                     <p>For more information about
+                        mapping templates, see <a href="api-gateway-mapping-template-reference.html">API Gateway Mapping Template Reference</a>.
+                     </p>
+                     <h2 id="stage-variables-use-cases">Use Cases</h2>
+                     
+                     
+                     <p>With deployment stages in API Gateway, you can manage multiple release stages for
+                        each API, such
+                        as alpha, beta, and production. Using stage variables you can configure an API deployment
+                        stage to interact with different backend endpoints. For example, your API can pass
+                        a GET
+                        request as an HTTP proxy to the backend web host (for example,
+                        <code class="code">http://example.com</code>). In this case, the backend web host is configured in a
+                        stage variable so that when developers call your production endpoint, API Gateway
+                        calls example.com.
+                        When you call your beta endpoint, API Gateway uses the value configured in the stage
+                        variable for
+                        the beta stage, and calls a different web host (for example, <code class="code">beta.example.com</code>).
+                        Similarly, stage variables can be used to specify a different AWS Lambda function
+                        name for each
+                        stage in your API.
+                     </p>
+                     
+                     
+                     <p>You can also use stage variables to pass configuration parameters to
+                        a Lambda function through your mapping templates. For example, you may want to re-use
+                        the same
+                        Lambda function for multiple stages in your API, but the function should read data
+                        from a
+                        different Amazon DynamoDB table depending on which stage is being called. In the mapping
+                        templates
+                        that generate the request for the Lambda function, you can use stage variables to
+                        pass the
+                        table name to Lambda.
+                     </p>
+                     
+                     
+                     <h2 id="stage-variables-examples">Examples</h2>
+                     
+                     
+                     <p>To use a stage variable to customize the HTTP integration endpoint, you must first
+                        configure a stage variable of a specified name, e.g., <strong class="userinput"><code>url</code></strong>, and then assign it a value, e.g., 
+                        <strong class="userinput"><code>example.com</code></strong>. Next, from your method configuration, set up an HTTP proxy
+                        integration, and instead of entering the endpoint&apos;s URL, you can tell API Gateway
+                        to use the stage variable
+                        value, <strong class="userinput"><code>http://${stageVariables.url}</code></strong>. This value tells API Gateway to
+                        substitute your stage variable <code class="code">${}</code> at runtime, depending on which stage your API
+                        is running. You can reference stage variables in a similar way to specify a Lambda
+                        function
+                        name, an AWS Service Proxy path, or an AWS role ARN in the credentials field.
+                     </p>
+                     
+                     
+                     <p>When specifying a Lambda function name as a stage variable value, you must configure
+                        the
+                        permissions on the Lambda function manually. You can use the AWS Command Line Interface
+                        to do this.
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws lambda add-permission --function-name arn:aws:lambda:XXXXXX:your-lambda-function-name --source-arn arn:aws:execute-api:us-east-1:YOUR_ACCOUNT_ID:api_id/*/HTTP_METHOD/resource --principal apigateway.amazonaws.com --statement-id apigateway-access --action lambda:InvokeFunction</code></pre>
+                     
+                     <p>The following example assigns API Gateway permission to invoke a
+                        Lambda function named <code class="code">helloWorld</code> hosted in the US West (Oregon) region of an AWS
+                        account on behalf of the API method.
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">arn arn:aws:execute-api:us-west-2:123123123123:bmmuvptwze/*/GET/hello</code></pre>
+                     <p>Here is the same command using the AWS CLI.</p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws lambda add-permission --function-name arn:aws:lambda:us-east-1:123123123123:function:helloWorld --source-arn  arn:aws:execute-api:us-west-2:123123123123:bmmuvptwze/*/GET/hello --principal apigateway.amazonaws.com --statement-id apigateway-access --action lambda:InvokeFunction</code></pre>
+                     
+                     </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="set-up-logging.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="how-to-set-stage-variables-aws-console.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Use Cases"><a class="pagetoc" href="#stage-variables-use-cases">Use Cases</a></li>
+                        <li class="pagetoc" name="Examples"><a class="pagetoc" href="#stage-variables-examples">Examples</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon API Gateway';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

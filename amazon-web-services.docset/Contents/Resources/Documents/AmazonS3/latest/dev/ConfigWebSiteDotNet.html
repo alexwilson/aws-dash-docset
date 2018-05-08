@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Managing Websites with the AWS SDK for .NET - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ManagingBucketWebsiteConfig.html" title="Managing Bucket Website Configuration">
+      <link rel="prev" href="ConfigWebSiteJava.html" title="Managing Websites with the AWS SDK for Java">
+      <link rel="next" href="ConfigWebSitePHP.html" title="Managing Websites with the AWS SDK for PHP">
+      <meta name="description" content="Configure your S3 bucket as a website using .NET classes.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/ConfigWebSiteDotNet.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="UsingBucket.html">Working with Amazon S3 Buckets</a> &#xBB; <a href="ManagingBucketWebsiteConfig.html">Managing Bucket Website Configuration</a> &#xBB; <span class="breadcrumb">Managing Websites with the AWS SDK for .NET</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ConfigWebSiteDotNet">Managing Websites with the AWS SDK for .NET</h1>
+                     <p>The following example shows how to use the AWS SDK for .NET to manage website configuration
+                        for a
+                        			bucket. To add a website configuration to a bucket, you provide a bucket name and
+                        a
+                        			website configuration. The website configuration must include an index document
+                        and can
+                        			contain an optional error document. These documents must be stored in the bucket.
+                        For
+                        			more information, see <a href="./AmazonS3/latest/API/RESTBucketPUTwebsite.html" target="_blank">PUT Bucket
+                           				website</a>. For more information about the Amazon S3 website feature, see <a href="WebsiteHosting.html">Hosting a Static Website on Amazon S3</a>. 
+                     </p>
+                     <div class="example">
+                        <div class="example-contents">
+                           <p>The following C# code example adds a website configuration to the specified
+                              				bucket. The configuration specifies both the index document and the error document
+                              				names. For instructions on how to create and test a working sample, see <a href="UsingTheMPDotNetAPI.html#TestingDotNetApiSamples">Running the Amazon S3 .NET Code Examples</a>.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="cs ">using Amazon.S3;
+using Amazon.S3.Model;
+using System;
+using System.Threading.Tasks;
+
+namespace Amazon.DocSamples.S3
+{
+    class WebsiteConfigTest
+    {
+        private const string bucketName = &quot;*** bucket name ***&quot;;
+        private const string indexDocumentSuffix = &quot;*** index object key ***&quot;; // For example, index.html.
+        private const string errorDocument = &quot;*** error object key ***&quot;; // For example, error.html.
+        // Specify your bucket region (an example region is shown).
+        private static readonly RegionEndpoint bucketRegion = RegionEndpoint.USWest2;
+        private static IAmazonS3 client;
+        public static void Main()
+        {
+            client = new AmazonS3Client(bucketRegion);
+            AddWebsiteConfigurationAsync(bucketName, indexDocumentSuffix, errorDocument).Wait();
+        }
+
+        static async Task AddWebsiteConfigurationAsync(string bucketName,
+                                            string indexDocumentSuffix,
+                                            string errorDocument)
+        {
+            try
+            {
+                // 1. Put the website configuration.
+                PutBucketWebsiteRequest putRequest = new PutBucketWebsiteRequest()
+                {
+                    BucketName = bucketName,
+                    WebsiteConfiguration = new WebsiteConfiguration()
+                    {
+                        IndexDocumentSuffix = indexDocumentSuffix,
+                        ErrorDocument = errorDocument
+                    }
+                };
+                PutBucketWebsiteResponse response = await client.PutBucketWebsiteAsync(putRequest);
+
+                // 2. Get the website configuration.
+                GetBucketWebsiteRequest getRequest = new GetBucketWebsiteRequest()
+                {
+                    BucketName = bucketName
+                };
+                GetBucketWebsiteResponse getResponse = await client.GetBucketWebsiteAsync(getRequest);
+                Console.WriteLine(&quot;Index document: {0}&quot;, getResponse.WebsiteConfiguration.IndexDocumentSuffix);
+                Console.WriteLine(&quot;Error document: {0}&quot;, getResponse.WebsiteConfiguration.ErrorDocument);
+            }
+            catch (AmazonS3Exception e)
+            {
+                Console.WriteLine(&quot;Error encountered on server. Message:&apos;{0}&apos; when writing an object&quot;, e.Message);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(&quot;Unknown encountered on server. Message:&apos;{0}&apos; when writing an object&quot;, e.Message);
+            }
+        }
+    }
+}
+</code></pre></div>
+                     </div>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ConfigWebSiteJava.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ConfigWebSitePHP.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

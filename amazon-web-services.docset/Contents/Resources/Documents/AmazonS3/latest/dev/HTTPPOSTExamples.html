@@ -1,0 +1,535 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Upload Examples (AWS Signature Version 2) - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="UsingHTTPPOST.html" title="Browser-Based Uploads Using POST (AWS Signature Version 2)">
+      <link rel="prev" href="HTTPPOSTForms.html" title="HTML Forms (AWS Signature Version 2)">
+      <link rel="next" href="HTTPPOSTFlash.html" title="POST with Adobe Flash">
+      <meta name="description" content="Code example of the complete process for constructing a policy and form for uploading a file attachment.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/HTTPPOSTExamples.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="Appendices.html">Appendices</a> &#xBB; <a href="auth-request-sig-v2.html">Appendix B: Authenticating Requests (AWS Signature Version 2)</a> &#xBB; <a href="UsingHTTPPOST.html">Browser-Based Uploads Using POST (AWS Signature Version 2)</a> &#xBB; <span class="breadcrumb">Upload Examples (AWS Signature Version 2)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="HTTPPOSTExamples">Upload Examples (AWS Signature Version 2)<b></b></h1>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#HTTPPOSTExamplesFileUpload">File Upload</a></li>
+                           <li><a href="#HTTPPOSTExamplesTextArea">Text Area Upload</a></li>
+                        </ul>
+                     </div>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>The request authentication discussed in this section is based on AWS Signature Version
+                           2, a
+                           					protocol for authenticating inbound API requests to AWS services. 
+                        </p>
+                        <p>Amazon S3 now supports Signature Version 4, a protocol for authenticating inbound
+                           API
+                           					requests to AWS services, in all AWS regions. At this time, AWS regions created
+                           					before January 30, 2014 will continue to support the previous protocol, Signature
+                           					Version 2. Any new regions after January 30, 2014 will support only Signature
+                           					Version 4 and therefore all requests to those regions must be made with Signature
+                           					Version 4. For more information, see <a href="./AmazonS3/latest/API/sigv4-post-example.html" target="_blank">Examples: Browser-Based Upload using HTTP POST 
+                              						(Using AWS Signature Version 4)</a> in the
+                           					<em>Amazon Simple Storage Service API Reference</em>. 
+                        </p>
+                     </div>
+                     <h2 id="HTTPPOSTExamplesFileUpload">File Upload</h2>
+                     			
+                     			
+                     <p>This example shows the complete process for constructing a policy and form that can
+                        be used to
+                        				upload a file attachment.
+                     </p>
+                     			
+                     <h3 id="HTTPPOSTExamplesFileUploadPolicy">Policy and Form
+                        					Construction
+                     </h3>
+                     				
+                     				
+                     <p>The following policy supports uploads to Amazon S3 for the johnsmith
+                        					bucket.
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{ &quot;expiration&quot;: &quot;2007-12-01T12:00:00.000Z&quot;,
+  &quot;conditions&quot;: [
+    {&quot;bucket&quot;: &quot;johnsmith&quot;},
+    [&quot;starts-with&quot;, &quot;$key&quot;, &quot;user/eric/&quot;],
+    {&quot;acl&quot;: &quot;public-read&quot;},
+    {&quot;success_action_redirect&quot;: &quot;http://johnsmith.s3.amazonaws.com/successful_upload.html&quot;},
+    [&quot;starts-with&quot;, &quot;$Content-Type&quot;, &quot;image/&quot;],
+    {&quot;x-amz-meta-uuid&quot;: &quot;14365123651274&quot;},
+    [&quot;starts-with&quot;, &quot;$x-amz-meta-tag&quot;, &quot;&quot;]
+  ]
+}</code></pre>
+                     				<p>This policy requires the following:</p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>The upload must occur before 12:00 UTC on December 1, 2007.</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The content must be uploaded to the johnsmith bucket.</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The key must start with &quot;user/eric/&quot;.</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The ACL is set to public-read.</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The success_action_redirect is set to
+                                 							http://johnsmith.s3.amazonaws.com/successful_upload.html.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The object is an image file.</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The x-amz-meta-uuid tag must be set to 14365123651274. </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The x-amz-meta-tag can contain any value.</p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>The following is a Base64-encoded version of this policy.</p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">
+
+eyAiZXhwaXJhdGlvbiI6ICIyMDA3LTEyLTAxVDEyOjAwOjAwLjAwMFoiLAogICJjb25kaXRpb25zIjogWwogICAgeyJidWNrZXQiOiAiam9obnNtaXRoIn0sCiAgICBbInN0YXJ0cy13aXRoIiwgIiRrZXkiLCAidXNlci9lcmljLyJdLAogICAgeyJhY2wiOiAicHVibGljLXJlYWQifSwKICAgIHsic3VjY2Vzc19hY3Rpb25fcmVkaXJlY3QiOiAiaHR0cDovL2pvaG5zbWl0aC5zMy5hbWF6b25hd3MuY29tL3N1Y2Nlc3NmdWxfdXBsb2FkLmh0bWwifSwKICAgIFsic3RhcnRzLXdpdGgiLCAiJENvbnRlbnQtVHlwZSIsICJpbWFnZS8iXSwKICAgIHsieC1hbXotbWV0YS11dWlkIjogIjE0MzY1MTIzNjUxMjc0In0sCiAgICBbInN0YXJ0cy13aXRoIiwgIiR4LWFtei1tZXRhLXRhZyIsICIiXQogIF0KfQo=</code></pre>
+                     				<p>Using your credentials create a signature, for example
+                        						<code class="code">0RavWzkygo6QX9caELEqKi9kDbU=</code> is the signature for the preceding
+                        					policy document.
+                     </p>
+                     				
+                     <p>The following form supports a POST request to the johnsmith.net bucket that uses 
+                        					this policy.
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;html&gt;
+  &lt;head&gt;
+    ...
+    &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
+    ...
+  &lt;/head&gt;
+  &lt;body&gt;
+  ...
+  &lt;form action=&quot;http://johnsmith.s3.amazonaws.com/&quot; method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;&gt;
+    Key to upload: &lt;input type=&quot;input&quot; name=&quot;key&quot; value=&quot;user/eric/&quot; /&gt;&lt;br /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;acl&quot; value=&quot;public-read&quot; /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;success_action_redirect&quot; value=&quot;http://johnsmith.s3.amazonaws.com/successful_upload.html&quot; /&gt;
+    Content-Type: &lt;input type=&quot;input&quot; name=&quot;Content-Type&quot; value=&quot;image/jpeg&quot; /&gt;&lt;br /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;x-amz-meta-uuid&quot; value=&quot;14365123651274&quot; /&gt;
+    Tags for File: &lt;input type=&quot;input&quot; name=&quot;x-amz-meta-tag&quot; value=&quot;&quot; /&gt;&lt;br /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;AWSAccessKeyId&quot; value=&quot;AKIAIOSFODNN7EXAMPLE&quot; /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;Policy&quot; value=&quot;POLICY&quot; /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;Signature&quot; value=&quot;SIGNATURE&quot; /&gt;
+    File: &lt;input type=&quot;file&quot; name=&quot;file&quot; /&gt; &lt;br /&gt;
+    &lt;!-- The elements after this will be ignored --&gt;
+    &lt;input type=&quot;submit&quot; name=&quot;submit&quot; value=&quot;Upload to Amazon S3&quot; /&gt;
+  &lt;/form&gt;
+  ...
+&lt;/html&gt;</code></pre>
+                     			
+                     			<h3 id="HTTPPOSTExamplesFileUploadRequest">Sample Request</h3>
+                     				
+                     				
+                     <p>This request assumes that the image uploaded is 117,108 bytes; the image data
+                        					is not included.
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">POST / HTTP/1.1
+Host: johnsmith.s3.amazonaws.com
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.10) Gecko/20071115 Firefox/2.0.0.10
+Accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5
+Accept-Language: en-us,en;q=0.5
+Accept-Encoding: gzip,deflate
+Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+Keep-Alive: 300
+Connection: keep-alive
+Content-Type: multipart/form-data; boundary=9431149156168
+Content-Length: 118698 
+
+--9431149156168
+Content-Disposition: form-data; name=&quot;key&quot;
+
+user/eric/MyPicture.jpg
+--9431149156168
+Content-Disposition: form-data; name=&quot;acl&quot;
+
+public-read
+--9431149156168
+Content-Disposition: form-data; name=&quot;success_action_redirect&quot;
+
+http://johnsmith.s3.amazonaws.com/successful_upload.html
+--9431149156168
+Content-Disposition: form-data; name=&quot;Content-Type&quot;
+
+image/jpeg
+--9431149156168
+Content-Disposition: form-data; name=&quot;x-amz-meta-uuid&quot;
+
+14365123651274
+--9431149156168
+Content-Disposition: form-data; name=&quot;x-amz-meta-tag&quot;
+
+Some,Tag,For,Picture
+--9431149156168
+Content-Disposition: form-data; name=&quot;AWSAccessKeyId&quot;
+
+AKIAIOSFODNN7EXAMPLE
+--9431149156168
+Content-Disposition: form-data; name=&quot;Policy&quot;
+
+eyAiZXhwaXJhdGlvbiI6ICIyMDA3LTEyLTAxVDEyOjAwOjAwLjAwMFoiLAogICJjb25kaXRpb25zIjogWwogICAgeyJidWNrZXQiOiAiam9obnNtaXRoIn0sCiAgICBbInN0YXJ0cy13aXRoIiwgIiRrZXkiLCAidXNlci9lcmljLyJdLAogICAgeyJhY2wiOiAicHVibGljLXJlYWQifSwKICAgIHsic3VjY2Vzc19hY3Rpb25fcmVkaXJlY3QiOiAiaHR0cDovL2pvaG5zbWl0aC5zMy5hbWF6b25hd3MuY29tL3N1Y2Nlc3NmdWxfdXBsb2FkLmh0bWwifSwKICAgIFsic3RhcnRzLXdpdGgiLCAiJENvbnRlbnQtVHlwZSIsICJpbWFnZS8iXSwKICAgIHsieC1hbXotbWV0YS11dWlkIjogIjE0MzY1MTIzNjUxMjc0In0sCiAgICBbInN0YXJ0cy13aXRoIiwgIiR4LWFtei1tZXRhLXRhZyIsICIiXQogIF0KfQo=
+--9431149156168
+Content-Disposition: form-data; name=&quot;Signature&quot;
+
+0RavWzkygo6QX9caELEqKi9kDbU=
+--9431149156168
+Content-Disposition: form-data; name=&quot;file&quot;; filename=&quot;MyFilename.jpg&quot;
+Content-Type: image/jpeg
+
+...file content...
+--9431149156168
+Content-Disposition: form-data; name=&quot;submit&quot;
+
+Upload to Amazon S3
+--9431149156168--</code></pre>
+                     			
+                     			<h3 id="HTTPPOSTExamplesFileUploadResponse">Sample Response</h3>
+                     				
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">HTTP/1.1 303 Redirect
+x-amz-request-id: 1AEE782442F35865
+x-amz-id-2: cxzFLJRatFHy+NGtaDFRR8YvI9BHmgLxjvJzNiGGICARZ/mVXHj7T+qQKhdpzHFh
+Content-Type: application/xml
+Date: Wed, 14 Nov 2007 21:21:33 GMT
+Connection: close
+Location: http://johnsmith.s3.amazonaws.com/successful_upload.html?bucket=johnsmith&amp;key=user/eric/MyPicture.jpg&amp;etag=&amp;quot;39d459dfbc0faabbb5e179358dfb94c3&amp;quot;
+Server: AmazonS3</code></pre>
+                     			
+                     		<h2 id="HTTPPOSTExamplesTextArea">Text Area Upload</h2>
+                     			
+                     			
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#HTTPPOSTExamplesTextAreaPolicy">Policy and Form
+                                 					Construction</a></li>
+                           <li><a href="#HTTPPOSTExamplesTextAreaRequest">Sample Request</a></li>
+                           <li><a href="#HTTPPOSTExamplesTextAreaResponse">Sample Response</a></li>
+                        </ul>
+                     </div>
+                     			
+                     <p>The following example shows the complete process for constructing a policy and form
+                        to
+                        				upload a text area. Uploading a text area is useful for submitting user-created
+                        content, such as blog
+                        				postings.
+                     </p>
+                     			
+                     <h3 id="HTTPPOSTExamplesTextAreaPolicy">Policy and Form
+                        					Construction
+                     </h3>
+                     				
+                     				
+                     <p>The following policy supports text area uploads to Amazon S3 for the
+                        					johnsmith bucket.
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{ &quot;expiration&quot;: &quot;2007-12-01T12:00:00.000Z&quot;,
+  &quot;conditions&quot;: [
+    {&quot;bucket&quot;: &quot;johnsmith&quot;},
+    [&quot;starts-with&quot;, &quot;$key&quot;, &quot;user/eric/&quot;],
+    {&quot;acl&quot;: &quot;public-read&quot;},
+    {&quot;success_action_redirect&quot;: &quot;http://johnsmith.s3.amazonaws.com/new_post.html&quot;},
+    [&quot;eq&quot;, &quot;$Content-Type&quot;, &quot;text/html&quot;],
+    {&quot;x-amz-meta-uuid&quot;: &quot;14365123651274&quot;},
+    [&quot;starts-with&quot;, &quot;$x-amz-meta-tag&quot;, &quot;&quot;]
+  ]
+}</code></pre>
+                     				<p>This policy requires the following:</p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>The upload must occur before 12:00 GMT on 2007-12-01.</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The content must be uploaded to the johnsmith bucket.</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The key must start with &quot;user/eric/&quot;.</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The ACL is set to public-read.</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The success_action_redirect is set to
+                                 							http://johnsmith.s3.amazonaws.com/new_post.html.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The object is HTML text.</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The x-amz-meta-uuid tag must be set to 14365123651274. </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The x-amz-meta-tag can contain any value.</p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>Following is a Base64-encoded version of this policy.</p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">eyAiZXhwaXJhdGlvbiI6ICIyMDA3LTEyLTAxVDEyOjAwOjAwLjAwMFoiLAogICJjb25kaXR
+pb25zIjogWwogICAgeyJidWNrZXQiOiAiam9obnNtaXRoIn0sCiAgICBbInN0YXJ0cy13aXRoIiwgIiRrZXkiLCAidXNlci9lcmljLyJd
+LAogICAgeyJhY2wiOiAicHVibGljLXJlYWQifSwKICAgIHsic3VjY2Vzc19hY3Rpb25fcmVkaXJlY3QiOiAiaHR0cDovL2pvaG5zbWl0a
+C5zMy5hbWF6b25hd3MuY29tL25ld19wb3N0Lmh0bWwifSwKICAgIFsiZXEiLCAiJENvbnRlbnQtVHlwZSIsICJ0ZXh0L2h0bWwiXSwKI
+CAgIHsieC1hbXotbWV0YS11dWlkIjogIjE0MzY1MTIzNjUxMjc0In0sCiAgICBbInN0YXJ0cy13aXRoIiwgIiR4LWFtei1tZXRhLXRhZy
+IsICIiXQogIF0KfQo=</code></pre>
+                     				<p>Using your credentials, create a signature. For example,
+                        						<code class="code">qA7FWXKq6VvU68lI9KdveT1cWgF=</code> is the signature for the preceding
+                        					policy document.
+                     </p>
+                     				
+                     <p>The following form supports a POST request to the johnsmith.net bucket that uses 
+                        					this policy.
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;html&gt;
+  &lt;head&gt;
+    ...
+    &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
+    ...
+  &lt;/head&gt;
+  &lt;body&gt;
+  ...
+  &lt;form action=&quot;http://johnsmith.s3.amazonaws.com/&quot; method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;&gt;
+    Key to upload: &lt;input type=&quot;input&quot; name=&quot;key&quot; value=&quot;user/eric/&quot; /&gt;&lt;br /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;acl&quot; value=&quot;public-read&quot; /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;success_action_redirect&quot; value=&quot;http://johnsmith.s3.amazonaws.com/new_post.html&quot; /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;Content-Type&quot; value=&quot;text/html&quot; /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;x-amz-meta-uuid&quot; value=&quot;14365123651274&quot; /&gt;
+    Tags for File: &lt;input type=&quot;input&quot; name=&quot;x-amz-meta-tag&quot; value=&quot;&quot; /&gt;&lt;br /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;AWSAccessKeyId&quot; value=&quot;AKIAIOSFODNN7EXAMPLE&quot; /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;Policy&quot; value=&quot;POLICY&quot; /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;Signature&quot; value=&quot;SIGNATURE&quot; /&gt;
+    Entry: &lt;textarea name=&quot;file&quot; cols=&quot;60&quot; rows=&quot;10&quot;&gt;
+
+Your blog post goes here.
+
+    &lt;/textarea&gt;&lt;br /&gt;
+    &lt;!-- The elements after this will be ignored --&gt;
+    &lt;input type=&quot;submit&quot; name=&quot;submit&quot; value=&quot;Upload to Amazon S3&quot; /&gt;
+  &lt;/form&gt;
+  ...
+&lt;/html&gt;</code></pre>
+                     			
+                     			<h3 id="HTTPPOSTExamplesTextAreaRequest">Sample Request</h3>
+                     				
+                     				
+                     <p>This request assumes that the image uploaded is 117,108 bytes; the image data
+                        					is not included.
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">POST / HTTP/1.1
+Host: johnsmith.s3.amazonaws.com
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.10) Gecko/20071115 Firefox/2.0.0.10
+Accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5
+Accept-Language: en-us,en;q=0.5
+Accept-Encoding: gzip,deflate
+Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+Keep-Alive: 300
+Connection: keep-alive
+Content-Type: multipart/form-data; boundary=178521717625888
+Content-Length: 118635
+
+-178521717625888
+Content-Disposition: form-data; name=&quot;key&quot;
+
+ser/eric/NewEntry.html
+--178521717625888
+Content-Disposition: form-data; name=&quot;acl&quot;
+
+public-read
+--178521717625888
+Content-Disposition: form-data; name=&quot;success_action_redirect&quot;
+
+http://johnsmith.s3.amazonaws.com/new_post.html
+--178521717625888
+Content-Disposition: form-data; name=&quot;Content-Type&quot;
+
+text/html
+--178521717625888
+Content-Disposition: form-data; name=&quot;x-amz-meta-uuid&quot;
+
+14365123651274
+--178521717625888
+Content-Disposition: form-data; name=&quot;x-amz-meta-tag&quot;
+
+Interesting Post
+--178521717625888
+Content-Disposition: form-data; name=&quot;AWSAccessKeyId&quot;
+
+AKIAIOSFODNN7EXAMPLE
+--178521717625888
+Content-Disposition: form-data; name=&quot;Policy&quot;
+eyAiZXhwaXJhdGlvbiI6ICIyMDA3LTEyLTAxVDEyOjAwOjAwLjAwMFoiLAogICJjb25kaXRpb25zIjogWwogICAgeyJidWNrZXQiOiAiam9obnNtaXRoIn0sCiAgICBbInN0YXJ0cy13aXRoIiwgIiRrZXkiLCAidXNlci9lcmljLyJdLAogICAgeyJhY2wiOiAicHVibGljLXJlYWQifSwKICAgIHsic3VjY2Vzc19hY3Rpb25fcmVkaXJlY3QiOiAiaHR0cDovL2pvaG5zbWl0aC5zMy5hbWF6b25hd3MuY29tL25ld19wb3N0Lmh0bWwifSwKICAgIFsiZXEiLCAiJENvbnRlbnQtVHlwZSIsICJ0ZXh0L2h0bWwiXSwKICAgIHsieC1hbXotbWV0YS11dWlkIjogIjE0MzY1MTIzNjUxMjc0In0sCiAgICBbInN0YXJ0cy13aXRoIiwgIiR4LWFtei1tZXRhLXRhZyIsICIiXQogIF0KfQo=
+
+--178521717625888
+Content-Disposition: form-data; name=&quot;Signature&quot;
+
+qA7FWXKq6VvU68lI9KdveT1cWgF=
+--178521717625888
+Content-Disposition: form-data; name=&quot;file&quot;
+
+...content goes here...
+--178521717625888
+Content-Disposition: form-data; name=&quot;submit&quot;
+
+Upload to Amazon S3
+--178521717625888--</code></pre>
+                     			
+                     			<h3 id="HTTPPOSTExamplesTextAreaResponse">Sample Response</h3>
+                     				
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">HTTP/1.1 303 Redirect
+x-amz-request-id: 1AEE782442F35865
+x-amz-id-2: cxzFLJRatFHy+NGtaDFRR8YvI9BHmgLxjvJzNiGGICARZ/mVXHj7T+qQKhdpzHFh
+Content-Type: application/xml
+Date: Wed, 14 Nov 2007 21:21:33 GMT
+Connection: close
+Location: http://johnsmith.s3.amazonaws.com/new_post.html?bucket=johnsmith&amp;key=user/eric/NewEntry.html&amp;etag=40c3271af26b7f1672e41b8a274d28d4
+Server: AmazonS3</code></pre>
+                     			
+                     		</div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="HTTPPOSTForms.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="HTTPPOSTFlash.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="File Upload"><a class="pagetoc" href="#HTTPPOSTExamplesFileUpload">File Upload</a></li>
+                        <li class="pagetoc" name="Text Area Upload"><a class="pagetoc" href="#HTTPPOSTExamplesTextArea">Text Area Upload</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

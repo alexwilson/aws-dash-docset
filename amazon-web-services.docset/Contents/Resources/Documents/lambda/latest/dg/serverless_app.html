@@ -1,0 +1,437 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Using the AWS Serverless Application Model (AWS SAM) - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="deploying-lambda-apps.html" title="Deploying Lambda-based Applications">
+      <link rel="prev" href="lambda-traffic-shifting-using-aliases.html" title="Traffic Shifting Using Aliases">
+      <link rel="next" href="serverless-deploy-wt.html" title="Create Your Own Serverless Application">
+      <meta name="description" content="The AWS Serverless Application Model (AWS SAM) is a model to define serverless applications. AWS SAM is natively supported by AWS CloudFormation and defines simplified syntax for expressing serverless resources. The specification currently covers APIs, Lambda functions and Amazon DynamoDB tables. SAM is available under Apache 2.0 for AWS partners and customers to adopt and extend within their own toolsets. For details on the specification, see the">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/serverless_app.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="deploying-lambda-apps.html">Deploying Lambda-based Applications</a> &#xBB; <span class="breadcrumb">Using the AWS Serverless Application Model (AWS SAM)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="serverless_app">Using the AWS Serverless Application Model (AWS SAM)</h1>
+                     <p>The AWS Serverless Application Model (AWS SAM) is a model to define serverless applications.
+                        AWS SAM is natively supported by AWS CloudFormation
+                        and defines simplified syntax for expressing serverless resources.
+                        
+                        The specification currently covers APIs, Lambda functions and Amazon DynamoDB tables.
+                        SAM is available under Apache 2.0 for AWS partners and customers to adopt and extend
+                        within their own toolsets. 
+                        
+                        
+                        
+                        For details on the specification, see the <a href="https://github.com/awslabs/serverless-application-model" target="_blank">AWS Serverless Application Model</a>.
+                     </p>
+                     <h2 id="serverless_app_resources">Serverless Resources Within AWS SAM</h2>
+                     
+                     
+                     
+                     
+                     <p>An AWS CloudFormation template
+                        
+                        with serverless resources conforming to the AWS SAM model is referred to as a SAM
+                        file or template.
+                     </p>
+                     
+                     <p>The examples following illustrate how to leverage AWS SAM to declare common
+                        components of a serverless application. Note that the <code class="code">Handler</code> and
+                        <code class="code">Runtime</code> parameter values should match the ones you used when
+                        you created the function in the previous section. 
+                     </p>
+                     
+                     <h3 id="serverless_app_function">Lambda function</h3>
+                     
+                     
+                     
+                     
+                     <p>The following shows the notation you use to describe a Lambda function:</p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">AWSTemplateFormatVersion: &apos;2010-09-09&apos;
+Transform: AWS::Serverless-2016-10-31
+Resources:
+
+    <em class="replaceable"><code>FunctionName:</code></em>
+        Type: AWS::Serverless::Function
+        Properties:
+           Handler: <em class="replaceable"><code>index.handler</code></em>
+           Runtime: <em class="replaceable"><code>runtime</code></em>
+           CodeUri: s3://<em class="replaceable"><code>bucketName</code></em>/<em class="replaceable"><code>codepackage.zip</code></em>
+    </code></pre>
+                     <p>The <code class="code">handler</code> value of the <code class="code">Handler</code> property points to the module containing the code your Lambda function will execute
+                        when invoked. The <code class="code">index</code> value of the <code class="code">Handler</code> property
+                        indicates the name of the file containing the code. You can declare as many functions
+                        as your serverless application requires. 
+                        
+                     </p>
+                     
+                     <p>You can also declare environment variables, which are configuration settings you can
+                        set for your application. The following
+                        shows an example of a serverless app with two Lambda functions and an environment
+                        variable that points to a DynamoDB table. You can update environment variables without
+                        needing to modify, repackage, or redeploy your Lambda function code.
+                        For more information, see <a href="env_variables.html">Environment Variables</a>.
+                        
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">AWSTemplateFormatVersion: &apos;2010-09-09&apos;
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  PutFunction:<em class="replaceable"><code></code></em>
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs6.10
+      Policies: AWSLambdaDynamoDBExecutionRole
+      CodeUri: s3://<em class="replaceable"><code>bucketName</code></em>/<em class="replaceable"><code>codepackage.zip</code></em>
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref Table
+  DeleteFunction:<em class="replaceable"><code></code></em>
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs6.10
+      Policies: AWSLambdaDynamoDBExecutionRole
+      CodeUri: s3://<em class="replaceable"><code>bucketName</code></em>/<em class="replaceable"><code>codepackage.zip</code></em>
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref Table
+      Events:
+        Stream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt DynamoDBTable.StreamArn
+            BatchSize: 100
+            StartingPosition: TRIM_HORIZON
+
+   DynamoDBTable:
+     Type: AWS::DynamoDB::Table
+     Properties: 
+       AttributeDefinitions: 
+         - AttributeName: id
+           AttributeType: S
+       KeySchema: 
+         - AttributeName: id
+           KeyType: HASH
+       ProvisionedThroughput: 
+         ReadCapacityUnits: 5
+         WriteCapacityUnits: 5
+       StreamSpecification:
+         StreamViewType: <em class="replaceable"><code>streamview type</code></em>
+    </code></pre><p>Note the notation at the top:</p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">AWSTemplateFormatVersion: &apos;2010-09-09&apos;
+Transform: AWS::Serverless-2016-10-31</code></pre><p>This is required in order to include objects defined by the AWS Serverless Application
+                        Model within an AWS CloudFormation template.
+                     </p>
+                          
+                     
+                     
+                     <h3 id="serverless_app_simple_table">SimpleTable</h3>
+                     
+                     
+                     
+                     
+                     <p><code class="code">SimpleTable</code> is a resource that creates a DynamoDB table with a single-attribute primary key.
+                        You can use this simplified version if the data
+                        your serverless application is interacting with only needs to be accessed by a single-valued
+                        key. You could update the previous example to 
+                        use a <code class="code">SimpleTable</code>, as shown following:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">AWSTemplateFormatVersion: &apos;2010-09-09&apos;
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  <em class="replaceable"><code>TableName</code></em>:                   
+     Type: AWS::Serverless::SimpleTable
+     Properties:
+       PrimaryKey:
+         Name: <em class="replaceable"><code>id</code></em>
+         Type: String
+       ProvisionedThroughput:
+         ReadCapacityUnits: 5
+         WriteCapacityUnits: 5
+    </code></pre>              
+                     
+                                            
+                     
+                     <h3 id="serverless_app_events">Events</h3>
+                     
+                     
+                     
+                     
+                     <p>Events are AWS resources that trigger the Lambda function, such as an Amazon API Gateway
+                        endpoint or an Amazon SNS notification. The <code class="code">Events</code>
+                        property is an array, which allows you to set multiple events per function. The following
+                        shows the notation you use to describe a Lambda function with a DynamoDB table as
+                        an event source:
+                     </p>          
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">AWSTemplateFormatVersion: &apos;2010-09-09&apos;
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  <em class="replaceable"><code>FunctionName:</code></em>
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs6.10
+      Events:
+        Stream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt DynamoDBTable.StreamArn
+            BatchSize: 100
+            StartingPosition: TRIM_HORIZON   
+  <em class="replaceable"><code>TableName:</code></em>
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions: 
+        - AttributeName: <em class="replaceable"><code>id</code></em>
+          AttributeType: S
+      KeySchema: 
+        - AttributeName: <em class="replaceable"><code>id</code></em>
+          KeyType: HASH
+      ProvisionedThroughput: 
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5</code></pre>
+                     
+                     <p>As mentioned preceding, you can set multiple event sources that will trigger the Lambda
+                        function. The example following shows a Lambda function that can be triggered
+                        by either an HTTP <code class="code">PUT</code> or <code class="code">POST</code> event.
+                     </p>      
+                     
+                     <h3 id="serverless_app_api">API</h3>
+                     
+                     
+                     
+                     <p>There are two ways to define an <code class="code">API</code> using AWS SAM. The following uses Swagger to configure the underlying Amazon API
+                        Gateway resources: 
+                     </p>            
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">
+AWSTemplateFormatVersion: &apos;2010-09-09&apos;
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  Api: 
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      DefinitionUri: swagger.yml
+</code></pre>
+                     <p>In the next example, the <code class="code">AWS::Serverless::Api</code> resource type is implicity added from the union of <code class="code">API</code> events defined on <code class="code">AWS::Serverless::Function</code> resources. 
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">
+AWSTemplateFormatVersion: &apos;2010-09-09&apos;
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  GetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.get
+      Runtime: nodejs6.10
+      CodeUri: s3://<em class="replaceable"><code>bucket</code></em>/api_backend.zip
+      Policies: AmazonDynamoDBReadOnlyAccess
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref Table
+      Events:
+        GetResource:
+          Type: Api
+          Properties:
+            Path: /resource/{resourceId}
+            Method: get
+ 
+  PutFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.put
+      Runtime: nodejs6.10
+      CodeUri: s3://<em class="replaceable"><code>bucket</code></em>/api_backend.zip
+      Policies: AmazonDynamoDBFullAccess
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref Table
+      Events:
+        PutResource:
+          Type: Api
+          Properties:
+            Path: /resource/{resourceId}
+            Method: put
+ 
+  DeleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.delete
+      Runtime: nodejs6.10
+      CodeUri: s3://<em class="replaceable"><code>bucket</code></em>/api_backend.zip
+      Policies: AmazonDynamoDBFullAccess
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref Table
+      Events:
+        DeleteResource:
+          Type: Api
+          Properties:
+            Path: /resource/{resourceId}
+            Method: delete
+ 
+  Table:
+    Type: AWS::Serverless::SimpleTable
+</code></pre>              
+                     
+                     <p>In the example preceding, AWS CloudFormation will automatically generate an
+                        Amazon API Gateway <code class="code">API</code> with the path
+                        <code class="code">&quot;/resource/{resourceId}&quot;</code> and with the methods
+                        <code class="code">GET</code>, <code class="code">PUT</code> and <code class="code">DELETE</code>. 
+                     </p>
+                     
+                     
+                     
+                               
+                     
+                     <h3 id="serverless_app_permissions">Permissions</h3>
+                     
+                     
+                     
+                     <p>You can supply an Amazon Resource Name (ARN) for an AWS Identity and Access Management
+                        (IAM) role be used as this function&apos;s execution role,
+                        as shown following: 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">
+AWSTemplateFormatVersion: &apos;2010-09-09&apos;
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  FunctionName:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role:<em class="replaceable"><code>role arn</code></em>
+   </code></pre>
+                     <p>Alternatively, you could supply one or more managed policies to the Lambda function
+                        resource. 
+                        AWS CloudFormation will then create a new role
+                        with the managed policies plus the default Lambda basic execution policy.
+                        
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">
+AWSTemplateFormatVersion: &apos;2010-09-09&apos;
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  FunctionName:
+    Type: AWS::Serverless::Function
+    Properties:
+      Policies: AmazonDynamoDBFullAccess
+  </code></pre>
+                     <p>If none of these are supplied, a default execution role is created with Lambda basic
+                        execution permissions.
+                     </p>  
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>In addition to using the serverless resources, you can 
+                           
+                           also use conventional AWS CloudFormation syntax for expressing resources 
+                           in the same template. Any resources not included in the current SAM model can still
+                           be created in the AWS CloudFormation template using AWS CloudFormation syntax. 
+                           In addition, you can use AWS CloudFormation syntax to express serverless resources
+                           as an alternative to using the SAM model. For information about specifying a Lambda
+                           function 
+                           using conventional CloudFormation syntax as part of your SAM 
+                           template, see <a href="./AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html" target="_blank">AWS::Lambda::Function</a> in the AWS CloudFormation User Guide.
+                        </p>
+                     </div> 
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     <p>For a list of complete serverless application examples, see <a href="use-cases.html">Examples of How to Use AWS Lambda</a>.
+                     </p>
+                     
+                     
+                     <h2 id="serv-app-next-step">Next Step</h2>
+                     
+                     
+                     <p><a href="serverless-deploy-wt.html">Create Your Own Serverless Application</a></p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="lambda-traffic-shifting-using-aliases.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="serverless-deploy-wt.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Serverless Resources Within AWS SAM"><a class="pagetoc" href="#serverless_app_resources">Serverless Resources With AWS SAM</a></li>
+                        <li class="pagetoc" name="Next Step"><a class="pagetoc" href="#serv-app-next-step">Next Step</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

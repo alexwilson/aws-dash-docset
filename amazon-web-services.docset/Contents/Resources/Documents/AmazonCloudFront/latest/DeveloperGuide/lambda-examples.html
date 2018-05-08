@@ -1,0 +1,1157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Lambda@Edge Example Functions - Amazon CloudFront</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="lambda-at-the-edge.html" title="Using CloudFront with Lambda@Edge">
+      <link rel="prev" href="lambda-updating-http-responses.html" title="Updating HTTP Responses in Origin-Response Triggers">
+      <link rel="next" href="lambda-requirements-limits.html" title="Requirements and Restrictions on Lambda Functions">
+      <meta name="description" content="Examples of functions for Lambda@Edge.">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-examples.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-at-the-edge.html">Using CloudFront with Lambda@Edge</a> &#xBB; <span class="breadcrumb">Lambda@Edge Example Functions</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="lambda-examples">Lambda@Edge Example Functions</h1>
+                     <p>See the following sections for examples of using Lambda functions with CloudFront.</p>
+                     <p>Note that each Lambda@Edge function must contain the <code class="code">callback</code> parameter to successfully process a request or return a response. 
+                        		For more information, see <a href="lambda-edge-create-function.html">Writing and Creating a Lambda@Edge Function</a>.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#lambda-examples-general-examples">General Examples</a></li>
+                           <li><a href="#lambda-examples-generated-response-examples">Generating Responses - Examples</a></li>
+                           <li><a href="#lambda-examples-query-string-examples">Working with Query Strings - Examples</a></li>
+                           <li><a href="#lambda-examples-redirecting-examples">Personalize Content by Country or Device Type Headers - Examples</a></li>
+                           <li><a href="#lambda-examples-content-based-routing-examples">Content-Based Dynamic Origin Selection - Examples</a></li>
+                           <li><a href="#lambda-examples-update-error-status-examples">Updating Error Statuses - Examples</a></li>
+                        </ul>
+                     </div>
+                     		
+                     <h2 id="lambda-examples-general-examples">General Examples</h2>
+                     		
+                     
+                     		
+                     		
+                     			
+                     <h3 id="lambda-examples-a-b-testing">Example: A/B Testing</h3>
+                     			
+                     
+                     			
+                     <p>You can use the following example if you want to test two different versions of your
+                        home page, but you don&apos;t want to 
+                        				create redirects or change the URL. This example sets cookies when CloudFront
+                        receives a request, randomly assigns the user to 
+                        				version A or B, and then returns the corresponding version to the viewer.
+                     </p>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+exports.handler = (event, context, callback) =&gt; {
+    const request = event.Records[0].cf.request;
+    const headers = request.headers;
+
+    if (request.uri !== &apos;/experiment-pixel.jpg&apos;) {
+        // do not process if this is not an A-B test request
+        callback(null, request);
+        return;
+    }
+
+    const cookieExperimentA = &apos;X-Experiment-Name=A&apos;;
+    const cookieExperimentB = &apos;X-Experiment-Name=B&apos;;
+    const pathExperimentA = &apos;/experiment-group/control-pixel.jpg&apos;;
+    const pathExperimentB = &apos;/experiment-group/treatment-pixel.jpg&apos;;
+
+    /*
+     * Lambda at the Edge headers are array objects.
+     *
+     * Client may send multiple Cookie headers, i.e.:
+     * &gt; GET /viewerRes/test HTTP/1.1
+     * &gt; User-Agent: curl/7.18.1 (x86_64-unknown-linux-gnu) libcurl/7.18.1 OpenSSL/1.0.1u zlib/1.2.3
+     * &gt; Cookie: First=1; Second=2
+     * &gt; Cookie: ClientCode=abc
+     * &gt; Host: example.com
+     *
+     * You can access the first Cookie header at headers[&quot;cookie&quot;][0].value
+     * and the second at headers[&quot;cookie&quot;][1].value.
+     *
+     * Header values are not parsed. In the example above,
+     * headers[&quot;cookie&quot;][0].value is equal to &quot;First=1; Second=2&quot;
+     */
+    let experimentUri;
+    if (headers.cookie) {
+        for (let i = 0; i &lt; headers.cookie.length; i++) {
+            if (headers.cookie[i].value.indexOf(cookieExperimentA) &gt;= 0) {
+                console.log(&apos;Experiment A cookie found&apos;);
+                experimentUri = pathExperimentA;
+                break;
+            } else if (headers.cookie[i].value.indexOf(cookieExperimentB) &gt;= 0) {
+                console.log(&apos;Experiment B cookie found&apos;);
+                experimentUri = pathExperimentB;
+                break;
+            }
+        }
+    }
+
+    if (!experimentUri) {
+        console.log(&apos;Experiment cookie has not been found. Throwing dice...&apos;);
+        if (Math.random() &lt; 0.75) {
+            experimentUri = pathExperimentA;
+        } else {
+            experimentUri = pathExperimentB;
+        }
+    }
+
+    request.uri = experimentUri;
+    console.log(`Request uri set to &quot;${request.uri}&quot;`);
+    callback(null, request);
+};</code></pre>
+                     		
+                     
+                     	
+                     
+                     		
+                     			<h3 id="lambda-examples-overriding-response-header">Example: Overriding a Response Header</h3>
+                     			
+                     			
+                     <p>The following example shows how to change the value of a response header based on
+                        the value of another header:
+                     </p>
+                     
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+exports.handler = (event, context, callback) =&gt; {
+   const response = event.Records[0].cf.response;
+   const headers = response.headers;
+
+   const headerNameSrc = &apos;X-Amz-Meta-Last-Modified&apos;;
+   const headerNameDst = &apos;Last-Modified&apos;;
+
+   if (headers[headerNameSrc.toLowerCase()]) {
+      headers[headerNameDst.toLowerCase()] = [
+         headers[headerNameSrc.toLowerCase()][0],
+      ];
+      console.log(`Response header &quot;${headerNameDst}&quot; was set to ` +
+               `&quot;${headers[headerNameDst.toLowerCase()][0].value}&quot;`);
+   }
+
+   callback(null, response);
+};</code></pre>
+                     		
+                     	
+                     		<h2 id="lambda-examples-generated-response-examples">Generating Responses - Examples</h2>
+                     	
+                     
+                     		
+                     			
+                     <h3 id="lambda-examples-static-web-server">Example: Serving Static Content (Generated Response)</h3>
+                     			
+                     			
+                     <p>The following example shows how to use a Lambda function to serve static website content,
+                        which reduces the load on the 
+                        				origin server and reduces overall latency. 
+                     </p>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You can generate HTTP responses for viewer request and origin request events. For
+                           more information, see 
+                           				<a href="lambda-generating-http-responses.html">Generating HTTP Responses in Request Triggers</a>. You can also
+                           				replace the HTTP response in origin and viewer response events. For more information,
+                           see 
+                           				<a href="lambda-updating-http-responses.html">Updating HTTP Responses in Origin-Response Triggers</a>.
+                        </p>
+                     </div>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+let content = `
+&lt;\!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+  &lt;head&gt;
+    &lt;meta charset=&quot;utf-8&quot;&gt;
+    &lt;title&gt;Simple Lambda@Edge Static Content Response&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;p&gt;Hello from Lambda@Edge!&lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+`;
+
+exports.handler = (event, context, callback) =&gt; {
+    /*
+     * Generate HTTP OK response using 200 status code with HTML body.
+     */
+    const response = {
+        status: &apos;200&apos;,
+        statusDescription: &apos;OK&apos;,
+        headers: {
+            &apos;cache-control&apos;: [{
+                key: &apos;Cache-Control&apos;,
+                value: &apos;max-age=100&apos;
+            }],
+            &apos;content-type&apos;: [{
+                key: &apos;Content-Type&apos;,
+                value: &apos;text/html&apos;
+            }],
+            &apos;content-encoding&apos;: [{
+                key: &apos;Content-Encoding&apos;,
+                value: &apos;UTF-8&apos;
+            }],
+        },
+        body: content,
+    };
+    callback(null, response);
+};</code></pre>
+                     		
+                     
+                     		
+                     		
+                     		
+                     			<h3 id="lambda-examples-body-encoding-base64">Example: Serving Static Website Content as Gzip Compressed Content (Generated Response)</h3>
+                     			
+                     			
+                     <p>This function demonstrates how to use a Lambda function to serve static website content
+                        as gzip compressed content, which reduces 
+                        				the load on the origin server and reduces overall latency.
+                     </p>
+                     			
+                     <p>You can generate HTTP responses for viewer request and origin request events. For
+                        more information, see
+                        				<a href="lambda-generating-http-responses.html">Generating HTTP Responses in Request Triggers</a></p>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+const zlib = require(&apos;zlib&apos;);
+
+let content = `
+&lt;\!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+  &lt;head&gt;
+    &lt;meta charset=&quot;utf-8&quot;&gt;
+    &lt;title&gt;Simple Lambda@Edge Static Content Response&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;p&gt;Hello from Lambda@Edge!&lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+`;
+
+exports.handler = (event, context, callback) =&gt; {
+
+    /*
+     * Generate HTTP OK response using 200 status code with a gzip compressed content HTML body.
+     */
+    
+    const buffer = zlib.gzipSync(content); 
+    const base64EncodedBody = buffer.toString(&apos;base64&apos;);
+    
+    var response = {
+        headers: {
+            &apos;content-type&apos;: [{key:&apos;Content-Type&apos;, value: &apos;text/html; charset=utf-8&apos;}],
+            &apos;content-encoding&apos; : [{key:&apos;Content-Encoding&apos;, value: &apos;gzip&apos;}]
+         },
+        body: base64EncodedBody,
+        bodyEncoding: &apos;base64&apos;,
+        status: &apos;200&apos;,
+        statusDescription: &quot;OK&quot;
+     }
+     
+    callback(null, response);
+};</code></pre>
+                     			
+                     			
+                     
+                     		
+                     		
+                     		
+                     		
+                     			<h3 id="lambda-examples-http-redirect">Example: Generating an HTTP Redirect (Generated Response)</h3>
+                     			
+                     			
+                     <p>The following example shows how to generate an HTTP redirect.</p>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You can generate HTTP responses for viewer request and origin request events. For
+                           more information, see 
+                           				<a href="lambda-generating-http-responses.html">Generating HTTP Responses in Request Triggers</a>.
+                        </p>
+                     </div>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+exports.handler = (event, context, callback) =&gt; {
+    /*
+     * Generate HTTP redirect response with 302 status code and Location header.
+     */
+    const response = {
+        status: &apos;302&apos;,
+        statusDescription: &apos;Found&apos;,
+        headers: {
+            location: [{
+                key: &apos;Location&apos;,
+                value: &apos;http://docs.aws.amazon.com/lambda/latest/dg/lambda-edge.html&apos;,
+            }],
+        },
+    };
+    callback(null, response);
+};</code></pre>
+                     		
+                     	
+                     			<h2 id="lambda-examples-query-string-examples">Working with Query Strings - Examples</h2>
+                     			
+                     			
+                     			
+                     		
+                     			
+                     <h3 id="lambda-examples-header-based-on-query-string">Example: Adding a Header Based on a Query String Parameter</h3>
+                     			
+                     			
+                     <p>The following example shows how to get the key-value pair of a query string parameter
+                        and add a header based on those values.
+                     </p>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+const querystring = require(&apos;querystring&apos;);
+exports.handler = (event, context, callback) =&gt; {
+    const request = event.Records[0].cf.request;
+    
+    /* When a request contains a query string key-value pair but the origin server
+     * expects the value in a header, you can use this Lambda function to
+     * convert the key-value pair to a header. Here&apos;s what the function does:
+     * 1. Parses the query string and gets the key-value pair.
+     * 2. Adds a header to the request using the key-value pair that the function got in step 1.
+     */
+
+    /* Parse request querystring to get javascript object */
+    const params = querystring.parse(request.querystring);
+
+    /* Move auth param from querystring to headers */
+    const headerName = &apos;Auth-Header&apos;;
+    request.headers[headerName.toLowerCase()] = [{ key: headerName, value: params.auth }];
+    delete params.auth;
+
+    /* Update request querystring */
+    request.querystring = querystring.stringify(params);
+
+    callback(null, request);
+}
+
+
+;</code></pre>
+                     		
+                     
+                     	
+                     	
+                     		
+                     			<h3 id="lambda-examples-normalize-query-string-parameters">Example: Normalizing Query String Parameters to Improve the Cache Hit Ratio</h3>
+                     			
+                     			
+                     <p>The following example shows how to improve your cache hit ratio by making the following
+                        changes to query strings before 
+                        				CloudFront forwards requests to your origin:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Alphabetize key-value pairs by the name of the parameter</p>
+                           </li>
+                           <li class="listitem">
+                              <p>Change the case of key-value pairs to lowercase</p>
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>For more information, see <a href="QueryStringParameters.html">Configuring CloudFront to Cache Based on Query String Parameters</a>.
+                     </p>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+const querystring = require(&apos;querystring&apos;);
+
+exports.handler = (event, context, callback) =&gt; {
+    const request = event.Records[0].cf.request;
+    /* When you configure a distribution to forward query strings to the origin and
+     * to cache based on a whitelist of query string parameters, we recommend
+     * the following to improve the cache-hit ratio:
+     * - Always list parameters in the same order.
+     * - Use the same case for parameter names and values.
+     *
+     * This function normalizes query strings so that parameter names and values
+     * are lowercase and parameter names are in alphabetical order.
+     *
+     * For more information, see:
+     * http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/QueryStringParameters.html
+     */
+
+    console.log(&apos;Query String: &apos;, request.querystring);
+
+    /* Parse request query string to get javascript object */
+    const params = querystring.parse(request.querystring.toLowerCase());
+    const sortedParams = {};
+
+    /* Sort param keys */
+    Object.keys(params).sort().forEach(key =&gt; {
+        sortedParams[key] = params[key];
+    });
+
+    /* Update request querystring with normalized  */
+    request.querystring = querystring.stringify(sortedParams);
+
+    callback(null, request);
+};</code></pre>
+                     		
+                     
+                     	
+                     	
+                     	
+                     		
+                     			<h3 id="lambda-examples-redirect-to-signin-page">Example: Redirecting Unauthenticated Users to a Sign-In Page</h3>
+                     		
+                     			
+                     <p>The following example shows how to redirect users to a sign-in page if they haven&apos;t
+                        entered their credentials.
+                     </p>
+                     		
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+function parseCookies(headers) {
+    const parsedCookie = {};
+    if (headers.cookie) {
+        headers.cookie[0].value.split(&apos;;&apos;).forEach((cookie) =&gt; {
+            if (cookie) {
+                const parts = cookie.split(&apos;=&apos;);
+                parsedCookie[parts[0].trim()] = parts[1].trim();
+            }
+        });
+    }
+    return parsedCookie;
+}
+
+exports.handler = (event, context, callback) =&gt; {
+    const request = event.Records[0].cf.request;
+    const headers = request.headers;
+
+    /* Check for session-id in request cookie in viewer-request event,
+     * if session-id is absent, redirect the user to sign in page with original
+     * request sent as redirect_url in query params.
+     */
+
+    /* Check for session-id in cookie, if present then proceed with request */
+    const parsedCookies = parseCookies(headers);
+    if (parsedCookies &amp;&amp; parsedCookies[&apos;session-id&apos;]) {
+        callback(null, request);
+    }
+
+    /* URI encode the original request to be sent as redirect_url in query params */
+    const encodedRedirectUrl = encodeURIComponent(`https://${headers.host[0].value}${request.uri}?${request.querystring}`);
+    const response = {
+        status: &apos;302&apos;,
+        statusDescription: &apos;Found&apos;,
+        headers: {
+            location: [{
+                key: &apos;Location&apos;,
+                value: `http://www.example.com/signin?redirect_url=${encodedRedirectUrl}`,
+            }],
+        },
+    };
+    callback(null, response);
+};</code></pre>
+                     		
+                     	
+                     		<h2 id="lambda-examples-redirecting-examples">Personalize Content by Country or Device Type Headers - Examples</h2>	
+                     
+                     	
+                     	
+                     		
+                     			
+                     <h3 id="lambda-examples-redirect-based-on-country">Example: Redirecting Viewer Requests to a Country-Specific URL</h3>
+                     			
+                     			
+                     <p>The following example shows how to generate an HTTP redirect response with a country-specific
+                        URL and return the response to the viewer. 
+                        				This is useful when you want to provide country-specific responses. For example:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>If you have country-specific subdomains, such as us.example.com and tw.example.com,
+                                 you can generate 
+                                 						a redirect response when a viewer requests example.com.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>If you&apos;re streaming video but you don&apos;t have rights to stream the content in a specific
+                                 country, you can 
+                                 						redirect users in that country to a page that explains why they can&apos;t view the
+                                 video. 
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>Note the following:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>You must configure your distribution to cache based on the <code class="code">CloudFront-Viewer-Country</code> header. 
+                                 					For more information, see <a href="distribution-web-values-specify.html#DownloadDistValuesForwardHeaders">Cache Based on Selected Request Headers</a>.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>CloudFront adds the <code class="code">CloudFront-Viewer-Country</code> header after the viewer request event. 
+                                 					To use this example, you must create a trigger for the origin request event.
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+/* This is an origin request function */
+exports.handler = (event, context, callback) =&gt; {
+    const request = event.Records[0].cf.request;
+    const headers = request.headers;
+
+    /*
+     * Based on the value of the CloudFront-Viewer-Country header, generate an
+     * HTTP status code 302 (Redirect) response, and return a country-specific
+     * URL in the Location header.
+     * NOTE: 1. You must configure your distribution to cache based on the
+     *          CloudFront-Viewer-Country header. For more information, see
+     *          http://docs.aws.amazon.com/console/cloudfront/cache-on-selected-headers
+     *       2. CloudFront adds the CloudFront-Viewer-Country header after the viewer
+     *          request event. To use this example, you must create a trigger for the
+     *          origin request event.
+     */
+
+    let url = &apos;https://example.com/&apos;;
+    if (headers[&apos;cloudfront-viewer-country&apos;]) {
+        const countryCode = headers[&apos;cloudfront-viewer-country&apos;][0].value;
+        if (countryCode === &apos;TW&apos;) {
+            url = &apos;https://tw.example.com/&apos;;
+        } else if (countryCode === &apos;US&apos;) {
+            url = &apos;https://us.example.com/&apos;;
+        }
+    }
+
+    const response = {
+        status: &apos;302&apos;,
+        statusDescription: &apos;Found&apos;,
+        headers: {
+            location: [{
+                key: &apos;Location&apos;,
+                value: url,
+            }],
+        },
+    };
+    callback(null, response);
+};</code></pre>
+                     			
+                     	
+                     	
+                     	
+                     		
+                     			<h3 id="lambda-examples-vary-on-device-type">Example: Serving Different Versions of an Object Based on the Device</h3>
+                     		
+                     			
+                     <p>The following example shows how to serve different versions of an object based on
+                        the type of device that the user is using, for example, 
+                        			a mobile device or a tablet. Note the following:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>You must configure your distribution to cache based on the <code class="code">CloudFront-Is-*-Viewer</code> headers. 
+                                 				For more information, see <a href="distribution-web-values-specify.html#DownloadDistValuesForwardHeaders">Cache Based on Selected Request Headers</a>.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>CloudFront adds the <code class="code">CloudFront-Is-*-Viewer</code> headers after the viewer request event. 
+                                 				To use this example, you must create a trigger for the origin request event.
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+/* This is an origin request function */
+exports.handler = (event, context, callback) =&gt; {
+    const request = event.Records[0].cf.request;
+    const headers = request.headers;
+
+    /*
+     * Serve different versions of an object based on the device type.
+     * NOTE: 1. You must configure your distribution to cache based on the
+     *          CloudFront-Is-*-Viewer headers. For more information, see
+     *          the following documentation:
+     *          http://docs.aws.amazon.com/console/cloudfront/cache-on-selected-headers
+     *          http://docs.aws.amazon.com/console/cloudfront/cache-on-device-type
+     *       2. CloudFront adds the CloudFront-Is-*-Viewer headers after the viewer
+     *          request event. To use this example, you must create a trigger for the
+     *          origin request event.
+     */
+
+    const desktopPath = &apos;/desktop&apos;;
+    const mobilePath = &apos;/mobile&apos;;
+    const tabletPath = &apos;/tablet&apos;;
+    const smarttvPath = &apos;/smarttv&apos;;
+
+    if (headers[&apos;cloudfront-is-desktop-viewer&apos;]
+        &amp;&amp; headers[&apos;cloudfront-is-desktop-viewer&apos;][0].value === &apos;true&apos;) {
+        request.uri = desktopPath + request.uri;
+    } else if (headers[&apos;cloudfront-is-mobile-viewer&apos;]
+               &amp;&amp; headers[&apos;cloudfront-is-mobile-viewer&apos;][0].value === &apos;true&apos;) {
+        request.uri = mobilePath + request.uri;
+    } else if (headers[&apos;cloudfront-is-tablet-viewer&apos;]
+               &amp;&amp; headers[&apos;cloudfront-is-tablet-viewer&apos;][0].value === &apos;true&apos;) {
+        request.uri = tabletPath + request.uri;
+    } else if (headers[&apos;cloudfront-is-smarttv-viewer&apos;]
+               &amp;&amp; headers[&apos;cloudfront-is-smarttv-viewer&apos;][0].value === &apos;true&apos;) {
+        request.uri = smarttvPath + request.uri;
+    }
+    console.log(`Request uri set to &quot;${request.uri}&quot;`);
+
+    callback(null, request);
+};</code></pre>
+                     		
+                     	
+                     		<h2 id="lambda-examples-content-based-routing-examples">Content-Based Dynamic Origin Selection - Examples</h2>	
+                     		
+                     		
+                     		
+                     		
+                     			
+                     <h3 id="lambda-examples-content-based-S3-origin-based-on-query">Example: Using an Origin-Request Trigger to Change From a Custom Origin to an Amazon
+                        S3 
+                        					Origin
+                     </h3>
+                     			
+                     			
+                     <p>This function demonstrates how an origin-request trigger can be used to change from
+                        a custom origin to an Amazon S3 origin from which the content is fetched, 
+                        				based on request properties.
+                     </p>
+                     
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+ const querystring = require(&apos;querystring&apos;);
+ 
+ exports.handler = (event, context, callback) =&gt; {
+     const request = event.Records[0].cf.request;
+ 
+     /**
+      * Reads query string to check if S3 origin should be used, and
+      * if true, sets S3 origin properties.
+      */
+ 
+     const params = querystring.parse(request.querystring);
+ 
+     if (params[&apos;useS3Origin&apos;]) {
+         if (params[&apos;useS3Origin&apos;] === &apos;true&apos;) {
+             const s3DomainName = &apos;my-bucket.s3.amazonaws.com&apos;;
+ 
+             /* Set S3 origin fields */
+             request.origin = {
+                 s3: {
+                     domainName: s3DomainName,
+                     region: &apos;&apos;,
+                     authMethod: &apos;none&apos;,
+                     path: &apos;&apos;,
+                     customHeaders: {}
+                 }
+             };
+             request.headers[&apos;host&apos;] = [{ key: &apos;host&apos;, value: s3DomainName}];
+         }
+     }
+     
+    callback(null, request);
+};</code></pre>
+                     		
+                     		
+                     	
+                     	
+                     	
+                     		<h3 id="lambda-examples-content-based-S3-origin-request-trigger">Example: Using an Origin-Request Trigger to Change the Amazon S3 Origin Region</h3>
+                     		
+                     		
+                     <p>This function demonstrates how an origin-request trigger can be used to change the
+                        Amazon S3 origin from which the content is fetched, based on 
+                        			request properties.
+                     </p>
+                     		
+                     <p>In this example, we use the value of the CloudFront-Viewer-Country header to update
+                        the S3 bucket domain name to a bucket in a region that is closer to
+                        			the viewer. This can be useful in several ways:
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>It reduces latencies when the region specified is nearer to the viewer&apos;s country.</p>
+                           </li>
+                           <li class="listitem">
+                              <p>It provides data sovereignty by making sure that data is served from an origin that&apos;s
+                                 				in the same country that the request came from.
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <p>To use this example, you must do the following:</p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Configure your distribution to cache based on the CloudFront-Viewer-Country header.
+                                 				For more information, see <a href="distribution-web-values-specify.html#DownloadDistValuesForwardHeaders">Cache Based on Selected Request Headers</a>.
+                                 			
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Create a trigger for this function in the origin request event. CloudFront adds the
+                                 CloudFront-Viewer-Country header after the 
+                                 				viewer request event, so to use this example, you must make sure the function
+                                 executes for an origin request.
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+exports.handler = (event, context, callback) =&gt; {
+    const request = event.Records[0].cf.request;
+
+    /**
+     * This blueprint demonstrates how an origin-request trigger can be used to
+     * change the origin from which the content is fetched, based on request properties.
+     * In this example, we use the value of the CloudFront-Viewer-Country header
+     * to update the S3 bucket domain name to a bucket in a region that is closer to
+     * the viewer.
+     * 
+     * This can be useful in several ways:
+     *      1) Reduces latencies when the region specified is nearer to the viewer&#x2019;s
+     *         country.
+     *      2) Provides data sovereignty by making sure that data is served from an
+     *         origin that&#x2019;s in the same country that the request came from.
+     * 
+     * NOTE: 1. You must configure your distribution to cache based on the
+     *          CloudFront-Viewer-Country header. For more information, see
+     *          http://docs.aws.amazon.com/console/cloudfront/cache-on-selected-headers
+     *       2. CloudFront adds the CloudFront-Viewer-Country header after the viewer
+     *          request event. To use this example, you must create a trigger for the
+     *          origin request event.
+     */
+
+    const countryToRegion = {
+        &apos;DE&apos;: &apos;eu-central-1&apos;,
+        &apos;IE&apos;: &apos;eu-west-1&apos;,
+        &apos;GB&apos;: &apos;eu-west-2&apos;,
+        &apos;FR&apos;: &apos;eu-west-3&apos;,
+        &apos;JP&apos;: &apos;ap-northeast-1&apos;,
+        &apos;IN&apos;: &apos;ap-south-1&apos;,
+        &apos;CN&apos;: &apos;cn-north-1&apos;
+    };
+
+    if (request.headers[&apos;cloudfront-viewer-country&apos;]) {
+        const countryCode = request.headers[&apos;cloudfront-viewer-country&apos;][0].value;
+        const region = countryToRegion[countryCode];
+        
+        /**
+         * If the viewer&apos;s country is not in the list you specify, the request
+         * goes to the default S3 bucket you&apos;ve configured.
+         */  
+        if (region) {
+            /**
+             * If you&#x2019;ve set up OAI, the bucket policy in the destination bucket
+             * should allow the OAI GetObject operation, as configured by default
+             * for an S3 origin with OAI. Another requirement with OAI is to provide
+             * the region so it can be used for the SIGV4 signature. Otherwise, the
+             * region is not required.
+             */
+            request.origin.s3.region = region;
+            const domainName = `my-bucket-in-${region}.s3.amazonaws.com`;
+            request.origin.s3.domainName = domainName;
+            request.headers[&apos;host&apos;] = [{ key: &apos;host&apos;, value: domainName }];
+        }
+    }
+
+    callback(null, request);
+};</code></pre>
+                     		
+                     
+                     	
+                     
+                     	
+                     	
+                     	
+                     		
+                     			<h3 id="lambda-examples-content-based-custom-origin-request-trigger">Example: Using an Origin-Request Trigger to Change From an Amazon S3 Origin 
+                        					to a Custom Origin
+                     </h3>
+                     			
+                     			
+                     <p>This function demonstrates how an origin-request trigger can be used to change the
+                        custom origin from which the content is fetched, based on 
+                        				request properties.
+                     </p>
+                     			
+                     		<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+const querystring = require(&apos;querystring&apos;);
+ 
+ exports.handler = (event, context, callback) =&gt; {
+     const request = event.Records[0].cf.request;
+ 
+     /**
+      * Reads query string to check if custom origin should be used, and
+      * if true, sets custom origin properties.
+      */
+ 
+     const params = querystring.parse(request.querystring);
+ 
+     if (params[&apos;useCustomOrigin&apos;]) {
+         if (params[&apos;useCustomOrigin&apos;] === &apos;true&apos;) {
+ 
+             /* Set custom origin fields*/
+             request.origin = {
+                 custom: {
+                     domainName: &apos;www.example.com&apos;,
+                     port: 443,
+                     protocol: &apos;https&apos;,
+                     path: &apos;&apos;,
+                     sslProtocols: [&apos;TLSv1&apos;, &apos;TLSv1.1&apos;],
+                     readTimeout: 5,
+                     keepaliveTimeout: 5,
+                     customHeaders: {}
+                 }
+             };
+             request.headers[&apos;host&apos;] = [{ key: &apos;host&apos;, value: &apos;www.example.com&apos;}];
+         }
+     }
+    callback(null, request);
+};</code></pre>
+                     	
+                     	
+                     		
+                     	
+                     		
+                     			<h3 id="lambda-examples-content-based-gradual-traffic-transfer">Example: Using an Origin-Request 
+                        					Trigger to Gradually Transfer Traffic From One Amazon S3 Bucket to Another
+                     </h3>
+                     		
+                     			
+                     <p>This function demonstrates how you can gradually transfer traffic from one Amazon
+                        S3 bucket to
+                        				another, in a controlled way.
+                     </p>
+                     		
+                     		<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+    function getRandomInt(min, max) {
+        /* Random number is inclusive of min and max*/
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+ }
+
+exports.handler = (event, context, callback) =&gt; {
+    const request = event.Records[0].cf.request;
+    const BLUE_TRAFFIC_PERCENTAGE = 80;
+
+    /**
+      * This Lambda function demonstrates how to gradually transfer traffic from
+      * one S3 bucket to another in a controlled way.
+      * We define a variable BLUE_TRAFFIC_PERCENTAGE which can take values from
+      * 1 to 100. If the generated randomNumber less than or equal to BLUE_TRAFFIC_PERCENTAGE, traffic
+      * is re-directed to blue-bucket. If not, the default bucket that we&apos;ve configured
+      * is used.
+      */
+
+    const randomNumber = getRandomInt(1, 100);
+
+if (randomNumber &lt;= BLUE_TRAFFIC_PERCENTAGE) {
+         const domainName = &apos;blue-bucket.s3.amazonaws.com&apos;;
+         request.origin.s3.domainName = domainName;
+         request.headers[&apos;host&apos;] = [{ key: &apos;host&apos;, value: domainName}];
+     }
+    callback(null, request);
+};</code></pre>
+                     		
+                     
+                     	
+                     	
+                     	
+                     		<h3 id="lambda-examples-content-based-geo-header">Example: Using an Origin-Request Trigger to Change the Origin Domain Name Based 
+                        				on the Country Header
+                     </h3>
+                     		
+                     		
+                     <p>This function demonstrates how you can change the origin domain name based on the
+                        CloudFront-Viewer-Country header, 
+                        			so content is served from an origin closer to the viewer&apos;s country.
+                     </p>
+                     		
+                     <p>Implementing this functionality for your distribution can have advantages such as
+                        the following:
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Reducing latencies when the region specified is nearer to the viewer&apos;s country.</p>
+                           </li>
+                           <li class="listitem">
+                              <p>Providing data sovereignty by making sure that data is served from an origin that&apos;s
+                                 				in the same country that the request came from.
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <p>Note that to enable this functionality you must configure your distribution to cache
+                        based on the 
+                        			CloudFront-Viewer-Country header. For more information, see <a href="distribution-web-values-specify.html#DownloadDistValuesForwardHeaders">Cache Based on Selected Request Headers</a>.
+                     </p>
+                     		<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+exports.handler = (event, context, callback) =&gt; {
+     const request = event.Records[0].cf.request;
+     
+  if (request.headers[&apos;cloudfront-viewer-country&apos;]) {
+         const countryCode = request.headers[&apos;cloudfront-viewer-country&apos;][0].value;
+         if (countryCode === &apos;UK&apos; || countryCode === &apos;DE&apos; || countryCode === &apos;IE&apos; ) {
+             const domainName = &apos;eu.example.com&apos;;
+             request.origin.custom.domainName = domainName;
+             request.headers[&apos;host&apos;] = [{key: &apos;host&apos;, value: domainName}];
+         } 
+     }
+     
+    callback(null, request);
+};</code></pre>
+                     
+                     		
+                     
+                     		<h2 id="lambda-examples-update-error-status-examples">Updating Error Statuses - Examples</h2>	
+                     		
+                     		
+                     		
+                     		
+                     			
+                     <h3 id="lambda-examples-custom-error-static-body">Example: Using an Origin-Response Trigger to Update the Error 
+                        					Status Code to 200-OK
+                     </h3>
+                     			
+                     			
+                     <p>This function demonstrates how you can update the response status to 200 and generate
+                        
+                        				static body content to return to the viewer in the following scenario:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>The function is triggered in an origin response</p>
+                           </li>
+                           <li class="listitem">
+                              <p>The response status from the origin server is an error status code (4xx or 5xx)</p>
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+exports.handler = (event, context, callback) =&gt; {
+    const response = event.Records[0].cf.response;
+
+    /**
+     * This function updates the response status to 200 and generates static
+     * body content to return to the viewer in the following scenario:
+     * 1. The function is triggered in an origin response
+     * 2. The response status from the origin server is an error status code (4xx or 5xx)
+     */
+
+    if (response.status &gt;= 400 &amp;&amp; response.status &lt;= 599) {
+        response.status = 200;
+        response.statusDescription = &apos;OK&apos;;
+        response.body = &apos;Body generation example&apos;;
+    }
+
+    callback(null, response);
+};</code></pre>
+                     		
+                     	
+                     	
+                     		
+                     		
+                     		
+                     			<h3 id="lambda-examples-custom-error-new-site">Example: Using an Origin-Response Trigger to Update the Error Status 
+                        					Code to 302-Found
+                     </h3>
+                     			
+                     			
+                     <p>This function demonstrates how you can update the HTTP status code to 302 to redirect
+                        to
+                        				another path (cache behavior) that has a different origin configured. Note the
+                        following:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>The function is triggered in an origin response</p>
+                           </li>
+                           <li class="listitem">
+                              <p>The response status from the origin server is an error status code (4xx or 5xx)</p>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">&apos;use strict&apos;;
+
+exports.handler = (event, context, callback) =&gt; {
+    const response = event.Records[0].cf.response;
+    const request = event.Records[0].cf.request;
+
+    /**
+     * This function updates the HTTP status code in the response to 302, to redirect to another
+     * path (cache behavior) that has a different origin configured. Note the following:
+     * 1. The function is triggered in an origin response
+     * 2. The response status from the origin server is an error status code (4xx or 5xx)
+     */
+
+    if (response.status &gt;= 400 &amp;&amp; response.status &lt;= 599) {
+        const redirect_path = `/plan-b/path?${request.querystring}`;
+
+        response.status = 302;
+        response.statusDescription = &apos;Found&apos;;
+
+        /* Drop the body, as it is not required for redirects */
+        response.body = &apos;&apos;;
+        response.headers[&apos;location&apos;] = [{ key: &apos;Location&apos;, value: redirect_path }];
+    }
+
+    callback(null, response);
+};</code></pre>
+                     		
+                     		
+                     	</div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="lambda-updating-http-responses.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="lambda-requirements-limits.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="General Examples"><a class="pagetoc" href="#lambda-examples-general-examples">General Examples</a></li>
+                        <li class="pagetoc" name="Generating Responses - Examples"><a class="pagetoc" href="#lambda-examples-generated-response-examples">Generating Responses - Examples</a></li>
+                        <li class="pagetoc" name="Working with Query Strings - Examples"><a class="pagetoc" href="#lambda-examples-query-string-examples">Working with Query Strings - Examples</a></li>
+                        <li class="pagetoc" name="Personalize Content by Country or Device Type Headers - Examples"><a class="pagetoc" href="#lambda-examples-redirecting-examples">Personalize Content by Country or Device Type Headers - Examples</a></li>
+                        <li class="pagetoc" name="Content-Based Dynamic Origin Selection - Examples"><a class="pagetoc" href="#lambda-examples-content-based-routing-examples">Content-Based Dynamic Origin Selection - Examples</a></li>
+                        <li class="pagetoc" name="Updating Error Statuses - Examples"><a class="pagetoc" href="#lambda-examples-update-error-status-examples">Updating Error Statuses - Examples</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

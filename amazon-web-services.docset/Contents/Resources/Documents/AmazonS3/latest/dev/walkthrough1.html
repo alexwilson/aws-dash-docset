@@ -1,0 +1,1630 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>An Example Walkthrough: Using user policies to control access
+         to your bucket - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="example-policies-s3.html" title="User Policy Examples">
+      <link rel="prev" href="example-policies-s3.html" title="User Policy Examples">
+      <link rel="next" href="S3_ACLs_UsingACLs.html" title="Managing Access with ACLs">
+      <meta name="description" content="Explains how user permissions work to control access to your bucket with this walkthrough sample.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/walkthrough1.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="s3-access-control.html">Managing Access Permissions to Your Amazon S3 Resources</a> &#xBB; <a href="using-iam-policies.html">Using Bucket Policies and User Policies</a> &#xBB; <a href="example-policies-s3.html">User Policy Examples</a> &#xBB; <span class="breadcrumb">An Example Walkthrough: Using user policies to control access
+                                    to your bucket</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="walkthrough1">An Example Walkthrough: Using user policies to control access
+                        to your bucket
+                     </h1>
+                     <p>This walkthrough explains how user permissions work with Amazon S3. We will create
+                        a bucket with folders, and
+                        then we&apos;ll create AWS Identity and Access Management users in your AWS account and
+                        grant those users incremental permissions on your Amazon S3 bucket and
+                        the folders in it. 
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#walkthrough-background1">Background: Basics of Buckets and Folders</a></li>
+                           <li><a href="#walkthrough-scenario">Walkthrough Example</a></li>
+                           <li><a href="#walkthrough-what-you-need">Step 0: Preparing for the Walkthrough</a></li>
+                           <li><a href="#walkthrough1-create-bucket">Step 1: Create a Bucket</a></li>
+                           <li><a href="#walkthrough1-add-users">Step 2: Create IAM Users and a Group</a></li>
+                           <li><a href="#walkthrough1-verify-no-user-permissions">Step 3: Verify that IAM Users Have
+                                 No Permissions </a></li>
+                           <li><a href="#walkthrough-group-policy">Step 4: Grant Group-Level Permissions</a></li>
+                           <li><a href="#walkthrough-grant-user1-permissions">Step 5: Grant IAM User Alice Specific
+                                 Permissions</a></li>
+                           <li><a href="#walkthrough1-grant-permissions-step5">Step 6: Grant IAM User Bob Specific
+                                 Permissions</a></li>
+                           <li><a href="#walkthrough-secure-private-folder-explicit-deny">Step 7: Secure the Private
+                                 Folder</a></li>
+                           <li><a href="#walkthrough-cleanup">Cleanup</a></li>
+                           <li><a href="#RelatedResources-walkthrough1">Related Resources</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="walkthrough-background1">Background: Basics of Buckets and Folders</h2>
+                     
+                     
+                     <p>The Amazon S3 data model is a flat structure: you create a bucket, and the bucket
+                        stores objects. There is no hierarchy of subbuckets or
+                        subfolders; however, you can emulate a folder hierarchy. Tools such as the
+                        Amazon S3 Console can present a view of these logical folders and subfolders in your
+                        bucket, as
+                        shown here:
+                     </p>
+                     
+                     
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/walkthrough-10.png">
+                        
+                        
+                     </div>
+                     
+                     
+                     <p>The console shows that a bucket named <b>companybucket</b> has three folders,
+                        <b>Private</b>, <b>Development</b>, and
+                        <b>Finance</b>, and an object,
+                        <b>s3-dg.pdf</b>. The console uses the object 
+                        names (keys) to create a logical hierarchy with folders and subfolders. Consider
+                        the following examples:
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>When you create the <b>Development</b> folder, the console
+                                 creates an object with the key <code class="code">Development/</code>.
+                                 Note the trailing &apos;/&apos; delimiter.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>When you upload an object named <b>Projects1.xls</b> in the
+                                 <b>Development</b> folder, the console uploads the object
+                                 and gives it the key <b>Development/Projects1.xls</b>. 
+                              </p>
+                              
+                              <p>In the key, <code class="code">Development</code> is the prefix and <code class="code">&apos;/&apos;</code> is
+                                 the delimiter. The Amazon S3 API supports prefixes and delimiters in its
+                                 operations. For example, you can get a list of all objects from a bucket
+                                 with a specific prefix and delimiter. In the console, when you double-click
+                                 the <b>Development</b> folder, the console lists the objects
+                                 in that folder. In the following example, the
+                                 <b>Development</b> folder contains one object. 
+                              </p>
+                              
+                              
+                              <div class="mediaobject">
+                                 
+                                 <img src="../../..//img/walkthrough-50.png">
+                                 
+                                 
+                              </div>
+                              
+                              
+                              <p>
+                                 When the console lists the <b>Development</b> folder in the
+                                 <code class="code">companybucket</code> bucket, it sends a request to Amazon S3 in which
+                                 it specifies a prefix of <code class="code">Development</code> and a delimiter of
+                                 <code class="code">&apos;/&apos;</code> in the request. The console&apos;s response looks just like
+                                 a folder list in your computer&apos;s file system. The preceding example shows
+                                 that the bucket <code class="code">companybucket</code> has an object with the key
+                                 <code class="code">Development/Projects1.xls</code>.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>The console is using object keys to infer a logical hierarchy; Amazon S3 has no
+                        physical hierarchy, only buckets that contain objects in a flat file structure. When
+                        you
+                        create objects by using the Amazon S3 API, you can use object keys that imply a logical
+                        hierarchy.
+                        
+                     </p>
+                     
+                     <p>When you create a logical hierarchy of objects, you can manage access to individual
+                        folders, as we will do in this 
+                        walkthrough. 
+                     </p>
+                     
+                     <p>Before going into the walkthrough, you need to familiarize yourself with one
+                        more concept, the &quot;root-level&quot; bucket content. Suppose your <code class="code">companybucket</code>
+                        bucket has the following objects:
+                     </p>
+                     
+                     <p>Private/privDoc1.txt</p>
+                     
+                     <p>Private/privDoc2.zip</p>
+                     
+                     <p>Development/project1.xls</p>
+                     
+                     <p>Development/project2.xls</p>
+                     
+                     <p>Finance/Tax2011/document1.pdf</p>
+                     
+                     <p>Finance/Tax2011/document2.pdf</p>
+                     
+                     <p>s3-dg.pdf</p>
+                     
+                     <p>These object keys create a logical hierarchy with <code class="code">Private</code>,
+                        <code class="code">Development</code> and the <code class="code">Finance</code> as root-level folders and
+                        <code class="code">s3-dg.pdf</code> as a root-level object. When you click the bucket name in the Amazon S3 console,
+                        
+                        the root-level items appear as shown. The console
+                        shows the top-level prefixes (Private/, Development/ and Finance/) as root-level
+                        folders. The object key s3-dg.pdf has no prefix, and so it appears as a
+                        root-level item.
+                     </p>
+                     
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/walkthrough-10.png">
+                        
+                        
+                     </div>
+                     
+                     
+                     
+                     <h2 id="walkthrough-scenario">Walkthrough Example</h2>
+                     
+                     
+                     <p>The example for this walkthrough is as follows:</p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>You create a bucket and then add three folders (Private, Development, and Finance)
+                                 to it. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              <p>You have two users, Alice and Bob. You want Alice to access only
+                                 the Development folder and Bob to access only the Finance folder, and you want
+                                 to keep the Private folder content private. In the walkthrough, you manage
+                                 access by creating AWS Identity and Access Management (IAM) users (we will use the
+                                 
+                                 same user names, Alice and Bob) and grant them the necessary permissions. 
+                              </p>
+                              
+                              <p>IAM also supports creating user groups and granting group-level
+                                 permissions that apply to all users in the group. This helps you better
+                                 manage permissions. For this exercise, both Alice and Bob will need some
+                                 common permissions. So you will also create a group named Consultants and then add
+                                 both Alice and Bob to the group. You will first grant permissions by
+                                 attaching a group policy to the group. Then you will add user-specific
+                                 permissions by attaching policies to specific users.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>The walkthrough uses <code class="code">companybucket</code> as the bucket name, Alice and
+                           Bob as the IAM users, and Consultants as the group name. Because Amazon S3 requires
+                           that
+                           bucket names be globally unique, you will need to replace the bucket name with a name
+                           that you create.
+                        </p>
+                     </div>
+                     
+                     
+                     <h2 id="walkthrough-what-you-need">Step 0: Preparing for the Walkthrough</h2>
+                     
+                     
+                     <p>
+                        <span>In this example, you will use your AWS account credentials to
+                           create IAM users.</span>
+                        Initially, these users have no permissions. You will
+                        incrementally grant these users permissions to perform specific Amazon S3 actions.
+                        To test
+                        these permissions, you will sign in to the console with each user&apos;s credentials. As
+                        you
+                        incrementally grant permissions as an AWS account owner and test permissions as an
+                        IAM
+                        user, you need to sign in and out, each time using different credentials. You can
+                        do
+                        this testing with one browser, but the process will go faster if you can use two
+                        different browsers: <span>use one browser to connect to the
+                           AWS Management Console with your AWS account credentials and another to connect with
+                           the IAM
+                           user credentials.</span>
+                        
+                        
+                     </p>                
+                     
+                     <p>
+                        <span>To sign into the AWS Management Console with your AWS account
+                           credentials, go to <a href="https://console.aws.amazon.com/" target="_blank">https://console.aws.amazon.com/</a>. </span>
+                        
+                        An IAM user cannot sign in by using
+                        the same link. An IAM user must use an IAM-enabled sign-in page. As the account owner,
+                        you can
+                        provide this link to your users. 
+                     </p>
+                     
+                     <p>For more information about IAM, go to <a href="./IAM/latest/UserGuide/console.html" target="_blank">The AWS Management Console Sign-in Page</a> in the <em>IAM User Guide</em>.
+                     </p>
+                     
+                     <h3 id="walkthrough-sign-in-user-credentials">To Provide a Sign-in Link for IAM Users</h3> 
+                     
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>Sign in to the AWS Management Console and open the IAM console at <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Navigation</b> pane, click <b>IAM Dashboard </b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Note the URL under <b>IAM users sign in link:</b>. 
+                              You will give this link to IAM users to
+                              sign in to the console with their IAM user name and password.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     
+                     <h2 id="walkthrough1-create-bucket">Step 1: Create a Bucket</h2>
+                     
+                     
+                     <p><span>In this step, you will sign in to the Amazon S3 console with your AWS account
+                           credentials, create a bucket, add folders (Development, Finance, Private) to the
+                           bucket, and upload one or two sample documents in each folder.</span>
+                        
+                        
+                        
+                     </p>
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>Sign in to the AWS Management Console and open the Amazon S3 console at
+                              <a href="https://console.aws.amazon.com/s3/" target="_blank">https://console.aws.amazon.com/s3/</a>.
+                           </p> 
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Create a bucket. </p>
+                           
+                           <p>For step-by-step instructions, see <a href="./AmazonS3/latest/user-guide/create-bucket.html" target="_blank">How Do I Create an S3 Bucket?</a> in the <em>Amazon Simple Storage Service Console User Guide</em>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Upload one document to the bucket.</p>
+                           
+                           <p>This exercise assumes you have the <code class="code">s3-dg.pdf</code> document at the root
+                              level of this bucket. If you upload a different document, substitute its file name
+                              
+                              for <code class="code">s3-dg.pdf</code>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Add three folders named Private, Finance, and Development to the bucket.</p>
+                           
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Upload one or two documents to each folder. </p>
+                           
+                           <p>For this exercise, assume you have uploaded a couple of documents in each
+                              folder, resulting in the bucket having objects with the following keys:
+                           </p>
+                           
+                           
+                           <p>Private/privDoc1.txt</p>
+                           
+                           <p>Private/privDoc2.zip</p>
+                           
+                           <p>Development/project1.xls</p>
+                           
+                           <p>Development/project2.xls</p>
+                           
+                           <p>Finance/Tax2011/document1.pdf</p>
+                           
+                           <p>Finance/Tax2011/document2.pdf</p>
+                           
+                           <p>s3-dg.pdf</p>
+                           
+                           <p>For step-by-step instructions, see <a href="./AmazonS3/latest/user-guide/upload-objects.html" target="_blank">How Do I Upload Files and Folders to an S3 Bucket?</a> 
+                              in the <em>Amazon Simple Storage Service Console User Guide</em>. 
+                           </p>
+                           
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="walkthrough1-add-users">Step 2: Create IAM Users and a Group</h2>
+                     
+                     
+                     <p>Now use the IAM console to add two IAM users, Alice and Bob, to your AWS
+                        account. Also create an administrative group named Consultants, and then 
+                        add both users to the group. 
+                     </p>
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Warning</p>
+                        <p>When you add users and a group, do not attach any policies that grant 
+                           permissions to these users. At first, these users will not have any permissions.
+                           In the following sections, you will incrementally grant permissions. You must first
+                           
+                           ensure that you have assigned passwords to these IAM users. You will use
+                           these user credentials to test Amazon S3 actions and verify that the permissions
+                           work as expected.
+                        </p>
+                     </div>
+                     
+                     
+                     <p> For step-by-step instructions on creating a new IAM user, see <a href="./IAM/latest/UserGuide/id_users_create.html" target="_blank">Creating an IAM User in Your AWS
+                           Account</a> in the <em>IAM User Guide</em>. 
+                     </p>
+                     
+                     <p>For step-by-step instructions on creating an administrative group, see <a href="./IAM/latest/UserGuide/getting-started_create-admin-group.html" target="_blank">Creating Your First IAM User and Administrators Group</a> section in the <em>IAM User Guide</em>.
+                     </p>
+                     
+                     
+                     <h2 id="walkthrough1-verify-no-user-permissions">Step 3: Verify that IAM Users Have
+                        No Permissions 
+                     </h2>
+                     
+                     
+                     <p>If you are using two browsers, you can now use the second browser to sign into the
+                        console using one of the IAM user credentials.
+                     </p>
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>Using the IAM user sign-in link (see <a href="walkthrough1.html#walkthrough-sign-in-user-credentials">To Provide a Sign-in Link for IAM Users</a>), sign into the AWS
+                              console using either of the IAM user credentials.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Open the Amazon S3 console at
+                              <a href="https://console.aws.amazon.com/s3/" target="_blank">https://console.aws.amazon.com/s3/</a>.
+                           </p> 
+                           
+                           <p>
+                              Verify the following console message telling
+                              you that access is denied.
+                              
+                           </p>
+                           
+                           
+                           <div class="mediaobject">
+                              
+                              <img src="../../..//img/walkthrough-20.png">
+                              
+                              
+                           </div>
+                           
+                           
+                        </li>
+                     </ol>
+                     
+                     <p>Now, let&apos;s begin granting incremental permissions to the users. First, you will 
+                        attach a group policy that grants permissions that both users must have. 
+                     </p>
+                     
+                     <h2 id="walkthrough-group-policy">Step 4: Grant Group-Level Permissions</h2>
+                     
+                     
+                     
+                     
+                     <p>We want all our users to be able to do the following:</p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>List all buckets owned by the parent account</p>
+                              
+                              <p>To do so, Bob and Alice must have permission for the <code class="code">s3:ListAllMyBuckets</code>
+                                 action.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>List root-level items, folders, and objects, in the
+                                 <code class="code">companybucket</code> bucket.
+                              </p>
+                              
+                              <p>To do so, Bob and Alice must have permission for the <code class="code">s3:ListBucket</code> action on the
+                                 <code class="code">companybucket</code> bucket. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     <p>Now we&apos;ll create a policy that grants these permissions and then we&apos;ll attach it to
+                        the Consultants group. 
+                     </p>
+                     
+                     
+                     <h3 id="walkthrough1-grant-permissions-step1">Step 4.1: Grant Permission to List All Buckets</h3>
+                     
+                     
+                     
+                     <p>In this step you&apos;ll create a managed policy that grants the users minimum permissions
+                        to enable them to list all buckets 
+                        owned by the parent account and then you&apos;ll attach the policy to the Consultants group.
+                        When you attach the managed policy to a user or a group, you allow the user or
+                        group permission to obtain a list of buckets owned by the parent AWS account.
+                     </p>            
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>Sign in to the AWS Management Console and open the IAM console at <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>Since you&apos;ll be granting user permissions sign in with your AWS account credentials,
+                                 not as an IAM user.
+                              </p>
+                           </div>             
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Create the managed policy.</p>
+                           
+                           <ol>
+                              <li>
+                                 <p>In the navigation pane on the left, click <b>Policies</b> and then click <b>Create Policy</b>.
+                                 </p>
+                              </li>
+                              <li>
+                                 <p>Next to <b>Create Your Own Policy</b>, click <b>Select</b>.
+                                 </p>
+                              </li>
+                              <li>
+                                 <p>Enter <code class="code">AllowGroupToSeeBucketListInTheConsole</code> in the <b>Policy Name</b> field.
+                                 </p>
+                              </li>
+                              <li>
+                                 
+                                 <p>Copy the following access policy and paste it into the <b>Policy Document</b> field. 
+                                    
+                                 </p>
+                                 
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Sid&quot;: &quot;AllowGroupToSeeBucketListInTheConsole&quot;,
+      &quot;Action&quot;: [&quot;s3:ListAllMyBuckets&quot;],
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Resource&quot;: [&quot;arn:aws:s3:::*&quot;]
+    }
+  ]
+}</code></pre>          
+                                 <p>A policy is a JSON document. In the document, a <code class="code">Statement</code> is an array of
+                                    objects, each describing a permission using a collection of name value pairs. The
+                                    preceding policy describes one specific permission. The <code class="code">Action</code>
+                                    specifies the type of access. In the policy, the <code class="code">s3:ListAllMyBuckets</code> is
+                                    a predefined Amazon S3 action. This action covers the Amazon S3 GET Service
+                                    operation, which returns list of all buckets owned by the authenticated sender. The
+                                    <code class="code">Effect</code> element value determine if specific permission is allowed or
+                                    denied.
+                                 </p>
+                                 
+                              </li>
+                           </ol>    
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Attach the <code class="code">AllowGroupToSeeBucketListInTheConsole</code> managed policy that you created to the Consultants group.
+                           </p>
+                           
+                           <p>For step-by-step instructions for attaching a managed policy, see <a href="./IAM/latest/UserGuide/access_policies_managed-using.html#policies_using-managed-console" target="_blank">Working with Managed Policies Using the AWS Management Console</a> in the <em>IAM User Guide</em>. 
+                           </p>
+                           
+                           <p>You attach policy documents to IAM users and groups in the IAM console. Because we
+                              want both our users to be able to list the buckets, we attach the policy to the group.
+                              
+                           </p>                  
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Test the permission.</p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>Using the IAM user sign-in link (see <a href="walkthrough1.html#walkthrough-sign-in-user-credentials">To Provide a Sign-in Link for IAM Users</a>), sign
+                                    into the AWS console using any one of IAM user credentials.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>Open the Amazon S3 console at
+                                    <a href="https://console.aws.amazon.com/s3/" target="_blank">https://console.aws.amazon.com/s3/</a>.
+                                 </p> 
+                                 
+                                 <p>The console should now list all the buckets but not the objects in any of the buckets.</p>
+                                 
+                                 
+                                 <div class="mediaobject">
+                                    
+                                    <img src="../../..//img/walkthrough-30.png">
+                                    
+                                    
+                                 </div>
+                                 
+                                 
+                              </li>
+                           </ol>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     
+                     <h3 id="walkthrough1-grant-permissions-step2">Step 4.2: Enable Users to List
+                        Root-Level Content of a Bucket
+                     </h3>
+                     
+                     
+                     <p>Now let&apos;s allow all users to list the root-level <code class="code">companybucket</code> bucket
+                        items. When a user clicks the company bucket in the Amazon S3 console, he or she will
+                        be able
+                        to see the root-level items in the bucket.
+                     </p>
+                     
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/walkthrough-10.png">
+                        
+                        
+                     </div>
+                     
+                     
+                     <p>Remember, we are using <code class="code">companybucket</code> for illustration. You must use
+                        the name of the bucket that you created for this exercise. 
+                     </p>
+                     
+                     <p>To understand what request the console sends to Amazon S3 when you click a bucket
+                        name, the response Amazon S3 returns, and how the console interprets the response,
+                        it is necessary to take a little deep dive.
+                     </p>
+                     
+                     <p>When you click a bucket name, the console sends the  <a href="./AmazonS3/latest/API/RESTBucketGET.html" target="_blank">GET Bucket (List Objects)</a> request to Amazon S3. This request includes the
+                        following parameters:
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><code class="code">prefix</code> parameter with an empty string as its value. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">delimiter</code> parameter with <code class="code">/</code> as its value.
+                                 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>The following is an example request:</p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">GET ?prefix=&amp;delimiter=/ HTTP/1.1 
+Host: companybucket.s3.amazonaws.com
+Date: Wed, 01 Aug  2012 12:00:00 GMT
+Authorization: AWS AKIAIOSFODNN7EXAMPLE:xQE0diMbLRepdf3YB+FIEXAMPLE=</code></pre>
+                     
+                     <p>Amazon S3 returns a response that includes the following
+                        <code class="code">&lt;ListBucketResult/&gt;</code> element:
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;ListBucketResult xmlns=&quot;http://s3.amazonaws.com/doc/2006-03-01/&quot;&gt;
+  &lt;Name&gt;companybucket&lt;/Name&gt;
+  &lt;Prefix&gt;&lt;/Prefix&gt;
+  &lt;Delimiter&gt;/&lt;/Delimiter&gt;
+   ...
+  &lt;Contents&gt;
+    &lt;Key&gt;s3-dg.pdf&lt;/Key&gt;
+    ...
+  &lt;/Contents&gt;
+  &lt;CommonPrefixes&gt;
+    &lt;Prefix&gt;Development/&lt;/Prefix&gt;
+  &lt;/CommonPrefixes&gt;
+  &lt;CommonPrefixes&gt;
+    &lt;Prefix&gt;Finance/&lt;/Prefix&gt;
+  &lt;/CommonPrefixes&gt;
+  &lt;CommonPrefixes&gt;
+    &lt;Prefix&gt;Private/&lt;/Prefix&gt;
+  &lt;/CommonPrefixes&gt;
+&lt;/ListBucketResult&gt;</code></pre>
+                     
+                     <p>The key <code class="code">s3-dg.pdf </code>does not contain the <code class="code">&apos;/&apos;</code>
+                        delimiter, and Amazon S3 returns the key in the <code class="code">&lt;Contents/&gt;</code>
+                        element. However, all other keys in our example bucket contain the <code class="code">&apos;/&apos;</code> delimiter. 
+                        Amazon S3 groups these keys and returns a
+                        <code class="code">&lt;CommonPrefixes/&gt;</code> element for each of the distinct prefix values
+                        <code class="code">Development/</code>, <code class="code">Finance/</code>, and <code class="code">Private/</code> that
+                        is a substring from the beginning of these keys to the first occurrence of the
+                        specified <code class="code">&apos;/&apos;</code> delimiter. 
+                     </p>
+                     
+                     <p>The console interprets this result and displays the root-level items as three
+                        folders and one object key. 
+                     </p>
+                     
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/walkthrough-10.png">
+                        
+                        
+                     </div>
+                     
+                     
+                     <p>Now, if Bob or Alice double-clicks the
+                        <b>Development</b> folder, the console sends the <a href="./AmazonS3/latest/API/RESTBucketGET.html" target="_blank">GET Bucket (List Objects)</a> request to Amazon S3 with the
+                        <code class="code">prefix</code> and the <code class="code">delimiter</code> parameters set to the following
+                        values:
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><code class="code">prefix</code> parameter with value
+                                 <code class="code">Development/</code>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">delimiter</code> parameter with<code class="code"> &apos;/&apos;</code> value. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>In response, Amazon S3 returns the object keys that start with the specified
+                        prefix. 
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;ListBucketResult xmlns=&quot;http://s3.amazonaws.com/doc/2006-03-01/&quot;&gt;
+  &lt;Name&gt;companybucket&lt;/Name&gt;
+  &lt;Prefix&gt;Development&lt;/Prefix&gt;
+  &lt;Delimiter&gt;/&lt;/Delimiter&gt;
+   ...
+  &lt;Contents&gt;
+    &lt;Key&gt;Project1.xls&lt;/Key&gt;
+    ...
+  &lt;/Contents&gt;
+  &lt;Contents&gt;
+    &lt;Key&gt;Project2.xls&lt;/Key&gt;
+    ...
+  &lt;/Contents&gt; 
+&lt;/ListBucketResult&gt;</code></pre>
+                     
+                     <p>The console shows the object keys: </p>
+                     
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/walkthrough-60.png">
+                        
+                        
+                     </div>
+                     
+                     
+                     <p>Now, let&apos;s return to granting users permission to list the root-level bucket
+                        items. To list bucket content, users need permission to call the
+                        <code class="code">s3:ListBucket</code> action, as shown in the following policy statement. To
+                        ensure that they see only the root-level content, we add a condition that users must
+                        specify an empty <code class="code">prefix</code> in the request&#x2014;that is, they are not allowed
+                        to double-click any of our root-level folders. Finally, we will add a 
+                        condition to require folder-style access by requiring user requests to include the
+                        <code class="code">delimiter</code> parameter with value <code class="code">&apos;/&apos;</code>. 
+                        
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{
+  &quot;Sid&quot;: &quot;AllowRootLevelListingOfCompanyBucket&quot;,
+  &quot;Action&quot;: [&quot;s3:ListBucket&quot;],
+  &quot;Effect&quot;: &quot;Allow&quot;,
+  &quot;Resource&quot;: [&quot;arn:aws:s3:::companybucket&quot;],
+  &quot;Condition&quot;:{ 
+         &quot;StringEquals&quot;:{
+             &quot;s3:prefix&quot;:[&quot;&quot;], &quot;s3:delimiter&quot;:[&quot;/&quot;]
+                        }
+              }
+}</code></pre>
+                     
+                     <p>When you use the Amazon S3 console, note that when you click a bucket, the console
+                        first sends the 
+                        <a href="./AmazonS3/latest/API/RESTBucketGETlocation.html" target="_blank">GET Bucket location</a> request to find the AWS region where the bucket is deployed. Then the
+                        console uses the region-specific endpoint for the bucket to send the <a href="./AmazonS3/latest/API/RESTBucketGET.html" target="_blank">GET Bucket (List Objects)</a> request. As a result, if users are going
+                        to use the console, you must grant permission for the
+                        <code class="code">s3:GetBucketLocation</code> action as shown in the following policy
+                        statement:
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{
+   &quot;Sid&quot;: &quot;RequiredByS3Console&quot;,
+   &quot;Action&quot;: [&quot;s3:GetBucketLocation&quot;],
+   &quot;Effect&quot;: &quot;Allow&quot;,
+   &quot;Resource&quot;: [&quot;arn:aws:s3:::*&quot;]
+}</code></pre>
+                     
+                     <p class="title"><b>To enable users to list root-level bucket content</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Sign in to the AWS Management Console and open the Amazon S3 console at
+                              <a href="https://console.aws.amazon.com/s3/" target="_blank">https://console.aws.amazon.com/s3/</a>.
+                           </p>
+                           
+                           <p>Use your AWS account credentials, not the credentials of an IAM user, to sign in to
+                              the console.
+                           </p>
+                           
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Replace the existing <code class="code">AllowGroupToSeeBucketListInTheConsole</code> managed policy 
+                              that is attached to the Consultants group with the following policy, which also 
+                              allows the <code class="code">s3:ListBucket</code> action. Remember to replace <code class="code">companybucket</code> in the policy <code class="code">Resource</code> with the name of your bucket.
+                              
+                           </p> 
+                           
+                           <p>For step-by-step instructions, see  <a href="./IAM/latest/UserGuide/access_policies_managed-using.html#edit-managed-policy-console" target="_blank">Editing Customer Managed Policies</a> in the <em>IAM User Guide</em>. When following the step-by-step instructions, 
+                              make sure to follow the directions for applying your changes to all principal entities
+                              that the policy is attached to.
+                              
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,                 
+  &quot;Statement&quot;: [
+     {
+       &quot;Sid&quot;: &quot;AllowGroupToSeeBucketListAndAlsoAllowGetBucketLocationRequiredForListBucket&quot;,
+       &quot;Action&quot;: [ &quot;s3:ListAllMyBuckets&quot;, &quot;s3:GetBucketLocation&quot; ],
+       &quot;Effect&quot;: &quot;Allow&quot;,
+       &quot;Resource&quot;: [ &quot;arn:aws:s3:::*&quot;  ]
+     },
+     {
+       &quot;Sid&quot;: &quot;AllowRootLevelListingOfCompanyBucket&quot;,
+       &quot;Action&quot;: [&quot;s3:ListBucket&quot;],
+       &quot;Effect&quot;: &quot;Allow&quot;,
+       &quot;Resource&quot;: [&quot;arn:aws:s3:::<em class="replaceable"><code>companybucket</code></em>&quot;],
+       &quot;Condition&quot;:{ 
+             &quot;StringEquals&quot;:{
+                    &quot;s3:prefix&quot;:[&quot;&quot;], &quot;s3:delimiter&quot;:[&quot;/&quot;]
+                           }
+                   }
+     }
+  ] 
+}</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Test the updated permissions.</p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>Using the IAM user sign-in link (see <a href="walkthrough1.html#walkthrough-sign-in-user-credentials">To Provide a Sign-in Link for IAM Users</a>), sign in to
+                                    the AWS Management Console. 
+                                 </p>
+                                 
+                                 <p>Open the Amazon S3 console at
+                                    <a href="https://console.aws.amazon.com/s3/" target="_blank">https://console.aws.amazon.com/s3/</a>.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>Click the bucket that you created for this exercise, and the console will now show
+                                    the root-level bucket
+                                    items. If you click any folders in the bucket, you will not be able to
+                                    see the folder content, because you have not yet granted those
+                                    permissions.
+                                 </p>  
+                                 
+                                 <div class="mediaobject">
+                                    
+                                    <img src="../../..//img/walkthrough-10.png">
+                                    
+                                    
+                                 </div>            
+                                 
+                              </li>
+                           </ol>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p>This test succeeds when users use the Amazon S3 console because when you click a bucket
+                        in the console, the
+                        console implementation sends a request that includes the <code class="code">prefix</code>
+                        parameter with an empty string as its value and the <code class="code">delimiter</code> parameter
+                        with <code class="code">&apos;/&apos;</code> as its value.
+                     </p>
+                     
+                     
+                     
+                     <h3 id="walkthrough-group-policy-summary">Step 4.3: Summary of the Group
+                        Policy
+                     </h3>
+                     
+                     
+                     <p>The net effect of the group policy that you added is to grant 
+                        the IAM users Alice and Bob the following minimum permissions:
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>List all buckets owned by the parent
+                                 account.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>See root-level items in the
+                                 <code class="code">companybucket</code> bucket. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     <p>However, the users still cannot do much. Let&apos;s grant user-specific
+                        permissions, as follows:
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Permit Alice to get and put objects in the Development folder.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              <p>Permit Bob to get and put objects in the Finance folder.</p>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     <p>For user-specific permissions, you attach a policy to the specific user, not to the
+                        group. In the following section, you grant Alice permission to work in the
+                        Development folder. You can repeat the steps to grant similar permission to Bob to
+                        work in the Finance folder.
+                     </p>
+                     
+                     
+                     <h2 id="walkthrough-grant-user1-permissions">Step 5: Grant IAM User Alice Specific
+                        Permissions
+                     </h2>
+                     
+                     
+                     <p>Now we grant additional permissions to Alice so she can see the content of the Development
+                        folder and get and put objects in that folder.
+                     </p>
+                     
+                     
+                     <h3 id="walkthrough-grant-user1-permissions-listbucket">Step 5.1: Grant IAM
+                        User Alice Permission to List the Development Folder Content
+                     </h3>
+                     
+                     
+                     <p>For Alice to list the Development folder content, you must apply a policy to the Alice
+                        user that grants permission for the <code class="code">s3:ListBucket</code> action on the
+                        <code class="code">companybucket</code> bucket, provided the request includes the prefix
+                        <code class="code">Development/</code>. Because we want this policy to be applied only to the
+                        user Alice we&apos;ll use an inline policy. For more information about inline policies,
+                        see  <a href="./IAM/latest/UserGuide/access_policies_managed-vs-inline.html" target="_blank">Managed Policies and Inline Policies</a> in the <em>IAM User Guide</em>.
+                     </p>
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>Sign in to the AWS Management Console and open the IAM console  at <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                           </p>
+                           
+                           <p>Use your AWS account credentials, not the credentials of an IAM user, to sign in to
+                              the console.
+                           </p>
+                           
+                           
+                        </li>
+                        <li>   
+                           
+                           <p>Create an inline policy to grant the user Alice permission to list the Development
+                              folder content.
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 <p>In the navigation pane on the left, click <b>Users</b>.
+                                 </p>
+                              </li>
+                              <li>
+                                 <p>Click the user name Alice.</p>
+                              </li>
+                              <li>
+                                 <p>On the user details page, select the <b>Permissions</b> tab and then expand the
+                                    <b>Inline Policies</b> section.
+                                 </p>
+                              </li>
+                              <li>
+                                 <p>Choose <b>click here</b> (or <b>Create User Policy</b>).
+                                 </p>
+                              </li>
+                              <li>
+                                 <p>Click <b>Custom Policy</b>, and then click <b>Select</b>.
+                                 </p>
+                              </li>
+                              <li>
+                                 <p>Enter a name for the policy in the <b>Policy Name</b> field.
+                                 </p>
+                              </li>
+                              <li>
+                                 <p>Copy the following policy into the <b>Policy Document</b> field.
+                                 </p>
+                                 
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,  
+    &quot;Statement&quot;: [
+    {
+      &quot;Sid&quot;: &quot;AllowListBucketIfSpecificPrefixIsIncludedInRequest&quot;,
+      &quot;Action&quot;: [&quot;s3:ListBucket&quot;],
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Resource&quot;: [&quot;arn:aws:s3:::<em class="replaceable"><code>companybucket</code></em>&quot;],
+      &quot;Condition&quot;:{  &quot;StringLike&quot;:{&quot;s3:prefix&quot;:[&quot;Development/*&quot;] }
+       }
+    }
+  ]
+}</code></pre>    
+                                 </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Test the change to Alice&apos;s permissions:</p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>Using the IAM user sign in link (see <a href="walkthrough1.html#walkthrough-sign-in-user-credentials">To Provide a Sign-in Link for IAM Users</a>), sign in to
+                                    the AWS Management Console. 
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 <p>Open the Amazon S3 console at
+                                    <a href="https://console.aws.amazon.com/s3/" target="_blank">https://console.aws.amazon.com/s3/</a>.
+                                 </p>
+                              </li>
+                              <li>
+                                 
+                                 <p>In the Amazon S3 console, verify that Alice can see the list of
+                                    objects in the <code class="code">Development/</code> folder in the bucket. 
+                                 </p>
+                                 
+                                 <p>When the user clicks the <code class="code">/Development</code> folder to see the
+                                    list of objects in it, the Amazon S3 console sends the
+                                    <code class="code">ListObjects</code> request to Amazon S3 with the prefix
+                                    <code class="code">/Development</code>. Because the user is granted
+                                    permission to see the object list with the prefix <code class="code">Development</code> and delimiter <code class="code">&apos;/&apos;</code>,
+                                    Amazon S3 returns the list of objects with the key prefix
+                                    <code class="code">Development/</code>, and the console displays the list.
+                                 </p>
+                                 
+                                 <div class="mediaobject">
+                                    
+                                    <img src="../../..//img/walkthrough-60.png">
+                                    
+                                    
+                                 </div>
+                                 
+                              </li>
+                           </ol>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     
+                     <h3 id="walkthrough-grant-user1-permissions-get-put-object">Step 5.2: Grant IAM
+                        User Alice Permissions to Get and Put Objects in the Development Folder
+                     </h3>
+                     
+                     
+                     <p>For Alice to get and put objects in the Development folder, she needs permission
+                        to call the <code class="code">s3:GetObject</code> and <code class="code">s3:PutObject</code> actions. The
+                        following policy statements grant these permissions, provided the request includes
+                        the <code class="code">prefix</code> parameter with a value of <code class="code">Development/</code>.
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{
+    &quot;Sid&quot;:&quot;AllowUserToReadWriteObjectData&quot;,
+    &quot;Action&quot;:[&quot;s3:GetObject&quot;, &quot;s3:PutObject&quot;],
+    &quot;Effect&quot;:&quot;Allow&quot;,
+    &quot;Resource&quot;:[&quot;arn:aws:s3:::companybucket/Development/*&quot;]
+ }</code></pre>
+                     
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>Sign in to the AWS Management Console and open the Amazon S3 console at
+                              <a href="https://console.aws.amazon.com/s3/" target="_blank">https://console.aws.amazon.com/s3/</a>.
+                           </p>
+                           
+                           <p>Use your AWS account credentials, not the credentials of an IAM user, to sign in to
+                              the console.
+                           </p>
+                           
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Edit the inline policy you created in the previous step. </p>
+                           
+                           <ol>
+                              <li>
+                                 <p>In the navigation pane on the left, click <b>Users</b>.
+                                 </p>
+                              </li>
+                              <li>
+                                 <p>Click the user name Alice.</p>
+                              </li>
+                              <li>
+                                 <p>On the user details page, select the <b>Permissions</b> tab and then expand the
+                                    <b>Inline Policies</b> section.
+                                 </p>
+                              </li>
+                              <li>
+                                 <p>Click <b>Edit Policy</b> next to the name of the policy you created in the previous step.
+                                 </p>
+                              </li>
+                              <li>
+                                 <p>Copy the following policy into the <b>Policy Document</b> field replacing the existing policy.
+                                 </p>                      
+                                 
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+     &quot;Version&quot;: &quot;2012-10-17&quot;,
+     &quot;Statement&quot;:[
+      {
+         &quot;Sid&quot;:&quot;AllowListBucketIfSpecificPrefixIsIncludedInRequest&quot;,
+         &quot;Action&quot;:[&quot;s3:ListBucket&quot;],
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Resource&quot;:[&quot;arn:aws:s3:::<em class="replaceable"><code>companybucket</code></em>&quot;],
+         &quot;Condition&quot;:{
+            &quot;StringLike&quot;:{&quot;s3:prefix&quot;:[&quot;Development/*&quot;]
+            }
+         }
+      },
+      {
+        &quot;Sid&quot;:&quot;AllowUserToReadWriteObjectDataInDevelopmentFolder&quot;, 
+        &quot;Action&quot;:[&quot;s3:GetObject&quot;, &quot;s3:PutObject&quot;],
+        &quot;Effect&quot;:&quot;Allow&quot;,
+        &quot;Resource&quot;:[&quot;arn:aws:s3:::<em class="replaceable"><code>companybucket</code></em>/Development/*&quot;]
+      }
+   ]
+}</code></pre>
+                                 
+                                 </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Test the updated policy:</p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>Using the IAM user sign-in link (see <a href="walkthrough1.html#walkthrough-sign-in-user-credentials">To Provide a Sign-in Link for IAM Users</a>), sign
+                                    into the AWS Management Console. 
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>Open the Amazon S3 console at
+                                    <a href="https://console.aws.amazon.com/s3/" target="_blank">https://console.aws.amazon.com/s3/</a>.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>In the Amazon S3 console, verify that Alice can now add an object 
+                                    and download an object in the <code class="code">Development</code> folder. 
+                                 </p>
+                                 
+                              </li>
+                           </ol>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <h3 id="walkthrough-grant-user1-explicit-deny-other-access">Step 5.3: Explicitly Deny IAM
+                        User Alice Permissions to Any Other Folders in the Bucket
+                     </h3>
+                     
+                     
+                     <p>User Alice can now list the root-level content in the <code class="code">companybucket</code> bucket. 
+                        She can also get and put objects in the
+                        <code class="code">Development</code> folder. If you really want to tighten the access
+                        permissions, you could explicitly deny Alice access to any other folders in the
+                        bucket. If there is any other policy (bucket policy or ACL) that grants Alice access
+                        to any other folders in the bucket, this explicit deny overrides those permissions.
+                        
+                     </p>
+                     
+                     <p>You can add the following statement to the user Alice policy that requires all
+                        requests that Alice sends to Amazon S3 to include the <code class="code">prefix</code> parameter,
+                        whose value can be either <code class="code">Development/*</code> or an empty string. 
+                     </p>
+                     
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{
+   &quot;Sid&quot;: &quot;ExplicitlyDenyAnyRequestsForAllOtherFoldersExceptDevelopment&quot;,
+   &quot;Action&quot;: [&quot;s3:ListBucket&quot;],
+   &quot;Effect&quot;: &quot;Deny&quot;,
+   &quot;Resource&quot;: [&quot;arn:aws:s3:::companybucket&quot;],
+   &quot;Condition&quot;:{  &quot;StringNotLike&quot;: {&quot;s3:prefix&quot;:[&quot;Development/*&quot;] },
+                  &quot;Null&quot;         : {&quot;s3:prefix&quot;:false }
+    }
+}</code></pre>
+                     
+                     <p>Note that there are two conditional expressions in the <code class="code">Condition</code>
+                        block. The result of these conditional expressions is combined by using the logical
+                        AND. If both conditions are true, the result of the combined condition is true. 
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>The <code class="code">Null</code> conditional expression ensures that requests from
+                                 Alice include the <code class="code">prefix</code> parameter. 
+                              </p>
+                              
+                              <p>The <code class="code">prefix</code> parameter requires folder-like access. If you
+                                 send a request without the <code class="code">prefix</code> parameter, Amazon S3
+                                 returns all the object keys. 
+                              </p>
+                              
+                              <p>If the request includes the <code class="code">prefix</code> parameter with a null
+                                 value, the expression will evaluate to true, and so the entire
+                                 <code class="code">Condition</code> will evaluate to true. You must allow an empty
+                                 string as value of the <code class="code">prefix</code> parameter. You recall from
+                                 the preceding discussion, allowing the null string  allows Alice to retrieve root-level
+                                 bucket
+                                 items as the console does in the preceding discussion. For more information, see <a href="walkthrough1.html#walkthrough1-grant-permissions-step2">Step 4.2: Enable Users to List
+                                    Root-Level Content of a Bucket</a>. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              <p>The <code class="code">StringNotLike</code> conditional expression ensures that if the value of the
+                                 <code class="code">prefix</code> parameter is specified and is not
+                                 <code class="code">Development/*</code>, the request will fail. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>Follow the steps in the preceding section and again update the inline policy you created
+                        for user Alice.
+                     </p>
+                     
+                     <p>Copy the following policy into the <b>Policy Document</b> field replacing the existing policy.
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+   &quot;Statement&quot;:[
+      {
+         &quot;Sid&quot;:&quot;AllowListBucketIfSpecificPrefixIsIncludedInRequest&quot;,
+         &quot;Action&quot;:[&quot;s3:ListBucket&quot;],
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Resource&quot;:[&quot;arn:aws:s3:::<em class="replaceable"><code>companybucket</code></em>&quot;],
+         &quot;Condition&quot;:{
+            &quot;StringLike&quot;:{&quot;s3:prefix&quot;:[&quot;Development/*&quot;]
+            }
+         }
+      },
+      {
+        &quot;Sid&quot;:&quot;AllowUserToReadWriteObjectDataInDevelopmentFolder&quot;, 
+        &quot;Action&quot;:[&quot;s3:GetObject&quot;, &quot;s3:PutObject&quot;],
+        &quot;Effect&quot;:&quot;Allow&quot;,
+        &quot;Resource&quot;:[&quot;arn:aws:s3:::<em class="replaceable"><code>companybucket</code></em>/Development/*&quot;]
+      },
+ <em>     {
+         &quot;Sid&quot;: &quot;ExplicitlyDenyAnyRequestsForAllOtherFoldersExceptDevelopment&quot;,
+         &quot;Action&quot;: [&quot;s3:ListBucket&quot;],
+         &quot;Effect&quot;: &quot;Deny&quot;,
+         &quot;Resource&quot;: [&quot;arn:aws:s3:::<em class="replaceable"><code>companybucket</code></em>&quot;],
+         &quot;Condition&quot;:{  &quot;StringNotLike&quot;: {&quot;s3:prefix&quot;:[&quot;Development/*&quot;] },
+                        &quot;Null&quot;         : {&quot;s3:prefix&quot;:false }
+          }
+      }</em>
+   ]
+}</code></pre>
+                     
+                     
+                     <h2 id="walkthrough1-grant-permissions-step5">Step 6: Grant IAM User Bob Specific
+                        Permissions
+                     </h2>
+                     
+                     
+                     <p>Now you want to grant Bob permission to the Finance folder. Follow the 
+                        steps you used earlier to grant permissions to Alice, but replace the Development
+                        folder with the Finance folder. 
+                        For step-by-step
+                        instructions, see <a href="walkthrough1.html#walkthrough-grant-user1-permissions">Step 5: Grant IAM User Alice Specific
+                           Permissions</a>. 
+                     </p>
+                     
+                     <h2 id="walkthrough-secure-private-folder-explicit-deny">Step 7: Secure the Private
+                        Folder
+                     </h2>
+                     
+                     
+                     <p>In this example, you have only two users. You granted all the minimum required
+                        permissions at the group level and granted user-level permissions only when you really
+                        need to permissions at the individual user level. This approach helps minimize the
+                        effort of managing permissions.
+                        As the number of users increases, managing permissions can become cumbersome. For
+                        example, we
+                        don&apos;t want any of the users in this example to access the content of the Private folder.
+                        How do you ensure you don&apos;t accidentally grant a user permission to it? You add a
+                        policy that explicitly denies
+                        access to the folder. An explicit deny overrides any other permissions. To ensure
+                        that the Private
+                        folder remains private, you can add the follow two deny statements to the group
+                        policy:
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Add the following statement to explicitly deny any action on resources in the
+                                 <code class="code">Private</code> folder
+                                 (<code class="code">companybucket/Private/*</code>).
+                              </p>
+                              
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{
+  &quot;Sid&quot;: &quot;ExplictDenyAccessToPrivateFolderToEveryoneInTheGroup&quot;,
+  &quot;Action&quot;: [&quot;s3:*&quot;],
+  &quot;Effect&quot;: &quot;Deny&quot;,
+  &quot;Resource&quot;:[&quot;arn:aws:s3:::companybucket/Private/*&quot;]
+}
+</code></pre>
+                              </li>
+                           <li class="listitem">
+                              
+                              <p>You also deny permission for the list objects action when the request specifies
+                                 the <code class="code">Private/</code> prefix. In the console, if Bob or Alice double-clicks the
+                                 Private folder, this policy causes Amazon S3 to return an error
+                                 response.
+                              </p>
+                              
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{
+  &quot;Sid&quot;: &quot;DenyListBucketOnPrivateFolder&quot;,
+  &quot;Action&quot;: [&quot;s3:ListBucket&quot;],
+  &quot;Effect&quot;: &quot;Deny&quot;,
+  &quot;Resource&quot;: [&quot;arn:aws:s3:::*&quot;],
+  &quot;Condition&quot;:{
+      &quot;StringLike&quot;:{&quot;s3:prefix&quot;:[&quot;Private/&quot;]}
+   }
+}</code></pre>
+                              </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>Replace the Consultants group policy with an updated policy that includes the
+                        preceding deny statements. After the updated policy is applied, none of the users
+                        in the
+                        group will be able to access the Private folder in your bucket. 
+                     </p> 
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>Sign in to the AWS Management Console and open the Amazon S3 console at
+                              <a href="https://console.aws.amazon.com/s3/" target="_blank">https://console.aws.amazon.com/s3/</a>.
+                           </p>
+                           
+                           <p>Use your AWS account credentials, not the credentials of an IAM user, to sign in to
+                              the console.
+                           </p>
+                           
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Replace the existing <code class="code">AllowGroupToSeeBucketListInTheConsole</code> managed policy 
+                              that is attached to the Consultants group with the following policy. 
+                              Remember to replace <code class="code">companybucket</code> in the policy with the name of your bucket.
+                              
+                           </p> 
+                           
+                           <p>For instructions, see  <a href="./IAM/latest/UserGuide/access_policies_managed-using.html#edit-managed-policy-console" target="_blank">Editing Customer Managed Policies</a> in the <em>IAM User Guide</em>. When following the instructions, 
+                              make sure to follow the directions for applying your changes to all principal entities
+                              that the policy is attached to.
+                              
+                           </p>
+                           
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;Statement&quot;: [
+    {
+      &quot;Sid&quot;: &quot;AllowGroupToSeeBucketListAndAlsoAllowGetBucketLocationRequiredForListBucket&quot;,
+      &quot;Action&quot;: [&quot;s3:ListAllMyBuckets&quot;, &quot;s3:GetBucketLocation&quot;],
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Resource&quot;: [&quot;arn:aws:s3:::*&quot;]
+    },
+    {
+      &quot;Sid&quot;: &quot;AllowRootLevelListingOfCompanyBucket&quot;,
+      &quot;Action&quot;: [&quot;s3:ListBucket&quot;],
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Resource&quot;: [&quot;arn:aws:s3:::<em class="replaceable"><code>companybucket</code></em>&quot;],
+      &quot;Condition&quot;:{
+          &quot;StringEquals&quot;:{&quot;s3:prefix&quot;:[&quot;&quot;]}
+       }
+    },
+    {
+      &quot;Sid&quot;: &quot;RequireFolderStyleList&quot;,
+      &quot;Action&quot;: [&quot;s3:ListBucket&quot;],
+      &quot;Effect&quot;: &quot;Deny&quot;,
+      &quot;Resource&quot;: [&quot;arn:aws:s3:::*&quot;],
+      &quot;Condition&quot;:{
+          &quot;StringNotEquals&quot;:{&quot;s3:delimiter&quot;:&quot;/&quot;}
+       }
+     },
+    {
+      &quot;Sid&quot;: &quot;ExplictDenyAccessToPrivateFolderToEveryoneInTheGroup&quot;,
+      &quot;Action&quot;: [&quot;s3:*&quot;],
+      &quot;Effect&quot;: &quot;Deny&quot;,
+      &quot;Resource&quot;:[&quot;arn:aws:s3:::<em class="replaceable"><code>companybucket</code></em>/Private/*&quot;]
+    },
+    {
+      &quot;Sid&quot;: &quot;DenyListBucketOnPrivateFolder&quot;,
+      &quot;Action&quot;: [&quot;s3:ListBucket&quot;],
+      &quot;Effect&quot;: &quot;Deny&quot;,
+      &quot;Resource&quot;: [&quot;arn:aws:s3:::*&quot;],
+      &quot;Condition&quot;:{
+          &quot;StringLike&quot;:{&quot;s3:prefix&quot;:[&quot;Private/&quot;]}
+       }
+    }
+  ]
+}</code></pre>
+                           
+                           </li>
+                     </ol>     
+                     
+                     
+                     <h2 id="walkthrough-cleanup">Cleanup</h2>
+                     
+                     
+                     <p>In order to clean up, go to the IAM console and remove the users Alice and
+                        Bob. For step-by-step instructions, go to <a href="./IAM/latest/UserGuide/id_users_manage.html#id_users_deleting" target="_blank">Deleting an IAM User</a> in the <em>IAM User Guide</em>.
+                     </p>
+                     
+                     <p>To ensure that you aren&apos;t charged further for storage, you should also delete the
+                        objects and the bucket that you created for this exercise .
+                     </p>
+                     
+                     <h2 id="RelatedResources-walkthrough1">Related Resources</h2>
+                     
+                     
+                     
+                     <div class="itemizedlist"> 
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./IAM/latest/UserGuide/access_policies_manage.html" target="_blank">Working with Policies</a> in the  <em>IAM User Guide</em>.
+                              </p>
+                           </li>
+                        </ul>
+                     </div> 
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="example-policies-s3.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="S3_ACLs_UsingACLs.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Background: Basics of Buckets and Folders"><a class="pagetoc" href="#walkthrough-background1">Background: Basics of Buckets and Folders</a></li>
+                        <li class="pagetoc" name="Walkthrough Example"><a class="pagetoc" href="#walkthrough-scenario">Walkthrough Example</a></li>
+                        <li class="pagetoc" name="Step 0: Preparing for the Walkthrough"><a class="pagetoc" href="#walkthrough-what-you-need">Step 0: Preparing for the Walkthrough</a></li>
+                        <li class="pagetoc" name="Step 1: Create a Bucket"><a class="pagetoc" href="#walkthrough1-create-bucket">Step 1: Create a Bucket</a></li>
+                        <li class="pagetoc" name="Step 2: Create IAM Users and a Group"><a class="pagetoc" href="#walkthrough1-add-users">Step 2: Create IAM Users and a Group</a></li>
+                        <li class="pagetoc" name="Step 3: Verify that IAM Users Have
+            No Permissions "><a class="pagetoc" href="#walkthrough1-verify-no-user-permissions">Step 3: Verify that IAM Users Have
+                              No Permissions </a></li>
+                        <li class="pagetoc" name="Step 4: Grant Group-Level Permissions"><a class="pagetoc" href="#walkthrough-group-policy">Attach Group Policy</a></li>
+                        <li class="pagetoc" name="Step 5: Grant IAM User Alice Specific
+            Permissions"><a class="pagetoc" href="#walkthrough-grant-user1-permissions">Step 5: Grant IAM User Alice Specific
+                              Permissions</a></li>
+                        <li class="pagetoc" name="Step 6: Grant IAM User Bob Specific
+            Permissions"><a class="pagetoc" href="#walkthrough1-grant-permissions-step5">Step 6: Grant IAM User Bob Specific
+                              Permissions</a></li>
+                        <li class="pagetoc" name="Step 7: Secure the Private
+            Folder"><a class="pagetoc" href="#walkthrough-secure-private-folder-explicit-deny">Step 7: Secure the Private
+                              Folder</a></li>
+                        <li class="pagetoc" name="Cleanup"><a class="pagetoc" href="#walkthrough-cleanup">Cleanup</a></li>
+                        <li class="pagetoc" name="Related Resources"><a class="pagetoc" href="#RelatedResources-walkthrough1">Related Resources</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

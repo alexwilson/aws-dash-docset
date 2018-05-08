@@ -1,0 +1,557 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Migrate a Custom Domain Name
+         to a Different API Endpoint - Amazon API Gateway
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="how-to-custom-domains.html" title="Set up Custom Domain Name for an API in
+            API Gateway">
+      <link rel="prev" href="apigateway-regional-api-custom-domain-create.html" title="Set up a Custom Domain Name
+            for a Regional API in API Gateway">
+      <link rel="next" href="sell-api-as-saas-on-aws-marketplace.html" title="">
+      <meta name="description" content="Learn how to migrate a custom domain name between a regional API endpoint and an edge-optimized API endpoint.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon API Gateway">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-regional-api-custom-domain-migrate.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/apigateway">Amazon API Gateway</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="how-to-deploy-api.html">Deploying an API in Amazon API Gateway</a> &#xBB; <a href="how-to-custom-domains.html">Set up Custom Domain Name for an API in
+                                    API Gateway</a> &#xBB; <span class="breadcrumb">Migrate a Custom Domain Name
+                                    to a Different API Endpoint</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="apigateway-regional-api-custom-domain-migrate">Migrate a Custom Domain Name
+                        to a Different API Endpoint
+                     </h1>
+                     <p> You can migrate your custom domain name between edge-optimized and regional endpoints.
+                        You first add the new endpoint configuration type to the existing
+                        <code class="code">endpointConfiguration.types</code> list for the custom domain name. Next, you set
+                        up a DNS record to point the custom domain name to the newly provisioned endpoint.
+                        An
+                        optional last step is to remove the obsolete custom domain name configuration data.
+                     </p>
+                     <p>When planning the migration, remember that for an edge-optimized API&apos;s custom domain
+                        name,
+                        the required certificate provided by ACM must be from the US East (N. Virginia) Region
+                        (<code class="code">us-east-1</code>). This certificate is distributed to all the geographic
+                        locations. However, for a regional API, the ACM Certificate for the regional domain
+                        name
+                        must be from the same region hosting the API. You can migrate an edge-optimized custom
+                        domain name that is not in the <code class="code">us-east-1</code> region to a regional custom domain
+                        name by first requesting a new ACM Certificate from the region that is local to the
+                        API.
+                     </p>
+                     <p> It may take up to 60 seconds to complete a migration between an edge-optimized custom
+                        domain name and a regional custom domain name in API Gateway. For the newly created
+                        endpoint to
+                        become ready to accept traffic, the migration time also depends on when you update
+                        your DNS
+                        records.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#migrate-custom-domain-name-using-console">Migrate Regional and
+                                 Edge-Optimized Domain Names Using the API Gateway Console</a></li>
+                           <li><a href="#apigateway-api-custom-domain-names-migrate-with-awscli">Update Custom
+                                 Domain Names Using the AWS CLI</a></li>
+                           <li><a href="#apigateway-api-custom-domain-names-migrate-with-rest-api">Update Custom
+                                 Domain Names Using the API Gateway REST API</a></li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="migrate-custom-domain-name-using-console">Migrate Regional and
+                        Edge-Optimized Domain Names Using the API Gateway Console
+                     </h2>
+                     
+                     <p> To use the API Gateway console to migrate a regional custom domain name to an edge-optimized
+                        custom domain name and vice versa, use the following procedure. 
+                     </p>
+                     
+                     <p class="title"><b>To migrate a regional or edge-optimized custom domain name using the API Gateway
+                           console</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p> Sign in to the API Gateway console and choose <b>Custom Domain Names</b>
+                              in the primary navigation pane.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Choose an existing domain name from <b>Custom Domain Names</b>, and
+                              then choose <b>Edit</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Depending on the existing endpoint type, do the following:</p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p> For an edge-optimized domain name, choose <b>Add Regional
+                                       Configuration</b>. 
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p> For a regional domain name, choose <b>Add Edge
+                                       Configuration</b>. 
+                                 </p>
+                                 
+                              </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose a certificate from the drop-down list. </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Choose <b>Save</b>. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Choose <b>Proceed</b> to confirm adding the new endpoint.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Update the DNS records to point the new domain name to the newly provisioned
+                              target domain name.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <h2 id="apigateway-api-custom-domain-names-migrate-with-awscli">Update Custom
+                        Domain Names Using the AWS CLI
+                     </h2>
+                     
+                     <p>To use the AWS CLI to update a custom domain name from an edge-optimized endpoint
+                        to a
+                        regional endpoint or vice versa, call the <a href="./cli/latest/reference/apigateway/update-domain-name.html" target="_blank"><code class="code">update-domain-name</code></a> command to add the new endpoint type
+                        and, optionally, call the <a href="./cli/latest/reference/apigateway/update-domain-name.html" target="_blank"><code class="code">update-domain-name</code></a> command to remove the old endpoint
+                        type.
+                     </p>
+                     
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#update-edge-optimized-domain-name-to-regional-cli">Update an
+                                 Edge-Optimized Custom Domain Name to Regional</a></li>
+                           <li><a href="#update-regional-domain-name-to-edge-optimized-cli">Update a
+                                 Regional Custom Domain Name to Edge-Optimized</a></li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="update-edge-optimized-domain-name-to-regional-cli">Update an
+                        Edge-Optimized Custom Domain Name to Regional
+                     </h3>
+                     
+                     <p>To migrate an edge-optimized custom domain name to a regional custom domain name,
+                        call the <code class="code">update-domain-name</code> command of AWS CLI, as follows:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway update-domain-name \
+    --domain-name &apos;api.example.com&apos; \
+    --patch-operations  [ \ 
+        { op:&apos;add&apos;, path: &apos;/endpointConfiguration/types&apos;,value: &apos;REGIONAL&apos; }, \
+        { op:&apos;add&apos;, path: &apos;/regionalCertificateArn&apos;, value: &apos;arn:aws:acm:us-west-2:123456789012:certificate/cd833b28-58d2-407e-83e9-dce3fd852149&apos; } \
+      ]</code></pre>
+                     <p>The regional certificate must be of the same region as the regional API. </p>
+                     
+                     <p>The success response has a <code class="code">200 OK</code> status code and a body similar to
+                        the following:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;certificateArn&quot;: &quot;arn:aws:acm:us-east-1:123456789012:certificate/34a95aa1-77fa-427c-aa07-3a88bd9f3c0a&quot;,
+    &quot;certificateName&quot;: &quot;edge-cert&quot;,
+    &quot;certificateUploadDate&quot;: &quot;2017-10-16T23:22:57Z&quot;,
+    &quot;distributionDomainName&quot;: &quot;d1frvgze7vy1bf.cloudfront.net&quot;,
+    &quot;domainName&quot;: &quot;api.example.com&quot;,
+    &quot;endpointConfiguration&quot;: {
+        &quot;types&quot;: [
+            &quot;EDGE&quot;,
+            &quot;REGIONAL&quot;
+        ]
+    },
+    &quot;regionalCertificateArn&quot;: &quot;arn:aws:acm:us-west-2:123456789012:certificate/cd833b28-58d2-407e-83e9-dce3fd852149&quot;,
+    &quot;regionalDomainName&quot;: &quot;d-fdisjghyn6.execute-api.us-west-2.amazonaws.com&quot;
+}</code></pre>
+                     <p>For the updated regional custom domain name, the resulting
+                        <code class="code">regionalDomainName</code> property returns the regional API host name. You
+                        must set up a DNS record to point the regional custom domain name to this regional
+                        host name. This enables the traffic that is bound to the custom domain name to be
+                        routed to the regional host. 
+                     </p>
+                     
+                     <p>After the DNS record is set, you can remove the edge-optimized custom domain name
+                        by calling the <code class="code"><a href="./cli/latest/reference/apigateway/update-domain-name.html" target="_blank">update-domain-name</a></code> command of AWS CLI:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway update-domain-name \
+    --domain-name api.example.com \
+    --patch-operations [ \
+            {op:&apos;remove&apos;, path:&apos;/endpointConfiguration/types&apos;, value:&apos;EDGE&apos;}, \
+            {op:&apos;remove&apos;, path:&apos;certificateName&apos;}, \
+            {op:&apos;remove&apos;, path:&apos;certificateArn&apos;} \
+        ]</code></pre>
+                     
+                     
+                     <h3 id="update-regional-domain-name-to-edge-optimized-cli">Update a
+                        Regional Custom Domain Name to Edge-Optimized
+                     </h3>
+                     
+                     <p>To migrate a regional custom domain name to an edge-optimized custom domain name,
+                        call the <code class="code">update-domain-name</code> command of the AWS CLI, as follows:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway update-domain-name \
+    --domain-name &apos;api.example.com&apos; \
+    --patch-operations  [ \
+            { op:&apos;add&apos;, path:&apos;/endpointConfiguration/types&apos;,value: &apos;EDGE&apos; }, \
+            { op:&apos;add&apos;, path:&apos;/certificateName&apos;, value:&apos;edge-cert&apos;}, \
+            { op:&apos;add&apos;, path:&apos;/certificateArn&apos;, value: &apos;arn:aws:acm:us-east-1:123456789012:certificate/34a95aa1-77fa-427c-aa07-3a88bd9f3c0a&apos; } \
+        ]</code></pre>
+                     <p>The edge-optimized domain certificate must be created in the
+                        <code class="code">us-east-1</code> region. 
+                     </p>
+                     
+                     <p>The success response has a <code class="code">200 OK</code> status code and a body similar to
+                        the following:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;certificateArn&quot;: &quot;arn:aws:acm:us-east-1:738575810317:certificate/34a95aa1-77fa-427c-aa07-3a88bd9f3c0a&quot;,
+    &quot;certificateName&quot;: &quot;edge-cert&quot;,
+    &quot;certificateUploadDate&quot;: &quot;2017-10-16T23:22:57Z&quot;,
+    &quot;distributionDomainName&quot;: &quot;d1frvgze7vy1bf.cloudfront.net&quot;,
+    &quot;domainName&quot;: &quot;api.example.com&quot;,
+    &quot;endpointConfiguration&quot;: {
+        &quot;types&quot;: [
+            &quot;EDGE&quot;,
+            &quot;REGIONAL&quot;
+        ]
+    },
+    &quot;regionalCertificateArn&quot;: &quot;arn:aws:acm:us-east-1:123456789012:certificate/3d881b54-851a-478a-a887-f6502760461d&quot;,
+    &quot;regionalDomainName&quot;: &quot;d-cgkq2qwgzf.execute-api.us-east-1.amazonaws.com&quot;
+}</code></pre>
+                     <p>For the specified custom domain name, API Gateway returns the edge-optimized API host
+                        name as the <code class="code">distributionDomainName</code> property value. You must set a DNS
+                        record to point the edge-optimized custom domain name to this distribution domain
+                        name. This enables traffic that is bound to the edge-optimized custom domain name
+                        to
+                        be routed to the edge-optimized API host name. 
+                     </p>
+                     
+                     <p>After the DNS record is set, you can remove the <code class="code">REGION</code> endpoint type
+                        of the custom domain name:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway update-domain-name \
+    --domain-name api.example.com \
+    --patch-operations [ \
+        {op:&apos;remove&apos;, path:&apos;/endpointConfiguration/types&apos;, value:&apos;REGIONAL&apos;}, \
+        {op:&apos;remove&apos;, path:&apos;regionalCertificateArn&apos;} \
+      ]</code></pre>
+                     <p>The result of this command is similar to the following output, with only
+                        edge-optimized domain name configuration data:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;certificateArn&quot;: &quot;arn:aws:acm:us-east-1:738575810317:certificate/34a95aa1-77fa-427c-aa07-3a88bd9f3c0a&quot;,
+    &quot;certificateName&quot;: &quot;edge-cert&quot;,
+    &quot;certificateUploadDate&quot;: &quot;2017-10-16T23:22:57Z&quot;,
+    &quot;distributionDomainName&quot;: &quot;d1frvgze7vy1bf.cloudfront.net&quot;,
+    &quot;domainName&quot;: &quot;regional.haymuto.com&quot;,
+    &quot;endpointConfiguration&quot;: {
+        &quot;types&quot;: &quot;EDGE&quot;
+    }
+}</code></pre>
+                     
+                     
+                     <h2 id="apigateway-api-custom-domain-names-migrate-with-rest-api">Update Custom
+                        Domain Names Using the API Gateway REST API
+                     </h2>
+                     
+                     <p>To use the API Gateway REST API to update an edge-optimized custom domain name to
+                        a regional
+                        one, or from a regional custom domain name to an edge-optimized one, use the <a href="./apigateway/api-reference/link-relation/domainname-update" target="_blank">domainname:update</a>
+                        link-relation and, optionally, the <a href="./apigateway/api-reference/link-relation/domainname-delete" target="_blank">domainname:delete</a>
+                        link-relation. 
+                     </p>
+                     
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#update-edge-domain-name-to-regional">Update an Edge-Optimized
+                                 Custom Domain Name to Regional</a></li>
+                           <li><a href="#update-regional-domain-name-to-edge-optimized">Update a Region
+                                 Domain Name to Edge-Optimized</a></li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="update-edge-domain-name-to-regional">Update an Edge-Optimized
+                        Custom Domain Name to Regional
+                     </h3>
+                     
+                     <p>To update an edge-optimized custom domain name (<code class="code">api.example.com</code>) to a
+                        regional custom domain name, call <a href="./apigateway/api-reference/link-relation/domainname-update/" target="_blank"><code class="code">domainname:update</code></a> of the API Gateway REST API:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">PATCH /domainnames/api.example.com HTTP/1.1
+Host: apigateway.us-west-2.amazonaws.com
+Content-Type: application/x-amz-json-1.0
+X-Amz-Date: 20170511T214723Z
+Authorization: AWS4-HMAC-SHA256 Credential={ACCESS-KEY-ID}/20170511/us-west-2/apigateway/aws4_request, SignedHeaders=content-length;content-type;host;x-amz-date, Signature=d0abd98a2a06199531c2916b162ede9f63a247032cdc8e4d077216446d13103c
+
+{
+    &quot;patchOperations&quot;: [
+      {
+        &quot;op&quot; : &quot;add&quot;,
+        &quot;path&quot; : &quot;/endpointConfiguration/types&quot;,
+        &quot;value&quot; : &quot;REGIONAL&quot;
+      },
+      {
+        &quot;op&quot; : &quot;add&quot;,
+        &quot;path&quot; : &quot;/regionalCertificateArn&quot;,
+        &quot;value&quot; : &quot;arn:aws:acm:us-west-2:123456789012:certificate/c19332f1-3be7-457f-a245-e03a423084e7&quot;
+      }
+    ]
+}</code></pre>
+                     <p>The regional certificate must be of the same region as the regional API. </p>
+                     
+                     <p>The success response has a <code class="code">200 OK</code> status code and a body similar to
+                        the following:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;certificateArn&quot;: &quot;arn:aws:acm:us-east-1:123456789012:certificate/34a95aa1-77fa-427c-aa07-3a88bd9f3c0a&quot;,
+    &quot;certificateName&quot;: &quot;edge-cert&quot;,
+    &quot;certificateUploadDate&quot;: &quot;2017-10-16T23:22:57Z&quot;,
+    &quot;distributionDomainName&quot;: &quot;d1frvgze7vy1bf.cloudfront.net&quot;,
+    &quot;domainName&quot;: &quot;api.example.com&quot;,
+    &quot;endpointConfiguration&quot;: {
+        &quot;types&quot;: [
+            &quot;EDGE&quot;,
+            &quot;REGIONAL&quot;
+        ]
+    },
+    &quot;regionalCertificateArn&quot;: &quot;arn:aws:acm:us-west-2:123456789012:certificate/c19332f1-3be7-457f-a245-e03a423084e7&quot;,
+    &quot;regionalDomainName&quot;: &quot;d-gdisjchyn5.execute-api.us-west-2.amazonaws.com&quot;
+}</code></pre>
+                     <p>For the regional custom domain name, the returned <code class="code">regionalDomainName</code>
+                        property value is the regional API host name. You must set up a DNS record to point
+                        the regional custom domain name to this regional API host name. This enables traffic
+                        that is bound to the regional custom domain name to be routed to the regional API
+                        host. 
+                     </p>
+                     
+                     <p>You can then remove the edge-optimized API custom domain name:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">PATCH /domainnames/{domain-name} HTTP/1.1
+Host: apigateway.us-west-2.amazonaws.com
+Content-Type: application/x-amz-json-1.0
+X-Amz-Date: 20170511T214723Z
+Authorization: AWS4-HMAC-SHA256 Credential={ACCESS-KEY-ID}/20170511/us-west-2/apigateway/aws4_request, SignedHeaders=content-length;content-type;host;x-amz-date, Signature=d0abd98a2a06199531c2916b162ede9f63a247032cdc8e4d077216446d13103c
+
+{
+    &quot;patchOperations&quot;: [
+      {
+        &quot;op&quot; : &quot;remove&quot;,
+        &quot;path&quot; : &quot;/endpointConfiguration/types&quot;
+      },
+      {
+        &quot;op&quot; : &quot;remove&quot;,
+        &quot;path&quot; : &quot;/certificateName&quot;
+      },
+      {
+        &quot;op&quot; : &quot;remove&quot;,
+        &quot;path&quot; : &quot;/certificateArn&quot;
+      }
+    ]
+}
+</code></pre>
+                     
+                     
+                     <h3 id="update-regional-domain-name-to-edge-optimized">Update a Region
+                        Domain Name to Edge-Optimized
+                     </h3>
+                     
+                     <p>To migrate a regional custom domain name to an edge-optimized custom domain name,
+                        call <code class="code">domainname:update</code> from the API Gateway REST API, as follows:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">PATCH /domainnames/{domain-name} HTTP/1.1
+Host: apigateway.us-west-2.amazonaws.com
+Content-Type: application/x-amz-json-1.0
+X-Amz-Date: 20170511T214723Z
+Authorization: AWS4-HMAC-SHA256 Credential={ACCESS-KEY-ID}/20170511/us-west-2/apigateway/aws4_request, SignedHeaders=content-length;content-type;host;x-amz-date, Signature=d0abd98a2a06199531c2916b162ede9f63a247032cdc8e4d077216446d13103c
+
+{
+  &quot;patchOperations&quot; : [ {
+      &quot;op&quot; : &quot;add&quot;,
+      &quot;path&quot; : &quot;/endpointConfiguration/types&quot;,
+      &quot;value&quot; : &quot;EDGE&quot;
+  }, {
+      &quot;op&quot;: &quot;add&quot;,
+      &quot;path&quot;: &quot;/certificateName&quot;,
+      &quot;value&quot;: &quot;edge-cert&quot;
+  },{
+      &quot;op&quot;: &quot;add&quot;,
+      &quot;path&quot;: &quot;/certificateArn&quot;,
+      &quot;value&quot;: &quot;arn:aws:acm:us-east-1:123456789012:certificate/34a95aa1-77fa-427c-aa07-3a88bd9f3c0a&quot;
+  } ]
+} </code></pre>
+                     <p>For an edge-optimized API custom domain name, the ACM Certificate must be from
+                        the <code class="code">us-east-1</code> region. 
+                     </p>
+                     
+                     <p>The successful response has a <code class="code">200 OK</code> status code and a body similar
+                        to the following:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;certificateArn&quot;: &quot;arn:aws:acm:us-east-1:738575810317:certificate/34a95aa1-77fa-427c-aa07-3a88bd9f3c0a&quot;,
+    &quot;certificateName&quot;: &quot;edge-cert&quot;,
+    &quot;certificateUploadDate&quot;: &quot;2017-10-16T23:22:57Z&quot;,
+    &quot;distributionDomainName&quot;: &quot;d1frvgze7vy1bf.cloudfront.net&quot;,
+    &quot;domainName&quot;: &quot;api.example.com&quot;,
+    &quot;endpointConfiguration&quot;: {
+        &quot;types&quot;: [
+            &quot;EDGE&quot;,
+            &quot;REGIONAL&quot;
+        ]
+    },
+    &quot;regionalCertificateArn&quot;: &quot;arn:aws:acm:us-east-1:123456789012:certificate/3d881b54-851a-478a-a887-f6502760461d&quot;,
+    &quot;regionalDomainName&quot;: &quot;d-cgkq2qwgzf.execute-api.us-east-1.amazonaws.com&quot;
+}</code></pre>
+                     <p>For the specified custom domain name, API Gateway returns the domain name of an Amazon
+                        CloudFront
+                        distribution. You must set a DNS record to point the custom domain name to this
+                        distribution domain name, so that traffic to the custom domain name is routed to the
+                        named CloudFront distribution. 
+                     </p>
+                     
+                     <p>You can then remove the regional API custom domain name:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">PATCH /domainnames/{domain-name} HTTP/1.1
+Host: apigateway.us-west-2.amazonaws.com
+Content-Type: application/x-amz-json-1.0
+X-Amz-Date: 20170511T214723Z
+Authorization: AWS4-HMAC-SHA256 Credential={ACCESS-KEY-ID}/20170511/us-west-2/apigateway/aws4_request, SignedHeaders=content-length;content-type;host;x-amz-date, Signature=d0abd98a2a06199531c2916b162ede9f63a247032cdc8e4d077216446d13103c
+
+{
+    &quot;patchOperations&quot;: [
+      {
+        &quot;op&quot; : &quot;remove&quot;,
+        &quot;path&quot; : &quot;/endpointConfiguration/types&quot;
+      },
+      {
+        &quot;op&quot; : &quot;remove&quot;,
+        &quot;path&quot; : &quot;/regionalCertificateArn&quot;
+      }
+    ]
+}
+</code></pre>
+                     <p>The successful response to the preceding request has a <code class="code">200 OK</code> status
+                        code and a body similar to the following:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;certificateArn&quot;: &quot;arn:aws:acm:us-east-1:738575810317:certificate/34a95aa1-77fa-427c-aa07-3a88bd9f3c0a&quot;,
+    &quot;certificateName&quot;: &quot;edge-cert&quot;,
+    &quot;certificateUploadDate&quot;: &quot;2017-10-16T23:22:57Z&quot;,
+    &quot;distributionDomainName&quot;: &quot;d1frvgze7vy1bf.cloudfront.net&quot;,
+    &quot;domainName&quot;: &quot;regional.haymuto.com&quot;,
+    &quot;endpointConfiguration&quot;: {
+        &quot;types&quot;: &quot;EDGE&quot;
+    }
+}</code></pre>
+                     
+                     
+                     </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="apigateway-regional-api-custom-domain-create.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="sell-api-as-saas-on-aws-marketplace.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Migrate Regional and
+            Edge-Optimized Domain Names Using the API Gateway Console"><a class="pagetoc" href="#migrate-custom-domain-name-using-console">Migrate Regional and
+                              Edge-Optimized Domain Names Using the API Gateway Console</a></li>
+                        <li class="pagetoc" name="Update Custom
+                Domain Names Using the AWS CLI"><a class="pagetoc" href="#apigateway-api-custom-domain-names-migrate-with-awscli">Migrate Custom Domain Names Using the AWS CLI</a></li>
+                        <li class="pagetoc" name="Update Custom
+                Domain Names Using the API Gateway REST API"><a class="pagetoc" href="#apigateway-api-custom-domain-names-migrate-with-rest-api">Update Custom Domain Names Using the REST API</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon API Gateway';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

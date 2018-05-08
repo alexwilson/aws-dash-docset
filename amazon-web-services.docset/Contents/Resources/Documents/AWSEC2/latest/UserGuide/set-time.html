@@ -1,0 +1,444 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Setting the Time for Your Linux Instance - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="Configure_Instance.html" title="Configuring Your Amazon Linux Instance">
+      <link rel="prev" href="processor_state_control.html" title="Processor State Control for Your EC2 Instance">
+      <link rel="next" href="set-hostname.html" title="Changing the Hostname of Your Linux Instance">
+      <meta name="description" content="Set the time or change the time zone for an Amazon Linux instance.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/set-time.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="Configure_Instance.html">Configuring Your Amazon Linux Instance</a> &#xBB; <span class="breadcrumb">Setting the Time for Your Linux Instance</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="set-time">Setting the Time for Your Linux Instance</h1>
+                     <p>A consistent and accurate time reference is crucial for many server tasks and
+                        processes. Most system logs include a time stamp that you can use to determine when
+                        problems occur and in what order the events take place. If you use the AWS CLI or
+                        an AWS
+                        SDK to make requests from your instance, these tools sign requests on your behalf.
+                        If
+                        your instance&apos;s date and time are not set correctly, the date in the signature may
+                        not
+                        match the date of the request, and AWS rejects the request. 
+                     </p>
+                     <p>Amazon provides the Amazon Time Sync Service, which you can access from your instance.
+                        This service uses a fleet of satellite-connected and atomic reference clocks in each
+                        AWS
+                        Region to deliver accurate current time readings of the Coordinated Universal Time
+                        (UTC)
+                        global standard through Network Time Protocol (NTP). The Amazon Time Sync Service
+                        automatically smooths any leap seconds that are added to UTC.
+                     </p>
+                     <p>The Amazon Time Sync Service is available through NTP at the <code class="code">169.254.169.123</code>
+                        IP address for any instance running in a VPC. Your instance does not require access
+                        to the
+                        internet, and you do not have to configure your security group rules or your network
+                        ACL
+                        rules to allow access. Use the following procedures to configure the Amazon Time Sync
+                        Service on your instance using the <code class="code">chrony</code> client.
+                     </p>
+                     <p>Alternatively, you can use external NTP sources. For more information about NTP and
+                        public time sources, see <a href="http://www.ntp.org/" target="_blank">http://www.ntp.org/</a>.
+                        An instance needs access to the internet for the external NTP time sources to work.
+                        
+                     </p>
+                     
+                     <h2 id="configure-amazon-time-service-amazon-linux">Configuring the Amazon Time Sync Service on Amazon Linux</h2>
+                     
+                     <p>On Amazon Linux 2, the default <code class="code">chrony</code> configuration is already set up to use the
+                        Amazon Time Sync Service IP address. On Amazon Linux, you must edit the <code class="code">chrony</code>
+                        configuration file to add a server entry for the Amazon Time Sync Service.
+                     </p>
+                     
+                     <p class="title"><b>To configure your instance to use the Amazon Time Sync Service</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Connect to your instance and uninstall the NTP service.</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo yum erase ntp*</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Install the <code class="code">chrony</code> package.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo yum install chrony</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Open the <code class="code">/etc/chrony.conf</code> file using a text editor (such as
+                              <b>vim</b> or <b>nano</b>). Verify that the file includes the
+                              following line:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">server 169.254.169.123 prefer iburst</code></pre>
+                           <p>If the line is present, then the Amazon Time Sync Service is already
+                              configured and you can go to the next step. If not, add the line after any other
+                              <code class="code">server</code> or <code class="code">pool</code> statements that are already present in
+                              the file, and save your changes.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Start the <code class="code">chrony</code> daemon (<code class="code">chronyd</code>).
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo service chronyd start</code></strong></code></pre>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">Starting chronyd:                                          [  OK  ]</code></pre>
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>On RHEL and CentOS (up to version 6), the service name is <code class="code">chrony</code> instead of
+                                 <code class="code">chronyd</code>.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Use the <code class="code">chkconfig</code> command to configure <code class="code">chronyd</code> to start
+                              at each system boot.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo chkconfig chronyd on</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Verify that <code class="code">chrony</code> is using the <code class="code">169.254.169.123</code> IP
+                              address to synchronize the time.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>chronyc sources -v</code></strong></code></pre>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">210 Number of sources = 7
+
+  .-- Source mode  &apos;^&apos; = server, &apos;=&apos; = peer, &apos;#&apos; = local clock.
+ / .- Source state &apos;*&apos; = current synced, &apos;+&apos; = combined , &apos;-&apos; = not combined,
+| /   &apos;?&apos; = unreachable, &apos;x&apos; = time may be in error, &apos;~&apos; = time too variable.
+||                                                 .- xxxx [ yyyy ] +/- zzzz
+||      Reachability register (octal) -.           |  xxxx = adjusted offset,
+||      Log2(Polling interval) --.      |          |  yyyy = measured offset,
+||                                \     |          |  zzzz = estimated error.
+||                                 |    |           \
+MS Name/IP address         Stratum Poll Reach LastRx Last sample               
+===============================================================================
+^* 169.254.169.123               3   6    17    43    -30us[ -226us] +/-  287us
+^- ec2-12-34-231-12.eu-west&gt;     2   6    17    43   -388us[ -388us] +/-   11ms
+^- tshirt.heanet.ie              1   6    17    44   +178us[  +25us] +/- 1959us
+^? tbag.heanet.ie                0   6     0     -     +0ns[   +0ns] +/-    0ns
+^? bray.walcz.net                0   6     0     -     +0ns[   +0ns] +/-    0ns
+^? 2a05:d018:c43:e312:ce77:&gt;     0   6     0     -     +0ns[   +0ns] +/-    0ns
+^? 2a05:d018:dab:2701:b70:b&gt;     0   6     0     -     +0ns[   +0ns] +/-    0ns</code></pre>
+                           <p>In the output that&apos;s returned, <code class="code">^*</code> indicates the preferred time
+                              source.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Verify the time synchronization metrics that are reported by
+                              <code class="code">chrony</code>.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>chronyc tracking</code></strong></code></pre>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">Reference ID    : A9FEA97B (169.254.169.123)
+Stratum         : 4
+Ref time (UTC)  : Wed Nov 22 13:18:34 2017
+System time     : 0.000000626 seconds slow of NTP time
+Last offset     : +0.002852759 seconds
+RMS offset      : 0.002852759 seconds
+Frequency       : 1.187 ppm fast
+Residual freq   : +0.020 ppm
+Skew            : 24.388 ppm
+Root delay      : 0.000504752 seconds
+Root dispersion : 0.001112565 seconds
+Update interval : 64.4 seconds
+Leap status     : Normal</code></pre>
+                           </li>
+                     </ol>
+                     
+                     
+                     <h2 id="configure-amazon-time-service-ubuntu">Configuring the Amazon Time Sync Service on Ubuntu</h2>
+                     
+                     
+                     <p>You must edit the <code class="code">chrony</code> configuration file to add a server entry for the Amazon Time Sync Service.
+                     </p>
+                     
+                     <p class="title"><b>To configure your instance to use the Amazon Time Sync Service</b></p>
+                     <ol>
+                        <li>
+                           <p>Connect to your instance and use <code class="code">apt</code> to install the <code class="code">chrony</code>
+                              package.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo apt install chrony</code></strong></code></pre>
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>If necessary, update your instance first by running <code class="code">sudo apt update</code>.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           <p>Open the <code class="code">/etc/chrony/chrony.conf</code> file using a text editor (such as
+                              <b>vim</b> or <b>nano</b>). Add the following line
+                              before any other <code class="code">server</code> or <code class="code">pool</code> statements that are
+                              already present in the file, and save your changes:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">server 169.254.169.123 prefer iburst</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Restart the <code class="code">chrony</code> service.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo /etc/init.d/chrony restart</code></strong></code></pre>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">[ ok ] Restarting chrony (via systemctl): chrony.service.</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Verify that <code class="code">chrony</code> is using the <code class="code">169.254.169.123</code> IP
+                              address to synchronize the time.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>chronyc sources -v</code></strong></code></pre>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">210 Number of sources = 7
+
+  .-- Source mode  &apos;^&apos; = server, &apos;=&apos; = peer, &apos;#&apos; = local clock.
+ / .- Source state &apos;*&apos; = current synced, &apos;+&apos; = combined , &apos;-&apos; = not combined,
+| /   &apos;?&apos; = unreachable, &apos;x&apos; = time may be in error, &apos;~&apos; = time too variable.
+||                                                 .- xxxx [ yyyy ] +/- zzzz
+||      Reachability register (octal) -.           |  xxxx = adjusted offset,
+||      Log2(Polling interval) --.      |          |  yyyy = measured offset,
+||                                \     |          |  zzzz = estimated error.
+||                                 |    |           \
+MS Name/IP address         Stratum Poll Reach LastRx Last sample
+===============================================================================
+^* 169.254.169.123               3   6    17    12    +15us[  +57us] +/-  320us
+^- tbag.heanet.ie                1   6    17    13  -3488us[-3446us] +/- 1779us
+^- ec2-12-34-231-12.eu-west-     2   6    17    13   +893us[ +935us] +/- 7710us
+^? 2a05:d018:c43:e312:ce77:6     0   6     0   10y     +0ns[   +0ns] +/-    0ns
+^? 2a05:d018:d34:9000:d8c6:5     0   6     0   10y     +0ns[   +0ns] +/-    0ns
+^? tshirt.heanet.ie              0   6     0   10y     +0ns[   +0ns] +/-    0ns
+^? bray.walcz.net                0   6     0   10y     +0ns[   +0ns] +/-    0ns</code></pre>
+                           <p>In the output that&apos;s returned, <code class="code">^*</code> indicates the preferred time
+                              source.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Verify the time synchronization metrics that are reported by
+                              <code class="code">chrony</code>.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>chronyc tracking</code></strong></code></pre>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">Reference ID    : 169.254.169.123 (169.254.169.123)
+Stratum         : 4
+Ref time (UTC)  : Wed Nov 29 07:41:57 2017
+System time     : 0.000000011 seconds slow of NTP time
+Last offset     : +0.000041659 seconds
+RMS offset      : 0.000041659 seconds
+Frequency       : 10.141 ppm slow
+Residual freq   : +7.557 ppm
+Skew            : 2.329 ppm
+Root delay      : 0.000544 seconds
+Root dispersion : 0.000631 seconds
+Update interval : 2.0 seconds
+Leap status     : Normal</code></pre>
+                           </li>
+                     </ol>
+                     
+                     
+                     <h2 id="configure-amazon-time-service-suse">Configuring the Amazon Time Sync Service on SUSE Linux</h2>
+                     
+                     
+                     <p>Install chrony from <a href="https://software.opensuse.org/package/chrony" target="_blank">https://software.opensuse.org/package/chrony</a>.
+                     </p>
+                     
+                     <p>Open the <code class="code">/etc/chrony.conf</code> file using a text editor (such as
+                        <b>vim</b> or <b>nano</b>). Verify that the file
+                        contains the following line:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">server 169.254.169.123 prefer iburst</code></pre>
+                     <p>If this line is not present, add it. Comment out any other server or pool lines.
+                        Open yast and enable the chrony service.
+                     </p>
+                     
+                     
+                     <h2 id="change_time_zone">Changing the Time Zone on Amazon Linux</h2>
+                     
+                     <p>Amazon Linux instances are set to the UTC (Coordinated Universal Time) time zone by
+                        default, but you may wish to change the time on an instance to the local time or to
+                        another time zone in your network.
+                     </p>
+                     	
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>These procedures are intended for use with Amazon Linux. For more information about
+                           other
+                           			distributions, see their specific documentation.
+                        </p>
+                     </div>
+                     
+                     <p class="title"><b>To change the time zone on an instance</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Identify the time zone to use on the instance. The
+                              <code>/usr/share/zoneinfo</code> directory contains a hierarchy
+                              of time zone data files. Browse the directory structure at that location to
+                              find a file for your time zone.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>ls /usr/share/zoneinfo</code></strong><code class="computeroutput" copy="false">
+Africa      Chile    GB         Indian       Mideast   posixrules  US
+America     CST6CDT  GB-Eire    Iran         MST       PRC         UTC
+Antarctica  Cuba     GMT        iso3166.tab  MST7MDT   PST8PDT     WET
+Arctic      EET      GMT0       Israel       Navajo    right       W-SU
+...</code></code></pre>
+                           <p>Some of the entries at this location are directories (such as
+                              <code>America</code>), and these directories contain time zone
+                              files for specific cities. Find your city (or a city in your time zone) to
+                              use for the instance. In this example, you can use the time zone file for
+                              Los Angeles,
+                              <code>/usr/share/zoneinfo/America/Los_Angeles</code>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Update the <code>/etc/sysconfig/clock</code> file with the new
+                              time zone.
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>Open the <code>/etc/sysconfig/clock</code> file with your
+                                    favorite text editor (such as <b>vim</b> or
+                                    <b>nano</b>). You need to use
+                                    <b>sudo</b> with your editor command because
+                                    <code>/etc/sysconfig/clock</code> is owned by
+                                    <code class="code">root</code>.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>Locate the <code class="code">ZONE</code> entry, and change it to the time zone
+                                    file (omitting the <code>/usr/share/zoneinfo</code> section
+                                    of the path). For example, to change to the Los Angeles time zone,
+                                    change the <code class="code">ZONE</code> entry to the following:
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">ZONE=&quot;<em class="replaceable"><code>America/Los_Angeles</code></em>&quot;</code></pre>
+                                 <div class="aws-note">
+                                    <p class="aws-note">Note</p>
+                                    <p>Do not change the <code class="code">UTC=true</code> entry to another
+                                       value. This entry is for the hardware clock, and does not need
+                                       to be adjusted when you&apos;re setting a different time zone on your
+                                       instance.
+                                    </p>
+                                 </div>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>Save the file and exit the text editor.</p>
+                                 
+                              </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Create a symbolic link between <code>/etc/localtime</code> and
+                              your time zone file so that the instance finds the time zone file when it
+                              references local time information.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo ln -sf /usr/share/zoneinfo/<em class="replaceable"><code>America/Los_Angeles</code></em> /etc/localtime</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Reboot the system to pick up the new time zone information in all services
+                              and applications.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo reboot</code></strong></code></pre>
+                           </li>
+                     </ol>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="processor_state_control.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="set-hostname.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Configuring the Amazon Time Sync Service on Amazon Linux"><a class="pagetoc" href="#configure-amazon-time-service-amazon-linux">Configuring the Amazon Time Sync Service on Amazon Linux</a></li>
+                        <li class="pagetoc" name="Configuring the Amazon Time Sync Service on Ubuntu"><a class="pagetoc" href="#configure-amazon-time-service-ubuntu">Configuring the Amazon Time Sync Service on Ubuntu</a></li>
+                        <li class="pagetoc" name="Configuring the Amazon Time Sync Service on SUSE Linux"><a class="pagetoc" href="#configure-amazon-time-service-suse">Configuring the Amazon Time Sync Service on SUSE Linux</a></li>
+                        <li class="pagetoc" name="Changing the Time Zone on Amazon Linux"><a class="pagetoc" href="#change_time_zone">Changing the Time Zone on Amazon Linux</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

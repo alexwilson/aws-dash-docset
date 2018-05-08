@@ -1,0 +1,683 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Example 3: Bucket Owner Granting
+         		Its Users Permissions to Objects It Does Not Own  - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="example-walkthroughs-managing-access.html" title="Example Walkthroughs:
+			Managing Access to Your Amazon S3 Resources ">
+      <link rel="prev" href="example-walkthroughs-managing-access-example2.html" title="Example 2: Bucket Owner Granting
+			Cross-Account Bucket Permissions  ">
+      <link rel="next" href="example-walkthroughs-managing-access-example4.html" title="Example 4: Bucket Owner Granting
+		Cross-account Permission to Objects It Does Not Own">
+      <meta name="description" content="The third Amazon S3 walkthrough example: Granting users permissions to objects that the bucket owner doesn&apos;t own.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/example-walkthroughs-managing-access-example3.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="s3-access-control.html">Managing Access Permissions to Your Amazon S3 Resources</a> &#xBB; <a href="intro-managing-access-s3-resources.html">Introduction to Managing Access Permissions to Your Amazon S3 Resources</a> &#xBB; <a href="example-walkthroughs-managing-access.html">Example Walkthroughs:
+                                    			Managing Access to Your Amazon S3 Resources </a> &#xBB; <span class="breadcrumb">Example 3: Bucket Owner Granting
+                                    		Its Users Permissions to Objects It Does Not Own </span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="example-walkthroughs-managing-access-example3">Example 3: Bucket Owner Granting
+                        		Its Users Permissions to Objects It Does Not Own 
+                     </h1>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#access-policies-walkthrough-cross-account-acl-step0">Step 0: Preparing for the
+                                 					Walkthrough</a></li>
+                           <li><a href="#access-policies-walkthrough-cross-account-acl-acctA-tasks">Step 1: Do
+                                 					the Account A Tasks</a></li>
+                           <li><a href="#access-policies-walkthrough-cross-account-acl-acctB-tasks">Step 2: Do
+                                 					the Account B Tasks</a></li>
+                           <li><a href="#access-policies-walkthrough-cross-account-acl-verify">Step 3: Test Permissions </a></li>
+                           <li><a href="#access-policies-walkthrough-cross-account-acl-cleanup">Step 4: Clean Up</a></li>
+                        </ul>
+                     </div>
+                     <p>The scenario for this example is that a bucket owner wants to grant permission to
+                        access
+                        		objects, but not all objects in the bucket are owned by the bucket owner. How can
+                        a bucket
+                        		owner grant permission on objects it does not own? For this example, the bucket
+                        owner is trying
+                        		to grant permission to users in its own account.
+                     </p>
+                     <p>A bucket owner can enable other AWS accounts to upload objects. These objects are
+                        owned by
+                        		the accounts that created them. The bucket owner does not own objects that were
+                        not created
+                        		by the bucket owner. Therefore, for the bucket owner to grant access to these objects,
+                        the
+                        		object owner must first grant permission to the bucket owner using an object ACL.
+                        The bucket
+                        		owner can then delegate those permissions via a bucket policy. In this example,
+                        the bucket
+                        		owner delegates permission to users in its own account.
+                     </p>
+                     <p>The following is a summary of the walkthrough steps:</p>
+                     <div class="mediaobject">
+                        		
+                        			<img src="../../..//img/access-policy-ex3.png">
+                        		
+                        	
+                     </div>
+                     <div class="orderedlist">
+                        		
+                        		
+                        		
+                        		
+                        	
+                        <ol>
+                           <li>
+                              			
+                              <p>Account A administrator user attaches a bucket policy with two statements.</p>
+                              			
+                              <div class="itemizedlist">
+                                 				
+                                 				
+                                 			
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       					
+                                       <p>Allow cross-account permission to Account B to upload
+                                          						objects.
+                                       </p>
+                                       				
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Allow a user in its own   account to access objects in the bucket.</p>
+                                    </li>
+                                 </ul>
+                              </div>				
+                              		
+                           </li>
+                           <li>
+                              			
+                              <p>Account B administrator user uploads objects to the bucket owned by Account
+                                 				A.
+                              </p>
+                              		
+                           </li>
+                           <li>
+                              			
+                              <p>Account B administrator updates the object ACL adding grant that gives the
+                                 				bucket owner full-control permission on the object.
+                              </p>
+                              		
+                           </li>
+                           <li>
+                              			
+                              <p>User in Account A verifies by accessing objects in the bucket, regardless of
+                                 				who owns them.
+                              </p>
+                              		
+                           </li>
+                        </ol>
+                     </div>
+                     <p>For this example, you need two accounts. The following table shows how we refer to
+                        these
+                        		accounts and the administrator users in these accounts. Per IAM guidelines (see
+                        <a href="example-walkthroughs-managing-access.html#about-using-root-credentials">About Using an Administrator User to Create Resources
+                           			and Grant Permissions</a>)
+                        		we do not use the account root credentials in this walkthrough. Instead, you create
+                        an
+                        		administrator user in each account and use those credentials in creating resources
+                        and
+                        		granting them permissions.
+                     </p>
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac27c19c17c17c17">
+                              				
+                              <tbody><tr>
+                                 					
+                                 <th>AWS Account ID</th>
+                                 					
+                                 <th>Account Referred To As</th>
+                                 					
+                                 <th>Administrator User in the Account </th>
+                                 				
+                              </tr>
+                              			
+                              				
+                              <tr>
+                                 					
+                                 <td>
+                                    						
+                                    <p><em class="replaceable"><code>1111-1111-1111</code></em></p>
+                                    					
+                                 </td>
+                                 					
+                                 <td>
+                                    						
+                                    <p>Account A</p>
+                                    					
+                                 </td>
+                                 					
+                                 <td>
+                                    						
+                                    <p>AccountAadmin</p>
+                                    					
+                                 </td>
+                                 				
+                              </tr>
+                              				
+                              <tr>
+                                 					
+                                 <td>
+                                    						
+                                    <p><em class="replaceable"><code>2222-2222-2222</code></em></p>
+                                    					
+                                 </td>
+                                 					
+                                 <td>
+                                    						
+                                    <p>Account B</p>
+                                    					
+                                 </td>
+                                 					
+                                 <td>
+                                    						
+                                    <p>AccountBadmin</p>
+                                    					
+                                 </td>
+                                 				
+                              </tr>
+                              			
+                           </tbody></table>
+                        </div>
+                     </div>
+                     <p>All the tasks of creating users and granting permissions are done in the AWS Management
+                        Console. 
+                        				To verify permissions, the walkthrough uses the command line tools, AWS Command
+                        Line
+                        		Interface (CLI) and AWS Tools for Windows PowerShell, so you don&apos;t need to write
+                        any code. 
+                     </p>
+                     <h2 id="access-policies-walkthrough-cross-account-acl-step0">Step 0: Preparing for the
+                        					Walkthrough
+                     </h2>
+                     		
+                     				
+                     <ol>
+                        <li>
+                           						
+                           <p>Make sure you have two AWS accounts and each account has one administrator user as
+                              shown
+                              							in the table in the preceding section.
+                           </p>						
+                           							
+                           <ol>
+                              <li>
+                                 									
+                                 <p>Sign up for an AWS account, if needed. </p>
+                                 							
+                                 <ol>
+                                    <li>
+                                       										
+                                       <p> Go to <a href="https://aws.amazon.com/s3/" target="_blank">https://aws.amazon.com/s3/</a> and click <b>Create an AWS Account</b>.
+                                          										
+                                       </p>
+                                       									
+                                    </li>
+                                    <li>
+                                       										
+                                       <p>Follow the on-screen instructions. AWS will notify you by email when your account
+                                          is
+                                          									active and available for you to use.
+                                       </p>
+                                       									
+                                    </li>
+                                 </ol>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>Using Account A credentials, sign in to the <a href="https://console.aws.amazon.com/iam/home?#home" target="_blank">IAM console</a>
+                                    							and do the following to create an administrator user:
+                                 </p>
+                                 							
+                                 								
+                                 <div class="itemizedlist">
+                                    									
+                                    									
+                                    									
+                                    								
+                                    <ul class="itemizedlist" type="disc">
+                                       <li class="listitem">
+                                          										
+                                          <p>Create user AccountAadmin and note down security credentials. For more information
+                                             											about adding users, see 
+                                             											<a href="./IAM/latest/UserGuide/id_users_create.html" target="_blank">Creating an IAM User in Your AWS Account</a> in  the <em>IAM User Guide</em>. 
+                                          </p>
+                                          									
+                                       </li>
+                                       <li class="listitem">
+                                          										
+                                          <p>Grant AccountAadmin administrator privileges by attaching a user policy giving
+                                             											full access. For instructions, see <a href="./IAM/latest/UserGuide/access_policies_manage.html" target="_blank">Working with Policies</a> in the  <em>IAM User Guide</em>. 
+                                          </p>
+                                          									
+                                       </li>
+                                       <li class="listitem">
+                                          										
+                                          <p>In the IAM console <b>Dashboard</b>, note down the<b> IAM
+                                                											User Sign-In URL</b>. Users in this account must
+                                             										use this URL when signing in to the AWS Management Console.
+                                             										For more information, see <a href="./IAM/latest/UserGuide/getting-started_how-users-sign-in.html" target="_blank">How 
+                                                											Users Sign in to Your Account</a> in
+                                             													<em>IAM User Guide</em>. 
+                                          </p>
+                                          									
+                                       </li>
+                                    </ul>
+                                 </div>
+                                 								
+                                 							
+                              </li>
+                              <li>
+                                 								
+                                 <p>Repeat the preceding step using Account B credentials and create administrator user
+                                    								AccountBadmin.
+                                 </p>
+                                 							
+                              </li>
+                           </ol>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>Set up either the AWS Command Line Interface (CLI) or the AWS Tools for Windows PowerShell.
+                              					Make sure you save administrator user credentials as follows:
+                           </p>
+                           						
+                           <div class="itemizedlist">
+                              							
+                              							
+                              						
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    								
+                                    <p>If using the AWS CLI, create two profiles, AccountAadmin and AccountBadmin, in the
+                                       config
+                                       								file.
+                                    </p>
+                                    							
+                                 </li>
+                                 <li class="listitem">
+                                    <p>If using the AWS Tools for Windows PowerShell, make sure you store credentials for
+                                       							the session as AccountAadmin and AccountBadmin.
+                                    </p>
+                                 </li>
+                              </ul>
+                           </div>					
+                           						
+                           <p>For instructions, see <a href="policy-eval-walkthrough-download-awscli.html">Setting Up the Tools for the Example Walkthroughs</a>. 
+                           </p>
+                           				
+                           					
+                        </li>
+                     </ol>
+                     			
+                     <h2 id="access-policies-walkthrough-cross-account-acl-acctA-tasks">Step 1: Do
+                        					the Account A Tasks
+                     </h2>
+                     		
+                     		
+                     		
+                     <h3 id="access-policies-walkthrough-cross-account-permissions-acctA-tasks-sign-in-example3">Step 1.1: Sign In to the AWS Management Console</h3>
+                     			
+                     			
+                     <p>Using the IAM user sign-in URL for Account A first sign in to the AWS Management Console
+                        as
+                        				AccountAadmin user. This user will create a bucket and attach a policy to it.
+                        
+                     </p>
+                     		
+                     		
+                     <h3 id="access-policies-walkthrough-cross-account-acl-create-bucket">Step 1.2: Create a
+                        				Bucket, a User, and Add a Bucket Policy Granting User Permissions
+                     </h3>
+                     			
+                     				
+                     <ol>
+                        <li>
+                           						
+                           <p>In the Amazon S3 console, create a bucket. This exercise assumes the bucket is created
+                              in the US East (N. Virginia) region 
+                              							and the name is <code class="code">examplebucket</code>.
+                           </p>
+                           						
+                           <p>For instructions, see <a href="./AmazonS3/latest/user-guide/create-bucket.html" target="_blank">How Do I Create an S3 Bucket?</a> in the
+                              							<em>Amazon Simple Storage Service Console User Guide</em>. 
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           					
+                           <p>In the IAM console, create a user Dave. </p>
+                           					
+                           <p>For instructions, see 
+                              						<a href="./IAM/latest/UserGuide/id_users_create.html#id_users_create_console" target="_blank">Creating IAM Users (AWS Management Console)</a> in  the <em>IAM User Guide</em>. 
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Note down the Dave credentials. </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the Amazon S3 console, attach the following bucket policy to <code class="code">examplebucket</code>
+                              						bucket. For instructions, see <a href="./AmazonS3/latest/user-guide/add-bucket-policy.html" target="_blank">How Do I Add an S3 Bucket Policy?</a> 
+                              						in the <em>Amazon Simple Storage Service Console User Guide</em>. Follow
+                              						steps to add a bucket policy.
+                           </p>
+                           					
+                           <p>The policy grants Account B the <code class="code">s3:PutObject</code> and
+                              							<code class="code">s3:ListBucket</code> permissions. The policy also grants user Dave
+                              						the <code class="code">s3:GetObject</code> permission.
+                           </p>
+                           						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+   &quot;Version&quot;: &quot;2012-10-17&quot;,
+   &quot;Statement&quot;: [
+      {
+         &quot;Sid&quot;: &quot;Statement1&quot;,
+         &quot;Effect&quot;: &quot;Allow&quot;,
+         &quot;Principal&quot;: {
+            &quot;AWS&quot;: &quot;arn:aws:iam::<em class="replaceable"><code>AccountB-ID</code></em>:root&quot;
+         },
+         &quot;Action&quot;: [
+            &quot;s3:PutObject&quot;
+         ],
+         &quot;Resource&quot;: [
+            &quot;arn:aws:s3:::<em class="replaceable"><code>examplebucket</code></em>/*&quot;
+         ]
+      },
+      {
+         &quot;Sid&quot;: &quot;Statement3&quot;,
+         &quot;Effect&quot;: &quot;Allow&quot;,
+         &quot;Principal&quot;: {
+            &quot;AWS&quot;: &quot;arn:aws:iam::<em class="replaceable"><code>AccountA-ID</code></em>:user/Dave&quot;
+         },
+         &quot;Action&quot;: [
+            &quot;s3:GetObject&quot;
+         ],
+         &quot;Resource&quot;: [
+            &quot;arn:aws:s3:::<em class="replaceable"><code>examplebucket</code></em>/*&quot;
+         ]
+      }  
+   ]
+}</code></pre>
+                           					</li>
+                     </ol>
+                     			
+                     		
+                     
+                     			
+                     <h2 id="access-policies-walkthrough-cross-account-acl-acctB-tasks">Step 2: Do
+                        					the Account B Tasks
+                     </h2>
+                     		
+                     				
+                     <p>Now that Account B has permissions to perform operations on Account A&apos;s bucket, the
+                        Account B
+                        			administrator will do the following;
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>Upload an object to Account A&apos;s bucket. </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              <p>Add a grant in the object ACL to allow Account A, bucket owner, full control. </p>
+                           </li>
+                        </ul>
+                     </div>		
+                     				
+                     <p class="title"><b>Using the AWS CLI</b></p>
+                     <ol>
+                        <li>
+                           						
+                           <p>Using the <code class="code">put-object</code> AWS CLI command, upload an object. The -<code class="code">-body</code>
+                              						parameter in the command identifies the source file to upload. For example,
+                              						if the file is on <code class="code">C:</code> drive of a Windows machine, you would specify
+                              							<code class="code">c:\HappyFace.jpg</code>. The <code class="code">--key</code> parameter provides
+                              						the key name for the object. 
+                           </p>
+                           					
+                           						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws s3api put-object --bucket <em class="replaceable"><code>examplebucket</code></em> --key HappyFace.jpg --body HappyFace.jpg --profile AccountBadmin</code></pre>
+                           					
+                           					</li>
+                        <li>
+                           						
+                           <p>Add a grant to the object ACL to allow the bucket owner full control of the object.</p>
+                           						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws s3api put-object-acl --bucket <em class="replaceable"><code>examplebucket</code></em> --key HappyFace.jpg --grant-full-control id=&quot;AccountA-CanonicalUserID&quot; --profile AccountBadmin</code></pre>
+                           					</li>
+                     </ol>
+                     			
+                     <p class="title"><b>Using the AWS Tools for Windows PowerShell </b></p>
+                     <ol>
+                        <li>
+                           					
+                           <p>Using the <code class="code">Write-S3Object</code> AWS Tools for Windows PowerShell command, upload an
+                              					object.  
+                           </p>
+                           						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Write-S3Object -BucketName <em class="replaceable"><code>examplebucket</code></em> -key HappyFace.jpg -file HappyFace.jpg -StoredCredentials AccountBadmin</code></pre>					
+                           				</li>
+                        <li>
+                           					
+                           <p>Add a grant to the object ACL to allow the bucket owner full control of the object.</p>
+                           						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Set-S3ACL -BucketName <em class="replaceable"><code>examplebucket</code></em> -Key HappyFace.jpg -CannedACLName &quot;bucket-owner-full-control&quot; -StoredCreden</code></pre>					
+                           				</li>
+                     </ol>
+                     	
+                     <h2 id="access-policies-walkthrough-cross-account-acl-verify">Step 3: Test Permissions </h2>
+                     		
+                     		
+                     <p>Now verify user Dave in Account A can access the object owned by Account B.</p>
+                     		
+                     <p class="title"><b>Using the AWS CLI</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Add user Dave credentials to the AWS CLI config file and create a new profile,
+                              						<code class="code">UserDaveAccountA</code>. For more information, see <a href="policy-eval-walkthrough-download-awscli.html">Setting Up the Tools for the Example Walkthroughs</a>.
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">[profile UserDaveAccountA]
+aws_access_key_id = <em class="replaceable"><code>access-key</code></em>
+aws_secret_access_key = <em class="replaceable"><code>secret-access-key</code></em>
+region = <em class="replaceable"><code>us-east-1</code></em></code></pre>
+                           			</li>
+                        <li>
+                           				
+                           <p>Execute the <code class="code">get-object</code> AWS CLI command to download <code class="code">HappyFace.jpg</code> and save
+                              					it locally. You provide user Dave credentials by adding the
+                              						<code class="code">--profile</code> parameter.
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws s3api get-object --bucket <em class="replaceable"><code>examplebucket</code></em> --key HappyFace.jpg <em class="replaceable"><code>Outputfile.jpg</code></em> --profile UserDaveAccountA</code></pre>				
+                           			</li>
+                     </ol>
+                     		
+                     <p class="title"><b>Using  the AWS Tools for Windows PowerShell </b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Store user Dave AWS credentials, as UserDaveAccountA, to persistent store.
+                              					
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Set-AWSCredentials -AccessKey <em class="replaceable"><code>UserDave-AccessKey</code></em> -SecretKey <em class="replaceable"><code>UserDave-SecretAccessKey</code></em> -storeas UserDaveAccountA</code></pre>
+                           			</li>
+                        <li>
+                           				
+                           <p>Execute the Read-S3Object command to download the <code class="code">HappyFace.jpg</code> object and save it
+                              					locally. You provide user Dave credentials by adding the
+                              						<code class="code">-StoredCredentials</code> parameter. 
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">Read-S3Object -BucketName examplebucket -Key HappyFace.jpg -file HappyFace.jpg  -StoredCredentials UserDaveAccountA</code></pre>				
+                           			</li>
+                     </ol>
+                     	
+                     <h2 id="access-policies-walkthrough-cross-account-acl-cleanup">Step 4: Clean Up</h2>
+                     		
+                     				
+                     <ol>
+                        <li>
+                           						
+                           <p>After you are done testing, you can do the following to clean up.</p>
+                           						
+                           <ol>
+                              <li>
+                                 								
+                                 <p>Sign in to the AWS Management Console (<a href="https://console.aws.amazon.com/" target="_blank">AWS Management Console</a>) using
+                                    									Account A credentials, and do the following:
+                                 </p>
+                                 						
+                                 									
+                                 <div class="itemizedlist">
+                                    										
+                                    										
+                                    										
+                                    									
+                                    <ul class="itemizedlist" type="disc">
+                                       <li class="listitem">
+                                          											
+                                          <p>In the Amazon S3 console, remove the bucket policy
+                                             												attached to
+                                             												<em class="replaceable"><code>examplebucket</code></em>. In the
+                                             												bucket <b>Properties</b>, delete the
+                                             												policy in the <b>Permissions</b>
+                                             												section. 
+                                          </p>
+                                          										
+                                       </li>
+                                       <li class="listitem">
+                                          											
+                                          <p>If the bucket is created for this exercise, in the
+                                             												Amazon S3 console, delete the objects and then delete the
+                                             												bucket. 
+                                          </p>
+                                          										
+                                       </li>
+                                       <li class="listitem">
+                                          											
+                                          <p>In the IAM console, remove the AccountAadmin user.</p>
+                                          										
+                                       </li>
+                                    </ul>
+                                 </div>
+                                 								
+                                 							
+                              </li>
+                           </ol>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>Sign in to the AWS Management Console (<a href="https://console.aws.amazon.com/" target="_blank">AWS Management Console</a>)
+                              							using Account B credentials. In the IAM console, delete user
+                              							AccountBadmin.
+                           </p>
+                           					
+                        </li>
+                     </ol>
+                     			
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="example-walkthroughs-managing-access-example2.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="example-walkthroughs-managing-access-example4.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Step 0: Preparing for the
+					Walkthrough"><a class="pagetoc" href="#access-policies-walkthrough-cross-account-acl-step0">Step 0: Preparing for the
+                              					Walkthrough</a></li>
+                        <li class="pagetoc" name="Step 1: Do
+					the Account A Tasks"><a class="pagetoc" href="#access-policies-walkthrough-cross-account-acl-acctA-tasks">Step 1: Do
+                              					the Account A Tasks</a></li>
+                        <li class="pagetoc" name="Step 2: Do
+					the Account B Tasks"><a class="pagetoc" href="#access-policies-walkthrough-cross-account-acl-acctB-tasks">Step 2: Do
+                              					the Account B Tasks</a></li>
+                        <li class="pagetoc" name="Step 3: Test Permissions "><a class="pagetoc" href="#access-policies-walkthrough-cross-account-acl-verify">Step 3: Test Permissions </a></li>
+                        <li class="pagetoc" name="Step 4: Clean Up"><a class="pagetoc" href="#access-policies-walkthrough-cross-account-acl-cleanup">Step 4: Clean Up</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

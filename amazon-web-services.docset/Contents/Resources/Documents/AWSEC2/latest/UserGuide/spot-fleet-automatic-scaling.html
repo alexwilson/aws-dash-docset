@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Automatic Scaling for Spot Fleet - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="using-spot-instances.html" title="Spot Instances">
+      <link rel="prev" href="spot-fleet-cloudwatch-metrics.html" title="CloudWatch Metrics for Spot Fleet">
+      <link rel="next" href="spot-fleet-target-tracking.html" title="Scale Spot Fleet Using a Target Tracking Policy">
+      <meta name="description" content="Automatic scaling is the ability to increase or decrease the target capacity of your Spot Fleet automatically based on demand. A Spot Fleet can either launch instances (scale out) or terminate instances (scale in), within the range that you choose, in response to one or more scaling policies.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-fleet-automatic-scaling.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="instance-purchasing-options.html">Instance Purchasing Options</a> &#xBB; <a href="using-spot-instances.html">Spot Instances</a> &#xBB; <span class="breadcrumb">Automatic Scaling for Spot Fleet</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="spot-fleet-automatic-scaling">Automatic Scaling for Spot Fleet</h1>
+                     <p><em>Automatic scaling</em> is the ability to increase or decrease the target
+                        			capacity of your Spot Fleet automatically based on demand. A Spot Fleet can either
+                        			launch instances (scale out) or terminate instances (scale in), within the range
+                        that
+                        			you choose, in response to one or more scaling policies.
+                     </p>
+                     <p>If you are using instance weighting, keep in mind that Spot Fleet can exceed the
+                        		target capacity as needed, and that fulfilled capacity can be a floating-point number
+                        		but target capacity must be an integer, so Spot Fleet rounds up to the next integer.
+                        You
+                        		must take these behaviors into account when you look at the outcome of a scaling
+                        policy
+                        		when an alarm is triggered. For example, suppose that the target capacity is 30,
+                        the
+                        		fulfilled capacity is 30.1, and the scaling policy subtracts 1. When the alarm is
+                        		triggered, the auto scaling process subtracts 1 from 30.1 to get 29.1 and then rounds
+                        it
+                        		up to 30, so no scaling action is taken. As another example, suppose that you selected
+                        		instance weights of 2, 4, and 8, and a target capacity of 10, but no weight 2 instances
+                        		were available so Spot Fleet provisioned instances of weights 4 and 8 for a fulfilled
+                        		capacity of 12. If the scaling policy decreases target capacity by 20% and an alarm
+                        is
+                        		triggered, the auto scaling process subtracts 12*0.2 from 12 to get 9.6 and then
+                        rounds
+                        		it up to 10, so no scaling action is taken.
+                     </p>
+                     <p>You can also configure the cooldown period for a scaling policy. This is the number
+                        of 
+                        		seconds after a scaling activity completes where previous trigger-related scaling
+                        activities 
+                        		can influence future scaling events. For scale out policies, while the cooldown
+                        period is 
+                        		in effect, the capacity that has been added by the previous scale out event that
+                        initiated 
+                        		the cooldown is calculated as part of the desired capacity for the next scale out.
+                        The 
+                        		intention is to continuously (but not excessively) scale out. For scale in policies,
+                        the 
+                        		cooldown period is used to block subsequent scale in requests until it has expired.
+                        The 
+                        		intention is to scale in conservatively to protect your application&apos;s availability.
+                        However, 
+                        		if another alarm triggers a scale out policy during the cooldown period after a
+                        scale-in, 
+                        		auto scaling scales out your scalable target immediately.
+                     </p>
+                     <p>Spot Fleet supports the following types of scaling policies:</p>
+                     <div class="itemizedlist">
+                        		
+                        		
+                        	
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              			
+                              <p><a href="spot-fleet-target-tracking.html">Target tracking scaling</a>&#x2014;Increase
+                                 				or decrease&#x2028; the current capacity of the fleet based on a target value for a specific
+                                 metric. 
+                                 				This is similar to the way that your thermostat maintains the temperature of your
+                                 home &#x2013; 
+                                 				you select temperature and the thermostat does the rest.
+                              </p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p><a href="spot-fleet-step-scaling.html">Step scaling</a>&#x2014;Increase or decrease the 
+                                 				current capacity of the fleet based on a set of scaling adjustments, known as
+                                 step adjustments, 
+                                 				that vary based on the size of the alarm breach.
+                              </p>
+                              		
+                           </li>
+                        </ul>
+                     </div>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="spot-fleet-cloudwatch-metrics.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="spot-fleet-target-tracking.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

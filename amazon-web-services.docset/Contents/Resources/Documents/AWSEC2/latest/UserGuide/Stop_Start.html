@@ -1,0 +1,527 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Stop and Start Your Instance - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ec2-instance-lifecycle.html" title="Instance Lifecycle">
+      <link rel="prev" href="mindterm.html" title="Connecting to Your Linux Instance Using MindTerm">
+      <link rel="next" href="ec2-instance-reboot.html" title="Reboot Your Instance">
+      <meta name="description" content="Stop and start any instance with an Amazon EBS volume as its root device.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Stop_Start.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="ec2-instance-lifecycle.html">Instance Lifecycle</a> &#xBB; <span class="breadcrumb">Stop and Start Your Instance</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="Stop_Start">Stop and Start Your Instance</h1>
+                     <p>You can stop and restart your instance if it has an Amazon EBS volume as its root
+                        device. The
+                        		instance retains its instance ID, but can change as described in the <a href="Stop_Start.html#instance_stop">Overview</a> section.
+                     </p>
+                     <p>When you stop an instance, we shut it down. We don&apos;t charge usage for a stopped instance,
+                        or
+                        		data transfer fees, but we do charge for the storage for any Amazon EBS volumes.
+                        <span>Each time you start a stopped instance we charge a minimum of one minute for
+                           			usage. After one minute, we charge only for the seconds you use. For example, if
+                           you run
+                           			an instance for 20 seconds and then stop it, we charge for a full one minute. If
+                           you run
+                           			an instance for 3 minutes and 40 seconds, we charge for exactly 3 minutes and 40
+                           seconds
+                           			of usage.</span></p>
+                     <p>While the instance is stopped, you can treat its root volume like any other volume,
+                        and modify it
+                        		(for example, repair file system problems or update software). You just detach the
+                        volume from the stopped
+                        		instance, attach it to a running instance, make your changes, detach it from the
+                        running instance, and
+                        		then reattach it to the stopped instance. Make sure that you reattach it using the
+                        storage device
+                        		name that&apos;s specified as the root device in the block device mapping for the instance.
+                     </p>
+                     <p>If you decide that you no longer need an instance, you can terminate it. As soon as
+                        the state
+                        		of an instance changes to <code class="code">shutting-down</code> or <code class="code">terminated</code>, we stop
+                        		charging for that instance. For more information, see <a href="terminating-instances.html">Terminate Your Instance</a>.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#instance_stop">Overview</a></li>
+                           <li><a href="#starting-stopping-instances">Stopping and Starting Your Instances</a></li>
+                           <li><a href="#Using_ChangingAttributesWhileInstanceStopped">Modifying a Stopped Instance</a></li>
+                           <li><a href="#troubleshoot-instance-stop">Troubleshooting</a></li>
+                        </ul>
+                     </div>
+                     	
+                     <h2 id="instance_stop">Overview</h2>
+                     
+                     	
+                     <p>You can only stop an Amazon EBS-backed instance. To verify the root device type of
+                        your instance, describe the instance
+                        		and check whether the device type of its root volume is <code class="code">ebs</code> (Amazon EBS-backed instance) or
+                        		<code class="code">instance store</code> (instance store-backed instance). For more information, see
+                        		<a href="ComponentsAMIs.html#display-ami-root-device-type">Determining the Root Device Type of Your AMI</a>.
+                     </p>
+                     	
+                     	    
+                     <p>When you stop a running instance, the following happens:</p>
+                     	
+                     <div class="itemizedlist">
+                        		
+                        		
+                        		
+                        
+                        		
+                        		
+                        		
+                        		
+                        			
+                        	
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              			
+                              <p>The instance performs a normal shutdown and stops running; its status changes to
+                                 					<code class="code">stopping</code> and then <code class="code">stopped</code>.
+                              </p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p>Any Amazon EBS volumes remain attached to the instance, and their data persists.</p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Any data stored in the RAM of the host computer or the instance store volumes of the
+                                 host computer is gone.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>In most cases, the instance is migrated to a new underlying host computer when it&apos;s
+                                 					started.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p>EC2-Classic: We release the public and private IPv4 addresses for the instance when
+                                 you
+                                 					stop the instance, and assign new ones when you restart it.
+                              </p>
+                              			
+                              <p>EC2-VPC: The instance retains its private IPv4 addresses and any IPv6 addresses when
+                                 					stopped and restarted. We release the public IPv4 address and assign a new one
+                                 					when you restart it.
+                              </p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p>EC2-Classic: We disassociate any Elastic IP address that&apos;s associated with the
+                                 instance. You&apos;re charged for Elastic IP addresses that aren&apos;t associated with an instance.
+                                 When you restart the instance, you must associate the Elastic IP address with the
+                                 instance; we don&apos;t do this automatically.
+                              </p>
+                              			
+                              <p>EC2-VPC: The instance retains its associated Elastic IP addresses. You&apos;re charged
+                                 for
+                                 any Elastic IP addresses associated with a stopped instance.
+                              </p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p>When you stop and start a Windows instance, the EC2Config service performs tasks on
+                                 the
+                                 					instance, such as changing the drive letters for any attached Amazon EBS volumes.
+                                 For
+                                 					more information about these defaults and how you can change them, see 
+                                 				<a href="./AWSEC2/latest/WindowsGuide/ec2config-service.html" target="_blank">Configuring a
+                                    					Windows Instance Using the EC2Config Service</a><span> in the
+                                    					<em>Amazon EC2 User Guide for Windows Instances</em></span>.
+                              </p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p>If your instance is in an Auto Scaling group, the Amazon EC2 Auto Scaling service
+                                 marks the stopped instance as
+                                 unhealthy, and may terminate it and launch a replacement instance. For more information,
+                                 see <a href="./autoscaling/latest/userguide/healthcheck.html" target="_blank">Health Checks for Auto Scaling Instances</a> in the <em>Amazon EC2 Auto Scaling User Guide</em>.
+                              </p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>When you stop a ClassicLink instance, it&apos;s unlinked from the VPC to which it was linked.
+                                 					You must link the instance to the VPC again after restarting it. For more information
+                                 					about ClassicLink, see <a href="vpc-classiclink.html">ClassicLink</a>.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     	
+                     <p>For more information, see <a href="ec2-instance-lifecycle.html#lifecycle-differences">Differences Between Reboot, Stop, and Terminate</a>.
+                     </p>
+                     	
+                     	
+                     <p>You can modify the following attributes of an instance only when it is stopped:</p>
+                     	
+                     <div class="itemizedlist">
+                        		
+                        		
+                        		
+                        		
+                        	
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              			
+                              <p>Instance type</p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p>User data</p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p>Kernel</p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p>RAM disk</p>
+                              		
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                     <p>If you try to modify these attributes while the instance is running, 
+                        		Amazon EC2 returns the <code class="code">IncorrectInstanceState</code> error.
+                     </p>
+                     	
+                     
+                     		
+                     <h2 id="starting-stopping-instances">Stopping and Starting Your Instances</h2>
+                     				
+                     		
+                     <p>You can start and stop your Amazon EBS-backed instance using the console or the command
+                        line.
+                     </p>
+                     		
+                     <p>By default, when you initiate a shutdown from an Amazon EBS-backed instance (using
+                        the
+                        <b>shutdown</b> or <b>poweroff</b> command), the instance
+                        stops. You can change this behavior so that it terminates instead. For more information,
+                        see <a href="terminating-instances.html#Using_ChangingInstanceInitiatedShutdownBehavior">Changing the Instance Initiated Shutdown Behavior</a>.
+                     </p>		
+                     		
+                     <p class="title"><b>To stop and start an Amazon EBS-backed instance using the console</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>In the navigation pane, choose <b>Instances</b>, and select the
+                              instance.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>[EC2-Classic] If the instance has an associated Elastic IP address, write down the
+                              Elastic IP address 
+                              					and the instance ID shown in the details pane.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Choose <b>Actions</b>, select <b>Instance State</b>, and then
+                              choose <b>Stop</b>. If <b>Stop</b> is disabled, either the
+                              instance is already stopped or its root device is an instance store volume.
+                           </p>
+                           			  
+                           <div class="aws-note">
+                              <p class="aws-note">Warning</p>
+                              <p>When you stop an instance, the data on any instance store volumes is erased. 
+                                 Therefore, if you have any data on instance store volumes that you want to keep, be
+                                 sure to back it up to persistent storage.
+                              </p>
+                           </div> 
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the confirmation dialog box, choose <b>Yes, Stop</b>. It can take a few
+                              minutes for the instance to stop.
+                           </p>
+                           				
+                           <p>[EC2-Classic] When the instance state becomes <code class="code">stopped</code>, the <b>Elastic
+                                 						IP</b>, <b>Public DNS (IPv4)</b>, <b>Private
+                                 						DNS</b>, and <b>Private IPs</b> fields in the details
+                              					pane are blank to indicate that the old values are no longer associated with
+                              the
+                              					instance.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>While your instance is stopped, you can modify certain instance attributes. For more
+                              information,
+                              					see <a href="Stop_Start.html#Using_ChangingAttributesWhileInstanceStopped">Modifying a Stopped Instance</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>To restart the stopped instance, select the instance, and choose
+                              						<b>Actions</b>, <b>Instance State</b>,
+                              						<b>Start</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the confirmation dialog box, choose <b>Yes, Start</b>. It can take a few
+                              minutes for the instance to enter the <code class="code">running</code> state.
+                           </p>
+                           				
+                           <p>[EC2-Classic] When the instance state becomes <code class="code">running</code>, the <b>Public
+                                 						DNS (IPv4)</b>, <b>Private DNS</b>, and
+                              						<b>Private IPs</b> fields in the details pane contain the new
+                              					values that we assigned to the instance.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>[EC2-Classic] If your instance had an associated Elastic IP address, you must re-associate
+                              					it as follows:
+                           </p>
+                           				
+                           <ol>
+                              <li>
+                                 <p>In the navigation pane, choose <b>Elastic IPs</b>.
+                                 </p>
+                              </li>
+                              <li>
+                                 <p>Select the Elastic IP address that you wrote down before you stopped the instance.</p>
+                              </li>
+                              <li>
+                                 <p>Choose <b>Actions</b>, and then select <b>Associate
+                                       							address</b>.
+                                 </p>
+                              </li>
+                              <li>
+                                 <p>Select the instance ID that you wrote down before you stopped the instance, and then
+                                    choose
+                                    <b>Associate</b>.
+                                 </p>
+                              </li>
+                           </ol>
+                           			
+                        </li>
+                     </ol>
+                     
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>To stop and start an Amazon EBS-backed instance using the command line</b></p>
+                        			
+                        <p>You can use one of the following commands. For more information about these command
+                           line interfaces,
+                           				see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/stop-instances.html" target="_blank">stop-instances</a>
+                                 				and <a href="./cli/latest/reference/ec2/start-instances.html" target="_blank">start-instances</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Stop-EC2Instance.html" target="_blank">Stop-EC2Instance</a>
+                                 				and <a href="./powershell/latest/reference/items/Start-EC2Instance.html" target="_blank">Start-EC2Instance</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     	
+                     		
+                     <h2 id="Using_ChangingAttributesWhileInstanceStopped">Modifying a Stopped Instance</h2>
+                     		
+                     
+                     <p>You can change the instance type, user data, and EBS-optimization attributes
+                        			of a stopped instance using the AWS Management Console or the command line interface.
+                        You can&apos;t use
+                        			the AWS Management Console to modify the <code class="code">DeleteOnTermination</code>, kernel, or RAM disk attributes.
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        	
+                        <p class="title"><b>To modify an instance attribute</b></p>
+                        	
+                        	
+                        	
+                        	
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              		
+                              <p>To change the instance type, see <a href="ec2-instance-resize.html">Resizing Your Instance</a>.
+                              </p>
+                              	
+                           </li>
+                           <li class="listitem">
+                              		
+                              <p>To change the user data for your instance, see 
+                                 			<a href="ec2-instance-metadata.html#instancedata-add-user-data">Working with Instance User Data</a>.
+                              </p>
+                              	
+                           </li>
+                           <li class="listitem">
+                              		
+                              <p>To enable or disable EBS&#x2013;optimization for your instance, see
+                                 			<a href="EBSOptimized.html#modify-ebs-optimized-attribute">Modifying EBS&#x2013;Optimization</a>.
+                              </p>
+                              	
+                           </li>
+                           <li class="listitem">
+                              		
+                              <p>To change the <code class="code">DeleteOnTermination</code> attribute of the root volume for your instance,
+                                 			see <a href="block-device-mapping-concepts.html#update-instance-bdm">Updating the Block Device Mapping of a Running Instance</a>.
+                              </p>
+                              	
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>To modify an instance attribute using the command line</b></p>
+                        			
+                        <p>You can use one of the following commands. For more information about these command
+                           line interfaces,
+                           				see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/modify-instance-attribute.html" target="_blank">modify-instance-attribute</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Edit-EC2InstanceAttribute.html" target="_blank">Edit-EC2InstanceAttribute</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     	
+                     	
+                     <h2 id="troubleshoot-instance-stop">Troubleshooting</h2>
+                     
+                     	
+                     <p>If you have stopped your Amazon EBS-backed instance and it appears &quot;stuck&quot; in the
+                        
+                        		<code class="code">stopping</code> state, you can forcibly stop it. For more information, see 
+                        		<a href="TroubleshootingInstancesStopping.html">Troubleshooting Stopping Your Instance</a>.
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="mindterm.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ec2-instance-reboot.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Overview"><a class="pagetoc" href="#instance_stop">Overview</a></li>
+                        <li class="pagetoc" name="Stopping and Starting Your Instances"><a class="pagetoc" href="#starting-stopping-instances">Stopping and Starting Your Instances</a></li>
+                        <li class="pagetoc" name="Modifying a Stopped Instance"><a class="pagetoc" href="#Using_ChangingAttributesWhileInstanceStopped">Modifying a Stopped Instance</a></li>
+                        <li class="pagetoc" name="Troubleshooting"><a class="pagetoc" href="#troubleshoot-instance-stop">Troubleshooting</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

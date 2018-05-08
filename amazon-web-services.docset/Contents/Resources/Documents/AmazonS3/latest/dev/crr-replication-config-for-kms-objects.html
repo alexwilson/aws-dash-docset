@@ -1,0 +1,507 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>CRR Additional Configuration:
+         Replicating Objects Created with Server-Side Encryption (SSE) Using AWS KMS-Managed
+         Encryption Keys - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="crr-additional-configs.html" title="Additional Cross-Region Replication
+      Configurations">
+      <link rel="prev" href="crr-change-owner.html" title="Cross-Region Replication Additional Configuration: Change
+            Replica Owner">
+      <link rel="next" href="crr-example-walkthroughs.html" title="Cross-Region Replication Examples">
+      <meta name="description" content="You might have objects in your source bucket that are created using server-side encryption using AWS KMS-managed keys. By default, Amazon S3 does not replicate AWS KMS-encrypted objects. If you want Amazon S3 to replicate these objects, in addition to the">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/crr-replication-config-for-kms-objects.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="crr.html">Cross-Region Replication (CRR)</a> &#xBB; <a href="crr-additional-configs.html">Additional Cross-Region Replication
+                                    Configurations</a> &#xBB; <span class="breadcrumb">CRR Additional Configuration:
+                                    Replicating Objects Created with Server-Side Encryption (SSE) Using AWS KMS-Managed
+                                    Encryption Keys</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="crr-replication-config-for-kms-objects">CRR Additional Configuration:
+                        Replicating Objects Created with Server-Side Encryption (SSE) Using AWS KMS-Managed
+                        Encryption Keys
+                     </h1>
+                     <p>You might have objects in your source bucket that are created using server-side encryption
+                        using AWS KMS-managed keys. By default, Amazon S3 does not replicate AWS KMS-encrypted
+                        objects. If
+                        you want Amazon S3 to replicate these objects, in addition to the <a href="./AmazonS3/latest/dev/crr-how-setup.html" target="_blank">basic replication configuration</a>, you must
+                        do the following:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Provide the AWS KMS-managed key for the destination bucket Region that you want Amazon
+                                 S3
+                                 to use to encrypt object replicas.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Grant additional permissions to the IAM role so that Amazon S3 can access the objects
+                                 using the AWS KMS key.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#crr-kms-extra-config">Specifying Additional Information in the
+                                 Replication Configuration</a></li>
+                           <li><a href="#crr-kms-extra-permissions">IAM Role Additional Permissions</a></li>
+                           <li><a href="#crr-kms-cross-acct-scenario">Cross-Account Scenario: Additional
+                                 Permissions</a></li>
+                           <li><a href="#crr-kms-considerations">Related Considerations</a></li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="crr-kms-extra-config">Specifying Additional Information in the
+                        Replication Configuration
+                     </h2>
+                     
+                     <p>In the <a href="./AmazonS3/latest/dev/crr-how-setup.html" target="_blank">basic replication
+                           configuration</a>, add the following additional information.
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>This feature (for Amazon S3 to replicate objects that are encrypted using
+                                 AWS KMS-managed keys) requires customer must explicitly opt in by adding the
+                                 <code class="code">&lt;SourceSelectionCriteria&gt;</code> element.
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="xml ">&lt;SourceSelectionCriteria&gt;
+   &lt;SseKmsEncryptedObjects&gt;
+     &lt;Status&gt;Enabled&lt;/Status&gt;
+   &lt;/SseKmsEncryptedObjects&gt;
+&lt;/SourceSelectionCriteria&gt;</code></pre>
+                              </li>
+                           <li class="listitem">
+                              
+                              <p>Provide the AWS KMS key that you want Amazon S3 to use to encrypt object replicas
+                                 by
+                                 adding the <code class="code">&lt;EncryptionConfiguration&gt;</code> element:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="xml ">&lt;EncryptionConfiguration&gt;
+   &lt;ReplicaKmsKeyID&gt;<em class="replaceable"><code>The AWS KMS key ID (S3 can use to encrypt object replicas).</code></em>&lt;/ReplicaKmsKeyID&gt;
+&lt;/EncryptionConfiguration&gt;</code></pre>
+                              <div class="aws-note">
+                                 <p class="aws-note">Important</p>
+                                 <p>Note that the AWS KMS key Region must be the same as the Region of the
+                                    destination bucket. Make sure that the AWS KMS key is valid. The
+                                    <code class="code">PUT</code> Bucket replication API does not check for invalid AWS KMS
+                                    keys. You get 200 OK response, but if the AWS KMS key is invalid, replication
+                                    fails.
+                                 </p>
+                              </div>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>Following is an example of a cross-region replication configuration that includes
+                        the
+                        optional configuration elements:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="xml ">&lt;ReplicationConfiguration&gt;
+  &lt;Role&gt;arn:aws:iam::account-id:role/role-name&lt;/Role&gt;
+  &lt;Rule&gt;
+    &lt;Prefix&gt;prefix1&lt;/Prefix&gt;
+    &lt;Status&gt;Enabled&lt;/Status&gt;
+<em>    &lt;SourceSelectionCriteria&gt;
+      &lt;SseKmsEncryptedObjects&gt;
+        &lt;Status&gt;Enabled&lt;/Status&gt;
+      &lt;/SseKmsEncryptedObjects&gt;
+    &lt;/SourceSelectionCriteria&gt;</em>
+    &lt;Destination&gt;
+      &lt;Bucket&gt;arn:aws:s3:::<em class="replaceable"><code>destination-bucket</code></em>&lt;/Bucket&gt;
+<em>      &lt;EncryptionConfiguration&gt;
+        &lt;ReplicaKmsKeyID&gt;<em class="replaceable"><code>The AWS KMS key ID (that S3 can use to encrypt object replicas).</code></em>&lt;/ReplicaKmsKeyID&gt;
+      &lt;/EncryptionConfiguration&gt;</em>
+    &lt;/Destination&gt;
+  &lt;/Rule&gt;
+&lt;/ReplicationConfiguration&gt;</code></pre>
+                     <p>This replication configuration has one rule. The rule applies to objects with the
+                        specified key prefix. Amazon S3 uses the AWS KMS key ID to encrypt these object
+                        replicas.
+                     </p>
+                     
+                     
+                     
+                     <h2 id="crr-kms-extra-permissions">IAM Role Additional Permissions</h2>
+                     
+                     <p>Amazon S3 needs additional permissions to replicate objects created using server-side
+                        encryption using AWS KMS-managed keys. You must grant the following additional permissions
+                        to the IAM role:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Grant permission for the <code class="code">s3:GetObjectVersionForReplication</code> action
+                                 for source objects. Permission for this action allows Amazon S3 to replicate the
+                                 unencrypted object and the objects created with server-side encryption using
+                                 SSE-S3 (Amazon S3-managed encryption key) or AWS KMS&#x2013;managed encryption (SSE-KMS)
+                                 keys.
+                              </p>
+                              
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>The permission for the <code class="code">s3:GetObjectVersion</code> action allows
+                                    replication of unencrypted and SSE-S3 encrypted objects. However, it does
+                                    not allow replication of objects created using an AWS KMS-managed encryption
+                                    key. 
+                                 </p>
+                              </div>
+                              
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>We recommend that you use the
+                                    <code class="code">s3:GetObjectVersionForReplication</code> action instead of the
+                                    <code class="code">s3:GetObjectVersion</code> action because it provides Amazon S3 with
+                                    only the minimum permissions necessary for cross-region replication.
+                                 </p>
+                              </div>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Grant permissions for the following AWS KMS actions:</p>
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       
+                                       <p><code class="code">kms:Decrypt</code> permissions for the AWS KMS key that was used
+                                          to encrypt the source object.
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><code class="code">kms:Encrypt</code> permissions for the AWS KMS key used to encrypt
+                                          the object replica.
+                                       </p>
+                                       
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                              <p>We recommend that you restrict these permissions to specific buckets and
+                                 objects using the AWS KMS condition keys as shown in the following example policy
+                                 statements: 
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;Action&quot;: [&quot;kms:Decrypt&quot;],
+    &quot;Effect&quot;: &quot;Allow&quot;,
+    &quot;Condition&quot;: {
+        &quot;StringLike&quot;: {
+            &quot;kms:ViaService&quot;: &quot;s3.<em class="replaceable"><code>source-bucket-region</code></em>.amazonaws.com&quot;,
+            &quot;kms:EncryptionContext:aws:s3:arn&quot;: [
+                &quot;arn:aws:s3:::<em class="replaceable"><code>source-bucket-name</code></em>/<em class="replaceable"><code>prefix1</code></em>*&quot;,
+            ]
+        }
+    },
+    &quot;Resource&quot;: [
+        &quot;<em class="replaceable"><code>List of AWS KMS key IDs that was used to encrypt source objects.</code></em>&quot;, 
+    ]
+},
+{
+    &quot;Action&quot;: [&quot;kms:Encrypt&quot;],
+    &quot;Effect&quot;: &quot;Allow&quot;,
+    &quot;Condition&quot;: {
+        &quot;StringLike&quot;: {
+            &quot;kms:ViaService&quot;: &quot;s3.<em class="replaceable"><code>destination-bucket-region</code></em>.amazonaws.com&quot;,
+            &quot;kms:EncryptionContext:aws:s3:arn&quot;: [
+                &quot;arn:aws:s3:::<em class="replaceable"><code>destination-bucket-name</code></em>/<em class="replaceable"><code>prefix1</code></em>*&quot;,
+            ]
+        }
+    },
+    &quot;Resource&quot;: [
+         &quot;<em class="replaceable"><code>List of AWS KMS key IDs, that you want S3 to use to encrypt object replicas.</code></em>&quot;, 
+    ]
+}</code></pre>
+                              <p>The AWS account that owns the IAM role must have permissions for these
+                                 AWS KMS actions (<code class="code">kms:Encrypt</code> and <code class="code">kms:Decrypt</code>) for AWS KMS
+                                 keys listed in the policy. If the AWS KMS keys are owned by another AWS account,
+                                 the key owner must grant these permissions to the AWS account that owns the
+                                 IAM role. For more information about managing access to these keys, see <a href="./kms/latest/developerguide/control-access-overview.html#overview-policy-elements" target="_blank">Using IAM Policies with AWS KMS</a> in the AWS Key Management Service Developer Guide.
+                              </p>
+                              
+                              
+                              <p>The following is a complete IAM policy that grants the necessary permissions
+                                 to replicate unencrypted objects, objects created with server-side encryption
+                                 using the Amazon S3-managed encryption keys, and AWS KMS-managed encryption
+                                 keys.
+                              </p>
+                              
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>Objects created with server-side encryption using customer-provided
+                                    (SSE-C) encryption keys are not replicated.
+                                 </p>
+                              </div>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+   &quot;Version&quot;:&quot;2012-10-17&quot;,
+   &quot;Statement&quot;:[
+      {
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Action&quot;:[
+            &quot;s3:GetReplicationConfiguration&quot;,
+            &quot;s3:ListBucket&quot;
+         ],
+         &quot;Resource&quot;:[
+            &quot;arn:aws:s3:::<em class="replaceable"><code>source-bucket</code></em>&quot;
+         ]
+      },
+      {
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Action&quot;:[
+            &quot;s3:GetObjectVersionForReplication&quot;,
+            &quot;s3:GetObjectVersionAcl&quot;
+         ],
+         &quot;Resource&quot;:[
+            &quot;arn:aws:s3:::<em class="replaceable"><code>source-bucket</code></em>/prefix1*&quot;
+         ]
+      },
+      {
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Action&quot;:[
+            &quot;s3:ReplicateObject&quot;,
+            &quot;s3:ReplicateDelete&quot;
+         ],
+         &quot;Resource&quot;:&quot;arn:aws:s3:::<em class="replaceable"><code>destination-bucket</code></em>/prefix1*&quot;
+      },
+      {
+         &quot;Action&quot;:[
+            &quot;kms:Decrypt&quot;
+         ],
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Condition&quot;:{
+            &quot;StringLike&quot;:{
+               &quot;kms:ViaService&quot;:&quot;s3.<em class="replaceable"><code>source-bucket-region</code></em>.amazonaws.com&quot;,
+               &quot;kms:EncryptionContext:aws:s3:arn&quot;:[
+                  &quot;arn:aws:s3:::<em class="replaceable"><code>source-bucket-name</code></em>/<em class="replaceable"><code>prefix1</code></em>*&quot;
+               ]
+            }
+         },
+         &quot;Resource&quot;:[
+           &quot;<em class="replaceable"><code>List of AWS KMS key IDs used to encrypt source objects.</code></em>&quot;
+         ]
+      },
+      {
+         &quot;Action&quot;:[
+            &quot;kms:Encrypt&quot;
+         ],
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Condition&quot;:{
+            &quot;StringLike&quot;:{
+               &quot;kms:ViaService&quot;:&quot;s3.<em class="replaceable"><code>destination-bucket-region</code></em>.amazonaws.com&quot;,
+               &quot;kms:EncryptionContext:aws:s3:arn&quot;:[
+                  &quot;arn:aws:s3:::<em class="replaceable"><code>destination-bucket-name</code></em>/<em class="replaceable"><code>prefix1</code></em>*&quot;
+               ]
+            }
+         },
+         &quot;Resource&quot;:[
+            &quot;<em class="replaceable"><code>List of AWS KMS key IDs that you want S3 to use to encrypt object replicas.</code></em>&quot;
+         ]
+      }
+   ]
+}</code></pre>
+                     
+                     <h2 id="crr-kms-cross-acct-scenario">Cross-Account Scenario: Additional
+                        Permissions
+                     </h2>
+                     
+                     <p>In a cross-account scenario, the destination AWS KMS key must be a customer master
+                        key
+                        (CMK). The key owner must grant the source bucket owner permission to use the key,
+                        using
+                        one of the following methods:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Use the IAM console.</p>
+                              <a id="cross-acct-kms-key-permission"></a><ol>
+                                 <li>
+                                    <p>Sign in to the AWS Management Console and open the IAM console at <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                                    </p>
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Choose <b>Encryption keys</b>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Select the AWS KMS key.</p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>In <b>Key Policy</b>, <b>Key Users</b>,
+                                       <b>External Accounts</b>, choose <b>Add
+                                          External Account</b>. 
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Specify source bucket account ID in the
+                                       <b>arn:aws:iam::</b> box.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Choose <b>Save Changes</b>.
+                                    </p>
+                                    
+                                 </li>
+                              </ol>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Use the AWS CLI. For more information, see <a href="./cli/latest/reference/kms/put-key-policy.html" target="_blank">put-key-policy</a> in the AWS CLI Command Reference. For information
+                                 about the underlying API, see <a href="./kms/latest/APIReference/API_PutKeyPolicy.html" target="_blank">PutKeyPolicy</a> in the <a href="./kms/latest/APIReference/" target="_blank">AWS Key Management Service API Reference</a>. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h2 id="crr-kms-considerations">Related Considerations</h2>
+                     
+                     <p>After you enable CRR, as you add a large number of new objects with AWS KMS encryption,
+                        you might experience throttling (HTTP 503 Slow Down errors). This is related to the
+                        KMS
+                        transactions per second limit supported by AWS KMS. For more information, see <a href=" ./kms/latest/developerguide/limits.html" target="_blank">Limits</a> in the AWS Key Management Service Developer Guide.
+                     </p>
+                     
+                     <p>In this case, we recommend that you request an increase in your AWS KMS API rate limit
+                        by creating a case in the AWS Support Center. &#xA0;For more information, see
+                        https://console.aws.amazon.com/support/home#/.
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="crr-change-owner.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="crr-example-walkthroughs.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Specifying Additional Information in the
+                Replication Configuration"><a class="pagetoc" href="#crr-kms-extra-config">Specifying Additional Information in the
+                              Replication Configuration</a></li>
+                        <li class="pagetoc" name="IAM Role Additional Permissions"><a class="pagetoc" href="#crr-kms-extra-permissions">IAM Role Additional Permissions</a></li>
+                        <li class="pagetoc" name="Cross-Account Scenario: Additional
+                Permissions"><a class="pagetoc" href="#crr-kms-cross-acct-scenario">Cross-Account Scenario: Additional
+                              Permissions</a></li>
+                        <li class="pagetoc" name="Related Considerations"><a class="pagetoc" href="#crr-kms-considerations">Related Considerations</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

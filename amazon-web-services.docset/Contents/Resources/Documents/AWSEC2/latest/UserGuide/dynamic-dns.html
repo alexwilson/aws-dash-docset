@@ -1,0 +1,219 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Setting Up Dynamic DNS on Your Linux Instance - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="Configure_Instance.html" title="Configuring Your Amazon Linux Instance">
+      <link rel="prev" href="set-hostname.html" title="Changing the Hostname of Your Linux Instance">
+      <link rel="next" href="user-data.html" title="Running Commands on Your Linux Instance at Launch">
+      <meta name="description" content="Use a dynamic DNS provider with Amazon EC2 and configure the instance to update the IP address associated with a public DNS name each time the instance starts.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/dynamic-dns.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="Configure_Instance.html">Configuring Your Amazon Linux Instance</a> &#xBB; <span class="breadcrumb">Setting Up Dynamic DNS on Your Linux Instance</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="dynamic-dns">Setting Up Dynamic DNS on Your Linux Instance</h1>
+                     <p>When you launch an EC2 instance, it is assigned a public IP address and a public DNS
+                        (Domain
+                        			Name System) name that you can use to reach it from the Internet. Because there
+                        are so
+                        			many hosts in the Amazon Web Services domain, these public names must be quite
+                        long for each name
+                        			to remain unique. A typical Amazon EC2 public DNS name looks something like this:
+                        				<code>ec2-12-34-56-78.us-west-2.compute.amazonaws.com</code>, where the name
+                        			consists of the Amazon Web Services domain, the service (in this case,
+                        			<code>compute</code>), the region, and a form of the public IP address.
+                     </p>
+                     <p>Dynamic DNS services provide custom DNS host names within their domain area that can
+                        be easy
+                        			to remember and that can also be more relevant to your host&apos;s use case; some of
+                        these
+                        			services are also free of charge. You can use a dynamic DNS provider with Amazon
+                        EC2 and
+                        			configure the instance to update the IP address associated with a public DNS name
+                        each
+                        			time the instance starts. There are many different providers to choose from, and
+                        the
+                        			specific details of choosing a provider and registering a name with them are outside
+                        the
+                        			scope of this guide.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>These procedures are intended for use with Amazon Linux. For more information about
+                           other
+                           			distributions, see their specific documentation.
+                        </p>
+                     </div><a id="procedure-dynamic-dns"></a><p class="title"><b>To use dynamic DNS with Amazon EC2</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Sign up with a dynamic DNS service provider and register a public DNS name with their
+                              					service. This procedure uses the free service from <a href="https://www.noip.com/free" target="_blank">noip.com/free</a> as an example.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Configure the dynamic DNS update client. After you have a dynamic DNS service provider
+                              and
+                              					a public DNS name registered with their service, point the DNS name to the IP
+                              					address for your instance. Many providers (including <a href="https://noip.com" target="_blank">noip.com</a>) allow you to do this manually from
+                              					your account page on their website, but many also support software update
+                              					clients. If an update client is running on your EC2 instance, your dynamic DNS
+                              					record is updated each time the IP address changes, as after a shutdown and
+                              					restart. In this example, you install the noip2 client, which
+                              					works with the service provided by <a href="https://noip.com" target="_blank">noip.com</a>.
+                           </p>
+                           				
+                           <ol>
+                              <li>
+                                 						
+                                 <p>Enable the Extra Packages for Enterprise Linux (EPEL) repository to gain access to
+                                    the
+                                    								noip2 client.
+                                 </p>
+                                 						
+                                 <div class="aws-note">
+                                    <p class="aws-note">Note</p>
+                                    <p>Amazon Linux instances have the GPG keys and repository information
+                                       									for the EPEL repository installed by default; however, Red Hat
+                                       									and CentOS instances must first install the
+                                       										<code>epel-release</code> package before you can
+                                       									enable the EPEL repository. For more information and to download
+                                       									the latest version of this package, see <a href="https://fedoraproject.org/wiki/EPEL" target="_blank">https://fedoraproject.org/wiki/EPEL</a>.
+                                    </p>
+                                 </div>
+                                 						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo yum-config-manager --enable epel</code></strong></code></pre>
+                                 					</li>
+                              <li>
+                                 						
+                                 <p>Install the <code>noip</code> package.
+                                 </p>
+                                 						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo yum install -y noip</code></strong></code></pre>
+                                 					</li>
+                              <li>
+                                 						
+                                 <p>Create the configuration file. Enter the login and password
+                                    							information when prompted and answer the subsequent questions to
+                                    							configure the client.
+                                 </p>
+                                 						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo noip2 -C</code></strong></code></pre>
+                                 					</li>
+                           </ol>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Enable the noip service with the <b>chkconfig</b>
+                              					command.
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo chkconfig noip on</code></strong></code></pre>
+                           				<p>You can verify that the service is enabled with the <b>chkconfig
+                                 						--list</b> command.
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>chkconfig --list noip</code></strong><code class="computeroutput" copy="false">
+noip           	0:off	1:off	2:on	3:on	4:on	5:on	6:off</code></code></pre>
+                           				<p>Here, <b>noip</b> is <code class="code">on</code> in runlevels 2, 3, 4,
+                              					and 5 (which is correct). Now the update client starts at every boot and updates
+                              					the public DNS record to point to the IP address of the instance.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Start the noip service.</p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo service noip start</code></strong><code class="computeroutput" copy="false">
+Starting noip2:                                            [  OK  ]</code></code></pre>
+                           				<p>This command starts the client, which reads the configuration file
+                              						(<code>/etc/no-ip2.conf</code>) that you created earlier and updates
+                              					the IP address for the public DNS name that you chose.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Verify that the update client has set the correct IP address for your dynamic DNS
+                              name.
+                              					Allow a few minutes for the DNS records to update, and then try to connect to
+                              					your instance using SSH with the public DNS name that you configured in this
+                              					procedure.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="set-hostname.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="user-data.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Creating a Deployment Package (Node.js) - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="deployment-package-v2.html" title="Creating a Deployment Package">
+      <link rel="prev" href="deployment-package-v2.html" title="Creating a Deployment Package">
+      <link rel="next" href="lambda-dotnet-how-to-create-deployment-package.html" title="Creating a Deployment Package (C#)">
+      <meta name="description" content="To create a Lambda function you first create a Lambda function deployment package, a .zip file consisting of your code and any dependencies. As noted previously, you need to set the appropriate security permissions for the zip package. For more information, see">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/nodejs-create-deployment-pkg.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-introduction-function.html">Lambda Functions</a> &#xBB; <a href="lambda-app.html">Building Lambda Functions</a> &#xBB; <a href="deployment-package-v2.html">Creating a Deployment Package</a> &#xBB; <span class="breadcrumb">Creating a Deployment Package (Node.js)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="nodejs-create-deployment-pkg">Creating a Deployment Package (Node.js)</h1>
+                     <p>To create a Lambda function you first create a Lambda function deployment package,
+                        a .zip
+                        file consisting of your code and any dependencies. As noted previously, you need to
+                        set the appropriate security permissions for the zip package. For more information,
+                        see <a href="lambda-auth-and-access-control.html">Authentication and Access Control for
+                           AWS Lambda</a> policies.
+                     </p>
+                     <p>You can create a deployment package yourself or write your code directly in the Lambda
+                        console, in which case the console creates the deployment package for you and uploads
+                        it,
+                        creating your Lambda function. Note the following to determine if you can use the
+                        console to
+                        create your Lambda function:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><b>Simple scenario</b> &#x2013; 
+                                 If your custom code requires only the AWS SDK library, then
+                                 you can use the inline editor in the AWS Lambda console. Using the console, you can
+                                 edit and upload your code to AWS Lambda. The console will zip up your code with the
+                                 relevant configuration information into a deployment package that the Lambda service
+                                 can run. 
+                              </p>
+                              
+                              <p>You can also test your code in the console by manually invoking it using sample
+                                 event data. 
+                              </p>
+                              
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>The Lambda service has preinstalled the AWS SDK for Node.js.</p>
+                              </div>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Advanced scenario</b> &#x2013; 
+                                 If you are writing code that uses other resources, such as
+                                 a graphics library for image processing, or you want to use the AWS CLI instead of
+                                 the console, you need to first create the Lambda function deployment package, and
+                                 then use the console or the CLI to upload the package.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>After you create a deployment package, you may either upload it directly or upload
+                           the .zip file first to an Amazon S3 bucket in the same AWS region where you want to
+                           create the Lambda function, and then specify the bucket name and object key name
+                           when you create the Lambda function using the console or the AWS CLI.
+                        </p>
+                     </div>
+                     <p>The following is an example procedure to create a deployment package (outside the
+                        console). Suppose you want to create a deployment package that includes a
+                        <code>filename.js</code> code file and your code uses the <code class="code">async</code>
+                        library. 
+                     </p>
+                     <div class="orderedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ol>
+                           <li>
+                              
+                              <p>Open a text editor, and write your code. Save the file (for example,
+                                 <code class="code">filename.js</code>).
+                              </p>
+                              
+                              <p>You will use the file name to specify the handler at the time
+                                 of creating the Lambda function.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>In the same directory, use <b>npm</b> to install the libraries that your code
+                                 depends on. For example, if your code uses the <code class="code">async</code> library, use the following
+                                 <b>npm</b> command.
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">npm install async</code></pre>
+                              </li>
+                           <li>
+                              
+                              <p>Your directory will then have the following structure:</p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">filename.js
+node_modules/async
+node_modules/async/lib
+node_modules/async/lib/async.js
+node_modules/async/package.json
+     </code></pre>
+                              </li>
+                           <li>
+                              
+                              <p>Zip the content of the folder, that is your deployment package (for example,
+                                 <code>sample.zip</code>).
+                              </p>
+                              
+                           </li>
+                        </ol>
+                     </div>
+                     <p>Then, specify the .zip file name as your deployment package at the time you create
+                        your Lambda function.
+                     </p>
+                     <p>If you want to include your own binaries, including native ones, just package them
+                        in the Zip file you upload 
+                        and then reference them (including the relative path within the Zip file you created)
+                        when you call them from Node.js or from other processes that you&#x2019;ve previously started.
+                        
+                        Ensure that you include the following at the start of your function code:
+                        
+                        <code class="code">process.env[&#x2018;PATH&#x2019;] = process.env[&#x2018;PATH&#x2019;] + &#x2018;:&#x2019; + process.env[&#x2018;LAMBDA_TASK_ROOT&#x2019;]</code></p>
+                     <p>For more information on including native binaries 
+                        in your Lambda function package, see <a href="https://aws.amazon.com/blogs/compute/running-executables-in-aws-lambda/" target="_blank">Running Executables in AWS Lambda</a>. Also note that you need to supply the requisite permissions to the contents of the
+                        Zip file.
+                        For more information, see <a href="deployment-package-v2.html#lambda-zip-package-permission-policies">Permissions Polices on Lambda Deployment Packages</a>.
+                        
+                     </p>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="deployment-package-v2.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="lambda-dotnet-how-to-create-deployment-package.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

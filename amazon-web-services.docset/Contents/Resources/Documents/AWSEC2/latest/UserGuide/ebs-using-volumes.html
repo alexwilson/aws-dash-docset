@@ -1,0 +1,356 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Making an Amazon EBS Volume Available for Use on Linux - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="EBSVolumes.html" title="Amazon EBS Volumes">
+      <link rel="prev" href="ebs-attaching-volume.html" title="Attaching an Amazon EBS Volume to an Instance">
+      <link rel="next" href="ebs-describing-volumes.html" title="Viewing Volume Information">
+      <meta name="description" content="Make an Amazon EBS volume available for use so you can access it like any other volume.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-using-volumes.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Storage.html">Storage</a> &#xBB; <a href="AmazonEBS.html">Amazon Elastic Block Store (Amazon EBS)</a> &#xBB; <a href="EBSVolumes.html">Amazon EBS Volumes</a> &#xBB; <span class="breadcrumb">Making an Amazon EBS Volume Available for Use on Linux</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ebs-using-volumes">Making an Amazon EBS Volume Available for Use on <span>Linux</span></h1>
+                     <p>After you attach an Amazon EBS volume to your instance, it is exposed as a block device.
+                        You
+                        can format the volume with any file system and then mount it. After you make the EBS
+                        volume
+                        available for use, you can access it in the same ways that you access any other volume.
+                        Any
+                        data written to this file system is written to the EBS volume and is transparent to
+                        applications using the device.
+                     </p>
+                     <p>You can take snapshots of your EBS volume for backup purposes or to use as a baseline
+                        when
+                        you create another volume. For more information, see <a href="EBSSnapshots.html">Amazon EBS Snapshots</a>.
+                     </p>
+                     <p>You can get directions for volumes on a Windows instance from <a href="./AWSEC2/latest/WindowsGuide/ebs-using-volumes.html" target="_blank">Making a Volume Available for Use on Windows</a> 
+                        in the <em>Amazon EC2 User Guide for Windows Instances</em>.
+                     </p>
+                     <p class="title"><b>To make an EBS volume available for use on Linux</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Connect to your instance using SSH. For more information, see <a href="AccessingInstances.html">Connect to Your Linux Instance</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Depending on the block device driver of the kernel, the device could be attached with
+                              a different name than you specified. 
+                              For example, if you specify a device name of <code>/dev/sdh</code>, your device could be renamed <code>/dev/xvdh</code> or <code>/dev/hdh</code>.
+                              In most cases, the trailing letter remains the same. In some versions of Red Hat Enterprise
+                              Linux (and its variants, such as CentOS), even the trailing letter could
+                              change (<code>/dev/sda</code> could become <code>/dev/xvde</code>). In these cases, the trailing letter of each device name is incremented the same
+                              number of times. 
+                              For example, if <code>/dev/sdb</code> is renamed <code>/dev/xvdf</code>, then <code>/dev/sdc</code> is renamed <code>/dev/xvdg</code>. 
+                              Amazon Linux AMIs create a symbolic link for the name you specified to the renamed
+                              device. Other AMIs could behave differently.
+                           </p>
+                           
+                           <p>Use the <b>lsblk</b> command to view your available disk devices and
+                              their mount points (if applicable) to help you determine the correct device name to
+                              use.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>lsblk</code></strong><code class="computeroutput" copy="false">
+NAME  MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+xvdf  202:80   0  100G  0 disk
+xvda1 202:1    0    8G  0 disk /</code></code></pre>
+                           <p>The output of <b>lsblk</b> removes the <code>/dev/</code> prefix from
+                              full device paths. In this example, <code>/dev/xvda1</code> is mounted as the
+                              root device (note that MOUNTPOINT is listed as <code>/</code>,
+                              the root of the Linux file system hierarchy), and <code>/dev/xvdf</code> is
+                              attached, but it has not been mounted yet.
+                           </p>
+                           
+                           <p>For C5 and M5 instances, EBS volumes are exposed as NVMe block devices. The device
+                              names 
+                              that you specify are renamed using NVMe device names (<code>/dev/nvme[0-26]n1</code>). For more information,
+                              see <a href="nvme-ebs-volumes.html">Amazon EBS and NVMe</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Determine whether to create a file system on the volume. New volumes are raw block
+                              devices, and you must create a file system on them before you can mount and use them.
+                              Volumes that have been restored from snapshots likely have a file system on them
+                              already; if you create a new file system on top of an existing file system, the
+                              operation overwrites your data. Use the <b>sudo file -s
+                                 <em class="replaceable"><code>device</code></em></b> command to list special information,
+                              such as file system type.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo file -s /dev/xvdf</code></strong><code class="computeroutput" copy="false">
+/dev/xvdf: data</code></code></pre>
+                           <p>If the output of the previous command shows simply <code class="code">data</code> for the device,
+                              then there is no file system on the device and you must create one. You can go on
+                              to
+                              <a href="ebs-using-volumes.html#create_file_system_step">Step&#xA0;4</a>. If you run this command on a device that
+                              contains a file system, then your output will be different.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo file -s /dev/xvda1</code></strong><code class="computeroutput" copy="false">
+/dev/xvda1: Linux rev 1.0 ext4 filesystem data, UUID=1701d228-e1bd-4094-a14c-8c64d6819362 (needs journal recovery) (extents) (large files) (huge files)</code></code></pre>
+                           <p>In the previous example, the device contains <strong class="errortext"><code>Linux rev 1.0 ext4 filesystem
+                                    data</code></strong>, so this volume does not need a file system created (you can skip <a href="ebs-using-volumes.html#create_file_system_step">Step&#xA0;4</a> if your output shows file system data).
+                           </p>
+                           
+                        </li>
+                        <li><a id="create_file_system_step"></a>
+                           
+                           <p>(Conditional) Use the following command to create an ext4 file system on the volume.
+                              Substitute the device name (such as <code>/dev/xvdf</code>) for
+                              <em class="replaceable"><code>device_name</code></em>. Depending on the requirements of your
+                              application or the limitations of your operating system, you can choose a different
+                              file
+                              system type, such as ext3 or XFS.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Warning</p>
+                              <p>This step assumes that you&apos;re mounting an empty volume. If you&apos;re mounting a
+                                 volume that already has data on it (for example, a volume that was restored from a
+                                 snapshot), don&apos;t use <b>mkfs</b> before mounting the volume (skip to the
+                                 next step instead). Otherwise, you&apos;ll format the volume and delete the existing
+                                 data.
+                              </p>
+                           </div>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo mkfs -t ext4 <em class="replaceable"><code>device_name</code></em></code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Use the following command to create a mount point directory for the volume. The
+                              mount point is where the volume is located in the file system tree and where you read
+                              and write files to after you mount the volume. Substitute a location for
+                              <em class="replaceable"><code>mount_point</code></em>, such as <code>/data</code>.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo mkdir <em class="replaceable"><code>mount_point</code></em></code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Use the following command to mount the volume at the location you just
+                              created.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo mount <em class="replaceable"><code>device_name</code></em> <em class="replaceable"><code>mount_point</code></em></code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>(Optional) To mount this EBS volume on every system reboot, add an entry for the
+                              device to the <code>/etc/fstab</code> file.
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>Create a backup of your <code>/etc/fstab</code> file that you can use if
+                                    you accidentally destroy or delete this file while you are editing
+                                    it.
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo cp /etc/fstab /etc/fstab.orig</code></strong></code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>Open the <code>/etc/fstab</code> file using any text editor, such as
+                                    <b>nano</b> or <b>vim</b>.
+                                 </p>
+                                 
+                                 <div class="aws-note">
+                                    <p class="aws-note">Note</p>
+                                    <p>You must open the file as root or by using the <b>sudo</b>
+                                       command.
+                                    </p>
+                                 </div>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>Add a new line to the end of the file for your volume using the following
+                                    format:
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><em class="replaceable"><code>device_name</code></em>  <em class="replaceable"><code>mount_point</code></em>  <em class="replaceable"><code>file_system_type</code></em>  <em class="replaceable"><code>fs_mntops</code></em>  <em class="replaceable"><code>fs_freq</code></em>  <em class="replaceable"><code>fs_passno</code></em>  </code></pre>
+                                 <p>The last three fields on this line are the file system mount options, the dump frequency
+                                    of the file system, and the order of file system checks done at boot time. If you
+                                    don&apos;t know what these values should be, then use the values in the following example
+                                    for them (<code class="code">defaults,nofail 0 2)</code>. For more information on
+                                    <code>/etc/fstab</code> entries, see the <b>fstab</b> manual
+                                    page (by entering <b>man fstab</b> on the command line). 
+                                 </p>
+                                 
+                                 <p>You can use the system&apos;s current device name (<code class="code">/dev/sda1</code>,
+                                    <code class="code">/dev/xvda1</code>, etc.) in <code class="code">/etc/fstab</code>, but we recommend using
+                                    the device&apos;s 128-bit universally unique identifier (UUID) instead. System-declared
+                                    block-device names may change under a variety of circumstances, but the UUID is
+                                    assigned to a volume partition when it is formatted and persists throughout the
+                                    partition&apos;s service life. By using the UUID, you reduce the chances of the
+                                    block-device mapping in <code class="code">/etc/fstab</code> leaving the system unbootable after
+                                    a hardware reconfiguration.
+                                 </p>
+                                 
+                                 <p>To find the UUID of a device, first display the available devices:</p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>df</code></strong></code></pre>
+                                 <p>The following is example output:</p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">Filesystem     1K-blocks    Used Available Use% Mounted on
+/dev/xvda1       8123812 1876888   6146676  24% /
+devtmpfs          500712      56    500656   1% /dev
+tmpfs             509724       0    509724   0% /dev/shm</code></pre>
+                                 <p>Next, continuing this example, examine the output of either of two commands to
+                                    find the UUID of <code>/dev/xvda1</code>:
+                                 </p>
+                                 
+                                 <div class="itemizedlist">
+                                    
+                                    
+                                    
+                                    <ul class="itemizedlist" type="disc">
+                                       <li class="listitem">
+                                          
+                                          <p><strong class="userinput"><code>sudo file -s
+                                                   <em class="replaceable"><code>/dev/xvda1</code></em></code></strong></p>
+                                          
+                                       </li>
+                                       <li class="listitem">
+                                          
+                                          <p><strong class="userinput"><code>ls -al /dev/disk/by-uuid/</code></strong></p>
+                                          
+                                       </li>
+                                    </ul>
+                                 </div>
+                                 
+                                 <p>Assuming that you find <code>/dev/xvda1</code> to have UUID
+                                    <code class="code">de9a1ccd-a2dd-44f1-8be8-0123456abcdef</code>, you would add the following
+                                    entry to <code>/etc/fstab</code> to mount an ext4 file system at mount point
+                                    <code>/data</code>:
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">UUID=de9a1ccd-a2dd-44f1-8be8-0123456abcdef       /data   ext4    defaults,nofail        0       2</code></pre>
+                                 <div class="aws-note">
+                                    <p class="aws-note">Note</p>
+                                    <p>If you ever intend to boot your instance without this volume attached (for
+                                       example, so this volume could move back and forth between different instances),
+                                       you should add the <code class="code">nofail</code> mount option that allows the instance
+                                       to boot even if there are errors in mounting the volume. Debian derivatives,
+                                       including Ubuntu versions earlier than 16.04, must also add the
+                                       <code class="code">nobootwait</code> mount option.
+                                    </p>
+                                 </div>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>After you&apos;ve added the new entry to <code>/etc/fstab</code>, you must
+                                    check that your entry works. Run the <b>sudo mount -a</b> command to
+                                    mount all file systems in <code>/etc/fstab</code>.
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo mount -a</code></strong></code></pre>
+                                 <p>If the previous command does not produce an error, then your
+                                    <code>/etc/fstab</code> file is OK and your file system will mount
+                                    automatically at the next boot. If the command does produce any errors, examine the
+                                    errors and try to correct your <code>/etc/fstab</code>.
+                                 </p>
+                                 
+                                 <div class="aws-note">
+                                    <p class="aws-note">Warning</p>
+                                    <p>Errors in the <code>/etc/fstab</code> file can render a system
+                                       unbootable. Do not shut down a system that has errors in the
+                                       <code>/etc/fstab</code> file.
+                                    </p>
+                                 </div>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>(Optional) If you are unsure how to correct <code>/etc/fstab</code>
+                                    errors, you can always restore your backup <code>/etc/fstab</code> file with
+                                    the following command.
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo mv /etc/fstab.orig /etc/fstab</code></strong></code></pre>
+                                 </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Review the file permissions of your new volume mount to make sure that your users
+                              and applications can write to the volume. For more information about file permissions,
+                              see <a href="http://tldp.org/LDP/intro-linux/html/sect_03_04.html" target="_blank">File
+                                 security</a> at <em>The Linux Documentation Project</em>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ebs-attaching-volume.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ebs-describing-volumes.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

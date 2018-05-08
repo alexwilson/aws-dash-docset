@@ -1,0 +1,1002 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title> Amazon S3 Inventory - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="Welcome.html" title="What Is Amazon S3?">
+      <link rel="prev" href="analytics-storage-class.html" title="Amazon S3 Analytics &#x2013; Storage Class Analysis">
+      <link rel="next" href="s3-access-control.html" title="Managing Access Permissions to Your Amazon S3 Resources">
+      <meta name="description" content="Describes Amazon S3 inventory and how to use it.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-inventory.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <span class="breadcrumb"> Amazon S3 Inventory</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="storage-inventory"> Amazon S3 Inventory</h1>
+                     <p>Amazon S3 inventory is one of the tools Amazon S3 provides to help manage your storage.
+                        You can use it
+                        to audit and report on the replication and encryption status of your objects for business,
+                        compliance, and regulatory needs. You can also simplify and speed up business workflows
+                        and big
+                        data jobs using Amazon S3 inventory, which provides a scheduled alternative to the
+                        Amazon S3 synchronous
+                        <code class="code">List</code> API operation. 
+                     </p>
+                     <p>Amazon S3 inventory provides comma-separated values (CSV) or <a href="https://orc.apache.org/" target="_blank">Apache optimized row columnar (ORC)</a> output files that
+                        list your objects and their corresponding metadata on a daily or weekly basis for
+                        an S3 bucket
+                        or a shared prefix (that is, objects that have names that begin with a common string).
+                        For
+                        information about Amazon S3 inventory pricing, see <a href="https://aws.amazon.com/s3/pricing/" target="_blank">Amazon S3
+                           Pricing</a>.
+                     </p>
+                     <p>You can configure multiple inventory lists for a bucket. You can configure what object
+                        metadata to include in the inventory, whether to list all object versions or only
+                        current
+                        versions, where to store the inventory list file output, and whether to generate the
+                        inventory
+                        on a daily or weekly basis. You can also specify that the inventory list file be
+                        encrypted.
+                     </p>
+                     <p>You can query Amazon S3 inventory using standard SQL by using Amazon Athena, Amazon
+                        Redshift Spectrum, and other
+                        tools such as <a href="https://prestodb.io/" target="_blank">Presto</a>, <a href="https://hive.apache.org/" target="_blank">Apache Hive</a>, and <a href="https://databricks.com/spark/about/" target="_blank">Apache Spark</a>. It&apos;s easy to use Athena to run
+                        queries on your inventory files. You can use Athena for Amazon S3 inventory queries
+                        in all Regions
+                        where Athena is available. 
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#storage-inventory-how-to-set-up">How Do I Set Up Amazon S3 Inventory?</a></li>
+                           <li><a href="#storage-inventory-contents">What&apos;s Included in an Amazon S3 Inventory? </a></li>
+                           <li><a href="#storage-inventory-location">Where Are Inventory Lists Located? </a></li>
+                           <li><a href="#storage-inventory-notification">How Do I Know When an Inventory Is
+                                 Complete?</a></li>
+                           <li><a href="#storage-inventory-athena-query">Querying Inventory with Amazon Athena</a></li>
+                           <li><a href="#storage-inventory-related-resources">Amazon S3 Inventory REST APIs</a></li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="storage-inventory-how-to-set-up">How Do I Set Up Amazon S3 Inventory?</h2>
+                     
+                     <p>This section describes how to set up an inventory, including details about the inventory
+                        source and destination buckets.
+                     </p>
+                     
+                     
+                     <h3 id="storage-inventory-buckets">Amazon S3 Inventory Source and Destination
+                        Buckets
+                     </h3>
+                     
+                     <p>The bucket that the inventory lists the objects for is called the <em>source
+                           bucket</em>. The bucket where the inventory list file is stored is called the
+                        <em>destination bucket</em>. 
+                     </p>
+                     
+                     <p><b>Source Bucket</b></p>
+                     
+                     <p>The inventory lists the objects that are stored in the source bucket. You can get
+                        inventory lists for an entire bucket or filtered by (object key name) prefix.
+                     </p>
+                     
+                     <p>The source bucket:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Contains the objects that are listed in the inventory.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Contains the configuration for the inventory.</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p><b>Destination Bucket</b></p>
+                     
+                     <p>Amazon S3 inventory list files are written to the destination bucket. To group all
+                        the
+                        inventory list files in a common location in the destination bucket, you can specify
+                        a
+                        destination (object key name) prefix in the inventory configuration.
+                     </p>
+                     
+                     <p>The destination bucket:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Contains the inventory file lists. </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Contains the  manifest files that list all the file inventory lists that are stored
+                                 in the destination bucket. For more information, see <a href="storage-inventory.html#storage-inventory-location-manifest">What Is an Inventory Manifest?</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Must have a bucket policy to give Amazon S3 permission to verify ownership of the
+                                 bucket
+                                 and permission to write files to the bucket. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Must be in the same AWS Region as the source bucket.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Can be the same as the source bucket.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Can be owned by a different AWS account than the account that owns the source
+                                 bucket.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     <h3 id="storage-inventory-setting-up">Setting Up Amazon S3 Inventory</h3>
+                     
+                     <p>Amazon S3 inventory helps you manage your storage by creating lists of the objects
+                        in an S3
+                        bucket on a defined schedule. You can configure multiple inventory lists for a bucket.
+                        The
+                        inventory lists are published to CSV or ORC files in a destination bucket. 
+                     </p>
+                     
+                     <p>The easiest way to set up an inventory is by using the AWS Management Console, but
+                        you can also use
+                        the REST API, AWS CLI, or AWS SDKs. The console performs the first step of the following
+                        procedure for you: adding a bucket policy to the destination bucket.
+                     </p>
+                     
+                     <p><b>To set up Amazon S3 inventory for an S3 bucket</b></p>
+                     
+                     <div class="orderedlist">
+                        
+                        
+                        
+                        
+                        <ol>
+                           <li>
+                              
+                              <p><b>Add a bucket policy for the destination
+                                    bucket.</b></p>
+                              
+                              <p>You must create a bucket policy on the destination bucket to grant permissions to
+                                 Amazon S3 to write objects to the bucket in the defined location. For an example policy,
+                                 see
+                                 <a href="example-bucket-policies.html#example-bucket-policies-use-case-9">Granting Permissions for Amazon S3 Inventory and
+                                    Amazon S3 Analytics</a>. 
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p><b>Configure an inventory to list the objects in a source bucket
+                                    and publish the list to a destination bucket.</b></p>
+                              
+                              <p>When you configure an inventory list for a source bucket, you specify the
+                                 destination bucket where you want the list to be stored, and whether you want to
+                                 generate the list daily or weekly. You can also configure what object metadata to
+                                 include and whether to list all object versions or only current versions. 
+                              </p>
+                              
+                              <p>You can specify that the inventory list file be encrypted by using Amazon S3-managed
+                                 keys
+                                 (SSE-S3) or AWS KMS-managed keys (SSE-KMS). For more information about SSE-S3 and
+                                 SSE-KMS, see <a href="serv-side-encryption.html">Protecting Data Using Server-Side Encryption</a>. If you plan to use SSE-KMS encryption, see Step 3.
+                              </p>
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       
+                                       <p>For information about how to use the console to configure an inventory list, see
+                                          <a href="./AmazonS3/latest/user-guide/configure-inventory.html" target="_blank">How Do I Configure Amazon S3
+                                             Inventory?</a> in the <em>Amazon Simple Storage Service Console User Guide</em>.
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p>To use the Amazon S3 API to configure an inventory list, use the <a href="./AmazonS3/latest/API/RESTBucketPUTInventoryConfig.html" target="_blank">PUT Bucket inventory
+                                             configuration</a> REST API, or the equivalent from the AWS CLI or AWS SDKs.
+                                          
+                                       </p>
+                                       
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                           </li>
+                           <li>
+                              
+                              <p><b>To encrypt the inventory list file with SSE-KMS, grant Amazon S3
+                                    permission to use the AWS KMS key.</b></p>
+                              
+                              <p>You can configure encryption for the inventory list file by using the AWS Management
+                                 Console,
+                                 REST API, AWS CLI, or AWS SDKs. Whichever way you choose, you must grant Amazon S3
+                                 permission
+                                 to use the AWS KMS customer master key (CMK) to encrypt the inventory file. You grant
+                                 Amazon S3
+                                 permission by modifying the key policy for the AWS KMS CMK that is being used to encrypt
+                                 the inventory file. For more information, see the next section, <a href="storage-inventory.html#storage-inventory-kms-key-policy">Grant Amazon S3 Permission to Encrypt Using
+                                    Your AWS KMS Key</a>.
+                              </p>
+                              
+                           </li>
+                        </ol>
+                     </div>
+                     
+                     
+                     <h4 id="storage-inventory-kms-key-policy">Grant Amazon S3 Permission to Encrypt Using
+                        Your AWS KMS Key
+                     </h4>
+                     
+                     <p>You must grant Amazon S3 permission to encrypt using your AWS KMS key with a key policy.
+                        The
+                        following procedure describes how to use the AWS Identity and Access Management (IAM)
+                        console to modify the key
+                        policy for the AWS KMS CMK that is used to encrypt the inventory file.
+                     </p>
+                     
+                     <p class="title"><b>To grant permissions to encrypt using your AWS KMS key</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Sign in to the AWS Management Console using the AWS account that owns the AWS KMS
+                              CMK, and open
+                              the IAM console at <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the left navigation pane, choose <b>Encryption keys</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Region</b>, choose the appropriate AWS Region. Do not use
+                              the region selector in the navigation bar (upper-right corner).
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose the alias of the CMK that you want to encrypt inventory with.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Key Policy</b> section of the page, choose
+                              <b>Switch to policy view</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Using the <b>Key Policy</b> editor, insert following key policy into
+                              the existing policy and then choose <b>Save Changes</b>. You might want
+                              to copy the policy to the end of the existing policy. 
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{
+    &quot;Sid&quot;: &quot;Allow Amazon S3 use of the key&quot;,
+    &quot;Effect&quot;: &quot;Allow&quot;,
+    &quot;Principal&quot;: {
+        &quot;Service&quot;: &quot;s3.amazonaws.com&quot;
+    },
+    &quot;Action&quot;: [
+        &quot;kms:GenerateDataKey*&quot;
+    ],
+    &quot;Resource&quot;: &quot;*&quot;
+}</code></pre>
+                           </li>
+                     </ol>
+                     
+                     <p>You can also use the AWS KMS PUT key policy API <a href="./kms/latest/APIReference/API_PutKeyPolicy.html" target="_blank">PutKeyPolicy</a> to copy the key policy to
+                        the CMK that is being used to encrypt the inventory file. For more information about
+                        creating and editing AWS KMS CMKs, see <a href="./kms/latest/developerguide/getting-started.html" target="_blank">Getting Started</a> in the <em>AWS Key Management Service Developer Guide</em>. 
+                     </p>
+                     
+                     
+                     
+                     
+                     <h2 id="storage-inventory-contents">What&apos;s Included in an Amazon S3 Inventory? </h2>
+                     
+                     <p>An inventory list file contains a list of the objects in the source bucket and metadata
+                        for each object. The inventory lists are stored in the destination bucket as a CSV
+                        file
+                        compressed with GZIP or as an Apache optimized row columnar (ORC) file. 
+                     </p>
+                     
+                     <p>The inventory list contains a list of the objects in an S3 bucket and the following
+                        metadata for each listed object: 
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><b>Bucket name</b> &#x2013; The name of the bucket that the
+                                 inventory is for.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Key name</b> &#x2013; Object key name (or key) that
+                                 uniquely identifies the object in the bucket. When using the CSV file format, the
+                                 key name
+                                 is URL-encoded and must be decoded before you can use it.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Version ID</b> &#x2013; Object version ID. When you
+                                 enable versioning on a bucket, Amazon S3 assigns a version number to objects that
+                                 are added to
+                                 the bucket. For more information, see <a href="ObjectVersioning.html">Object Versioning</a>. (This field is not included if the list is only for
+                                 the current version of objects.)
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>IsLatest</b> &#x2013; Set to <code class="code">True</code> if the
+                                 object is the current version of the object. (This field is not included if the list
+                                 is
+                                 only for the current version of objects.)
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Size</b> &#x2013; Object size in bytes.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Last modified date</b> &#x2013; Object creation date or
+                                 the last modified date, whichever is the latest.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>ETag</b> &#x2013; The entity tag is a hash of the object.
+                                 The ETag reflects changes only to the contents of an object, not its metadata. The
+                                 ETag
+                                 may or may not be an MD5 digest of the object data. Whether it is depends on how the
+                                 object was created and how it is encrypted.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Storage class</b> &#x2013; Storage class used for storing
+                                 the object. For more information, see <a href="storage-class-intro.html">Storage Classes</a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Multipart upload flag</b> &#x2013; Set to
+                                 <code class="code">True</code> if the object was uploaded as a multipart upload. For more
+                                 information, see <a href="mpuoverview.html">Multipart Upload Overview</a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Delete marker</b> &#x2013; Set to <code class="code">True</code>, if
+                                 the object is a delete marker. For more information, see <a href="ObjectVersioning.html">Object Versioning</a>. (This field is not included if the list is only for
+                                 the current version of objects.)
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Replication status</b> &#x2013; Set to
+                                 <code class="code">PENDING</code>, <code class="code">COMPLETED</code>, <code class="code">FAILED</code>, or
+                                 <code class="code">REPLICA.</code> For more information, see <a href="crr-status.html">Finding the Cross-Region Replication Status </a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Encryption status</b> &#x2013; Set to
+                                 <code class="code">SSE-S3</code>, <code class="code">SSE-C</code>, <code class="code">SSE-KMS</code>, or <code class="code">NOT-SSE</code>.
+                                 The server-side encryption status for SSE-S3, SSE-KMS, and SSE with customer-provided
+                                 keys
+                                 (SSE-C). A status of <code class="code">NOT-SSE</code> means that the object is not encrypted with
+                                 server-side encryption. For more information, see <a href="UsingEncryption.html">Protecting Data Using Encryption</a>.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>The following is an example CSV inventory list opened in a spreadsheet application.
+                        The
+                        heading row is shown only to help clarify the example; it is not included in the actual
+                        list.
+                     </p>
+                     
+                     <div class="mediaobject">
+                        
+                        
+                        <img src="../../..//img/inventory-list.png" alt="
+        Screenshot of an example inventory list opened in a spreadsheet
+          application.
+      ">
+                        
+                        
+                        
+                        
+                     </div>
+                     
+                     <p>We recommend that you create a lifecycle policy that deletes old inventory lists.
+                        For more
+                        information, see <a href="object-lifecycle-mgmt.html">Object Lifecycle Management</a>.
+                     </p>
+                     
+                     
+                     <h3 id="storage-inventory-contents-consitency">Inventory Consistency</h3>
+                     
+                     <p>All of your objects might not appear in each inventory list. The inventory list provides
+                        eventual consistency for PUTs of both new objects and overwrites, and DELETEs. Inventory
+                        lists are a rolling snapshot of bucket items, which are eventually consistent (that
+                        is, the
+                        list might not include recently added or deleted objects). 
+                     </p>
+                     
+                     <p>To validate the state of the object before you take action on the object, we recommend
+                        that you perform a <code class="code">HEAD Object</code> REST API request to retrieve metadata for the
+                        object, or check the object&apos;s properties in the Amazon S3 console. You can also check
+                        object
+                        metadata with the AWS CLI or the AWS SDKS. For more information, see <a href="./AmazonS3/latest/API/RESTObjectHEAD.html" target="_blank">HEAD Object</a> in the
+                        <em>Amazon Simple Storage Service API Reference</em>.
+                     </p>
+                     
+                     
+                     
+                     <h2 id="storage-inventory-location">Where Are Inventory Lists Located? </h2>
+                     
+                     <p>When an inventory list is published, the manifest files are published to the following
+                        location in the destination bucket.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">
+ <em class="replaceable"><code>destination-prefix</code></em>/<em class="replaceable"><code>source-bucket</code></em>/<em class="replaceable"><code>config-ID</code></em>/<em class="replaceable"><code>YYYY-MM-DDTHH-MMZ</code></em>/manifest.json
+ <em class="replaceable"><code>destination-prefix</code></em>/<em class="replaceable"><code>source-bucket</code></em>/<em class="replaceable"><code>config-ID</code></em>/<em class="replaceable"><code>YYYY-MM-DDTHH-MMZ</code></em>/manifest.checksum
+ <em class="replaceable"><code>destination-prefix</code></em>/<em class="replaceable"><code>source-bucket</code></em>/<em class="replaceable"><code>config-ID</code></em>/hive/dt=<em class="replaceable"><code>YYYY-MM-DD-HH-MM</code></em>/symlink.txt
+ </code></pre>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><em class="replaceable"><code>destination-prefix</code></em> is the (object key name) prefix set in
+                                 the inventory configuration, which can be used to group all the inventory list files
+                                 in a
+                                 common location within the destination bucket.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><em class="replaceable"><code>source-bucket</code></em> is the source bucket that the inventory list
+                                 is for. It is added to prevent collisions when multiple inventory reports from different
+                                 source buckets are sent to the same destination bucket.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><em class="replaceable"><code>config-ID</code></em> is added to prevent collisions with multiple
+                                 inventory reports from the same source bucket that are sent to the same destination
+                                 bucket.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><em class="replaceable"><code>YYYY-MM-DDTHH-MMZ</code></em> is the time stamp that consists of the
+                                 start time and the date when the inventory report generation begins scanning the bucket;
+                                 for example, <code class="code">2016-11-06T21-32Z</code>. Storage added after the time stamp will not
+                                 be in the report.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">manifest.json</code> is the manifest file. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">manifest.checksum</code> is the MD5 of the content of the
+                                 <code class="code">manifest.json</code> file. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">symlink.txt</code> is the Apache Hive-compatible manifest file. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>The inventory lists are published daily or weekly to the following location in the
+                        destination bucket.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">
+      <em class="replaceable"><code>destination-prefix</code></em>/<em class="replaceable"><code>source-bucket</code></em>/data/<em class="replaceable"><code>example-file-name.csv.gz</code></em>
+      ...
+      <em class="replaceable"><code>destination-prefix</code></em>/<em class="replaceable"><code>source-bucket</code></em>/data/<em class="replaceable"><code>example-file-name-1.csv.gz</code></em>
+      </code></pre>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><em class="replaceable"><code>destination-prefix</code></em> is the (object key name) prefix set in
+                                 the inventory configuration. It can be used to group all the inventory list files
+                                 in a
+                                 common location in the destination bucket.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><em class="replaceable"><code>source-bucket</code></em> is the source bucket that the inventory list
+                                 is for. It is added to prevent collisions when multiple inventory reports from different
+                                 source buckets are sent to the same destination bucket.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><em class="replaceable"><code>example-file-name</code></em><code class="code">.csv.gz</code> is one of the CSV
+                                 inventory files. ORC inventory names end with the file name extension
+                                 <code class="code">.orc</code>.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="storage-inventory-location-manifest">What Is an Inventory Manifest?</h3>
+                     
+                     <p>The manifest files <code class="code">manifest.json</code> and <code class="code">symlink.txt</code> describe
+                        where the inventory files are located. Whenever a new inventory list is delivered,
+                        it is
+                        accompanied by a new set of manifest files.
+                     </p>
+                     
+                     <p>Each manifest contained in the <code class="code">manifest.json</code> file provides metadata and
+                        other basic information about an inventory. This information includes the following:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Source bucket name</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Destination bucket name</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Version of the inventory</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Creation time stamp
+                                 in the epoch date
+                                 format that consists of the start time and the date when the inventory
+                                 report generation begins scanning the bucket
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Format and schema of the inventory files</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Actual list of the inventory files that are in the destination bucket</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>Whenever a <code class="code">manifest.json</code> file is written, it is accompanied by a
+                        <code class="code">manifest.checksum</code> file that is the MD5 of the content of
+                        <code class="code">manifest.json</code> file. 
+                     </p>
+                     
+                     <p>The following is an example of a manifest in a <code class="code">manifest.json</code> file for a
+                        CSV-formatted inventory.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;sourceBucket&quot;: &quot;example-source-bucket&quot;,
+    &quot;destinationBucket&quot;: &quot;example-inventory-destination-bucket&quot;,
+    &quot;version&quot;: &quot;2016-11-30&quot;,
+    &quot;creationTimestamp&quot; : &quot;1514944800000&quot;,
+    &quot;fileFormat&quot;: &quot;CSV&quot;,
+    &quot;fileSchema&quot;: &quot;Bucket, Key, VersionId, IsLatest, IsDeleteMarker, Size, LastModifiedDate, ETag, StorageClass, MultipartUploaded, ReplicationStatus&quot;,
+    &quot;files&quot;: [
+        {
+            &quot;key&quot;: &quot;Inventory/example-source-bucket/2016-11-06T21-32Z/files/939c6d46-85a9-4ba8-87bd-9db705a579ce.csv.gz&quot;,
+            &quot;size&quot;: 2147483647,
+            &quot;MD5checksum&quot;: &quot;f11166069f1990abeb9c97ace9cdfabc&quot;,
+            &quot;inventoriedRecord&quot;: 58050695
+        }
+    ]
+}</code></pre>
+                     <p>The following is an example of a manifest in a <code class="code">manifest.json</code> file for an
+                        ORC-formatted inventory.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;sourceBucket&quot;: &quot;example-source-bucket&quot;,
+    &quot;destinationBucket&quot;: &quot;arn:aws:s3:::example-destination-bucket&quot;,
+    &quot;version&quot;: &quot;2016-11-30&quot;,
+    &quot;creationTimestamp&quot; : &quot;1514944800000&quot;,
+    &quot;fileFormat&quot;: &quot;ORC&quot;,
+    &quot;fileSchema&quot;: &quot;struct&lt;bucket:string,key:string,version_id:string,is_latest:boolean,is_delete_marker:boolean,size:bigint,last_modified_date:timestamp,e_tag:string,storage_class:string,is_multipart_uploaded:boolean,replication_status:string,encryption_status:string&gt;&quot;,
+    &quot;files&quot;: [
+        {
+            &quot;key&quot;: &quot;inventory/example-source-bucket/data/d794c570-95bb-4271-9128-26023c8b4900.orc&quot;,
+            &quot;size&quot;: 56291,
+            &quot;MD5checksum&quot;: &quot;5925f4e78e1695c2d020b9f6eexample&quot;
+        }
+    ]
+}</code></pre>
+                     <p>The <code class="code">symlink.txt</code> file is an Apache Hive-compatible manifest file that allows
+                        Hive to automatically discover inventory files and their associated data files. The
+                        Hive-compatible manifest works with any Hive-compatible service, including Athena,
+                        AWS Glue, and
+                        Amazon Redshift Spectrum. It also works with Hive-compatible applications, including
+                        <a href="https://prestodb.io/" target="_blank">Presto</a>, <a href="https://hive.apache.org/" target="_blank">Apache
+                           Hive</a>, <a href="https://databricks.com/spark/about/" target="_blank">Apache Spark</a>, and
+                        many others.
+                     </p>
+                     
+                     
+                     
+                     <h2 id="storage-inventory-notification">How Do I Know When an Inventory Is
+                        Complete?
+                     </h2>
+                     
+                     <p>You can set up an Amazon S3 event notification to receive notice when the manifest
+                        checksum
+                        file is created, which indicates that an inventory list has been added to the destination
+                        bucket. The manifest is an up-to-date list of all the inventory lists at the destination
+                        location.
+                     </p>
+                     
+                     <p>Amazon S3 can publish events to an Amazon Simple Notification Service (Amazon SNS)
+                        topic, an Amazon Simple Queue Service (Amazon SQS) queue, or an
+                        AWS Lambda function. For more information, see <a href="NotificationHowTo.html"> Configuring Amazon S3 Event Notifications</a>.
+                     </p>
+                     
+                     <p>The following notification configuration defines that all <code class="code">manifest.checksum</code>
+                        files newly added to the destination bucket are processed by the AWS Lambda
+                        <code class="code">cloud-function-list-write</code>.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&lt;NotificationConfiguration&gt;
+  &lt;QueueConfiguration&gt;
+      &lt;Id&gt;1&lt;/Id&gt;
+      &lt;Filter&gt;
+          &lt;S3Key&gt;
+              &lt;FilterRule&gt;
+                  &lt;Name&gt;prefix&lt;/Name&gt;
+                  &lt;Value&gt;<em class="replaceable"><code>destination-prefix</code></em>/<em class="replaceable"><code>source-bucket</code></em>&lt;/Value&gt;
+              &lt;/FilterRule&gt;
+              &lt;FilterRule&gt;
+                  &lt;Name&gt;suffix&lt;/Name&gt;
+                  &lt;Value&gt;checksum&lt;/Value&gt;
+              &lt;/FilterRule&gt;
+          &lt;/S3Key&gt;
+     &lt;/Filter&gt;
+     &lt;Cloudcode&gt;arn:aws:lambda:us-west-2:222233334444:cloud-function-list-write&lt;/Cloudcode&gt;
+     &lt;Event&gt;s3:ObjectCreated:*&lt;/Event&gt;
+  &lt;/QueueConfiguration&gt;
+  &lt;/NotificationConfiguration&gt;</code></pre>
+                     <p>For more information, see <a href="./lambda/latest/dg/with-s3.html" target="_blank">Using AWS Lambda with
+                           Amazon S3</a> in the <em>AWS Lambda Developer Guide</em>.
+                     </p>
+                     
+                     
+                     <h2 id="storage-inventory-athena-query">Querying Inventory with Amazon Athena</h2>
+                     
+                     <p>You can query Amazon S3 inventory using standard SQL by using Amazon Athena in all
+                        Regions where
+                        Athena is available. To check for AWS Region availability, see the <a href="https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/" target="_blank">AWS Region
+                           Table</a>. 
+                     </p>
+                     
+                     <p>Athena can query Amazon S3 inventory files in ORC or CSV format. When you use Athena
+                        to query
+                        inventory, we recommend that you use ORC-formatted inventory files instead of CSV.
+                        ORC
+                        provides faster query performance and lower query costs. ORC is a self-describing
+                        type-aware
+                        columnar file format designed for <a href="http://hadoop.apache.org/" target="_blank">Apache
+                           Hadoop</a>. The columnar format lets the reader read, decompress, and process only the
+                        columns that are required for the current query. The ORC format for Amazon S3 inventory
+                        is
+                        available in all AWS Regions.
+                     </p>
+                     
+                     <p class="title"><b>To get started using Athena to query Amazon S3 inventory</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Create an Athena table. For information about creating a table, see 
+                              <a href="./athena/latest/ug/getting-started.html" target="_blank">Getting Started</a> in the 
+                              <em>Amazon Athena User Guide</em>.
+                           </p>
+                           
+                           <p>The following sample query includes all optional fields in the inventory report. Drop
+                              any optional field that you did not choose for your inventory so that the query
+                              corresponds to the fields chosen for your inventory. Also, you must use your bucket
+                              name
+                              and the location. The location points to your inventory destination path; for example,
+                              <code class="code">s3://destination-prefix/source-bucket/config-ID/hive</code>.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="sgl ">CREATE EXTERNAL TABLE <em class="replaceable"><code>your-table-name</code></em>(
+  `bucket` string,
+  key string,
+  version_id string,
+  is_latest boolean,
+  is_delete_marker boolean,
+  size bigint,
+  last_modified_date timestamp,
+  e_tag string,
+  storage_class string,
+  is_multipart_uploaded boolean,
+  replication_status string,
+  encryption_status string
+  )
+  PARTITIONED BY (dt string)
+  ROW FORMAT SERDE &apos;org.apache.hadoop.hive.ql.io.orc.OrcSerde&apos;
+  STORED AS INPUTFORMAT &apos;org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat&apos;
+  OUTPUTFORMAT  &apos;org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat&apos;
+  LOCATION &apos;s3://<em class="replaceable"><code>destination-prefix/source-bucket/config-ID</code></em>/hive&apos;;</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>To add new inventory lists to your table, use the following <code class="code">MSCK REPAIR
+                                 TABLE</code> command.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="sgl ">MSCK REPAIR TABLE <em class="replaceable"><code>your-table-name</code></em>;</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>After performing the first two steps, you can run ad hoc queries on your inventory,
+                              as
+                              shown in the following example. 
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="sgl ">SELECT encryption_status, count(*) FROM <em class="replaceable"><code>your-table-name</code></em> GROUP BY encryption_status;</code></pre>
+                           </li>
+                     </ol>
+                     
+                     <p>For more information about using Athena, see <a href="./athena/latest/ug/" target="_blank">Amazon Athena User Guide</a>.
+                     </p>
+                     
+                     
+                     <h2 id="storage-inventory-related-resources">Amazon S3 Inventory REST APIs</h2>
+                     
+                     <p>The following are the REST operations used for Amazon S3 inventory.</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>
+                                 <a href="./AmazonS3/latest/API/RESTBucketDELETEInventoryConfiguration.html" target="_blank"> DELETE Bucket
+                                    inventory configuration</a>
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <a href="./AmazonS3/latest/API/RESTBucketGETInventoryConfig.html" target="_blank"> GET Bucket inventory
+                                    configuration</a>
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <a href="./AmazonS3/latest/API/RESTBucketListInventoryConfigs.html" target="_blank"> List Bucket Inventory
+                                    Configuration</a>
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <a href="./AmazonS3/latest/API/RESTBucketPUTInventoryConfig.html" target="_blank"> PUT Bucket inventory
+                                    configuration</a>
+                                 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="analytics-storage-class.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="s3-access-control.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="How Do I Set Up Amazon S3 Inventory?"><a class="pagetoc" href="#storage-inventory-how-to-set-up">How to Set Up Amazon S3 Inventory</a></li>
+                        <li class="pagetoc" name="What&apos;s Included in an Amazon S3 Inventory? "><a class="pagetoc" href="#storage-inventory-contents">Inventory Lists</a></li>
+                        <li class="pagetoc" name="Where Are Inventory Lists Located? "><a class="pagetoc" href="#storage-inventory-location">Location of Inventory Lists </a></li>
+                        <li class="pagetoc" name="How Do I Know When an Inventory Is
+        Complete?"><a class="pagetoc" href="#storage-inventory-notification">Notify When Inventory Is
+                              Complete</a></li>
+                        <li class="pagetoc" name="Querying Inventory with Amazon Athena"><a class="pagetoc" href="#storage-inventory-athena-query">&gt;Querying Inventory with
+                              Athena</a></li>
+                        <li class="pagetoc" name="Amazon S3 Inventory REST APIs"><a class="pagetoc" href="#storage-inventory-related-resources">Amazon S3 Inventory REST APIs</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

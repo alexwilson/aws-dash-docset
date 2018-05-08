@@ -1,0 +1,347 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Deleting Multiple Objects Using the
+         AWS SDK for Java - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="DeletingMultipleObjects.html" title="Deleting Multiple Objects Per Request">
+      <link rel="prev" href="DeletingMultipleObjects.html" title="Deleting Multiple Objects Per Request">
+      <link rel="next" href="DeletingMultipleObjectsUsingNetSDK.html" title="Deleting Multiple Objects Using the
+            AWS SDK for .NET">
+      <meta name="description" content="Delete multiple Amazon S3 objects in a single request using the AWS SDK for Java.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/DeletingMultipleObjectsUsingJava.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="UsingObjects.html">Working with Amazon S3 Objects</a> &#xBB; <a href="ObjectOperations.html">Operations on Objects</a> &#xBB; <a href="DeletingObjects.html">Deleting Objects</a> &#xBB; <a href="DeletingMultipleObjects.html">Deleting Multiple Objects Per Request</a> &#xBB; <span class="breadcrumb">Deleting Multiple Objects Using the
+                                    AWS SDK for Java</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="DeletingMultipleObjectsUsingJava">Deleting Multiple Objects Using the
+                        AWS SDK for Java
+                     </h1>
+                     <p>The AWS SDK for Java provides the <code class="code">AmazonS3Client.deleteObjects()</code> method for
+                        deleting multiple objects. For each object that you want to delete, you specify the
+                        key
+                        name. If the bucket is versioning-enabled, you have the following options:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Specify only the object&apos;s key name. Amazon S3 will add a delete marker to the object.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Specify both the object&apos;s key name and a version ID to be deleted. Amazon S3 will
+                                 delete the specified version of the object.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="example">
+                        <div class="example-contents">
+                           <p>The following example uses the Multi-Object Delete API to delete objects from
+                              a bucket that is not version-enabled. The example uploads sample objects to the
+                              bucket and then uses the <code class="code">AmazonS3Client.deleteObjects()</code> method to
+                              delete the objects in a single request. In the <code class="code">DeleteObjectsRequest</code>,
+                              the example specifies only the object key names because the objects do not have
+                              version IDs. 
+                           </p>
+                           <p>For more information about deleting objects, see <a href="DeletingObjects.html">Deleting Objects</a>. For instructions on
+                              creating and testing a working sample, see <a href="UsingTheMPJavaAPI.html#TestingJavaSamples">Testing the Amazon S3 Java Code Examples</a>. 
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="java ">import java.io.IOException;
+import java.util.ArrayList;
+
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
+import com.amazonaws.services.s3.model.DeleteObjectsResult;
+
+public class DeleteMultipleObjectsNonVersionedBucket {
+
+    public static void main(String[] args) throws IOException {
+        String clientRegion = &quot;*** Client region ***&quot;;
+        String bucketName = &quot;*** Bucket name ***&quot;;
+
+        try {
+            AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
+                    .withCredentials(new ProfileCredentialsProvider())
+                    .withRegion(clientRegion)
+                    .build();
+
+            // Upload three sample objects.
+            ArrayList&lt;KeyVersion&gt; keys = new ArrayList&lt;KeyVersion&gt;();
+            for (int i = 0; i &lt; 3; i++) {
+                String keyName = &quot;delete object example &quot; + i;
+                s3Client.putObject(bucketName, keyName, &quot;Object number &quot; + i + &quot; to be deleted.&quot;);
+                keys.add(new KeyVersion(keyName));
+            }
+            System.out.println(keys.size() + &quot; objects successfully created.&quot;);
+    
+            // Delete the sample objects.
+            DeleteObjectsRequest multiObjectDeleteRequest = new DeleteObjectsRequest(bucketName)
+                                                                    .withKeys(keys)
+                                                                    .withQuiet(false);
+    
+            // Verify that the objects were deleted successfully.
+            DeleteObjectsResult delObjRes = s3Client.deleteObjects(multiObjectDeleteRequest);
+            int successfulDeletes = delObjRes.getDeletedObjects().size();
+            System.out.println(successfulDeletes + &quot; objects successfully deleted.&quot;);
+        }
+        catch(AmazonServiceException e) {
+            // The call was transmitted successfully, but Amazon S3 couldn&apos;t process 
+            // it, so it returned an error response.
+            e.printStackTrace();
+        }
+        catch(SdkClientException e) {
+            // Amazon S3 couldn&apos;t be contacted for a response, or the client
+            // couldn&apos;t parse the response from Amazon S3.
+            e.printStackTrace();
+        }
+    }
+}</code></pre></div>
+                     </div>
+                     <div class="example">
+                        <div class="example-contents">
+                           <p>The following example uses the Multi-Object Delete API to delete objects from
+                              a version-enabled bucket. It does the following: 
+                           </p>
+                           <div class="orderedlist">
+                              
+                              
+                              
+                              
+                              <ol>
+                                 <li>
+                                    
+                                    <p>Creates sample objects and then deletes them, specifying the key name
+                                       and version ID for each object to delete. The operation deletes only the
+                                       specified object versions.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Creates sample objects and then deletes them by specifying only the
+                                       key names. Because the example doesn&apos;t specify version IDs, the operation
+                                       adds a delete marker to each object, without deleting any specific object
+                                       versions. After the delete markers are added, these objects will not appear
+                                       in the AWS Management Console.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Remove the delete markers by specifying the object keys and version
+                                       IDs of the delete markers. The operation deletes the delete markers, which
+                                       results in the objects reappearing in the AWS Management Console.
+                                    </p>
+                                    
+                                 </li>
+                              </ol>
+                           </div><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="java ">import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
+import com.amazonaws.services.s3.model.DeleteObjectsResult;
+import com.amazonaws.services.s3.model.DeleteObjectsResult.DeletedObject;
+import com.amazonaws.services.s3.model.PutObjectResult;
+
+public class DeleteMultipleObjectsVersionEnabledBucket {
+    private static AmazonS3 S3_CLIENT;
+    private static String VERSIONED_BUCKET_NAME;
+
+    public static void main(String[] args) throws IOException {
+        String clientRegion = &quot;*** Client region ***&quot;;
+        VERSIONED_BUCKET_NAME = &quot;*** Bucket name ***&quot;;
+        
+        try {
+            S3_CLIENT = AmazonS3ClientBuilder.standard()
+                    .withCredentials(new ProfileCredentialsProvider())
+                    .withRegion(clientRegion)
+                    .build();
+
+            // Check to make sure that the bucket is versioning-enabled.
+            String bucketVersionStatus = S3_CLIENT.getBucketVersioningConfiguration(VERSIONED_BUCKET_NAME).getStatus();
+            if(!bucketVersionStatus.equals(BucketVersioningConfiguration.ENABLED)) {
+                System.out.printf(&quot;Bucket %s is not versioning-enabled.&quot;, VERSIONED_BUCKET_NAME);
+            }
+            else {
+                // Upload and delete sample objects, using specific object versions.
+                uploadAndDeleteObjectsWithVersions();
+        
+                // Upload and delete sample objects without specifying version IDs.
+                // Amazon S3 creates a delete marker for each object rather than deleting
+                // specific versions.
+                DeleteObjectsResult unversionedDeleteResult = uploadAndDeleteObjectsWithoutVersions();
+        
+                // Remove the delete markers placed on objects in the non-versioned create/delete method.
+                multiObjectVersionedDeleteRemoveDeleteMarkers(unversionedDeleteResult);
+            }
+        }
+        catch(AmazonServiceException e) {
+            // The call was transmitted successfully, but Amazon S3 couldn&apos;t process 
+            // it, so it returned an error response.
+            e.printStackTrace();
+        }
+        catch(SdkClientException e) {
+            // Amazon S3 couldn&apos;t be contacted for a response, or the client
+            // couldn&apos;t parse the response from Amazon S3.
+            e.printStackTrace();
+        }
+    }
+
+    private static void uploadAndDeleteObjectsWithVersions() {
+        System.out.println(&quot;Uploading and deleting objects with versions specified.&quot;);
+
+        // Upload three sample objects.
+        ArrayList&lt;KeyVersion&gt; keys = new ArrayList&lt;KeyVersion&gt;();
+        for (int i = 0; i &lt; 3; i++) {
+            String keyName = &quot;delete object without version ID example &quot; + i;
+            PutObjectResult putResult = S3_CLIENT.putObject(VERSIONED_BUCKET_NAME, keyName,
+                    &quot;Object number &quot; + i + &quot; to be deleted.&quot;);
+            // Gather the new object keys with version IDs.
+            keys.add(new KeyVersion(keyName, putResult.getVersionId()));
+        }
+
+        // Delete the specified versions of the sample objects.
+        DeleteObjectsRequest multiObjectDeleteRequest = new DeleteObjectsRequest(VERSIONED_BUCKET_NAME)
+                .withKeys(keys)
+                .withQuiet(false);
+
+        // Verify that the object versions were successfully deleted.
+        DeleteObjectsResult delObjRes = S3_CLIENT.deleteObjects(multiObjectDeleteRequest);
+        int successfulDeletes = delObjRes.getDeletedObjects().size();
+        System.out.println(successfulDeletes + &quot; objects successfully deleted&quot;);
+    }
+
+    private static DeleteObjectsResult uploadAndDeleteObjectsWithoutVersions() {
+        System.out.println(&quot;Uploading and deleting objects with no versions specified.&quot;);
+
+        // Upload three sample objects.
+        ArrayList&lt;KeyVersion&gt; keys = new ArrayList&lt;KeyVersion&gt;();
+        for (int i = 0; i &lt; 3; i++) {
+            String keyName = &quot;delete object with version ID example &quot; + i;
+            S3_CLIENT.putObject(VERSIONED_BUCKET_NAME, keyName, &quot;Object number &quot; + i + &quot; to be deleted.&quot;);
+            // Gather the new object keys without version IDs.
+            keys.add(new KeyVersion(keyName));
+        }
+
+        // Delete the sample objects without specifying versions.
+        DeleteObjectsRequest multiObjectDeleteRequest = new DeleteObjectsRequest(VERSIONED_BUCKET_NAME).withKeys(keys)
+                .withQuiet(false);
+
+        // Verify that delete markers were successfully added to the objects.
+        DeleteObjectsResult delObjRes = S3_CLIENT.deleteObjects(multiObjectDeleteRequest);
+        int successfulDeletes = delObjRes.getDeletedObjects().size();
+        System.out.println(successfulDeletes + &quot; objects successfully marked for deletion without versions.&quot;);
+        return delObjRes;
+    }
+
+    private static void multiObjectVersionedDeleteRemoveDeleteMarkers(DeleteObjectsResult response) {
+        List&lt;KeyVersion&gt; keyList = new ArrayList&lt;KeyVersion&gt;();
+        for (DeletedObject deletedObject : response.getDeletedObjects()) {
+            // Note that the specified version ID is the version ID for the delete marker.
+            keyList.add(new KeyVersion(deletedObject.getKey(), deletedObject.getDeleteMarkerVersionId()));
+        }
+        // Create a request to delete the delete markers.
+        DeleteObjectsRequest deleteRequest = new DeleteObjectsRequest(VERSIONED_BUCKET_NAME).withKeys(keyList);
+
+        // Delete the delete markers, leaving the objects intact in the bucket.
+        DeleteObjectsResult delObjRes = S3_CLIENT.deleteObjects(deleteRequest);
+        int successfulDeletes = delObjRes.getDeletedObjects().size();
+        System.out.println(successfulDeletes + &quot; delete markers successfully deleted&quot;);
+    }
+}</code></pre></div>
+                     </div>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="DeletingMultipleObjects.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="DeletingMultipleObjectsUsingNetSDK.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,355 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Set up API Logging in API Gateway - Amazon API Gateway</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="set-up-stages.html" title="Set up a Stage in API Gateway">
+      <link rel="prev" href="api-gateway-caching.html" title="">
+      <link rel="next" href="stage-variables.html" title="Set up Stage Variable for API Deployment">
+      <meta name="description" content="Learn how to set up API execution and API access logging in Amazon API Gateway.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon API Gateway">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-logging.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/apigateway">Amazon API Gateway</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="how-to-deploy-api.html">Deploying an API in Amazon API Gateway</a> &#xBB; <a href="set-up-stages.html">Set up a Stage in API Gateway</a> &#xBB; <span class="breadcrumb">Set up API Logging in API Gateway</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="set-up-logging">Set up API Logging in API Gateway</h1>
+                     <p> To help debug issues related to request execution or client access to your API, you
+                        can
+                        enable Amazon CloudWatch Logs to trace API calls. Once enabled, API Gateway will log
+                        API calls in CloudWatch. There
+                        are two types of API logging: execution logging and access logging. 
+                     </p>
+                     <p>In execution logging, API Gateway manages the CloudWatch Logs. The process includes
+                        creating log groups
+                        and log streams, and reporting to the log streams any caller&apos;s requests and responses.
+                        The
+                        logged data includes errors or execution traces (such as request or response parameter
+                        values or payloads), data used by Lambda authorizers (formerly known as custom authorizers),
+                        whether API keys are required, whether
+                        usage plans are enabled, and so on. 
+                     </p>
+                     <p>When you deploy an API, API Gateway creates a log group and log streams under the
+                        log group. The
+                        log group is named following the
+                        <code class="code">API-Gateway-Execution-Logs_{rest-api-id}/{stage_name}</code> format. Within each
+                        log group, the logs are further divided into log streams, which are ordered by
+                        <b>Last Event Time</b> as logged data is reported. 
+                     </p>
+                     <p>In access logging, you, as an API developer, want to log who has accessed your API
+                        and how
+                        the caller accessed the API. You can create your own log group or choose an existing
+                        one,
+                        which could be managed by API Gateway. You can specify the access details by selecting
+                        <a href="api-gateway-mapping-template-reference.html#context-variable-reference"><code class="code">$context</code></a> variables, expressed
+                        in a format of your choosing, and by choosing a log group as the destination. To preserve
+                        uniqueness of each log, access log format must include <code class="code">$context.requestId</code>. 
+                     </p>
+                     <p>Choose a log format that is also adopted by your analytic backend, such as <a href="https://httpd.apache.org/docs/1.3/logs.html#common" target="_blank">Common Log Format</a>
+                        (CLF), JSON, XML, or CSV. You can then feed the access logs to it directly to have
+                        your
+                        metrics computed and rendered. To define the log format, set the log group ARN on
+                        the <a href="./apigateway/api-reference/resource/stage/#destinationArn" target="_blank">accessLogSettings/destinationArn</a> property on the <a href="./apigateway/api-reference/resource/stage/" target="_blank">stage</a>. You can obtain a log group ARN in the
+                        CloudWatch console, provided that the <b>ARN</b> column is selected for display. To
+                        define the access log format, set a chosen format on the <a href="./apigateway/api-reference/resource/stage/#format" target="_blank">accessLogSetting/format</a> property on
+                        the <a href="./apigateway/api-reference/resource/stage/" target="_blank">stage</a>. 
+                     </p>
+                     <p>Examples of some commonly used access log formats are shown in the API Gateway console
+                        and
+                        listed as follows.
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><code class="code">CLF</code> (<a href="https://httpd.apache.org/docs/1.3/logs.html#common" target="_blank">Common Log Format</a>):
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="clf ">$context.identity.sourceIp $context.identity.caller  \
+$context.identity.user [$context.requestTime] \
+&quot;$context.httpMethod $context.resourcePath $context.protocol&quot; \
+$context.status $context.responseLength $context.requestId</code></pre>
+                              <p>The continuation characters (<code class="code">\</code>) are meant as a visual aid and the log
+                                 format cannot have any
+                                 line
+                                 breaks.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <code class="code">JSON</code>: 
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{ &quot;requestId&quot;:&quot;$context.requestId&quot;, \
+  &quot;ip&quot;: &quot;$context.identity.sourceIp&quot;, \
+  &quot;caller&quot;:&quot;$context.identity.caller&quot;, \
+  &quot;user&quot;:&quot;$context.identity.user&quot;, \
+  &quot;requestTime&quot;:&quot;$context.requestTime&quot;, \
+  &quot;httpMethod&quot;:&quot;$context.httpMethod&quot;, \
+  &quot;resourcePath&quot;:&quot;$context.resourcePath&quot;, \
+  &quot;status&quot;:&quot;$context.status&quot;, \
+  &quot;protocol&quot;:&quot;$context.protocol&quot;, \
+  &quot;responseLength&quot;:&quot;$context.responseLength&quot; \
+}</code></pre>
+                              <p>The continuation characters (<code class="code">\</code>) are meant as a visual aid and the log
+                                 format cannot have any
+                                 line
+                                 breaks.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">XML</code>:  
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="xml ">&lt;request id=&quot;$context.requestId&quot;&gt; \
+    &lt;ip&gt;$context.identity.sourceIp&lt;/ip&gt; \
+    &lt;caller&gt;$context.identity.caller&lt;/caller&gt; \
+    &lt;user&gt;$context.identity.user&lt;/user&gt; \
+    &lt;requestTime&gt;$context.requestTime&lt;/requestTime&gt; \
+    &lt;httpMethod&gt;$context.httpMethod&lt;/httpMethod&gt; \
+    &lt;resourcePath&gt;$context.resourcePath&lt;/resourcePath&gt; \
+    &lt;status&gt;$context.status&lt;/status&gt; \
+    &lt;protocol&gt;$context.protocol&lt;/protocol&gt; \
+    &lt;responseLength&gt;$context.responseLength&lt;/responseLength&gt; \
+&lt;/request&gt;</code></pre>
+                              <p>The continuation characters (<code class="code">\</code>) are meant as a visual aid and the log
+                                 format cannot have any
+                                 line
+                                 breaks.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">CSV</code> (comma-separated values):
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="csv ">$context.identity.sourceIp,$context.identity.caller,\
+$context.identity.user,$context.requestTime,$context.httpMethod,\
+$context.resourcePath,$context.protocol,$context.status,\
+$context.responseLength,$context.requestId</code></pre>
+                              <p>The continuation characters (<code class="code">\</code>) are meant as a visual aid and the log
+                                 format cannot have any
+                                 line
+                                 breaks.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="set-up-access-logging-permissions">Permissions</h2>
+                     
+                     
+                     <p>To enable CloudWatch Logs, you must grant API Gateway proper permissions to read and
+                        write logs to
+                        CloudWatch for your account. The <b>AmazonAPIGatewayPushToCloudWatchLogs</b>
+                        managed policy (with an ARN of
+                        <b>arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs</b>)
+                        has all the required permissions. 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="iam ">{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [
+        {
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: [
+                &quot;logs:CreateLogGroup&quot;,
+                &quot;logs:CreateLogStream&quot;,
+                &quot;logs:DescribeLogGroups&quot;,
+                &quot;logs:DescribeLogStreams&quot;,
+                &quot;logs:PutLogEvents&quot;,
+                &quot;logs:GetLogEvents&quot;,
+                &quot;logs:FilterLogEvents&quot;
+            ],
+            &quot;Resource&quot;: &quot;*&quot;
+        }
+    ]
+}</code></pre>
+                     <p>To grant these permissions to your account, create an IAM role with
+                        <code class="code">apigateway.amazonaws.com</code> as its trusted entity, attach the preceding
+                        policy to the IAM role, and set the IAM role ARN on the <a href="./apigateway/api-reference/resource/account/#cloudWatchRoleArn" target="_blank">cloudWatchRoleArn</a>
+                        property on your <a href="./apigateway/api-reference/resource/account/" target="_blank">Account</a>.
+                     </p>
+                     
+                     
+                     
+                     
+                     <h2 id="set-up-access-logging-using-console">Set up API Logging Using the API Gateway
+                        Console
+                     </h2>
+                     
+                     <p>To set up API logging, you must have deployed the API to a stage. You must also have
+                        configured <a href="set-up-logging.html#set-up-access-logging-permissions">an appropriate CloudWatch Logs
+                           role</a> ARN for your account. 
+                     </p>
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>Sign in to the API Gateway console.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Settings</b> from the primary navigation panel. Type
+                              an ARN of an IAM role with appropriate permissions in <b>CloudWatch log
+                                 role ARN</b>. You need to do this once. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Do one of the following:</p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p> Choose an existing API and then choose a stage.</p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p> Create an API and deploy it to a stage.</p>
+                                 
+                              </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Choose <b>Logs</b> in the <b>Stage
+                                 Editor</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>To enable execution logging, choose <b>Enable CloudWatch
+                                 Logs</b> under <b>CloudWatch Settings</b>. Choose
+                              <b>Error</b> or <b>Info</b> from the drop-down
+                              menu. If desired, choose <b>Enable Detailed CloudWatch
+                                 Metrics</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>To enable access logging, choose <b>Enable Access Logging</b>
+                              under <b>Custom Access Logging</b>. Then type the ARN of a log
+                              group in <b>CloudWatch Group</b>. Type a log format in
+                              <b>Log Format</b>. You can choose <b>CLF</b>,
+                              <b>JSON</b>, <b>XML</b>, or
+                              <b>CSV</b> to use one of the provided examples as a
+                              guide.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Save Changes</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You can enable execution logging and access logging independent of each
+                           other.
+                        </p>
+                     </div>
+                     
+                     <p>API Gateway is now ready to log requests to your API. You do not need to redeploy
+                        the API
+                        when you update the stage settings, logs, or stage variables. 
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="api-gateway-caching.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="stage-variables.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Permissions"><a class="pagetoc" href="#set-up-access-logging-permissions">Permissions</a></li>
+                        <li class="pagetoc" name="Set up API Logging Using the API Gateway
+                Console"><a class="pagetoc" href="#set-up-access-logging-using-console">Set up API Logging Using the API Gateway
+                              Console</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon API Gateway';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

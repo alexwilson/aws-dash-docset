@@ -1,0 +1,454 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Spot Instance Data Feed - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="using-spot-instances.html" title="Spot Instances">
+      <link rel="prev" href="spot-interruptions.html" title="Spot Instance Interruptions">
+      <link rel="next" href="using-spot-limits.html" title="Spot Instance Limits">
+      <meta name="description" content="Subscribe to a data feed to log your Spot Instance usage.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-data-feeds.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="instance-purchasing-options.html">Instance Purchasing Options</a> &#xBB; <a href="using-spot-instances.html">Spot Instances</a> &#xBB; <span class="breadcrumb">Spot Instance Data Feed</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="spot-data-feeds">Spot Instance Data Feed</h1>
+                     <p>To help you understand the charges for your Spot Instances, Amazon EC2 provides a
+                        data feed that
+                        			describes your Spot Instance usage and pricing. This data feed is sent to an Amazon
+                        S3 bucket
+                        			that you specify when you subscribe to the data feed.
+                     </p>
+                     <p>Data feed files arrive in your bucket typically once an hour, and each hour of usage
+                        is
+                        			typically covered in a single data file. These files are compressed (gzip) before
+                        they
+                        			are delivered to your bucket. Amazon EC2 can write multiple files for a given hour
+                        of usage
+                        			where files are very large (for example, when file contents for the hour exceed
+                        50 MB
+                        			before compression).
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>If you don&apos;t have a Spot Instance running during a certain hour, you won&apos;t receive
+                           a data
+                           				feed file for that hour.
+                        </p>
+                     </div>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#using-spot-instances-format">Data Feed File Name and Format</a></li>
+                           <li><a href="#using-spot-instances-dfs3">Amazon S3 Bucket Requirements</a></li>
+                           <li><a href="#using-spot-instances-datafeed-all">Subscribing to Your Spot Instance Data
+                                 					Feed</a></li>
+                           <li><a href="#using-spot-instances-datafeed-delete">Deleting Your Spot Instance Data
+                                 				Feed</a></li>
+                        </ul>
+                     </div>
+                     			
+                     <h2 id="using-spot-instances-format">Data Feed File Name and Format</h2>
+                     			
+                     <p>The Spot Instance data feed file name uses the following format (with the date and
+                        hour in
+                        				UTC): 
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><em>bucket-name</em>.s3.amazonaws.com/{optional prefix}/<em>aws-account-id</em>.<em>YYYY-MM-DD-HH</em>.<em>n</em>.<em>unique-id</em>.gz</code></pre>
+                     			<p>For example, if your bucket name is <code class="code">myawsbucket</code> and your
+                        				prefix is <code class="code">myprefix</code>, your file names are similar to the
+                        				following:
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><em class="replaceable"><code>myawsbucket</code></em>.s3.amazonaws.com/<em class="replaceable"><code>myprefix</code></em>/<em class="replaceable"><code>111122223333</code></em>.2014-03-17-20.001.pwBdGTJG.gz</code></pre>
+                     			<p>The Spot Instance data feed files are tab-delimited. Each line in the data file corresponds
+                        				to one instance hour and contains the fields listed in the following table.
+                     </p>
+                     			
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac17c13c18c43c11c13">
+                              						
+                              <tbody><tr>
+                                 							
+                                 <th> Field </th>
+                                 							
+                                 <th> Description </th>
+                                 						
+                              </tr>
+                              					
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    								
+                                    <p>
+                                       									<code class="code">Timestamp</code>
+                                       								
+                                    </p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>The timestamp used to determine the price charged for this instance usage.</p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    								
+                                    <p>
+                                       									<code class="code">UsageType</code>
+                                       								
+                                    </p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>The type of usage and instance type being charged for. For <code class="code">m1.small</code> Spot
+                                       									Instances, this field is set to <code class="code">SpotUsage</code>. For all
+                                       									other instance types, this field is set to
+                                       										<code class="code">SpotUsage:</code>{<em>instance-type</em>}.
+                                       									For example, <code class="code">SpotUsage:c1.medium</code>.
+                                    </p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    								
+                                    <p>
+                                       									<code class="code">Operation</code>
+                                       								
+                                    </p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>The product being charged for. For Linux Spot Instances, this field is set to
+                                       										<code class="code">RunInstances</code>. For Windows Spot Instances, this
+                                       									field is set to <code class="code">RunInstances:0002</code>. Spot usage is
+                                       									grouped according to Availability Zone.
+                                    </p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    								
+                                    <p>
+                                       									<code class="code">InstanceID</code>
+                                       								
+                                    </p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>The ID of the Spot Instance that generated this instance usage.</p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    								
+                                    <p>
+                                       									<code class="code">MyBidID</code>
+                                       								
+                                    </p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>The ID for the Spot Instance request that generated this instance usage.</p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    								
+                                    <p>
+                                       									<code class="code">MyMaxPrice</code>
+                                       								
+                                    </p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>The maximum price specified for this Spot Instance request.</p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    								
+                                    <p>
+                                       									<code class="code">MarketPrice</code>
+                                       								
+                                    </p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>The Spot price at the time specified in the
+                                       										<code class="code">Timestamp</code> field.
+                                    </p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    								
+                                    <p>
+                                       									<code class="code">Charge</code>
+                                       								
+                                    </p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>The price charged for this instance usage.</p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    								
+                                    <p>
+                                       									<code class="code">Version</code>
+                                       								
+                                    </p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>The version included in the data feed file name for this
+                                       									record.
+                                    </p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              					
+                           </tbody></table>
+                        </div>
+                     </div>
+                     		
+                     			
+                     <h2 id="using-spot-instances-dfs3">Amazon S3 Bucket Requirements</h2>
+                     			
+                     <p>When you subscribe to the data feed, you must specify an Amazon S3 bucket to store
+                        the
+                        				data feed files. Before you choose an Amazon S3 bucket for the data feed, consider
+                        the
+                        				following:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>You must have <code class="code">FULL_CONTROL</code> permission to the bucket, which includes
+                                 permission for the <code class="code">s3:GetBucketAcl</code> and
+                                 <code class="code">s3:PutBucketAcl</code> actions.
+                              </p>
+                              					
+                              <p>If you&apos;re the bucket owner, you have this permission by default.
+                                 						Otherwise, the bucket owner must grant your AWS account this
+                                 						permission.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              				    
+                              <p>When you subscribe to a data feed, these permissions are used to update the bucket
+                                 ACL
+                                 to give the AWS data feed account <code class="code">FULL_CONTROL</code> permission. The
+                                 AWS data feed account writes data feed files to the bucket. If your account
+                                 doesn&apos;t have the required permissions, the data feed files cannot be written
+                                 to the bucket.
+                              </p>
+                              				
+                              				
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>If you update the ACL and remove the permissions for the AWS data feed account, the
+                                    data feed files cannot be written to the bucket. You must resubscribe to
+                                    the data feed to receive the data feed files.
+                                 </p>
+                              </div>
+                              			
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Each data feed file has its own ACL (separate from the ACL for the bucket). The bucket
+                                 owner has <code class="code">FULL_CONTROL</code> permission to the data files. The AWS
+                                 data feed account has read and write permissions.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>If you delete your data feed subscription, Amazon EC2 doesn&apos;t remove the read and
+                                 write
+                                 permissions for the AWS data feed account on either the bucket or the data
+                                 files. You must remove these permissions yourself.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     			
+                     <h2 id="using-spot-instances-datafeed-all">Subscribing to Your Spot Instance Data
+                        					Feed
+                     </h2>
+                     
+                     			
+                     <p>To subscribe to your data feed, use the following <a href="./cli/latest/reference/ec2/create-spot-datafeed-subscription.html" target="_blank">create-spot-datafeed-subscription</a> command:
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 create-spot-datafeed-subscription --bucket <em class="replaceable"><code>myawsbucket</code></em> [--prefix <em class="replaceable"><code>myprefix</code></em>]</code></strong></code></pre>
+                     				<p>The following is example output:</p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;SpotDatafeedSubscription&quot;: {
+        &quot;OwnerId&quot;: &quot;111122223333&quot;,
+        &quot;Prefix&quot;: &quot;myprefix&quot;,
+        &quot;Bucket&quot;: &quot;myawsbucket&quot;,
+        &quot;State&quot;: &quot;Active&quot;
+    }
+}</code></pre>
+                     		
+                     			<h2 id="using-spot-instances-datafeed-delete">Deleting Your Spot Instance Data
+                        				Feed
+                     </h2>
+                     
+                     			
+                     <p>To delete your data feed, use the following <a href="./cli/latest/reference/ec2/delete-spot-datafeed-subscription.html" target="_blank">delete-spot-datafeed-subscription</a> command:
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 delete-spot-datafeed-subscription</code></strong></code></pre>
+                     
+                     		</div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="spot-interruptions.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="using-spot-limits.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Data Feed File Name and Format"><a class="pagetoc" href="#using-spot-instances-format">Data Feed File Name and Format</a></li>
+                        <li class="pagetoc" name="Amazon S3 Bucket Requirements"><a class="pagetoc" href="#using-spot-instances-dfs3">Amazon S3 Bucket Requirements</a></li>
+                        <li class="pagetoc" name="Subscribing to Your Spot Instance Data
+					Feed"><a class="pagetoc" href="#using-spot-instances-datafeed-all">Subscribing to Your Spot Instance Data
+                              					Feed</a></li>
+                        <li class="pagetoc" name="Deleting Your Spot Instance Data
+				Feed"><a class="pagetoc" href="#using-spot-instances-datafeed-delete">Deleting Your Spot Instance Data
+                              				Feed</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

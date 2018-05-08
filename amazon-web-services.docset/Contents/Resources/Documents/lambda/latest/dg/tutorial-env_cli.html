@@ -1,0 +1,372 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Create a Lambda Function Using Environment Variables - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="env_variables.html" title="Environment Variables">
+      <link rel="prev" href="env_variables.html" title="Environment Variables">
+      <link rel="next" href="tutorial-env_console.html" title="Create a Lambda Function Using Environment Variables To Store Sensitive Information">
+      <meta name="description" content="This section will illustrate how you can modify a Lambda function&apos;s behavior through configuration changes that require no changes to the Lambda function code.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/tutorial-env_cli.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="advanced.html">Advanced Topics</a> &#xBB; <a href="env_variables.html">Environment Variables</a> &#xBB; <span class="breadcrumb">Create a Lambda Function Using Environment Variables</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="tutorial-env_cli">Create a Lambda Function Using Environment Variables</h1>
+                     <p>This section will illustrate how you can modify a Lambda function&apos;s behavior through
+                        configuration changes that require no changes to the Lambda function code. 
+                        
+                     </p>
+                     <p>In this tutorial, you will do the following: </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Create a deployment package with sample code that returns the value of an environment
+                                 variable that specifies 
+                                 the name of an Amazon S3 bucket.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              
+                              <p>Invoke a Lambda function and verify that the Amazon S3 bucket name that is returned
+                                 matches the value set by the environment variable.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Update the Lambda function by changing the Amazon S3 bucket name specified by the
+                                 environment variable.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Invoke the Lambda function again and verify that the Amazon S3 bucket name that is
+                                 returned matches the updated value.
+                              </p>
+                              
+                              
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <h2 id="with-env-prepare">Step 1: Prepare</h2>
+                     
+                     
+                     
+                     <p>Make sure you have completed the following steps:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Signed up for an AWS account and created an
+                                 administrator user in the account (called 
+                                 <b>adminuser</b>). For instructions, see <a href="setup.html">Set Up an AWS Account</a> 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Installed and set up the AWS CLI. For instructions, see <a href="setup-awscli.html">Set Up the AWS Command Line Interface (AWS CLI)</a></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h2 id="env-test-function">Step 2: Set Up the Lambda Environment</h2>
+                     
+                     
+                     <p>In this section, you do the following:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Create the Lambda function deployment package using the sample code
+                                 provided.
+                              </p>
+                              
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Create a Lambda execution role.</p>
+                              
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Create the Lambda function by uploading the deployment package, and then 
+                                 test it by invoking it manually.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="env-create-package">Step 2.1: Create the Deployment Package</h3>
+                     
+                     
+                     <p>The code sample below reads the environment variable of a Lambda function that returns
+                        the name of an Amazon S3 bucket.
+                     </p>
+                     
+                     <div class="orderedlist">
+                               
+                           
+                        
+                        
+                        
+                        
+                        <ol>
+                           <li>
+                              <p>Open a text editor and copy the following code:</p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">var AWS = require(&apos;aws-sdk&apos;);
+     
+    exports.handler = function(event, context, callback) {
+        
+        var bucketName = process.env.S3_BUCKET;       
+    	callback(null, bucketName);        
+    }</code></pre></li>
+                           <li>
+                              <p> Save the file as <em>index.js</em>. 
+                              </p>
+                           </li>
+                           <li>
+                              <p>Zip the <em>index.js.</em> file as <em>Test_Environment_Variables.zip</em>.
+                              </p>
+                           </li>
+                        </ol>
+                     </div>
+                     
+                     
+                     <h3 id="env-create-exec-role">Step 2.2: Create an Execution Role</h3>
+                     
+                     
+                     <p>Create an IAM role (execution role) that you can specify at
+                        the time you create your Lambda function. 
+                     </p>
+                     <ol>
+                        <li>
+                           
+                           <p>Sign in to the AWS Management Console and open the IAM console at <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Follow the steps in <a href="./IAM/latest/UserGuide/id_roles.html" target="_blank">IAM Roles</a> in the <em>IAM User Guide</em> 
+                              to create an IAM role (execution role). 
+                              As you follow the steps to create a role, note the following: 
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p>In <b>Select Role Type</b>, choose
+                                       <b>AWS Service Roles</b>, and then choose
+                                       <b>AWS Lambda</b>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>In <b>Attach Policy</b>, choose the policy
+                                       named <b>AWSLambdaBasicExecutionRole</b>.
+                                       
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Write down the Amazon Resource Name (ARN) of the IAM role. You
+                              need this value when you create your Lambda function in the
+                              next step.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <h3 id="with-env-create-function">Step 2.3 Create the Lambda function and Test It </h3>
+                     
+                     
+                     <p>In this section, you create a Lambda function containing an environment variable that
+                        specifies an Amazon S3 bucket named <code class="code">Test</code>. When invoked, 
+                        the function simply returns the name of the Amazon S3 bucket. Then you update the
+                        configuration by changing the Amazon S3 bucket name to <code class="code">Prod</code> 
+                        and when invoked again, the function returns the updated name of the Amazon S3 bucket.
+                        
+                     </p>
+                     
+                     
+                     
+                     
+                     
+                     <p>To create the Lambda function, open a command prompt and run the following Lambda
+                        AWS CLI <code class="code">create-function</code> command. You need to provide the .zip file path and the execution role ARN.
+                        Note that the <code class="code">Runtime</code>
+                        parameter uses <code class="code">nodejs6.10</code> but you can also specify <code class="code">nodejs8.10</code>.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws lambda  create-function \
+--region us-east-1 \
+--function-name ReturnBucketName \
+--zip-file fileb://<em class="replaceable"><code>file-path</code></em>/Test_Environment_Variables.zip \
+--role <em class="replaceable"><code>role-arn</code></em> \
+--environment Variables={S3_BUCKET=Test} \
+--handler index.handler \
+--runtime nodejs6.10 \
+--version  <em class="replaceable"><code>version</code></em> \
+--profile default</code></pre>
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Optionally, you can upload the .zip file to an 
+                           Amazon S3 bucket in the same AWS region, and then specify the bucket and
+                           object name in the preceding command. You need to replace the
+                           <code class="code">--zip-file</code> parameter with the <code class="code">--code</code>
+                           parameter. For example:
+                        </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">--code S3Bucket=<em class="replaceable"><code>bucket-name</code></em>,S3Key=<em class="replaceable"><code>zip-file-object-key</code></em></code></pre></div>      
+                     
+                     <p>Next, run the following Lambda CLI <code class="code">invoke</code> command to invoke
+                        the function. Note that the command requests asynchronous execution. You can
+                        optionally invoke it synchronously by specifying
+                        <code class="code">RequestResponse</code> as the <code class="code">invocation-type</code> parameter
+                        value.
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">aws lambda invoke \
+--invocation-type Event \
+--function-name ReturnBucketName \
+--region us-east-1 \
+--profile default \
+outputfile.txt</code></pre>
+                     
+                     
+                     <p>The Lambda function will return the name of the Amazon S3 bucket as &quot;Test&quot;.</p>
+                     
+                     
+                     <p>Next, run the following Lambda CLI <code class="code">update-function-configuration</code> command to update the Amazon S3 environment variable by pointing
+                        it to the <code class="code">Prod</code> bucket.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">aws lambda update-function-configuration
+--function-name ReturnBucketName \
+--region us-east-1 \
+--environment Variables={S3_BUCKET=Prod} 
+</code></pre>
+                     <p>Run the <code class="code">aws lambda invoke</code> command again using the same parameters. This time, the Lambda function will return
+                        the Amazon S3 bucket name as <code class="code">Prod</code>.
+                     </p>
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="env_variables.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="tutorial-env_console.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Step 1: Prepare"><a class="pagetoc" href="#with-env-prepare">Step 1: Prepare</a></li>
+                        <li class="pagetoc" name="Step 2: Set Up the Lambda Environment"><a class="pagetoc" href="#env-test-function">Step 2: Set Up the Lambda Environment</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

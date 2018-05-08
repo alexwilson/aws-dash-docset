@@ -1,0 +1,149 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Using an Amazon S3 Bucket as the Origin for an RTMP Distribution - Amazon CloudFront</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="distribution-rtmp.html" title="Working with RTMP Distributions">
+      <link rel="prev" href="Streaming_URLs.html" title="Configuring the Media Player">
+      <link rel="next" href="distribution-rtmp-multiple.html" title="Creating Multiple RTMP Distributions for an Origin Server">
+      <meta name="description" content="When you create a distribution, you specify where CloudFront gets the files that it distributes to edge locations. For an RTMP distribution, you must use an Amazon S3 bucket; custom origins are not supported. To get your objects into your bucket, you can use any method supported by Amazon S3, for example, the Amazon S3 API or a third-party tool. You can create a hierarchy in your bucket just as you would with any other Amazon S3 bucket. You incur regular Amazon S3 charges for storing the objects in the bucket. For more information about the charges to use CloudFront, see">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/StreamingDistributionS3Origin.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="distribution-rtmp.html">Working with RTMP Distributions</a> &#xBB; <span class="breadcrumb">Using an Amazon S3 Bucket as the Origin for an RTMP Distribution</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="StreamingDistributionS3Origin">Using an Amazon S3 Bucket as the Origin for an RTMP Distribution</h1>
+                     <p>When you create a distribution, you specify where CloudFront gets the files that it
+                        distributes to edge locations. 
+                        			For an RTMP distribution, you must use an Amazon S3 bucket; custom origins are
+                        not supported. To get your objects 
+                        			into your bucket, you can use any method supported by Amazon S3, for example, the
+                        Amazon S3 API or a third-party tool. You can create a hierarchy 
+                        			in your bucket just as you would with any other Amazon S3 bucket. You incur regular
+                        Amazon S3 charges for storing the objects in the bucket. 
+                        			For more information about the charges to use CloudFront, see <a href="reports.html">CloudFront Reports</a>.
+                     </p>
+                     <p>Using an existing Amazon S3 bucket as your CloudFront origin server doesn&apos;t change
+                        the bucket in any way; 
+                        			you can still use it as you normally would to store and access Amazon S3 objects
+                        (at the normal Amazon S3 prices). 
+                     </p>
+                     <p>You can use the same Amazon S3 bucket for both RTMP and web distributions. </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>After you create an RTMP distribution, you can&apos;t change its origin server. If you
+                           need to change 
+                           			the Amazon S3 bucket for an RTMP distribution, you must create a new distribution
+                           that uses the new bucket
+                           			and update either your links or your DNS records to use the domain name for the
+                           new distribution. You can
+                           			then delete the original distribution. For more information, see 
+                           			<a href="HowToDeleteDistribution.html">Deleting a Distribution</a>.
+                        </p>
+                     </div>
+                     <p>When you specify the name of the Amazon S3 bucket that you want CloudFront to get
+                        objects from, you generally use the following format:
+                     </p>
+                     <p><code class="code"><em class="replaceable"><code>bucket-name</code></em>.s3.amazonaws.com</code></p>
+                     <p>If your bucket is in the US Standard region and you want Amazon S3 to route requests
+                        to a facility in Northern Virginia, 
+                        			use the following format:
+                     </p>
+                     <p><code class="code"><em class="replaceable"><code>bucket-name</code></em>.s3-external-1.amazonaws.com</code> 
+                     </p>
+                     <p>Do not specify the name of the bucket using the following values:</p>
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>The Amazon S3 path style, <code class="code">s3.amazonaws.com/<em class="replaceable"><code>bucket-name</code></em></code></p>
+                           </li>
+                           <li class="listitem">
+                              <p>The Amazon S3 CNAME, if any</p>
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>For your bucket to work with CloudFront, the name must conform to DNS naming requirements.
+                           For more information, go to 
+                           			<a href="./AmazonS3/latest/dev/BucketRestrictions.html" target="_blank">Bucket Restrictions and Limitations</a> in the <em>Amazon Simple Storage Service Developer Guide</em>.
+                        </p>
+                     </div>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="Streaming_URLs.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="distribution-rtmp-multiple.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

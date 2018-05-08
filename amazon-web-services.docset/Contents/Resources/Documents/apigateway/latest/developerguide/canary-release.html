@@ -1,0 +1,246 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Set up an API Gateway Canary Release
+         Deployment - Amazon API Gateway
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="how-to-deploy-api.html" title="Deploying an API in Amazon API Gateway">
+      <link rel="prev" href="set-up-tags.html" title="Set up Tags for an API Stage in API Gateway">
+      <link rel="next" href="create-canary-deployment.html" title="Create a Canary Release Deployment">
+      <meta name="description" content="Learn how to set up a canary release deployment to test API updates in Amazon API Gateway.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon API Gateway">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/apigateway/latest/developerguide/canary-release.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/apigateway">Amazon API Gateway</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="how-to-deploy-api.html">Deploying an API in Amazon API Gateway</a> &#xBB; <span class="breadcrumb">Set up an API Gateway Canary Release
+                                    Deployment</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="canary-release">Set up an API Gateway Canary Release
+                        Deployment
+                     </h1>
+                     <p><a href="https://martinfowler.com/bliki/CanaryRelease.html" target="_blank">Canary release</a> is a
+                        software development strategy in which a new version of an API (as well as other software)
+                        is deployed as a canary release for testing purposes, and the base version remains
+                        deployed
+                        as a production release for normal operations on the same stage. For purposes of discussion,
+                        we refer to the base version as a production release in this documentation. Although
+                        this is
+                        reasonable, you are free to apply canary release on any non-production version for
+                        testing.
+                     </p>
+                     <p>In a canary release deployment, total API traffic is separated at random into a production
+                        release and a canary release with a pre-configured ratio. Typically, the canary release
+                        receives a small percentage of API traffic and the production release takes up the
+                        rest. The
+                        updated API features are only visible to API traffic through the canary. You can adjust
+                        the
+                        canary traffic percentage to optimize test coverage or performance. 
+                     </p>
+                     <p>By keeping canary traffic small and the selection random, most users are not adversely
+                        affected at any time by potential bugs in the new version, and no single user is adversely
+                        affected all the time.
+                     </p>
+                     <p>After the test metrics pass your requirements, you can promote the canary release
+                        to the
+                        production release and disable the canary from the deployment. This makes the new
+                        features
+                        available in the production stage. 
+                     </p>
+                     <div class="highlights">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#api-gateway-canary-release-deployment-overview">Canary Release Deployment in API Gateway </a></li>
+                           <li><a href="create-canary-deployment.html">Create a Canary Release Deployment</a></li>
+                           <li><a href="update-canary-deployment.html">Update a Canary Release </a></li>
+                           <li><a href="promote-canary-deployment.html">Promote a Canary Release</a></li>
+                           <li><a href="delete-canary-deployment.html">Disable a Canary Release</a></li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="api-gateway-canary-release-deployment-overview">Canary Release Deployment in API Gateway </h2>
+                     
+                     <p> In API Gateway, a canary release deployment uses the deployment stage for the production
+                        release of the base version of an API, and attaches to the stage a canary release
+                        for
+                        the new versions, relative to the base version, of the API. The stage is associated
+                        with
+                        the initial deployment and the canary with subsequent deployments. At the beginning,
+                        both the stage and the canary point to the same API version. We use stage and production
+                        release interchangeably and use canary and canary release interchangeably throughout
+                        this section.
+                     </p>
+                     
+                     <p>To deploy an API with a canary release, you create a canary release deployment by
+                        adding <a href="./apigateway/api-reference/resource/stage/#canarySettings" target="_blank">canary settings</a>
+                        to the <a href="./apigateway/api-reference/resource/stage/" target="_blank">stage</a> of a regular <a href="./apigateway/api-reference/resource/deployment/" target="_blank">deployment</a>. The canary settings
+                        describe the underlying canary release and the stage represents the production release
+                        of the API within this deployment. To add canary settings, set
+                        <code class="code">canarySettings</code> on the deployment stage and specify the following: 
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p> A deployment ID, initially identical to the ID of the base version deployment
+                                 set on the stage. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p> A <a href="./apigateway/api-reference/resource/stage/#percentTraffic" target="_blank">percentage of API
+                                    traffic</a>, between 0.0 and 100.0 inclusive, for the canary release. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <a href="./apigateway/api-reference/resource/stage/#stageVariableOverrides" target="_blank">Stage variables
+                                    for the canary release</a> that can override production release stage
+                                 variables. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p> The <a href="./apigateway/api-reference/resource/stage/#useStageCache" target="_blank">use of the stage
+                                    cache</a> for canary requests, if the <a href="./apigateway/api-reference/resource/stage/#useStageCache" target="_blank">useStageCache</a> is
+                                 set and API caching is enabled on the stage.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p> After a canary release is enabled, the deployment stage cannot be associated with
+                        another non-canary release deployment until the canary release is disabled and the
+                        canary settings removed from the stage. 
+                     </p>
+                     
+                     <p>When you enable API execution logging, the canary release has its own logs and metrics
+                        generated for all canary requests. They are reported to a production stage CloudWatch
+                        Logs log
+                        group as well as a canary-specific CloudWatch Logs log group. The same applies to
+                        access logging.
+                        The separate canary-specific logs are helpful to validate new API changes and decide
+                        whether to accept the changes and promote the canary release to the production stage,
+                        or
+                        to discard the changes and revert the canary release from the production stage.
+                     </p>
+                     
+                     <p>The production stage execution log group is named
+                        <code class="code">API-Gateway-Execution-Logs/<em class="replaceable"><code>{rest-api-id}</code></em>/<em class="replaceable"><code>{stage-name}</code></em></code>
+                        and the canary release execution log group is named
+                        <code class="code">API-Gateway-Execution-Logs/<em class="replaceable"><code>{rest-api-id}</code></em>/<em class="replaceable"><code>{stage-name}</code></em>/Canary</code>.
+                        For access logging, you must create a new log group or choose an existing one. The
+                        canary release access log group name has the <code class="code">/Canary</code> suffix appended to the
+                        selected log group name. 
+                     </p>
+                     
+                     <p>A canary release can use the stage cache, if enabled, to store responses and use
+                        cached entries to return results to the next canary requests, within a pre-configured
+                        time-to-live (TTL) period. 
+                     </p>
+                     
+                     <p>In a canary release deployment, the production release and canary release of the API
+                        can be associated with the same version or with different versions. When they are
+                        associated with different versions, responses for production and canary requests are
+                        cached separately and the stage cache returns corresponding results for production
+                        and
+                        canary requests. When the production release and canary release are associated with
+                        the
+                        same deployment, the stage cache uses a single cache key for both types of requests
+                        and
+                        returns the same response for the same requests from the production release and canary
+                        release. 
+                     </p>
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="set-up-tags.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="create-canary-deployment.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Canary Release Deployment in API Gateway "><a class="pagetoc" href="#api-gateway-canary-release-deployment-overview">Canary Release Deployment in API Gateway </a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon API Gateway';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

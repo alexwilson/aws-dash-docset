@@ -1,0 +1,710 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Terminate Your Instance - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ec2-instance-lifecycle.html" title="Instance Lifecycle">
+      <link rel="prev" href="instance-retirement.html" title="Instance Retirement">
+      <link rel="next" href="ec2-instance-recover.html" title="Recover Your Instance">
+      <meta name="description" content="Terminate your instance when you no longer need it and stop incurring charges for that instance.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/terminating-instances.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="ec2-instance-lifecycle.html">Instance Lifecycle</a> &#xBB; <span class="breadcrumb">Terminate Your Instance</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="terminating-instances">Terminate Your Instance</h1>
+                     <p>You can delete your instance when you no longer need it. This is referred to as <em>terminating</em> your instance. As soon as the state of an instance
+                        		changes to <code class="code">shutting-down</code> or <code class="code">terminated</code>, you stop incurring charges
+                        		for that instance.
+                     </p>
+                     <p>You can&apos;t connect to or restart an instance after you&apos;ve terminated it. However, you
+                        can launch additional instances using the same AMI.
+                        		If you&apos;d rather stop and restart your instance, see <a href="Stop_Start.html">Stop and Start Your Instance</a>.
+                        		For more information, see <a href="ec2-instance-lifecycle.html#lifecycle-differences">Differences Between Reboot, Stop, and Terminate</a>.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#termination-overview">Instance Termination</a></li>
+                           <li><a href="#terminating-instances-console">Terminating an Instance</a></li>
+                           <li><a href="#Using_ChangingDisableAPITermination">Enabling Termination Protection for an
+                                 			Instance</a></li>
+                           <li><a href="#Using_ChangingInstanceInitiatedShutdownBehavior">Changing the Instance Initiated Shutdown Behavior</a></li>
+                           <li><a href="#preserving-volumes-on-termination">Preserving Amazon EBS Volumes on Instance Termination</a></li>
+                           <li><a href="#troubleshoot-instance-terminate">Troubleshooting</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="termination-overview">Instance Termination</h2>
+                     		
+                     		
+                     		
+                     <p>After you terminate an instance, it remains visible in the console for a short while,
+                        and
+                        			then the entry is automatically deleted. You cannot delete the terminated instance
+                        entry
+                        			yourself. After an instance is terminated, resources such as tags and volumes are
+                        			gradually disassociated from the instance, therefore may no longer be visible on
+                        the
+                        			terminated instance after a short while.
+                     </p>
+                     		
+                     		
+                     <p>When an instance terminates, the data on any instance store volumes associated with
+                        that
+                        			instance is deleted. 
+                     </p>
+                     		
+                     		
+                     <p>By default, Amazon EBS root device volumes are automatically deleted when the instance
+                        			terminates. However, by default, any additional EBS volumes that you attach at
+                        launch,
+                        			or any EBS volumes that you attach to an existing instance persist even after the
+                        			instance terminates. This behavior is controlled by the volume&apos;s
+                        				<code class="code">DeleteOnTermination</code> attribute, which you can modify. For more
+                        			information, see <a href="terminating-instances.html#preserving-volumes-on-termination">Preserving Amazon EBS Volumes on Instance Termination</a>.
+                     </p>
+                     		
+                     		
+                     <p>You can prevent an instance from being terminated accidentally by someone using the
+                        			AWS Management Console, the CLI, and the API. This feature is available for both
+                        Amazon EC2 instance
+                        			store-backed and Amazon EBS-backed instances. Each instance has a
+                        				<code class="code">DisableApiTermination</code> attribute with the default value of
+                        				<code class="code">false</code> (the instance can be terminated through Amazon EC2). You can modify
+                        			this instance attribute while the instance is running or stopped (in the case of
+                        			Amazon EBS-backed instances). For more information, see <a href="terminating-instances.html#Using_ChangingDisableAPITermination">Enabling Termination Protection for an
+                           			Instance</a>.
+                     </p>
+                     		
+                     		
+                     <p>You can control whether an instance should stop or terminate when shutdown is initiated
+                        from
+                        			the instance using an operating system command for system shutdown. For more
+                        			information, see <a href="terminating-instances.html#Using_ChangingInstanceInitiatedShutdownBehavior">Changing the Instance Initiated Shutdown Behavior</a>.
+                     </p>
+                     		
+                     		
+                     <p>If you run a script on instance termination, your instance might have an abnormal
+                        termination, because we have no way to ensure 
+                        			that shutdown scripts run. Amazon EC2 attempts to shut an instance down cleanly
+                        and run any system shutdown scripts; however, 
+                        			certain events (such as hardware failure) may prevent these system shutdown scripts
+                        from running.
+                     </p>
+                     	
+                     <h2 id="terminating-instances-console">Terminating an Instance</h2>
+                     		
+                     
+                     		
+                     <p>You can terminate an instance using the AWS Management Console or the command line.</p>
+                     		
+                     		
+                     <p class="title"><b>To terminate an instance using the console</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Before you terminate the instance, verify that you won&apos;t lose any data by checking
+                              that your Amazon EBS
+                              					volumes won&apos;t be deleted on termination and that you&apos;ve copied any data that
+                              you need from your
+                              					instance store volumes to Amazon EBS or Amazon S3.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the navigation pane, choose <b>Instances</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Select the instance, and choose <b>Actions</b>, <b>Instance
+                                 						State</b>, <b>Terminate</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Choose <b>Yes, Terminate</b> when prompted for confirmation.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     		
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>To terminate an instance using the command line</b></p>
+                        			
+                        <p>You can use one of the following commands. For more information about these command
+                           line interfaces,
+                           				see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/terminate-instances.html" target="_blank">terminate-instances</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Stop-EC2Instance.html" target="_blank">Stop-EC2Instance</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                     <h2 id="Using_ChangingDisableAPITermination">Enabling Termination Protection for an
+                        			Instance
+                     </h2>
+                     		
+                     		
+                     
+                     		
+                     <p>By default, you can terminate your instance using the Amazon EC2 console, command
+                        line interface,
+                        			or API. If you want to prevent your instance from being accidentally terminated
+                        using Amazon EC2,
+                        			you can enable <em>termination protection</em> for the instance. The 
+                        			<code class="code">DisableApiTermination</code> attribute controls whether the instance can be terminated
+                        			using the console, CLI, or API. By default, termination protection is disabled
+                        for your instance.
+                        			You can set the value of this attribute when you launch the instance, while the
+                        instance is running, 
+                        			or while the instance is stopped (for Amazon EBS-backed instances).
+                        		
+                     </p>
+                     		
+                     <p>The <code class="code">DisableApiTermination</code> attribute does not prevent you from terminating an
+                        			instance by initiating shutdown from the instance (using an operating system command
+                        for
+                        			system shutdown) when the <code class="code">InstanceInitiatedShutdownBehavior</code> attribute is
+                        			set. For more information, see <a href="terminating-instances.html#Using_ChangingInstanceInitiatedShutdownBehavior">Changing the Instance Initiated Shutdown Behavior</a>.
+                     </p>
+                     
+                     
+                     	
+                     <p class="title"><b>Limits</b></p>
+                     	
+                     <p>You can&apos;t enable termination protection for Spot instances &#x2014; a Spot instance is
+                        		terminated when the Spot price exceeds your bid price. However, you can prepare
+                        your
+                        		application to handle Spot instance interruptions. For more information, see <a href="spot-interruptions.html">Spot Instance Interruptions</a>.
+                     </p>
+                             
+                     
+                     		
+                     <p>The <code class="code">DisableApiTermination</code> attribute does not prevent Amazon EC2 Auto Scaling from terminating an instance.
+                        			For instances in an Auto Scaling group, use the following Amazon EC2 Auto Scaling
+                        features instead of Amazon EC2 termination protection:
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>To prevent instances that are part of an Auto Scaling group from terminating on scale
+                                 in, use instance protection. 
+                                 					For more information, see <a href="./autoscaling/ec2/userguide/as-instance-termination.html#instance-protection" target="_blank">Instance Protection</a> in the <em>Amazon EC2 Auto Scaling User Guide</em>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>To prevent Amazon EC2 Auto Scaling from terminating unhealthy instances, suspend the
+                                 <code class="code">ReplaceUnhealthy</code> process. 
+                                 					For more information, see <a href="./autoscaling/ec2/userguide/as-suspend-resume-processes.html" target="_blank">Suspending and Resuming 
+                                    					Scaling Processes</a> in the <em>Amazon EC2 Auto Scaling User Guide</em>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>To specify which instances Amazon EC2 Auto Scaling should terminate first, choose
+                                 a termination policy. For more information, see 
+                                 					<a href="./autoscaling/ec2/userguide/as-instance-termination.html#custom-termination-policy" target="_blank">Customizing the Termination Policy</a> 
+                                 					in the <em>Amazon EC2 Auto Scaling User Guide</em>.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>		
+                     
+                     		
+                     <p class="title"><b>To enable termination protection for an instance at launch time</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           				
+                           <p>On the dashboard, choose <b>Launch Instance</b> and follow the directions in
+                              					the wizard.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Configure Instance Details</b> page, select the <b>Enable termination
+                                 					protection</b> check box.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     		
+                     <p class="title"><b>To enable termination protection for a running or stopped instance</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Select the instance, choose <b>Actions</b>, <b>Instance
+                                 						Settings</b>, and then choose <b>Change Termination
+                                 						Protection</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Select <b>Yes, Enable</b>.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     		
+                     <p class="title"><b>To disable termination protection for a running or stopped instance</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Select the instance, choose <b>Actions</b>, <b>Instance
+                                 						Settings</b>, and then choose <b>Change Termination
+                                 						Protection</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Select <b>Yes, Disable</b>.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     		
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>To enable or disable termination protection using the command line</b></p>
+                        			
+                        <p>You can use one of the following commands. For more information about these command
+                           line interfaces,
+                           				see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/modify-instance-attribute.html" target="_blank">modify-instance-attribute</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Edit-EC2InstanceAttribute.html" target="_blank">Edit-EC2InstanceAttribute</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     	
+                     <h2 id="Using_ChangingInstanceInitiatedShutdownBehavior">Changing the Instance Initiated Shutdown Behavior</h2>
+                     		
+                     		
+                     
+                     		
+                     <p>By default, when you initiate a shutdown from an Amazon EBS-backed instance (using
+                        a command 
+                        			such as <b>shutdown</b>, <b>halt</b>, or <b>poweroff</b>), 
+                        			the instance stops. You can change this behavior using the <code class="code">InstanceInitiatedShutdownBehavior</code> 
+                        			attribute for the instance so that it terminates instead. You can update this attribute
+                        while the
+                        			instance is running or stopped.
+                     </p>
+                     		
+                     <p>Note that instance store-backed instances can be terminated but they can&apos;t be stopped.</p>		
+                     
+                     		
+                     <p>You can update the <code class="code">InstanceInitiatedShutdownBehavior</code> attribute using the Amazon EC2
+                        			console or the command line. The <code class="code">InstanceInitiatedShutdownBehavior</code>
+                        			attribute only applies when you perform a shutdown from the operating system of
+                        the
+                        			instance itself; it does not apply when you stop an instance using the
+                        				<code class="code">StopInstances</code> API or the Amazon EC2 console.
+                     </p>
+                     
+                     
+                     		
+                     <p class="title"><b>To change the shutdown behavior of an instance using the console</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the navigation pane, choose <b>Instances</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Select the instance, select <b>Actions</b>, <b>Instance
+                                 						Settings</b>, and then choose <b>Change Shutdown
+                                 						Behavior</b>. The current behavior is already selected.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>To change the behavior, select an option from the <b>Shutdown behavior</b>
+                              					list, and then select <b>Apply</b>.
+                           </p>
+                           				
+                           <div class="mediaobject">
+                              					
+                              						<img src="../../..//img/shutdown_behavior_dialog.png" alt="
+						The Change Shutdown Behavior dialog box
+					">
+                              					
+                              					
+                              				
+                           </div>
+                           			
+                        </li>
+                     </ol>
+                     
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>To change the shutdown behavior of an instance using the command line</b></p>
+                        			
+                        <p>You can use one of the following commands. For more information about these command
+                           line interfaces,
+                           				see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/modify-instance-attribute.html" target="_blank">modify-instance-attribute</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Edit-EC2InstanceAttribute.html" target="_blank">Edit-EC2InstanceAttribute</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     	
+                     <h2 id="preserving-volumes-on-termination">Preserving Amazon EBS Volumes on Instance Termination</h2>
+                     	
+                     	
+                     	
+                     <p>When an instance terminates, Amazon EC2 uses the value of the <code class="code">DeleteOnTermination</code> attribute 
+                        		for each attached Amazon EBS volume to determine whether to preserve or delete the
+                        volume.
+                     </p>
+                     
+                     
+                     <p>By default, the <code class="code">DeletionOnTermination</code> attribute for the root volume of an instance
+                        is set to <code class="code">true</code>. Therefore, the default is to delete the root volume of an instance
+                        when the instance terminates.
+                     </p>
+                     	
+                     <p>By default, when you attach an EBS volume to an instance, its
+                        				<code class="code">DeleteOnTermination</code> attribute is set to <code class="code">false</code>. Therefore,
+                        			the default is to preserve these volumes. After the instance terminates, you can
+                        take a
+                        			snapshot of the preserved volume or attach it to another instance.
+                     </p>
+                     	   	
+                     	
+                     <p>To verify the value of the <code class="code">DeleteOnTermination</code> attribute for an EBS volume that is in-use,
+                        			look at the instance&apos;s block device mapping. For more information, see 
+                        		<a href="block-device-mapping-concepts.html#view-instance-bdm">Viewing the EBS Volumes in an Instance Block Device
+                           Mapping</a>.
+                     </p>
+                     
+                     	
+                     <p>You can change value of the <code class="code">DeleteOnTermination</code> attribute for a volume
+                        		when you launch the instance or while the instance is running.
+                     </p>
+                     	
+                     	
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Examples</strong></p>
+                        <ul>
+                           <li><a href="#delete-on-termination-console">Changing the Root Volume to Persist at Launch Using the Console</a></li>
+                           <li><a href="#delete-on-termination-cli">Changing the Root Volume to Persist at Launch Using the Command Line</a></li>
+                           <li><a href="#delete-on-termination-running-instance">Changing the Root Volume of a Running Instance to Persist Using the Command Line</a></li>
+                        </ul>
+                     </div>
+                     
+                     	
+                     <h3 id="delete-on-termination-console">Changing the Root Volume to Persist at Launch Using the Console</h3>
+                     		
+                     	
+                     <p>Using the console, you can change the <code class="code">DeleteOnTermination</code> attribute when you launch an instance.
+                        	    To change this attribute for a running instance, you must use the command line.
+                     </p>
+                     	
+                     <p class="title"><b>To change the root volume of an instance to persist at launch using the console</b></p>
+                     <ol>
+                        <li>
+                           			
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                           		
+                        </li>
+                        <li>
+                           			
+                           <p>From the console dashboard, select <b>Launch Instance</b>.
+                           </p>
+                           		
+                        </li>
+                        <li>
+                           			
+                           <p>On the <b>Choose an Amazon Machine Image (AMI)</b> page, choose an
+                              						AMI and choose <b>Select</b>.
+                           </p>
+                           		
+                        </li>
+                        <li>
+                           			
+                           <p>Follow the wizard to complete the <b>Choose an Instance Type</b> and
+                              				<b>Configure Instance Details</b> pages.
+                           </p>
+                           		
+                        </li>
+                        <li>
+                           			
+                           <p>On the <b>Add Storage</b> page, deselect the <b>Delete On
+                                 				Termination</b> check box for the root volume.
+                           </p>
+                           		
+                        </li>
+                        <li>
+                           			
+                           <p>Complete the remaining wizard pages, and then choose
+                              						<b>Launch</b>.
+                           </p>
+                           		
+                        </li>
+                     </ol>
+                     	
+                     <p>You can verify the setting by viewing details for the root device volume on the instance&apos;s
+                        		details pane. Next to <b>Block devices</b>, click the entry for the root
+                        		device volume. By default, <b>Delete on termination</b> is <code class="code">True</code>.
+                        		If you change the default behavior, <b>Delete on termination</b> is
+                        		<code class="code">False</code>.
+                     </p>        	
+                     
+                     	
+                     	
+                     <h3 id="delete-on-termination-cli">Changing the Root Volume to Persist at Launch Using the Command Line</h3>
+                     		
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p>When you launch an EBS-backed instance, you can use one of the following commands
+                           to change the root device volume to persist. 
+                           				For more information about these command line interfaces, see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/run-instances.html" target="_blank">run-instances</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/New-EC2Instance.html" target="_blank">New-EC2Instance</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     		
+                     <p>For example, add the following option to your <code class="code">run-instances</code> command:
+                     </p>
+                     	    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>--block-device-mappings file://mapping.json</code></strong></code></pre>
+                     	    <p>Specify the following in <code>mapping.json</code>:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">[
+  {
+    &quot;DeviceName&quot;: &quot;/dev/sda1&quot;,
+    &quot;Ebs&quot;: {
+      &quot;DeleteOnTermination&quot;: false,
+      &quot;SnapshotId&quot;: &quot;snap-1234567890abcdef0&quot;,
+      &quot;VolumeType&quot;: &quot;gp2&quot;
+    }
+  }
+]</code></pre>
+                     	
+                     	
+                     	<h3 id="delete-on-termination-running-instance">Changing the Root Volume of a Running Instance to Persist Using the Command Line</h3>
+                     		
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p>You can use one of the following commands to change the root device volume of a running
+                           EBS-backed instance to persist. 
+                           				For more information about these command line interfaces, see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/modify-instance-attribute.html" target="_blank">modify-instance-attribute</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Edit-EC2InstanceAttribute.html" target="_blank">Edit-EC2InstanceAttribute</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     		
+                     <p>For example, use the following command:</p>
+                     		<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 modify-instance-attribute --instance-id <em class="replaceable"><code>i-1234567890abcdef0</code></em> --block-device-mappings file://mapping.json</code></strong></code></pre>
+                     		<p>Specify the following in <code>mapping.json</code>:
+                     </p>
+                     		<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">[
+  {
+    &quot;DeviceName&quot;: &quot;/dev/sda1&quot;,
+    &quot;Ebs&quot;: {
+      &quot;DeleteOnTermination&quot;: false
+    }
+  }
+]</code></pre>
+                     		
+                     	
+                     
+                     <h2 id="troubleshoot-instance-terminate">Troubleshooting</h2>
+                     		
+                     		
+                     <p>If your instance is in the <code class="code">shutting-down</code> state for longer than usual, it will eventually be cleaned up
+                        			(terminated) by automated processes within the Amazon EC2 service.
+                        			For more information, see <a href="TroubleshootingInstancesShuttingDown.html">Troubleshooting Terminating (Shutting Down)
+                           Your Instance</a>.
+                        		
+                     </p>
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="instance-retirement.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ec2-instance-recover.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Instance Termination"><a class="pagetoc" href="#termination-overview">Instance Termination</a></li>
+                        <li class="pagetoc" name="Terminating an Instance"><a class="pagetoc" href="#terminating-instances-console">Terminating an Instance</a></li>
+                        <li class="pagetoc" name="Enabling Termination Protection for an
+			Instance"><a class="pagetoc" href="#Using_ChangingDisableAPITermination">Enabling Termination Protection</a></li>
+                        <li class="pagetoc" name="Changing the Instance Initiated Shutdown Behavior"><a class="pagetoc" href="#Using_ChangingInstanceInitiatedShutdownBehavior">Changing the Shutdown Behavior</a></li>
+                        <li class="pagetoc" name="Preserving Amazon EBS Volumes on Instance Termination"><a class="pagetoc" href="#preserving-volumes-on-termination">Preserving Amazon EBS Volumes on Instance Termination</a></li>
+                        <li class="pagetoc" name="Troubleshooting"><a class="pagetoc" href="#troubleshoot-instance-terminate">Troubleshooting</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

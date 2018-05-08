@@ -1,0 +1,414 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Bootstrapping AWS CloudFormation Windows Stacks - AWS CloudFormation</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="cfn-windows-stacks.html" title="Working with Microsoft Windows Stacks on AWS CloudFormation">
+      <link rel="prev" href="cfn-windows-stacks-amis-and-templates.html" title="Microsoft Windows Amazon Machine Images (AMIs) and AWS CloudFormation
+      Templates">
+      <link rel="next" href="template-guide.html" title="Working with AWS CloudFormation Templates">
+      <meta name="description" content="Use AWS CloudFormation to bootstrap a Windows stack.">
+      <meta name="keywords" content="CloudFormation,AWSCloudFormation,resource provisioning,resource configuration,infrastructure management,CloudFormer,CloudFormation Designer,CloudFormation stack,CloudFormation stackset,CloudFormation template,change set">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS CloudFormation">
+      <meta name="guide" content="User Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-windows-stacks-bootstrapping.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudformation">AWS CloudFormation</a> &#xBB; <a href="index.html">User Guide</a> &#xBB; <a href="stacks.html">Working with Stacks</a> &#xBB; <a href="cfn-windows-stacks.html">Working with Microsoft Windows Stacks on AWS CloudFormation</a> &#xBB; <span class="breadcrumb">Bootstrapping AWS CloudFormation Windows Stacks</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="cfn-windows-stacks-bootstrapping">Bootstrapping AWS CloudFormation Windows Stacks</h1>
+                     <p>This topic describes how to bootstrap a Windows stack and troubleshoot stack creation
+                        issues. If you will be creating your own Windows image for use with CloudFormation,
+                        see the
+                        information at <a href="./AWSEC2/latest/WindowsGuide/UsingConfig_WinAMI.html" target="_blank">Configuring a Windows Instance Using EC2ConfigService</a> in the <em>Amazon EC2
+                           Microsoft Windows Guide</em> for instructions. You must set up a Windows instance
+                        with EC2ConfigService for it to work with the AWS CloudFormation bootstrapping tools.
+                     </p>
+                     <h2 id="cfn-windows-bootstrapping-example">Example of Bootstrapping a Windows
+                        Stack
+                     </h2>
+                     
+                     
+                     <p>For the purposes of illustration, we&apos;ll examine the AWS CloudFormation single-instance
+                        Sharepoint
+                        server template, which can be viewed, in its entirety, at the following URL:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>
+                                 <a href="https://s3.amazonaws.com/cloudformation-templates-us-east-1/Windows_Single_Server_SharePoint_Foundation.template" target="_blank">
+                                    https://s3.amazonaws.com/cloudformation-templates-us-east-1/Windows_Single_Server_SharePoint_Foundation.template
+                                    </a>
+                                 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>This example demonstrates how to:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Create an IAM User and Security Group for access to the instance</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Configure initialization files: <code>cfn-credentials</code>,
+                                 <code>cfn-hup.conf</code>, and
+                                 <code>cfn-auto-reloader.conf</code></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Download and install a package such as Sharepoint Foundation 2010 on the server
+                                 instance.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Use a WaitCondition to ensure resources are ready </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Retrieve an IP for the instance with Amazon Elastic IP (EIP).</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>The AWS CloudFormation helper script <code>cfn-init</code> is used to perform each of these
+                        actions, based on information in the <a href="aws-resource-init.html">AWS::CloudFormation::Init</a> resource in the Windows Single Server Sharepoint
+                        Foundation template.
+                     </p>
+                     
+                     <p>The AWS::CloudFormation::Init section is named &quot;SharePointFoundation&quot;, and begins
+                        with a
+                        standard declaration:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">
+&quot;SharePointFoundation&quot;: {
+   &quot;Type&quot; : &quot;AWS::EC2::Instance&quot;,
+   &quot;Metadata&quot; : {
+     &quot;AWS::CloudFormation::Init&quot; : {
+       &quot;config&quot; : {</code></pre>
+                     <p>After this, the <b>files</b> section of AWS::CloudFormation::Init is
+                        declared:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">
+&quot;files&quot; : {
+  &quot;c:\\cfn\\cfn-hup.conf&quot; : {
+    &quot;content&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [
+      &quot;[main]\n&quot;,
+      &quot;stack=&quot;, { &quot;Ref&quot; : &quot;AWS::StackName&quot; }, &quot;\n&quot;,
+      &quot;region=&quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;
+      ]]}
+  },
+  &quot;c:\\cfn\\hooks.d\\cfn-auto-reloader.conf&quot; : {
+    &quot;content&quot;: { &quot;Fn::Join&quot; : [&quot;&quot;, [
+      &quot;[cfn-auto-reloader-hook]\n&quot;,
+      &quot;triggers=post.update\n&quot;,
+      &quot;path=Resources.SharePointFoundation.Metadata.AWS::CloudFormation::Init\n&quot;,
+      &quot;action=cfn-init.exe -v -s &quot;, { &quot;Ref&quot; : &quot;AWS::StackName&quot; },
+                                     &quot; -r SharePointFoundation&quot;,
+                                     &quot; --region &quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;
+    ]]}
+  },
+  &quot;C:\\SharePoint\\SharePointFoundation2010.exe&quot; : {
+    &quot;source&quot; : &quot;http://d3adzpja92utk0.cloudfront.net/SharePointFoundation.exe&quot;
+  }
+},
+</code></pre>
+                     <p>Three files are created here and placed in the <code>C:\cfn</code> directory on
+                        the server instance. They are:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><code>cfn-hup.conf</code>, the configuration file for cfn-hup.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code>cfn-auto-reloader.conf</code>, the configuration file for the hook
+                                 used by cfn-hup to initiate an update (calling cfn-init) when the metadata in
+                                 AWS::CloudFormation::Init changes.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>There is also a file that is downloaded to the server:
+                        <code>SharePointFoundation.exe</code>. This file is used to install SharePoint
+                        on the server instance.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Since paths on Windows use a backslash (&apos;\&apos;) character, you must always remember to
+                           properly escape all backslashes by prepending another backslash whenever you refer
+                           to a
+                           Windows path in the AWS CloudFormation template.
+                        </p>
+                     </div>
+                     
+                     <p>Next is the <b>commands</b> section, which are
+                        <code>cmd.exe</code> commands.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">
+&quot;commands&quot; : {
+  &quot;1-extract&quot; : {
+    &quot;command&quot; : &quot;C:\\SharePoint\\SharePointFoundation2010.exe /extract:C:\\SharePoint\\SPF2010 /quiet /log:C:\\SharePoint\\SharePointFoundation2010-extract.log&quot;
+  },
+  &quot;2-prereq&quot; : {
+    &quot;command&quot; : &quot;C:\\SharePoint\\SPF2010\\PrerequisiteInstaller.exe /unattended&quot;
+  },
+  &quot;3-install&quot; : {
+    &quot;command&quot; : &quot;C:\\SharePoint\\SPF2010\\setup.exe /config C:\\SharePoint\\SPF2010\\Files\\SetupSilent\\config.xml&quot;
+  }</code></pre>
+                     <p>Because commands in the instance are processed in <em>alphabetical order by
+                           name</em>, each command has been prepended with a number indicating its desired
+                        execution order. Thus, we can make sure that the installation package is first extracted,
+                        all prerequisites are then installed, and finally, installation of SharePoint is
+                        started.
+                     </p>
+                     
+                     <p>Next is the <b>Properties</b> section:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">
+&quot;Properties&quot;: {
+  &quot;InstanceType&quot; : { &quot;Ref&quot; : &quot;InstanceType&quot; },
+  &quot;ImageId&quot; : { &quot;Fn::FindInMap&quot; : [ &quot;AWSRegionArch2AMI&quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; },
+                { &quot;Fn::FindInMap&quot; : [ &quot;AWSInstanceType2Arch&quot;, { &quot;Ref&quot; : &quot;InstanceType&quot; }, &quot;Arch&quot; ] } ] },
+  &quot;SecurityGroups&quot; : [ {&quot;Ref&quot; : &quot;SharePointFoundationSecurityGroup&quot;} ],
+  &quot;KeyName&quot; : { &quot;Ref&quot; : &quot;KeyPairName&quot; },
+  &quot;UserData&quot; : { &quot;Fn::Base64&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [
+    &quot;&lt;script&gt;\n&quot;,
+
+    &quot;cfn-init.exe -v -s &quot;, { &quot;Ref&quot; : &quot;AWS::StackName&quot; },
+    &quot; -r SharePointFoundation&quot;,
+    &quot; --region &quot;, { &quot;Ref&quot; : &quot;AWS::Region&quot; }, &quot;\n&quot;,
+
+    &quot;cfn-signal.exe -e %ERRORLEVEL% &quot;, { &quot;Fn::Base64&quot; : { &quot;Ref&quot; : &quot;SharePointFoundationWaitHandle&quot; }}, &quot;\n&quot;,
+
+    &quot;&lt;/script&gt;&quot;
+    ]]}}
+  }</code></pre>
+                     <p>In this section, the <code class="code">UserData</code> property contains a
+                        <code>cmd.exe</code> script that will be executed by
+                        <code>cfn-init</code>, surrounded by &lt;script&gt; tags. You can use a Windows
+                        Powershell script here instead by surrounding your script with &lt;powershell&gt; tags.
+                        For
+                        Windows stacks, you must base64 encode the wait condition handle URL again.
+                     </p>
+                     
+                     <p>SharePointFoundationWaitHandle is referenced here and run with
+                        <code>cfn-signal</code>. The <b>WaitConditionHandle</b> and
+                        associated <b>WaitCondition</b> are declared next in the template:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">
+&quot;SharePointFoundationWaitHandle&quot; : {
+   &quot;Type&quot; : &quot;AWS::CloudFormation::WaitConditionHandle&quot;
+},
+
+&quot;SharePointFoundationWaitCondition&quot; : {
+   &quot;Type&quot; : &quot;AWS::CloudFormation::WaitCondition&quot;,
+   &quot;DependsOn&quot; : &quot;SharePointFoundation&quot;,
+   &quot;Properties&quot; : {
+     &quot;Handle&quot; : {&quot;Ref&quot; : &quot;SharePointFoundationWaitHandle&quot;},
+     &quot;Timeout&quot; : &quot;3600&quot;
+   }
+}</code></pre>
+                     <p>Since executing all of the steps and installing SharePoint might take a while, but
+                        not
+                        an entire hour, the WaitCondition waits an hour (3600 seconds) before timing out.
+                     </p>
+                     
+                     <p>If all goes well, an Elastic IP is used to provide access to the SharePoint
+                        instance:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">
+&quot;Outputs&quot; : {
+ &quot;SharePointFoundationURL&quot; : {
+   &quot;Value&quot; : { &quot;Fn::Join&quot; : [&quot;&quot;, [&quot;http://&quot;, { &quot;Ref&quot; : &quot;SharePointFoundationEIP&quot; } ]] },
+   &quot;Description&quot; : &quot;SharePoint Team Site URL. Please retrieve Administrator password of the instance and use it to access the URL&quot;
+ }</code></pre>
+                     <p>Once stack creation is complete, the IP address supplied by EIP will be displayed
+                        in the <b>Outputs</b> tab of the AWS CloudFormation console. However, before you can access the instance
+                        you will need to retrieve the auto-generated temporary Administrator password for
+                        the instance. For more information, see <a href="./AWSEC2/latest/WindowsGuide/connecting_to_windows_instance.html" target="_blank">Connecting to Your Windows Instance Using RDP</a> in
+                        the <em>Amazon EC2 User Guide for Windows Instances</em>.
+                     </p>
+                     
+                     <h2 id="w2ab2c15c25c15c11">How to Manage Windows Services</h2>
+                     
+                     
+                     <p>You manage Windows services in the same way as Linux services, except that you use
+                        a
+                        <code class="code">windows</code> key instead of <code class="code">sysvinit</code>. The following example starts
+                        the <code class="code">cfn-hup</code> service, sets it to Automatic, and restarts the service if
+                        cfn-init modifies the <code>c:\cfn\cfn-hup.conf</code> or
+                        <code>c:\cfn\hooks.d\cfn-auto-reloader.conf</code> configuration files. 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">
+&quot;services&quot; : {
+  &quot;windows&quot; : {
+    &quot;cfn-hup&quot; : {
+      &quot;enabled&quot; : &quot;true&quot;,
+      &quot;ensureRunning&quot; : &quot;true&quot;,
+      &quot;files&quot; : [&quot;c:\\cfn\\cfn-hup.conf&quot;, &quot;c:\\cfn\\hooks.d\\cfn-auto-reloader.conf&quot;]
+    }
+  }
+} </code></pre>
+                     <p>You can manage other Windows services in the same way by using the name&#x2014;not the
+                        display name&#x2014;to reference the service.
+                     </p>
+                     
+                     <h2 id="cfn-windows-stacks-troubleshooting">How to Troubleshoot Stack Creation
+                        Issues
+                     </h2>
+                     
+                     
+                     <p>If your stack fails during creation, the default behavior is to Rollback on failure.
+                        While this is normally a good default because it avoids unnecessary charges, it makes
+                        it
+                        difficult to debug why your stack creation is failing.
+                     </p>
+                     
+                     <p>To turn this behavior off, click <b>Show Advanced Options</b> when
+                        creating your stack with the AWS CloudFormation console, and click the <b>No</b> selector
+                        next to <b>Rollback on failure</b>. This will allow you to log into your
+                        instance and view the logfiles to pinpoint issues encountered when running your startup
+                        scripts.
+                     </p>
+                     
+                     <p>Important logs to look at are:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>The EC2 configuration log at <code>C:\Program
+                                    Files\Amazon\Ec2ConfigService\Logs\Ec2ConfigLog.txt</code></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The <b>cfn-init</b> log at <code>
+                                    C:\cfn\log\cfn-init.log</code></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="cfn-windows-stacks-amis-and-templates.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="template-guide.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Example of Bootstrapping a Windows
+         Stack"><a class="pagetoc" href="#cfn-windows-bootstrapping-example">Example of Bootstrapping a Windows
+                              Stack</a></li>
+                        <li class="pagetoc" name="How to Manage Windows Services"><a class="pagetoc" href="#w2ab2c15c25c15c11">How to Manage Windows Services</a></li>
+                        <li class="pagetoc" name="How to Troubleshoot Stack Creation
+         Issues"><a class="pagetoc" href="#cfn-windows-stacks-troubleshooting">How to Troubleshoot Stack Creation
+                              Issues</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS CloudFormation';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

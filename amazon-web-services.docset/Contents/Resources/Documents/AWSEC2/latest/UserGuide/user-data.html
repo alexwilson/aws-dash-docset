@@ -1,0 +1,588 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Running Commands on Your Linux Instance at Launch - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="Configure_Instance.html" title="Configuring Your Amazon Linux Instance">
+      <link rel="prev" href="dynamic-dns.html" title="Setting Up Dynamic DNS on Your Linux Instance">
+      <link rel="next" href="ec2-instance-metadata.html" title="Instance Metadata and User Data">
+      <meta name="description" content="Pass user data to an Amazon Linux instance at launch time.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="Configure_Instance.html">Configuring Your Amazon Linux Instance</a> &#xBB; <span class="breadcrumb">Running Commands on Your Linux Instance at Launch</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="user-data">Running Commands on Your Linux Instance at Launch</h1>
+                     <p>When you launch an instance in Amazon EC2, you have the option of passing user data
+                        to the
+                        			instance that can be used to perform common automated configuration tasks and even
+                        run
+                        			scripts after the instance starts. You can pass two types of user data to Amazon
+                        EC2: shell
+                        			scripts and cloud-init directives. You can also pass this data into
+                        			the launch wizard as plain text, as a file (this is useful for launching instances
+                        using
+                        			the command line tools), or as base64-encoded text (for API calls).
+                     </p>
+                     <p>If you are interested in more complex automation scenarios, consider using AWS CloudFormation
+                        and
+                        			AWS OpsWorks. For more information, see the <a href="./AWSCloudFormation/latest/UserGuide/" target="_blank">AWS CloudFormation User Guide</a> and the <a href="./opsworks/latest/userguide/" target="_blank">AWS OpsWorks User Guide</a>.
+                     </p>
+                     <p>For information about running commands on your Windows instance at launch, see <a href="./AWSEC2/latest/WindowsGuide/ec2-windows-user-data.html" target="_blank">Running Commands on Your Windows Instance at Launch</a> 
+                        			and <a href="./AWSEC2/latest/WindowsGuide/ec2-configuration-manage.html" target="_blank">Managing Windows Instance Configuration</a> in the
+                        			<em>Amazon EC2 User Guide for Windows Instances</em>.
+                     </p>
+                     <p>In the following examples, the commands from the <a href="install-LAMP.html">Installing a LAMP Web Server tutorial</a> are converted to a shell script and a
+                        			set of cloud-init directives that executes when the instance
+                        			launches. In each example, the following tasks are executed by the user data:
+                     </p>
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>The distribution software packages are updated.</p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>The necessary web server, <code>php</code>, and <code>mysql</code>
+                                 					packages are installed.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>The <code>httpd</code> service is started and turned on via
+                                 						<b>chkconfig</b>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>The www group is added, and <code class="code">ec2-user</code> is added to that group.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>The appropriate ownership and file permissions are set for the web directory
+                                 					and the files contained within it.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>A simple web page is created to test the web server and PHP engine.</p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     <p>By default, user data and cloud-init directives only run during the first
+                        				boot cycle when you launch an instance. However, AWS Marketplace vendors and owners
+                        of
+                        				third-party AMIs may have made their own customizations for how and when scripts
+                        				run. 
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#user-data-requirements">Prerequisites</a></li>
+                           <li><a href="#user-data-shell-scripts">User Data and Shell Scripts</a></li>
+                           <li><a href="#user-data-console">User Data and the Console</a></li>
+                           <li><a href="#user-data-cloud-init">User Data and cloud-init Directives</a></li>
+                           <li><a href="#user-data-api-cli">User Data and the AWS CLI</a></li>
+                        </ul>
+                     </div>
+                     			
+                     <h2 id="user-data-requirements">Prerequisites</h2>
+                     
+                     			
+                     <p>The following examples assume that your instance has a public DNS name that is
+                        				reachable from the Internet. For more information, see <a href="EC2_GetStarted.html#ec2-launch-instance">Step 1: Launch an Instance</a>.
+                        				You must also configure your security group to allow SSH (port
+                        				22), HTTP (port 80), and HTTPS (port 443)
+                        				connections. For more information about these prerequisites, see <a href="get-set-up-for-amazon-ec2.html">Setting Up with Amazon EC2</a>.
+                     </p>
+                     			
+                     <p>Also, these instructions are intended for use with Amazon Linux, and the commands
+                        and
+                        				directives may not work for other Linux distributions. For more information about
+                        				other distributions, such as their support for cloud-init, see
+                        				their specific documentation.
+                     </p>
+                     		
+                     			
+                     <h2 id="user-data-shell-scripts">User Data and Shell Scripts</h2>
+                     
+                     
+                     			
+                     <p>If you are familiar with shell scripting, this is the easiest and most complete
+                        				way to send instructions to an instance at launch, and the cloud-init output log
+                        file
+                        				(<code>/var/log/cloud-init-output.log</code>) captures console output so
+                        				it is easy to debug your scripts following a launch if the instance does not behave
+                        				the way you intended.
+                     </p>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>User data scripts and cloud-init directives run only during
+                           					the first boot cycle when an instance is launched.
+                        </p>
+                     </div>
+                     			
+                     <p>User data shell scripts must start with the <code class="code">#!</code> characters and
+                        				the path to the interpreter you want to read the script (commonly
+                        				<b>/bin/bash)</b>. For a great introduction on shell scripting, see
+                        				<a href="http://tldp.org/HOWTO/Bash-Prog-Intro-HOWTO.html" target="_blank">the BASH
+                           				Programming HOW-TO</a> at the Linux Documentation Project (<a href="http://tldp.org" target="_blank">tldp.org</a>).
+                     </p>
+                     			
+                     <p>Scripts entered as user data are executed as the <code class="code">root</code> user, so
+                        				do not use the <b>sudo</b> command in the script. Remember that any
+                        				files you create will be owned by <code class="code">root</code>; if you need
+                        					non-root users to have file access, you should modify the
+                        				permissions accordingly in the script. Also, because the script is not run
+                        				interactively, you cannot include commands that require user feedback (such as
+                        					<b>yum update</b> without the <code class="code">-y</code> flag).
+                     </p>
+                     			
+                     <p>Adding these tasks at boot time adds to the amount of time it takes to boot the
+                        				instance. You should allow a few minutes of extra time for the tasks to complete
+                        				before you test that the user script has finished successfully.
+                     </p>
+                     		
+                     			
+                     <h2 id="user-data-console">User Data and the Console</h2>
+                     
+                     
+                     <p>You can specify instance user data when you launch the instance. If the root 
+                        	volume of the instance is an EBS volume, you can also stop the instance and update
+                        
+                        	its user data.
+                     </p>
+                     
+                     			
+                     				
+                     <h3 id="user-data-launch-instance-wizard">Specify Instance User Data at Launch </h3>
+                     				
+                     				
+                     <p>Follow the procedure for launching an instance at <a href="launching-instance.html#launch-instance-console">Launching Your Instance from an AMI</a>, but when you get to <a href="launching-instance.html#configure_instance_details_step">Step&#xA0;6</a> in that procedure, copy
+                        					your shell script in the <b>User data</b> field, and then
+                        					complete the launch procedure.
+                     </p>
+                     				
+                     <p>In the example script below, the script creates and configures our web server.</p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">#!/bin/bash
+yum update -y
+yum install -y httpd24 php56 mysql55-server php56-mysqlnd
+service httpd start
+chkconfig httpd on
+groupadd www
+usermod -a -G www ec2-user
+chown -R root:www /var/www
+chmod 2775 /var/www
+find /var/www -type d -exec chmod 2775 {} +
+find /var/www -type f -exec chmod 0664 {} +
+echo &quot;&lt;?php phpinfo(); ?&gt;&quot; &gt; /var/www/html/phpinfo.php</code></pre>
+                     				
+                     				<p>Allow enough time for the instance to launch and execute the commands in your script,
+                        and
+                        					then check to see that your script has completed the tasks that you intended.
+                     </p>
+                     				
+                     <p>For our example, in a web browser, enter the URL of the PHP test
+                        					file the script created. This URL is the public DNS address of your instance
+                        					followed by a forward slash and the file name.
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">http://<em class="replaceable"><code>my.public.dns.amazonaws.com</code></em>/phpinfo.php</code></pre>
+                     				<p>You should see the PHP information page. If you are unable to see the PHP information
+                        page, 
+                        					check that the security group you are using contains a rule to allow HTTP (port
+                        80) traffic. 
+                        					For more information, see <a href="using-network-security.html#adding-security-group-rule">Adding Rules to a Security Group</a>.
+                     </p>
+                     				
+                     				
+                     <p>(Optional) If your script did not accomplish the tasks you were expecting
+                        					it to, or if you just want to verify that your script completed without
+                        					errors, examine the cloud-init output log file at
+                        					<code>/var/log/cloud-init-output.log</code> and look for error
+                        					messages in the output. 
+                     </p>
+                     				
+                     <p>For additional debugging information, you can create a Mime multipart
+                        					archive that includes a cloud-init data section with the
+                        					following directive:
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">output : { all : &apos;| tee -a /var/log/cloud-init-output.log&apos; }</code></pre>
+                     				<p>This directive sends command output from your script to
+                        					<code>/var/log/cloud-init-output.log</code>. For more
+                        					information about cloud-init data formats and creating Mime
+                        					multi part archive, see <a href="http://cloudinit.readthedocs.org/en/latest/topics/format.html" target="_blank">cloud-init Formats</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="user-data-view-change">View and Update the Instance User Data</h3>
+                     				
+                     				
+                     <p class="title"><b>To modify instance user data</b></p>
+                     <ol>
+                        <li> 
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p> 
+                        </li>
+                        <li>
+                           						
+                           <p>In the navigation pane, choose <b>Instances</b>.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>Select the instance and choose <b>Actions</b>, <b>Instance 
+                                 							State</b>, <b>Stop</b>.
+                           </p>
+                           						
+                           <div class="aws-note">
+                              <p class="aws-note">Warning</p>
+                              <p>When you stop an instance, the data on any instance store volumes is erased. 
+                                 Therefore, if you have any data on instance store volumes that you want to keep, be
+                                 sure to back it up to persistent storage.
+                              </p>
+                           </div> 
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>When prompted for confirmation, choose <b>Yes, Stop</b>. It
+                              							can take a few minutes for the instance to stop.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>With the instance still selected, choose <b>Actions</b>,
+                              							<b>Instance Settings</b>, <b>View/Change User Data</b>. 
+                              							You can&apos;t change the user data if the instance is running, but you can view
+                              it.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>In the <b>View/Change User Data</b> dialog box, update the user data, 
+                              							and then choose <b>Save</b>.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>Restart the instance. The new user data is visible on your instance after you
+                              							restart it; however, user data scripts are not executed.
+                           </p>
+                           					
+                        </li>
+                     </ol>
+                     						
+                     		
+                     			
+                     <h2 id="user-data-cloud-init">User Data and cloud-init Directives</h2>
+                     
+                     			
+                     <p>The cloud-init package configures specific aspects of a new Amazon Linux instance
+                        when it is
+                        				launched; most notably, it configures the <code>.ssh/authorized_keys</code>
+                        				file for the ec2-user so you can log in with your own private key. For more
+                        				information, see <a href="amazon-linux-ami-basics.html#amazon-linux-cloud-init">cloud-init</a>.
+                     </p>
+                     			
+                     <p>The cloud-init user directives can be passed to an instance at
+                        				launch the same way that a script is passed, although the syntax is different.
+                        For
+                        				more information about cloud-init, go to <a href="http://cloudinit.readthedocs.org/en/latest/index.html" target="_blank">http://cloudinit.readthedocs.org/en/latest/index.html</a>.
+                     </p>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>User data scripts and cloud-init directives only run during
+                           					the first boot cycle when an instance is launched.
+                        </p>
+                     </div>
+                     			
+                     <p>The Amazon Linux version of cloud-init does not support all of the
+                        				directives that are available in the base package, and some of the directives
+                        have
+                        				been renamed (such as <code class="code">repo_update</code> instead of
+                        					<code class="code">apt-upgrade</code>).
+                     </p>
+                     						
+                     <p>Adding these tasks at boot time adds to the amount of time it takes to boot an
+                        				instance. You should allow a few minutes of extra time for the tasks to complete
+                        				before you test that your user data directives have completed.
+                     </p>
+                     			
+                     <p class="title"><b>To pass cloud-init directives to an instance with user data</b></p>
+                     <ol>
+                        <li>
+                           					
+                           <p>Follow the procedure for launching an instance at <a href="launching-instance.html#launch-instance-console">Launching Your Instance from an AMI</a>, but when you get to <a href="launching-instance.html#configure_instance_details_step">Step&#xA0;6</a> in that procedure, enter
+                              						your cloud-init directive text in the <b>User data</b> field,
+                              						and then complete the launch procedure.
+                           </p>
+                           					
+                           <p>In the example below, the directives create and configure a web server. The
+                              <code class="code">#cloud-config</code> line at the top is required in order to
+                              identify the commands as cloud-init directives.
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">#cloud-config
+repo_update: true
+repo_upgrade: all
+
+packages:
+ - httpd24
+ - php56
+ - mysql55-server
+ - php56-mysqlnd
+
+runcmd:
+ - service httpd start
+ - chkconfig httpd on
+ - groupadd www
+ - [ sh, -c, &quot;usermod -a -G www ec2-user&quot; ]
+ - [ sh, -c, &quot;chown -R root:www /var/www&quot; ]
+ - chmod 2775 /var/www
+ - [ find, /var/www, -type, d, -exec, chmod, 2775, {}, + ]
+ - [ find, /var/www, -type, f, -exec, chmod, 0664, {}, + ]
+ - [ sh, -c, &apos;echo &quot;&lt;?php phpinfo(); ?&gt;&quot; &gt; /var/www/html/phpinfo.php&apos; ]</code></pre>
+                           				</li>
+                        <li>
+                           					
+                           <p>Allow enough time for the instance to launch and execute the directives in
+                              						your user data, and then check to see that your directives have completed
+                              						the tasks you intended.
+                           </p>
+                           					
+                           <p>For our example, in a web browser, enter the URL of
+                              						the PHP test file the directives created. This URL is the public DNS address
+                              						of your instance followed by a forward slash and the file name.
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">http://<em class="replaceable"><code>my.public.dns.amazonaws.com</code></em>/phpinfo.php</code></pre>
+                           					<p>You should see the PHP information page. If you are unable to see the PHP information
+                              page, 
+                              						check that the security group you are using contains a rule to allow HTTP (port
+                              80) traffic. 
+                              						For more information, see <a href="using-network-security.html#adding-security-group-rule">Adding Rules to a Security Group</a>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>(Optional) If your directives did not accomplish the tasks you were
+                              						expecting them to, or if you just want to verify that your directives
+                              						completed without errors, examine the output
+                              						log file at <code>/var/log/cloud-init-output.log</code> and look for
+                              						error messages in the output. For additional debugging information, you can
+                              						add the following line to your directives:
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">output : { all : &apos;| tee -a /var/log/cloud-init-output.log&apos; }</code></pre>
+                           					<p>This directive sends <b>runcmd</b> output to
+                              							<code>/var/log/cloud-init-output.log</code>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     		
+                     			
+                     <h2 id="user-data-api-cli">User Data and the AWS CLI</h2>
+                     
+                     
+                     <p>You can use the AWS CLI to specify, modify, and view the user data for your instance.
+                        For information
+                        	about viewing user data from your instance using instance metadata, see <a href="ec2-instance-metadata.html#instancedata-user-data-retrieval">Retrieve Instance User Data</a>.
+                     </p>
+                     			
+                     <p>On Windows, you can use the AWS Tools for Windows PowerShell instead of using the
+                        AWS CLI. For more information, see
+                        	<a href="./AWSEC2/latest/WindowsGuide/ec2-windows-user-data.html#user-data-powershell" target="_blank">User Data and the Tools for Windows PowerShell</a> 
+                        	in the <em>Amazon EC2 User Guide for Windows Instances</em>.
+                     </p>
+                     
+                     			
+                     	
+                     <p class="title"><b>Example: Specify User Data at Launch</b></p>
+                     	
+                     <p>To specify user data when you launch your instance, use the <a href="./cli/latest/reference/ec2/run-instances.html" target="_blank">run-instances</a> 
+                        		command with the <code class="code">--user-data</code> parameter. With <b>run-instances</b>, the AWS CLI performs base64 encoding of 
+                        		the user data for you.
+                     </p> 
+                     
+                     			
+                     <p>The following example shows how to specify a script as a string on the command line:</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 run-instances --image-id ami-<em class="replaceable"><code>abcd1234</code></em> --count <em class="replaceable"><code>1</code></em> --instance-type <em class="replaceable"><code>m3.medium</code></em> \
+--key-name <em class="replaceable"><code>my-key-pair</code></em> --subnet-id subnet-<em class="replaceable"><code>abcd1234</code></em> --security-group-ids sg-<em class="replaceable"><code>abcd1234</code></em> \
+--user-data <em class="replaceable"><code>echo user data</code></em></code></strong></code></pre>
+                     			<p>The following example shows how to specify a script using a text file. Be sure to
+                        use the
+                        					<code class="code">file://</code> prefix to specify the file.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 run-instances --image-id ami-<em class="replaceable"><code>abcd1234</code></em> --count <em class="replaceable"><code>1</code></em> --instance-type <em class="replaceable"><code>m3.medium</code></em> \
+--key-name <em class="replaceable"><code>my-key-pair</code></em> --subnet-id subnet-<em class="replaceable"><code>abcd1234</code></em> --security-group-ids sg-<em class="replaceable"><code>abcd1234</code></em> \
+--user-data file://<em class="replaceable"><code>my_script.txt</code></em></code></strong></code></pre>
+                     			<p>The following is an example text file with a shell script.</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">#!/bin/bash
+yum update -y
+service httpd start
+chkconfig httpd on</code></pre>
+                     
+                     
+                     	<p class="title"><b>Example: Modify the User Data of a Stopped Instance</b></p>
+                     	
+                     <p>You can modify the user data of a stopped instance using the <a href="./cli/latest/reference/ec2/modify-instance-attribute.html" target="_blank">modify-instance-attribute</a> 
+                        		command. With <b>modify-instance-attribute</b>, the AWS CLI does not perform base64 encoding of the user data for you.
+                     </p>
+                     
+                     			
+                     <p>On Linux, use the base64 command to encode the user data.</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>base64 my_script.txt &gt;my_script_base64.txt</code></strong></code></pre>
+                     <p>On Windows, use the certutil command to encode the user data. 
+                        	Before you can use this file with the AWS CLI, you must remove the first (BEGIN CERTIFICATE)
+                        and last 
+                        	(END CERTIFICATE) lines.
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>certutil -encode my_script.txt my_script_base64.txt
+notepad my_script_base64.txt</code></strong></code></pre>
+                     			<p>Use the <code class="code">--user-data</code> and <code class="code">--value</code> parameters to use the encoded text file 
+                        				to specify the user data. Be sure to use the <code class="code">file://</code> prefix to specify the file.
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 modify-instance-attribute --instance-id <em class="replaceable"><code>i-1234567890abcdef0</code></em> --attribute userData --value file://<em class="replaceable"><code>my_script_base64.txt</code></em></code></strong></code></pre>
+                     
+                     
+                     	<p class="title"><b>Example: View User Data</b></p>
+                     	
+                     <p>To retrieve the user data for an instance, use the <a href="./cli/latest/reference/ec2/describe-instance-attribute.html" target="_blank">describe-instance-attribute</a> command.
+                        		With <b>describe-instance-attribute</b>, the AWS CLI does not perform base64 decoding of the user data for you.
+                     </p>
+                     
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-instance-attribute --instance-id <em class="replaceable"><code>i-1234567890abcdef0</code></em> --attribute userData</code></strong></code></pre>
+                     			<p>The following is example output with the user data base64 encoded.</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+    &quot;UserData&quot;: {
+        &quot;Value&quot;: &quot;IyEvYmluL2Jhc2gKeXVtIHVwZGF0ZSAteQpzZXJ2aWNlIGh0dHBkIHN0YXJ0CmNoa2NvbmZpZyBodHRwZCBvbg==&quot;
+    },
+    &quot;InstanceId&quot;: &quot;i-1234567890abcdef0&quot;
+}</code></pre>
+                     
+                     <p>On Linux, use the <code class="code">--query</code> option to get the encoded user data and the
+                        				base64 command to decode it.
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws ec2 describe-instance-attribute --instance-id <em class="replaceable"><code>i-1234567890abcdef0</code></em> --attribute userData --output text --query &quot;UserData.Value&quot; | base64 --decode</code></pre>
+                     			<p>On Windows, use the <code class="code">--query</code> option to get the coded user data and the certutil command to
+                        				decode it. Note that the encoded output is stored in a file and the decoded output
+                        				is stored in another file.
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws ec2 describe-instance-attribute --instance-id <em class="replaceable"><code>i-1234567890abcdef0</code></em> --attribute userData --output text --query &quot;UserData.Value&quot; &gt;my_output.txt
+certutil -decode my_output.txt my_output_decoded.txt
+type my_output_decoded.txt</code></pre>
+                     			<p>The following is example output.</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">#!/bin/bash
+yum update -y
+service httpd start
+chkconfig httpd on</code></pre>
+                     			
+                     		</div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="dynamic-dns.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ec2-instance-metadata.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Prerequisites"><a class="pagetoc" href="#user-data-requirements">Prerequisites</a></li>
+                        <li class="pagetoc" name="User Data and Shell Scripts"><a class="pagetoc" href="#user-data-shell-scripts">User Data and Shell Scripts</a></li>
+                        <li class="pagetoc" name="User Data and the Console"><a class="pagetoc" href="#user-data-console">User Data and the Console</a></li>
+                        <li class="pagetoc" name="User Data and cloud-init Directives"><a class="pagetoc" href="#user-data-cloud-init">User Data and cloud-init Directives</a></li>
+                        <li class="pagetoc" name="User Data and the AWS CLI"><a class="pagetoc" href="#user-data-api-cli">User Data and the AWS CLI</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

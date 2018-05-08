@@ -1,0 +1,872 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Placement Groups - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="EC2_Network_and_Security.html" title="Network and Security">
+      <link rel="prev" href="requester-managed-eni.html" title="Requester-Managed Network Interfaces">
+      <link rel="next" href="network_mtu.html" title="Network Maximum Transmission Unit (MTU) for Your EC2 Instance">
+      <meta name="description" content="Launch instances in a placement group to cluster them logically into a low-latency group, or to spread them across hardware to reduce the risk of simultaneous failures.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="EC2_Network_and_Security.html">Network and Security</a> &#xBB; <span class="breadcrumb">Placement Groups</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="placement-groups">Placement Groups</h1>
+                     <p>You can launch or start instances in a <em>placement group</em>, which
+                        determines how instances are placed on underlying hardware. When you create a placement
+                        group, you specify one of the following strategies for the group:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><em>Cluster</em>&#x2014;clusters instances into a low-latency group in
+                                 a single Availability Zone
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><em>Spread</em>&#x2014;spreads instances across underlying
+                                 hardware
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <p>There is no charge for creating a placement group.</p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#placement-groups-cluster">Cluster Placement Groups</a></li>
+                           <li><a href="#placement-groups-spread">Spread Placement Groups</a></li>
+                           <li><a href="#concepts-placement-groups">Placement Group Rules and Limitations</a></li>
+                           <li><a href="#create-placement-group">Creating a Placement Group</a></li>
+                           <li><a href="#launch-instance-placement-group">Launching Instances in a Placement Group</a></li>
+                           <li><a href="#change-instance-placement-group">Changing the Placement Group for an
+                                 Instance</a></li>
+                           <li><a href="#delete-placement-group">Deleting a Placement Group</a></li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="placement-groups-cluster">Cluster Placement Groups</h2>
+                     
+                     <p>A cluster placement group is a logical grouping of instances within a single Availability
+                        Zone.
+                        Placement groups are recommended for applications that benefit from low network latency,
+                        high network throughput, or both. To provide the lowest latency, and the highest
+                        packet-per-second network performance for your placement group, choose an instance
+                        type that
+                        supports enhanced networking. For more information, see <a href="enhanced-networking.html">Enhanced Networking</a>.
+                     </p>
+                     
+                     <p>We recommend that you launch the number of instances that you need in the placement
+                        group in a single launch request and that you use the same instance type for all
+                        instances in the placement group. If you try to add more instances to the placement
+                        group later, or if you try to launch more than one instance type in the placement
+                        group,
+                        you increase your chances of getting an insufficient capacity error.
+                     </p>
+                     
+                     <p>If you stop an instance in a placement group and then start it again, it still runs
+                        in
+                        the placement group. However, the start fails if there isn&apos;t enough capacity for the
+                        instance.
+                     </p>
+                     
+                     <p>If you receive a capacity error when launching an instance in a placement group that
+                        already has running instances, stop and start all of the instances in the placement
+                        group, and try the launch again. Restarting the instances may migrate them to hardware
+                        that has capacity for all the requested instances.
+                     </p>
+                     
+                     
+                     <h2 id="placement-groups-spread">Spread Placement Groups</h2>
+                     
+                     <p>A spread placement group is a group of instances that are each placed on distinct
+                        underlying hardware.
+                     </p>
+                     
+                     <p>Spread placement groups are recommended for applications that have a small number
+                        of
+                        critical instances that should be kept separate from each other. Launching instances
+                        in
+                        a spread placement group reduces the risk of simultaneous failures that might occur
+                        when
+                        instances share the same underlying hardware. Spread placement groups provide access
+                        to
+                        distinct hardware, and are therefore suitable for mixing instance types or launching
+                        instances over time.
+                     </p>
+                     
+                     <p>A spread placement group can span multiple Availability Zones, and you can have a
+                        maximum of seven running instances per Availability Zone per group.
+                     </p>
+                     
+                     <p>If you start or launch an instance in a spread placement group and there is
+                        insufficient unique hardware to fulfill the request, the request fails. Amazon EC2
+                        makes more
+                        distinct hardware available over time, so you can try your request again later.
+                     </p>
+                     
+                     		
+                     <h2 id="concepts-placement-groups">Placement Group Rules and Limitations</h2>
+                     
+                     		
+                     <p>Before you use placement groups, be aware of the following rules:</p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        
+                        			
+                        
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>The name you specify for a placement group must be unique within your AWS account
+                                 for the
+                                 region.
+                              </p>				
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>You can&apos;t merge placement groups.</p>				
+                              			
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>An instance can be launched in one placement group at a time; it cannot span
+                                 multiple placement groups.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Reserved Instances provide a capacity reservation for EC2 instances in a specific
+                                 Availability Zone.
+                                 The capacity reservation can be used by instances in a placement group. However,
+                                 it is not possible to explicitly reserve capacity for a placement group.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Instances with a tenancy of <code class="code">host</code> cannot be launched in placement
+                                 groups.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     
+                     
+                     <p>The following rules apply to cluster placement groups:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>The following are the only instance types that you can use when you launch an
+                                 instance into a cluster placement group:
+                              </p>
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       
+                                       <p>General purpose: <code class="code">m4.large</code> | <code class="code">m4.xlarge</code> |
+                                          <code class="code">m4.2xlarge</code> | <code class="code">m4.4xlarge</code> |
+                                          <code class="code">m4.10xlarge</code> | <code class="code">m4.16xlarge</code> |
+                                          <code class="code">m5.large</code> | <code class="code">m5.xlarge</code> |
+                                          <code class="code">m5.2xlarge</code> | <code class="code">m5.4xlarge</code> |
+                                          <code class="code">m5.12xlarge</code> | <code class="code">m5.24xlarge</code></p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p>Compute optimized: <code class="code">c3.large</code> | <code class="code">c3.xlarge</code> |
+                                          <code class="code">c3.2xlarge</code> | <code class="code">c3.4xlarge</code> |
+                                          <code class="code">c3.8xlarge</code> | <code class="code">c4.large</code> |
+                                          <code class="code">c4.xlarge</code> | <code class="code">c4.2xlarge</code> |
+                                          <code class="code">c4.4xlarge</code> | <code class="code">c4.8xlarge</code> |
+                                          <code class="code">c5.large</code> | <code class="code">c5.xlarge</code> |
+                                          <code class="code">c5.2xlarge</code> | <code class="code">c5.4xlarge</code> |
+                                          <code class="code">c5.9xlarge</code> | <code class="code">c5.18xlarge</code> |
+                                          <code class="code">cc2.8xlarge</code></p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p>Memory optimized: <code class="code">r3.large</code> | <code class="code">r3.xlarge</code> |
+                                          <code class="code">r3.2xlarge</code> | <code class="code">r3.4xlarge</code> |
+                                          <code class="code">r3.8xlarge</code> | <code class="code">r4.large</code> |
+                                          <code class="code">r4.xlarge</code> | <code class="code">r4.2xlarge</code> |
+                                          <code class="code">r4.4xlarge</code> | <code class="code">r4.8xlarge</code> |
+                                          <code class="code">r4.16xlarge</code> | <code class="code">x1.16xlarge</code> |
+                                          <code class="code">x1.32xlarge</code> | <code class="code">x1e.xlarge</code> |
+                                          <code class="code">x1e.2xlarge</code> | <code class="code">x1e.4xlarge</code> |
+                                          <code class="code">x1e.8xlarge</code> | <code class="code">x1e.16xlarge</code> |
+                                          <code class="code">x1e.32xlarge</code>| <code class="code">cr1.8xlarge</code></p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p>Storage optimized: <code class="code">d2.xlarge</code> | <code class="code">d2.2xlarge</code> |
+                                          <code class="code">d2.4xlarge</code> | <code class="code">d2.8xlarge</code> |
+                                          <code class="code">h1.2xlarge</code> | <code class="code">h1.4xlarge</code> |
+                                          <code class="code">h1.8xlarge</code> | <code class="code">h1.16xlarge</code> |
+                                          <code class="code">i2.xlarge</code> | <code class="code">i2.2xlarge</code> |
+                                          <code class="code">i2.4xlarge</code> | <code class="code">i2.8xlarge</code>
+                                          <code class="code">i3.large</code> | <code class="code">i3.xlarge</code> | <code class="code">i3.2xlarge</code>
+                                          | <code class="code">i3.4xlarge</code> | <code class="code">i3.8xlarge</code> |
+                                          <code class="code">i3.16xlarge</code> | <code class="code">hs1.8xlarge</code></p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p>Accelerated computing: <code class="code">f1.2xlarge</code> |
+                                          <code class="code">f1.16xlarge</code> | <code class="code">g2.2xlarge</code> |
+                                          <code class="code">g2.8xlarge</code> | <code class="code">g3.4xlarge</code> |
+                                          <code class="code">g3.8xlarge</code> | <code class="code">g3.16xlarge</code> |
+                                          <code class="code">p2.xlarge</code> | <code class="code">p2.8xlarge</code> |
+                                          <code class="code">p2.16xlarge</code> | <code class="code">p3.2xlarge</code> |
+                                          <code class="code">p3.8xlarge</code> | <code class="code">p3.16xlarge</code></p>
+                                       
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>A cluster placement group can&apos;t span multiple Availability Zones.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The maximum network throughput speed of traffic between two instances in a cluster
+                                 placement group is limited by the slower of the two instances. For applications
+                                 with high-throughput requirements, choose an instance type with 10&#x2013;Gbps or
+                                 25&#x2013;Gbps network connectivity. For more information about instance type
+                                 network performance, see the <a href="https://aws.amazon.com/ec2/instance-types/#instance-type-matrix" target="_blank">Amazon EC2
+                                    Instance Types Matrix</a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>For current generation instance types that are enabled for enhanced
+                                 networking, the following applies:
+                              </p>
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       
+                                       <p>Traffic between instances within the same AWS Region that is addressed
+                                          using private IPv4 or IPv6 addresses can use 5 Gbps for single-flow
+                                          traffic and up to 25 Gbps for multi-flow traffic.
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p>Instances within a cluster placement group can use up to 10 Gbps for
+                                          single-flow traffic.
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p>Traffic to and from Amazon S3 buckets within the same AWS Region over the
+                                          public IP address space or through a VPC endpoint can use all available
+                                          instance aggregate bandwidth.
+                                       </p>
+                                       
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>You can launch multiple instance types into a cluster placement group. However,
+                                 this reduces the likelihood that the required capacity will be available for
+                                 your launch to succeed. We recommend using the same instance type for all
+                                 instances in a cluster placement group.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Network traffic to the internet and over an AWS Direct Connect connection to on-premises
+                                 resources is limited to 5 Gbps.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>The following rules apply to spread placement groups:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>A spread placement group supports a maximum of seven running instances per
+                                 Availability Zone. For example, in an AWS Region that has three Availability
+                                 Zones, you can have a total of 21 running instances in the group (seven per
+                                 zone).
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Spread placement groups are not supported for Dedicated Instances or Dedicated Hosts.</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     		
+                     <h2 id="create-placement-group">Creating a Placement Group</h2>
+                     
+                     <p>You can create a placement group using the Amazon EC2 console or the command line.</p>
+                     		
+                     <p class="title"><b>To create a placement group using the console</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>In the navigation pane, choose <b>Placement Groups</b>,
+                              <b>Create Placement Group</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Specify a name for the group and choose the strategy.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Create</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <div class="itemizedlist">
+                        
+                        <p class="title"><b>To create a placement group using the command line</b></p>
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./cli/latest/reference/ec2/create-placement-group.html" target="_blank">create-placement-group</a> (AWS CLI)
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="./powershell/latest/reference/items/New-EC2PlacementGroup.html" target="_blank">New-EC2PlacementGroup</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>		
+                     
+                     	
+                     
+                     <h2 id="launch-instance-placement-group">Launching Instances in a Placement Group</h2>
+                     
+                     <p>You can create an AMI specifically for the instances to be launched in a placement
+                        group. To do this, launch an instance and install the required software and applications
+                        on the instance. Then, create an AMI from the instance. For more information, see
+                        <a href="creating-an-ami-ebs.html">Creating an Amazon EBS-Backed Linux AMI</a>.
+                     </p>
+                     <a id="launch_cluster_instance"></a><p class="title"><b>To launch instances into a placement group
+                           using the console</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>In the navigation pane, choose <b>Instances</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Launch Instance</b>. Complete the wizard as
+                              directed, taking care to do the following:
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p>On the <b>Choose an Amazon Machine Image
+                                          (AMI)</b> page, select an AMI. To select an AMI you
+                                       created, choose <b>My AMIs</b>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>On the <b>Choose an Instance Type</b> page,
+                                       select an instance type that can be launched into a placement
+                                       group.
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>On the <b>Configure Instance Details</b> page,
+                                       enter the total number of instances that you need in this
+                                       placement group, as you might not be able to add instances to
+                                       the placement group later.
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>On the <b>Configure Instance Details</b> page,
+                                       select the placement group that you created from
+                                       <b>Placement group</b>. If you do not see the
+                                       <b>Placement group</b> list on this page,
+                                       verify that you have selected an instance type that can be
+                                       launched into a placement group, as this option is not available
+                                       otherwise.
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p class="title"><b>To launch instances into a placement group using the command line</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Create an AMI for your instances using one of the following commands:</p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/create-image.html" target="_blank">create-image</a>
+                                       (AWS CLI)
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./powershell/latest/reference/items/New-EC2Image.html" target="_blank">New-EC2Image</a>
+                                       (AWS Tools for Windows PowerShell)
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Launch instances into your placement group using one of the following
+                              options:
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><code class="code">--placement</code> with <a href="./cli/latest/reference/ec2/run-instances.html" target="_blank">run-instances</a>
+                                       (AWS CLI)
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><code class="code">-PlacementGroup</code> with <a href="./powershell/latest/reference/items/New-EC2Instance.html" target="_blank">New-EC2Instance</a> (AWS Tools for Windows PowerShell)
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <h2 id="change-instance-placement-group">Changing the Placement Group for an
+                        Instance
+                     </h2>
+                     
+                     <p>You can move an existing instance to a placement group, move an instance from one
+                        placement group to another, or remove an instance from a placement group. Before you
+                        begin, the instance must be in the <code class="code">stopped</code> state.
+                     </p>
+                     
+                     <p>You can change the placement group for an instance using the command line or an AWS
+                        SDK.
+                     </p>
+                     
+                     <p class="title"><b>To move an instance to a placement group using the command line</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Stop the instance using one of the following commands:</p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/stop-instances.html" target="_blank">stop-instances</a>
+                                       (AWS CLI)
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./powershell/latest/reference/items/Stop-EC2Instance.html" target="_blank">Stop-EC2Instance</a>
+                                       (AWS Tools for Windows PowerShell)
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Use the <a href="./cli/latest/reference/ec2/modify-instance-placement.html" target="_blank">modify-instance-placement</a> command (AWS CLI) and specify the name of
+                              the placement group to which to move the instance.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws ec2 modify-instance-placement --instance-id <em class="replaceable"><code>i-0aa51192b00939a40</code></em> --group-name <em class="replaceable"><code>MySpreadGroup</code></em></code></pre>
+                           <p>Alternatively, use the <a href="./powershell/latest/reference/items/Edit-EC2InstancePlacement.html" target="_blank">Edit-EC2InstancePlacement</a> command (AWS Tools for Windows PowerShell).
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Restart the instance using one of the following commands:</p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/start-instances.html" target="_blank">start-instances</a>
+                                       (AWS CLI)
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./powershell/latest/reference/items/Start-EC2Instance.html" target="_blank">Start-EC2Instance</a>
+                                       (AWS Tools for Windows PowerShell)
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p class="title"><b>To remove an instance from a placement group using the command line</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Stop the instance using one of the following commands:</p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/stop-instances.html" target="_blank">stop-instances</a>
+                                       (AWS CLI)
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./powershell/latest/reference/items/Stop-EC2Instance.html" target="_blank">Stop-EC2Instance</a> (AWS Tools for Windows PowerShell)
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Use the <a href="./cli/latest/reference/ec2/modify-instance-placement.html" target="_blank">modify-instance-placement</a> command (AWS CLI) and specify an empty string
+                              for the group name.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws ec2 modify-instance-placement --instance-id <em class="replaceable"><code>i-0aa51192b00939a40</code></em> --group-name &quot;&quot;</code></pre>
+                           <p>Alternatively, use the <a href="./powershell/latest/reference/items/Edit-EC2InstancePlacement.html" target="_blank">Edit-EC2InstancePlacement</a> command (AWS Tools for Windows PowerShell).
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Restart the instance using one of the following commands:</p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/start-instances.html" target="_blank">start-instances</a>
+                                       (AWS CLI)
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./powershell/latest/reference/items/Start-EC2Instance.html" target="_blank">Start-EC2Instance</a> (AWS Tools for Windows PowerShell)
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                     </ol>
+                     		
+                     <h2 id="delete-placement-group">Deleting a Placement Group</h2>
+                     		
+                     		
+                     <p>If you need to replace a placement group or no longer need one, you can delete it.
+                        Before
+                        you can delete your placement group, you must terminate all instances that you launched
+                        into the placement group, or move them to another placement group.
+                     </p>
+                     		
+                     <p class="title"><b>To terminate or move instances and delete a placement group using the console</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the navigation pane, choose <b>Instances</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Select and terminate all instances in the placement group. You can verify that the
+                              instance is in a placement group before you terminate it by checking the value
+                              of <b>Placement Group</b> in the details pane.
+                           </p>
+                           			    
+                           <p>Alternatively, follow the steps in <a href="placement-groups.html#change-instance-placement-group">Changing the Placement Group for an
+                                 Instance</a> to move the instances to a
+                              different placement group.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the navigation pane, choose <b>Placement Groups</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Select the placement group and choose <b>Delete Placement Group</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>When prompted for confirmation, choose <b>Delete</b>.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>To terminate instances and delete a placement group using the command line</b></p>
+                        			
+                        <p>You can use one of the following sets of commands. For more information about these
+                           command line interfaces,
+                           				see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="./cli/latest/reference/ec2/terminate-instances.html" target="_blank">terminate-instances</a> 
+                                 				and <a href="./cli/latest/reference/ec2/delete-placement-group.html" target="_blank">delete-placement-group</a> (AWS CLI)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Remove-EC2Instance.html" target="_blank">Remove-EC2Instance</a> 
+                                 				and <a href="./powershell/latest/reference/items/Remove-EC2PlacementGroup.html" target="_blank">Remove-EC2PlacementGroup</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="requester-managed-eni.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="network_mtu.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Cluster Placement Groups"><a class="pagetoc" href="#placement-groups-cluster">Cluster Placement Groups</a></li>
+                        <li class="pagetoc" name="Spread Placement Groups"><a class="pagetoc" href="#placement-groups-spread">Spread Placement Groups</a></li>
+                        <li class="pagetoc" name="Placement Group Rules and Limitations"><a class="pagetoc" href="#concepts-placement-groups">Placement Group Rules and Limitations</a></li>
+                        <li class="pagetoc" name="Creating a Placement Group"><a class="pagetoc" href="#create-placement-group">Creating a Placement Group</a></li>
+                        <li class="pagetoc" name="Launching Instances in a Placement Group"><a class="pagetoc" href="#launch-instance-placement-group">Launching Instances in a Placement Group</a></li>
+                        <li class="pagetoc" name="Changing the Placement Group for an
+                Instance"><a class="pagetoc" href="#change-instance-placement-group">Changing the Placement Group for an
+                              Instance</a></li>
+                        <li class="pagetoc" name="Deleting a Placement Group"><a class="pagetoc" href="#delete-placement-group">Deleting a Placement Group</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

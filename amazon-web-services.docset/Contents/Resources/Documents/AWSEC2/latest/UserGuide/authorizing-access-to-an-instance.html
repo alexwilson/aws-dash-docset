@@ -1,0 +1,380 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Authorizing Inbound Traffic for Your Linux Instances - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="UsingIAM.html" title="Controlling Access to Amazon EC2 Resources">
+      <link rel="prev" href="iam-roles-for-amazon-ec2.html" title="IAM Roles for Amazon EC2">
+      <link rel="next" href="using-vpc.html" title="Amazon EC2 and Amazon Virtual Private Cloud">
+      <meta name="description" content="Create security groups to control the network traffic that can reach your Amazon EC2 instances.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/authorizing-access-to-an-instance.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="EC2_Network_and_Security.html">Network and Security</a> &#xBB; <a href="UsingIAM.html">Controlling Access to Amazon EC2 Resources</a> &#xBB; <span class="breadcrumb">Authorizing Inbound Traffic for Your Linux Instances</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="authorizing-access-to-an-instance">Authorizing Inbound Traffic for Your <span>Linux</span> Instances
+                     </h1>
+                     <p>Security groups enable you to control traffic to your instance, including the kind
+                        of
+                        			traffic that can reach your instance. For example, you can allow computers from
+                        only
+                        			your home network to access your instance using <span>SSH</span>. If your instance is
+                        			a web server, you can allow all IP addresses to access your instance using HTTP
+                        or HTTPS, 
+                        			so that external users can browse the content on your web server.
+                     </p>
+                     <p>Your default security groups and newly created security groups include default rules
+                        			that do not enable you to access your instance from the Internet. For more information,
+                        			see <a href="using-network-security.html#default-security-group">Default Security Groups</a> and 
+                        			<a href="using-network-security.html#creating-your-own-security-groups">Custom Security Groups</a>.
+                        			To enable network access to your instance, you must allow inbound traffic to your
+                        			instance. To open a port for inbound traffic, add a rule to a security group that
+                        you
+                        			associated with your instance when you launched it.
+                     </p>
+                     <p>To connect to your instance, you must set up a rule to authorize <span>SSH</span>
+                        			traffic from your computer&apos;s public IPv4 address. To allow <span>SSH</span> traffic
+                        			from additional IP address ranges, add another rule for each range you need to
+                        			authorize.
+                     </p>
+                     <p>If you&apos;ve enabled your VPC for IPv6 and launched your instance with an IPv6 address,
+                        			you can connect to your instance using its IPv6 address instead of a public IPv4
+                        			address. Your local computer must have an IPv6 address and must be configured to
+                        use
+                        			IPv6.
+                     </p>
+                     <p>If you need to enable network access to a Windows instance, see <a href="./AWSEC2/latest/WindowsGuide/authorizing-access-to-an-instance.html" target="_blank">Authorizing Inbound
+                           				Traffic for Your Windows Instances</a> in the
+                        				<em>Amazon EC2 User Guide for Windows Instances</em>.
+                     </p>
+                     			
+                     <h2 id="authorizing-access-prereqs">Before You Start</h2>
+                     			
+                     			
+                     <p>Decide who requires access to your instance; for example, a single host or a specific
+                        				network that you trust such as your local computer&apos;s public IPv4 address. The
+                        				security group editor in the Amazon EC2 console can automatically detect the public
+                        IPv4
+                        				address of your local computer for you. Alternatively, you can use the search
+                        phrase
+                        				&quot;what is my IP address&quot; in an internet browser, or use the following service:
+                        <a href="http://checkip.amazonaws.com/" target="_blank">Check IP</a>. If you are connecting
+                        				through an ISP or from behind your firewall without a static IP address, you need
+                        to
+                        				find out the range of IP addresses used by client computers.
+                     </p>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Warning</p>
+                        <p>If you use <code class="code">0.0.0.0/0</code>, you enable all IPv4 addresses to access your instance
+                           					using <span>SSH</span>. If you use <code class="code">::/0</code>, you enable all IPv6
+                           					address to access your instance. This is acceptable for a short time in a test
+                           					environment, but it&apos;s unsafe for production environments. In production, you
+                           					authorize only a specific IP address or range of addresses to access your
+                           					instance.
+                        </p>
+                     </div>
+                     			
+                     <p>For more information about security groups, see <a href="using-network-security.html">Amazon EC2 Security Groups for <span>Linux</span> Instances</a>.
+                     </p>
+                     			
+                     		
+                     			
+                     <h2 id="add-rule-authorize-access">Adding a Rule for Inbound <span>SSH</span>
+                        				Traffic to a <span>Linux</span> Instance
+                     </h2>
+                     			
+                     			
+                     <p>Security groups act as a firewall for associated instances, controlling both
+                        				inbound and outbound traffic at the instance level. You must add rules to a security
+                        				group that enable you to connect to your <span>Linux</span> instance from your IP address
+                        				using <span>SSH</span>.
+                     </p>
+                     			
+                     <p class="title"><b>To add a rule to a security group for inbound <span>SSH</span> traffic over
+                           					IPv4 using the console</b></p>
+                     <ol>
+                        <li>
+                           					
+                           <p>In the navigation pane of the Amazon EC2 console, choose
+                              							<b>Instances</b>. Select your instance and look at the
+                              							<b>Description</b> tab; <b>Security
+                                 							groups</b> lists the security groups that are associated with the
+                              						instance. Choose <b>view rules</b> to display a list of the
+                              						rules that are in effect for the instance.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the navigation pane, choose <b>Security Groups</b>.
+                              						Select one of the security groups associated with your instance.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the details pane, on the <b>Inbound</b> tab, choose
+                              							<b>Edit</b>. In the dialog, choose <b>Add
+                                 							Rule</b>, and then choose <b>SSH</b> from the
+                              							<b>Type</b> list.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the <b>Source</b> field, choose <b>My
+                                 							IP</b> to automatically populate the field with the public IPv4
+                              						address of your local computer. Alternatively, choose
+                              							<b>Custom</b> and specify the public IPv4 address of your
+                              						computer or network in CIDR notation. For example, if your IPv4 address is
+                              							<code class="code">203.0.113.25</code>, specify <code class="code">203.0.113.25/32</code> to list
+                              						this single IPv4 address in CIDR notation. If your company allocates
+                              						addresses from a range, specify the entire range, such as
+                              							<code class="code">203.0.113.0/24</code>.
+                           </p>
+                           					
+                           <p>For information about finding your IP address, see <a href="authorizing-access-to-an-instance.html#authorizing-access-prereqs">Before You Start</a>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Choose <b>Save</b>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     			
+                     <p>(VPC only) If you launched an instance with an IPv6 address and want to connect to
+                        				your instance using its IPv6 address, you must add rules that allow inbound IPv6
+                        				traffic over <span>SSH</span>.
+                     </p>
+                     			
+                     <p class="title"><b>To add a rule to a security group for inbound <span>SSH</span> traffic over
+                           					IPv6 using the console</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           					
+                           <p>In the navigation pane, choose <b>Security Groups</b>.
+                              						Select the security group for your instance.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Choose <b>Inbound</b>, <b>Edit</b>,
+                              							<b>Add Rule</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>For <b>Type</b>, choose <b>SSH</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the <b>Source</b> field, specify the IPv6 address of your
+                              						computer in CIDR notation. For example, if your IPv6 address is
+                              							<code class="code">2001:db8:1234:1a00:9691:9503:25ad:1761</code>, specify
+                              							<code class="code">2001:db8:1234:1a00:9691:9503:25ad:1761/128</code> to list the
+                              						single IP address in CIDR notation. If your company allocates addresses from
+                              						a range, specify the entire range, such as
+                              							<code class="code">2001:db8:1234:1a00::/64</code>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Choose <b>Save</b>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Be sure to run the following commands on your local system, not on the
+                           					instance itself. For more information about these command line interfaces, see
+                           						<a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                     </div>
+                     			
+                     			
+                     <p class="title"><b>To add a rule to a security group using the command line</b></p>
+                     <ol>
+                        <li>
+                           						
+                           <p>Find the security group that is associated with your instance using one of the following
+                              						commands:
+                           </p>
+                           					
+                           <div class="itemizedlist">
+                              						
+                              						
+                              					
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    							
+                                    <p><a href="./cli/latest/reference/ec2/describe-instance-attribute.html" target="_blank">describe-instance-attribute</a> (AWS CLI)
+                                    </p>
+                                    							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-instance-attribute --instance-id <em class="replaceable"><code>instance_id</code></em> --attribute groupSet</code></strong></code></pre>
+                                    						</li>
+                                 <li class="listitem">
+                                    							
+                                    <p><a href="./powershell/latest/reference/items/Get-EC2InstanceAttribute.html" target="_blank">Get-EC2InstanceAttribute</a> (AWS Tools for Windows PowerShell)
+                                    </p>
+                                    							<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code><code class="prompt" copy="false">PS C:\&gt; </code>(Get-EC2InstanceAttribute -InstanceId <em class="replaceable"><code>instance_id</code></em> -Attribute groupSet).Groups</code></strong></code></pre>
+                                    						</li>
+                              </ul>
+                           </div>
+                           					
+                           <p>Both commands return a security group ID, which you use in the next step.</p>
+                           				
+                        </li>
+                        <li>
+                           						
+                           <p>Add the rule to the security group using one of the following commands:</p>
+                           						
+                           <div class="itemizedlist">
+                              							
+                              							
+                              						
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    								
+                                    <p><a href="./cli/latest/reference/ec2/authorize-security-group-ingress.html" target="_blank">authorize-security-group-ingress</a> (AWS CLI)
+                                    </p>
+                                    								<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 authorize-security-group-ingress --group-id <em class="replaceable"><code>security_group_id</code></em> --protocol tcp --port 22 --cidr <em class="replaceable"><code>cidr_ip_range</code></em></code></strong></code></pre>
+                                    								
+                                    							</li>
+                                 <li class="listitem">
+                                    								
+                                    <p><a href="./powershell/latest/reference/items/Grant-EC2SecurityGroupIngress.html" target="_blank">Grant-EC2SecurityGroupIngress</a> (AWS Tools for Windows PowerShell)
+                                    </p>
+                                    							
+                                    <p>The <code class="code">Grant-EC2SecurityGroupIngress</code> command needs an
+                                       									<code class="code">IpPermission</code> parameter, which describes the
+                                       								protocol, port range, and IP address range to be used for the
+                                       								security group rule. The following command creates the
+                                       									<code class="code">IpPermission</code> parameter:
+                                    </p>
+                                    								<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code><code class="prompt" copy="false">PS C:\&gt; </code>$ip1 = @{ IpProtocol=&quot;tcp&quot;; FromPort=&quot;22&quot;; ToPort=&quot;22&quot;; IpRanges=&quot;<em class="replaceable"><code>cidr_ip_range</code></em>&quot; }</code></strong></code></pre>
+                                    								
+                                    								<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code><code class="prompt" copy="false">PS C:\&gt; </code>Grant-EC2SecurityGroupIngress -GroupId <em class="replaceable"><code>security_group_id</code></em> -IpPermission @($ip1)</code></strong></code></pre>
+                                    							</li>
+                              </ul>
+                           </div>
+                           					
+                        </li>
+                     </ol>
+                     		
+                     			
+                     <h2 id="assign-security-group-to-instance">Assigning a Security Group to an Instance</h2>
+                     			
+                     			
+                     <p>You can assign a security group to an instance when you launch the instance. When
+                        				you add or remove rules, those changes are automatically applied to all instances
+                        to
+                        				which you&apos;ve assigned the security group.
+                     </p>
+                     			
+                     <p>After you launch an instance in EC2-Classic, you can&apos;t change its security
+                        				groups. After you launch an instance in a VPC, you can change its security groups.
+                        				For more information, see <a href="./AmazonVPC/latest/UserGuide/VPC_SecurityGroups.html#SG_Changing_Group_Membership" target="_blank">Changing an Instance&apos;s Security Groups</a> in the
+                        					<em>Amazon VPC User Guide</em>.
+                     </p>
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="iam-roles-for-amazon-ec2.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="using-vpc.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Before You Start"><a class="pagetoc" href="#authorizing-access-prereqs">Before You Start</a></li>
+                        <li class="pagetoc" name="Adding a Rule for Inbound SSH
+				Traffic to a Linux Instance"><a class="pagetoc" href="#add-rule-authorize-access">Adding a Rule for Inbound SSH
+                              				Traffic to a Linux Instance</a></li>
+                        <li class="pagetoc" name="Assigning a Security Group to an Instance"><a class="pagetoc" href="#assign-security-group-to-instance">Assigning a Security Group to an Instance</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,1975 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Access Logs - Amazon CloudFront</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="Introduction.html" title="What Is Amazon CloudFront?">
+      <link rel="prev" href="cf-api-permissions-ref.html" title="CloudFront API Permissions: Actions, Resources, and Conditions Reference">
+      <link rel="next" href="monitoring-using-cloudwatch.html" title="Monitoring CloudFront Activity Using CloudWatch">
+      <meta name="description" content="Use log files to get information about user requests for your objects.">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/AccessLogs.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <span class="breadcrumb">Access Logs</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="AccessLogs">Access Logs</h1>
+                     <p>You can configure CloudFront to create log files that contain detailed information
+                        about every user request that CloudFront receives. These access logs 
+                        		are available for both web and RTMP distributions. If you enable logging, you can
+                        also specify the Amazon S3 bucket that you want CloudFront to save files in.
+                     </p>
+                     <p>You can enable logging as an option that you specify when you&apos;re creating a distribution.
+                        For more information, see the 
+                        		<a href="./AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html#DownloadDistValuesLoggingOnOff" target="_blank">Logging</a> section of the 
+                        		<b>Values That You Specify When You Create or Update a Web Distribution </b> topic.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#AccessLogsOverview">How Logging Works</a></li>
+                           <li><a href="#access-logs-choosing-s3-bucket">Choosing an Amazon S3 Bucket for Your Access Logs</a></li>
+                           <li><a href="#AccessLogsBucketAndFileOwnership">Permissions Required to Configure Logging and to Access Your Log Files</a></li>
+                           <li><a href="#AccessLogsFileNaming">File Name Format</a></li>
+                           <li><a href="#access-logs-timing">Timing of Log File Delivery</a></li>
+                           <li><a href="#access-logs-analyzing">Analyzing Access Logs</a></li>
+                           <li><a href="#ChangeSettings">Editing Your Logging Settings</a></li>
+                           <li><a href="#DeletingLogFiles">Deleting Log Files from an Amazon S3 Bucket</a></li>
+                           <li><a href="#LogFileFormat">Log File Format</a></li>
+                           <li><a href="#AccessLogsCharges">Charges for Access Logs</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="AccessLogsOverview">How Logging Works</h2>
+                     		
+                     		
+                     <p>The following diagram shows how CloudFront logs information about requests for your
+                        objects.
+                     </p>
+                     			
+                     <div class="mediaobject">
+                        				
+                        					
+                        					<img src="../../..//img/Logging.png" alt="
+					Basic flow for access logs
+				">
+                        					
+                        					
+                        				
+                        				
+                        			
+                     </div>
+                     		
+                     <p>The following explains how CloudFront logs information about requests for your objects,
+                        as illustrated in the previous graphic.
+                     </p>
+                     		
+                     <div class="orderedlist">
+                        			
+                        			
+                        			
+                        			
+                        		
+                        <ol>
+                           <li>
+                              				
+                              <p>In this diagram, you have two websites, A and B, and two corresponding CloudFront
+                                 distributions. Users request your objects 
+                                 					using URLs that are associated with your distributions.
+                              </p>
+                              			
+                           </li>
+                           <li>
+                              				
+                              <p>CloudFront routes each request to the appropriate edge location.</p>
+                              			
+                           </li>
+                           <li>
+                              				
+                              <p>CloudFront writes data about each request to a log file specific to that distribution.
+                                 In this example, information about requests 
+                                 					related to Distribution A goes into a log file just for Distribution A, and information
+                                 about requests related to 
+                                 					Distribution B goes into a log file just for Distribution B.
+                              </p>
+                              			
+                           </li>
+                           <li>
+                              				
+                              <p>CloudFront periodically saves the log file for a distribution in the Amazon S3 bucket
+                                 that you specified when you enabled logging. 
+                                 					CloudFront then starts saving information about subsequent requests in a new
+                                 log file for the distribution.
+                              </p>
+                              			
+                           </li>
+                        </ol>
+                     </div>
+                     		
+                     <p>Each entry in a log file gives details about a single request. For more information
+                        about log file format, see 
+                        			<a href="AccessLogs.html#LogFileFormat">Log File Format</a>.
+                     </p>
+                     	
+                     <h2 id="access-logs-choosing-s3-bucket">Choosing an Amazon S3 Bucket for Your Access Logs</h2>
+                     		
+                     		
+                     <p>When you enable logging for a distribution, you specify the Amazon S3 bucket that
+                        you want CloudFront to store log files in. If you&apos;re using Amazon S3 
+                        			as your origin, we recommend that you do not use the same bucket for your log files;
+                        using a separate bucket simplifies maintenance. 
+                     </p>
+                     
+                     		
+                     <p>You can store the log files for multiple distributions in the same bucket. When you
+                        enable logging, you can specify an optional prefix 
+                        			for the file names, so you can keep track of which log files are associated with
+                        which distributions.
+                     </p>
+                     		
+                     <p>If no users access your content during a given hour, you don&apos;t receive any log files
+                        for that hour.
+                     </p>
+                     	
+                     <h2 id="AccessLogsBucketAndFileOwnership">Permissions Required to Configure Logging and to Access Your Log Files</h2>
+                     		
+                     		
+                     <p>Your AWS account must have the following permissions for the bucket that you specify
+                        for log files:
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>The S3 access control list (ACL) for the bucket must grant you <code class="code">FULL_CONTROL</code>. If you&apos;re the bucket owner, 
+                                 					your account has this permission by default. If you&apos;re not, the bucket owner
+                                 must update the ACL for the bucket.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><code class="code">s3:GetBucketAcl</code></p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><code class="code">s3:PutBucketAcl</code></p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     		
+                     <p>Note the following:</p>
+                     		
+                     		
+                     <div class="variablelist">
+                        			
+                        			
+                        			
+                        		
+                        <dl>
+                           				
+                           <dt><b><span class="term">ACL for the bucket</span></b></dt>
+                           				
+                           <dd>
+                              <p>When you create or update a distribution and enable logging, CloudFront uses these
+                                 permissions to update the ACL for the bucket to give the 
+                                 					awsdatafeeds account <code class="code">FULL_CONTROL</code> permission. The awsdatafeeds account writes log files to the bucket. If your account
+                                 doesn&apos;t 
+                                 					have the required permissions, creating or updating the distribution will fail.
+                              </p>
+                              					
+                              					
+                              <p>In some circumstances, if you programmatically submit a request to create a bucket
+                                 but a bucket with the specified name already exists, 
+                                 						S3 resets permissions on the bucket to the default value. If you configured
+                                 CloudFront to save access logs in an S3 bucket and you stop getting logs 
+                                 						in that bucket, check permissions on the bucket to ensure that CloudFront has
+                                 the necessary permissions.
+                              </p>
+                              				
+                           </dd>
+                           			
+                           				
+                           <dt><b><span class="term">Restoring the ACL for the bucket</span></b></dt>
+                           				
+                           <dd>
+                              <p>If you remove permissions for the awsdatafeeds account, CloudFront won&apos;t be able to
+                                 save logs to the
+                                 						S3 bucket. To enable CloudFront to start again to save logs for your distribution,
+                                 						restore the ACL permission by doing one of the following:
+                              </p>
+                              				
+                              <div class="orderedlist">
+                                 					
+                                 					
+                                 				
+                                 <ol>
+                                    <li>
+                                       <p>Disable logging for your distribution in CloudFront, and then enable it again. For
+                                          more information,
+                                          								see <a href="./AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html#DownloadDistValuesLoggingOnOff" target="_blank">Logging</a> in the <b>Values That You
+                                             									Specify When You Create or Update a Web Distribution </b>
+                                          								topic.
+                                       </p>
+                                    </li>
+                                    <li>
+                                       <p>Add the ACL permission for awsdatafeeds manually by navigating to the S3 bucket in
+                                          the Amazon S3 console and adding
+                                          						permission. To add the ACL for awsdatafeeds, you must provide the canonical
+                                          name for the account, which is the following: 
+                                       </p>
+                                       						
+                                       <p><code class="code">c4c1ede66af53448b93c283ce9448c4ba468c9432aa01d700d3878632f77d2d0</code></p>
+                                       						
+                                       <p>For more information about adding ACLs to S3 buckets, see <a href="./AmazonS3/latest/user-guide/set-bucket-permissions.html" target="_blank">Setting ACL Bucket 
+                                             							Permissions</a> in the <b>Amazon Simple Storage Service Console User Guide</b>.
+                                       </p>
+                                    </li>
+                                 </ol>
+                              </div>
+                           </dd>
+                           			
+                           				
+                           <dt><b><span class="term">ACL for each log file</span></b></dt>
+                           				
+                           <dd>
+                              <p>In addition to the ACL on the bucket, there&apos;s an ACL on each log file. The bucket
+                                 owner has <code class="code">FULL_CONTROL</code> permission 
+                                 					on each log file, the distribution owner (if different from the bucket owner)
+                                 has no permission, and the awsdatafeeds account has 
+                                 					read and write permissions. 
+                              </p>
+                           </dd>
+                           			
+                           				
+                           <dt><b><span class="term">Disabling logging</span></b></dt>
+                           				
+                           <dd>
+                              <p>If you disable logging, CloudFront doesn&apos;t delete the ACLs for either the bucket or
+                                 the log files. If you want, 
+                                 					you can do that yourself.
+                              </p>
+                           </dd>
+                           			
+                        </dl>
+                     </div>
+                     	
+                     <h2 id="AccessLogsFileNaming">File Name Format</h2>
+                     		
+                     		
+                     <p>The name of each log file that CloudFront saves in your Amazon S3 bucket uses the
+                        following file name
+                        			format: 
+                     </p>
+                     		
+                     <p>
+                        			<code class="code"><em class="replaceable"><code>bucket-name</code></em>.s3.amazonaws.com/<em class="replaceable"><code>optional-prefix</code></em>/<em class="replaceable"><code>distribution-ID</code></em>.<em class="replaceable"><code>YYYY</code></em>-<em class="replaceable"><code>MM</code></em>-<em class="replaceable"><code>DD</code></em>-<em class="replaceable"><code>HH</code></em>.<em class="replaceable"><code>unique-ID</code></em>.gz
+                           			</code>
+                        		
+                     </p>
+                     		
+                     <p>The date and time are in Coordinated Universal time (UTC).</p>
+                     		
+                     <p>For example, if your bucket name is <code class="code">mylogs</code>, your prefix is <code class="code">myprefix/</code>, and your distribution ID is 
+                        			<code class="code">EMLARXS9EXAMPLE</code>, your file names look similar to this:
+                     </p>
+                     		
+                     <p>
+                        			<code class="code">mylogs.s3.amazonaws.com/myprefix/EMLARXS9EXAMPLE.2014-11-14-20.RT4KCN4SGK9.gz</code>
+                        		
+                     </p>
+                     		
+                     <p>When you enable logging for a distribution, you can specify an optional prefix for
+                        the file names, so you can keep track of which 
+                        			log files are associated with which distributions. If you include a value for the
+                        log file prefix and your prefix doesn&apos;t include a 
+                        			<code class="code">/</code>, CloudFront adds one automatically. If your value does include a <code class="code">/</code>, CloudFront doesn&apos;t add another one. 
+                     </p>
+                     		
+                     <p>The .gz at the end of the file name indicates that CloudFront has compressed the log
+                        file using gzip.
+                     </p>
+                     	
+                     <h2 id="access-logs-timing">Timing of Log File Delivery</h2>
+                     		
+                     		
+                     <p>CloudFront delivers access logs for a distribution up to several times an hour. In
+                        general, a log file contains information about the requests 
+                        			that CloudFront received during a given time period. CloudFront usually delivers
+                        the log file for that time period to your Amazon S3 bucket within an 
+                        			hour of the events that appear in the log. Note, however, that some or all log
+                        file entries for a time period can sometimes be delayed 
+                        			by up to 24 hours. When log entries are delayed, CloudFront saves them in a log
+                        file for which the file name includes the date and time of the period
+                        			in which the requests occurred, not the date and time when the file was delivered.
+                     </p>
+                     		
+                     <p>When creating a log file, CloudFront consolidates information for your distribution
+                        from all of the edge locations that received requests 
+                        			for your objects during the time period that the log file covers.
+                     </p>
+                     		
+                     <p>CloudFront can save more than one file for a time period depending on how many requests
+                        CloudFront receives for the objects associated with a distribution.
+                     </p>
+                     		
+                     <p>CloudFront begins to reliably deliver access logs about four hours after you enable
+                        logging. You might get a few access logs before that time.
+                     </p>
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>If no users request your objects during the time period, you don&apos;t receive any log
+                           files for that period.
+                        </p>
+                     </div>
+                     	
+                     <h2 id="access-logs-analyzing">Analyzing Access Logs</h2>
+                     		
+                     		
+                     <p>Because you can receive multiple access logs per hour, we recommend that you combine
+                        all the log files you receive for a given period 
+                        			into one file. You can then analyze the data for that period more quickly and accurately.
+                     </p>
+                     		
+                     <p>One way to analyze your access logs is to use Amazon Athena. Athena is an interactive
+                        query service that can help you analyze data for AWS 
+                        			services, including CloudFront. To learn more, see <a href="./athena/latest/ug/cloudfront-logs.html" target="_blank">
+                           			Querying Amazon CloudFront Logs</a> in the Amazon Athena User Guide.
+                     </p>
+                     		
+                     <p>In addition, the following AWS blog posts discuss some ways to analyze access logs.</p>
+                     		
+                     		
+                     <p>AWS Blog: <a href="http://aws.typepad.com/aws/2009/05/amazon-cloudfront-request-logging.html" target="_blank">
+                           			Amazon CloudFront Request Logging</a>  (for content delivered via HTTP)
+                     </p>
+                     		
+                     <p>AWS Blog: <a href="http://aws.typepad.com/aws/2010/05/amazon-cloudfront-supports-streaming-access-logs.html" target="_blank">
+                           			Amazon CloudFront Now Supports Streaming Access Logs</a>  (for content delivered via RTMP)
+                     </p>
+                     		
+                     <p>AWS Blog: <a href="http://aws.typepad.com/aws/2010/07/enhanced-cloudfront-logs-now-with-query-strings.html" target="_blank">
+                           			Enhanced CloudFront Logs, Now With Query Strings</a></p>
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>We recommend that you use the logs to understand the nature of the requests for your
+                           content, not as a complete accounting of 
+                           				all requests. CloudFront delivers access logs on a best-effort basis. The log
+                           entry for a particular request might be delivered long after the 
+                           				request was actually processed and, in rare cases, a log entry might not be delivered
+                           at all. When a log entry is omitted from access logs, 
+                           				the number of entries in the access logs won&apos;t match the usage that appears in
+                           the AWS usage and billing reports.
+                        </p>
+                     </div>
+                     	
+                     <h2 id="ChangeSettings">Editing Your Logging Settings</h2>
+                     		
+                     
+                     		
+                     <p>You can enable or disable logging, change the Amazon S3 bucket where your logs are
+                        stored, and change the prefix for log files by using the 
+                        			CloudFront console or the CloudFront API. Your changes to logging settings take
+                        effect within 12 hours.
+                     </p>
+                     		
+                     <p>For more information, see the following topics:</p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>Updating a web or an RTMP distribution using the CloudFront console: <a href="HowToUpdateDistribution.html">Viewing and Updating CloudFront Distributions</a>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Updating a web distribution using the CloudFront API: <a href="./cloudfront/latest/APIReference/PutConfig.html" target="_blank">PUT Distribution Config</a> in the <em>Amazon CloudFront API Reference</em>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Updating an RTMP distribution using the CloudFront API: <a href="./cloudfront/latest/APIReference/PutStreamingDistConfig.html" target="_blank">PUT Streaming Distribution Config</a> in the <em>Amazon CloudFront API Reference</em>.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     		
+                     <p>To use the CloudFront API to change access log settings for web distributions, you
+                        must use the 2009-04-02 or later version of the API. 
+                        			To use the CloudFront API to change access log settings for RTMP distributions,
+                        you must use the 2010-05-01 or later version of the API. 
+                     </p>
+                     
+                     	
+                     <h2 id="DeletingLogFiles">Deleting Log Files from an Amazon S3 Bucket</h2>
+                     		
+                     		
+                     <p>CloudFront does not automatically delete log files from your Amazon S3 bucket. For
+                        information about deleting log files from an Amazon S3 bucket, 
+                        			see the following topics:
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>Using the Amazon S3 console: <a href="./AmazonS3/latest/UG/DeletinganObject.html" target="_blank">Deleting an Object</a> 
+                                 					in the <em>Amazon Simple Storage Service Console User Guide</em>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Using the REST API: <a href="./AmazonS3/latest/API/RESTObjectDELETE.html" target="_blank">DELETE Object</a> in the <em>Amazon Simple Storage Service API Reference</em>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Using the SOAP API: <a href="./AmazonS3/latest/API/SOAPDeleteObject.html" target="_blank">DeleteObject</a> in the <em>Amazon Simple Storage Service API Reference</em>.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                     <h2 id="LogFileFormat">Log File Format</h2>
+                     		
+                     
+                     		
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#BasicDistributionFileFormat">Web Distribution Log File Format</a></li>
+                           <li><a href="#StreamingDistributionLogFileFormat">RTMP Distribution Log File Format</a></li>
+                        </ul>
+                     </div>
+                     
+                     		
+                     <p>Each entry in a log file gives details about a single user request. The log files
+                        for web and for RTMP distributions are not identical, 
+                        			but they share the following characteristics:
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>Use the W3C extended log file format. (For more information, go to 
+                                 					<a href="http://www.w3.org/TR/WD-logfile.html" target="_blank">http://www.w3.org/TR/WD-logfile.html</a>.)
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Contain tab-separated values.</p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Contain records that are not necessarily in chronological order.</p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Contain two header lines: one with the file-format version, and another that lists
+                                 the W3C fields included in each record.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Substitute URL-encoded equivalents for spaces and non-standard characters in field
+                                 values.
+                              </p>
+                              				
+                              <p>These non-standard characters consist of all ASCII codes below 32 and above 127, plus
+                                 the characters in the following table. 
+                                 					The URL encoding standard is RFC 1738. For more information, go to 
+                                 					<a href="http://www.ietf.org/rfc/rfc1738.txt" target="_blank">http://www.ietf.org/rfc/rfc1738.txt</a>. 
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <div class="table">
+                        <p class="title"><b></b></p>
+                        <div class="table-contents">
+                           <table id="w313aac33c25b8">
+                              					
+                              <tbody><tr>
+                                 						
+                                 <th>
+                                    <p>URL-Encoded Value</p>
+                                 </th>
+                                 						
+                                 <th>
+                                    <p>Character</p>
+                                 </th>
+                                 					
+                              </tr>
+                              				
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%3C</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>&lt;</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%3E</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>&gt;</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%2522</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>&quot;</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%23</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>#</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%25</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>%</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%7B</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>{</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%7D</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>}</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%7C</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>|</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%255C</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>\</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%5E</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>^</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%7E</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>~</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%5B</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>[</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%5D</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>]</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%60</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>`</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%27</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>&apos;</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>%2520</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>space</p>
+                                 </td>
+                                 					
+                              </tr>
+                              				
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     		
+                     <h3 id="BasicDistributionFileFormat">Web Distribution Log File Format</h3>
+                     			
+                     			
+                     <p>The log file for a web distribution includes the following fields in the listed order.</p>
+                     			
+                     <div class="table">
+                        <p class="title"><b></b></p>
+                        <div class="table-contents">
+                           <table id="w313aac33c25c10b4">
+                              						
+                              <tbody><tr>
+                                 							
+                                 <th>Field Number</th>
+                                 							
+                                 <th>Field Name</th>
+                                 							
+                                 <th>Description</th>
+                                 						
+                              </tr>
+                              					
+                              						
+                              <tr>
+                                 							
+                                 <td>1</td>
+                                 							
+                                 <td><code class="code">date</code></td>
+                                 							
+                                 <td>The date on which the event occurred in the format <code class="code">yyyy-mm-dd</code>, for 
+                                    								example, <code class="code">2015-06-30</code>. The date and time are in Coordinated Universal 
+                                    								Time (UTC).
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>2</td>
+                                 							
+                                 <td><code class="code">time</code></td>
+                                 							
+                                 <td>The time when the CloudFront server finished responding to the request (in UTC), for
+                                    
+                                    								example, <code class="code">01:42:39</code>.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>3</td>
+                                 							
+                                 <td><code class="code">x-edge-location</code></td>
+                                 							
+                                 <td>The edge location that served the request. Each edge location is identified by a three-letter
+                                    code and an 
+                                    								arbitrarily assigned number, for example, DFW3. The three-letter code typically
+                                    corresponds with the International Air Transport 
+                                    								Association airport code for an airport near the edge location. (These abbreviations
+                                    might change in the future.) For a list of 
+                                    								edge locations, see the Amazon CloudFront detail page, <a href="http://aws.amazon.com/cloudfront" target="_blank">http://aws.amazon.com/cloudfront</a>.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>4</td>
+                                 							
+                                 <td><code class="code">sc-bytes</code></td>
+                                 							
+                                 <td>The total number of bytes that CloudFront served to the viewer in response to the
+                                    request, including headers, for example, 
+                                    								<code class="code">1045619</code>.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>5</td>
+                                 							
+                                 <td><code class="code">c-ip</code></td>
+                                 							
+                                 <td>
+                                    <p>The IP address of the viewer that made the request, for example, <code class="code">192.0.2.183</code> or 
+                                       									<code class="code">2001:0db8:85a3:0000:0000:8a2e:0370:7334</code>. If the viewer used an HTTP proxy or a load balancer to send the request, 
+                                       								the value of <code class="code">c-ip</code> is the IP address of the proxy or load balancer. See also <code class="code">X-Forwarded-For</code> in field 20.
+                                    </p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>6</td>
+                                 							
+                                 <td><code class="code">cs-method</code></td>
+                                 							
+                                 <td>The HTTP access method: <code class="code">DELETE</code>, <code class="code">GET</code>, <code class="code">HEAD</code>, <code class="code">OPTIONS</code>, <code class="code">PATCH</code>, 
+                                    								<code class="code">POST</code>, or <code class="code">PUT</code>.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>7</td>
+                                 							
+                                 <td><code class="code">cs(Host)</code></td>
+                                 							
+                                 <td>The domain name of the CloudFront distribution, for example, <code class="code">d111111abcdef8.cloudfront.net</code>.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>8</td>
+                                 							
+                                 <td><code class="code">cs-uri-stem</code></td>
+                                 							
+                                 <td>The portion of the URI that identifies the path and object, for example, <code class="code">/images/daily-ad.jpg</code>.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>9</td>
+                                 							
+                                 <td><code class="code">sc-status</code></td>
+                                 							
+                                 <td>
+                                    <p>One of the following values:</p>
+                                    								
+                                    <div class="itemizedlist">
+                                       									
+                                       									
+                                       								
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             										
+                                             <p>An HTTP status code (for example, <code class="code">200</code>). For a list of HTTP status codes, see 
+                                                											<a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html" target="_blank">RFC 2616, Hypertext Transfer Protocol&#x2014;HTTP 1.1, 
+                                                   												section 10, Status Code Definitions</a>. For more information, see 
+                                                											<a href="HTTPStatusCodes.html">How CloudFront Processes and Caches HTTP 4xx and 5xx Status Codes from Your Origin</a>.
+                                             </p>
+                                             									
+                                          </li>
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">000</code>, which indicates that the viewer closed the connection (for example, closed the browser
+                                                tab) before CloudFront 
+                                                											could respond to a request.
+                                             </p>
+                                             										
+                                             <p>If the viewer closes the connection after CloudFront starts to send the object, the
+                                                log contains the applicable HTTP status code.
+                                             </p>
+                                             									
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>10</td>
+                                 							
+                                 <td><code class="code">cs(Referer)</code></td>
+                                 							
+                                 <td>The name of the domain that originated the request. Common referrers include search
+                                    engines, other websites that link directly 
+                                    								to your objects, and your own website.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>11</td>
+                                 							
+                                 <td><code class="code">cs(User-Agent)</code></td>
+                                 							
+                                 <td>The value of the <code class="code">User-Agent</code> header in the request. The <code class="code">User-Agent</code> header identifies the source 
+                                    								of the request, such as the type of device and browser that submitted the
+                                    request and, if the request came from 
+                                    								a search engine, which search engine. For more information, see 
+                                    								<a href="RequestAndResponseBehaviorCustomOrigin.html#request-custom-user-agent-header">User-Agent Header</a>.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>12</td>
+                                 							
+                                 <td><code class="code">cs-uri-query</code></td>
+                                 							
+                                 <td>
+                                    <p>The query string portion of the URI, if any. When a URI doesn&apos;t contain a query string,
+                                       the value of 
+                                       								<code class="code">cs-uri-query</code> is a hyphen (-).
+                                    </p> 
+                                    								
+                                    <p>For more information, see <a href="QueryStringParameters.html">Configuring CloudFront to Cache Based on Query String Parameters</a>.
+                                    </p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>13</td>
+                                 							
+                                 <td><code class="code">cs(Cookie)</code></td>
+                                 							
+                                 <td>
+                                    <p>The cookie header in the request, including name-value pairs and the associated attributes.
+                                       If you enable cookie logging, 
+                                       								CloudFront logs the cookies in all requests regardless of which cookies you
+                                       choose to forward to the origin: none, all, or a 
+                                       								whitelist of cookie names. When a request doesn&apos;t include a cookie header,
+                                       the value of <code class="code">cs(Cookie)</code> is a hyphen (-). 
+                                    </p>
+                                    								
+                                    <p>For more information about cookies, see <a href="Cookies.html">Configuring CloudFront to Cache Objects Based on Cookies</a>.
+                                    </p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>14</td>
+                                 							
+                                 <td><code class="code">x-edge-result-type</code></td>
+                                 							
+                                 <td>
+                                    <p>How CloudFront classifies the response after the last byte left the edge location.
+                                       In some cases, the result type can change 
+                                       								between the time that CloudFront is ready to send the response and the time
+                                       that CloudFront has finished sending the response. For example, 
+                                       								in HTTP streaming, suppose CloudFront finds a segment in the edge cache. The
+                                       value of <code class="code">x-edge-response-result-type</code>, the result type 
+                                       									immediately before CloudFront begins to respond to the request, is <code class="code">Hit</code>. However, if the user closes the viewer before 
+                                       								CloudFront has delivered the entire segment, the final result type&#x2014;the value
+                                       of <code class="code">x-edge-result-type</code>&#x2014;changes to 
+                                       								<code class="code">Error</code>. 
+                                    </p>
+                                    								
+                                    <p>Possible values include:</p>
+                                    								
+                                    <div class="itemizedlist">
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       								
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">Hit</code> &#x2013; CloudFront served the object to the viewer from the edge cache.
+                                             </p>
+                                             										
+                                             <p>For information about a situation in which CloudFront classifies the result type as
+                                                <code class="code">Hit</code> even though the response 
+                                                											from the origin contains a <code class="code">Cache-Control: no-cache</code> header, see 
+                                                											<a href="RequestAndResponseBehaviorCustomOrigin.html#request-custom-traffic-spikes">Simultaneous Requests for the Same Object (Traffic Spikes)</a>. 
+                                             </p>
+                                             									
+                                          </li>
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">RefreshHit</code> &#x2013; CloudFront found the object in the edge cache but it had expired, so CloudFront
+                                                contacted 
+                                                											the origin to determine whether the cache has the latest version of the
+                                                object and, if not, to get the latest version.
+                                             </p>
+                                             									
+                                          </li>
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">Miss</code> &#x2013; The request could not be satisfied by an object in the edge cache, so CloudFront
+                                                forwarded the 
+                                                											request to the origin server and returned the result to the viewer. 
+                                             </p>
+                                             									
+                                          </li>
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">LimitExceeded</code> &#x2013; The request was denied because a CloudFront limit was exceeded.
+                                             </p>
+                                             									
+                                          </li>
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">CapacityExceeded</code> &#x2013; CloudFront returned an HTTP 503 status code (Service Unavailable) because the 
+                                                											CloudFront edge server was temporarily unable to respond to requests.
+                                             </p>
+                                             									
+                                          </li>
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">Error</code> &#x2013; Typically, this means the request resulted in a client error (<code class="code">sc-status</code> is 
+                                                												<code class="code">4</code><em class="replaceable"><code>xx</code></em>) or a server error (<code class="code">sc-status</code> is 
+                                                											<code class="code">5</code><em class="replaceable"><code>xx</code></em>).
+                                             </p>
+                                             									
+                                          </li>
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">Redirect</code> &#x2013; CloudFront redirects from HTTP to HTTPS.
+                                             </p>
+                                             										
+                                             <p>If <code class="code">sc-status</code> is <code class="code">403</code> and you configured CloudFront to restrict the geographic distribution of your content,
+                                                
+                                                											the request might have come from a restricted location. For more information
+                                                about geo restriction, 
+                                                											see <a href="georestrictions.html">Restricting the Geographic Distribution of Your 
+                                                   			Content</a>.
+                                             </p>
+                                             										
+                                             <p>If the value of <code class="code">x-edge-result-type</code> is <code class="code">Error</code> and the value of <code class="code">x-edge-response-result-type</code> 
+                                                											is not <code class="code">Error</code>, the client disconnected before finishing the download.
+                                             </p>
+                                             									
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>15</td>
+                                 							
+                                 <td><code class="code">x-edge-request-id</code></td>
+                                 							
+                                 <td>An encrypted string that uniquely identifies a request.</td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>16</td>
+                                 							
+                                 <td><code class="code">x-host-header</code></td>
+                                 							
+                                 <td>
+                                    <p>The value that the viewer included in the <code class="code">Host</code> header for this request. This is the domain name in the request:
+                                    </p>
+                                    								
+                                    <div class="itemizedlist">
+                                       									
+                                       									
+                                       								
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             										
+                                             <p>If you&apos;re using the CloudFront domain name in your object URLs, such as <code class="code">http://d111111abcdef8.cloudfront.net/logo.png</code>, the 
+                                                											<code class="code">x-host-header</code> field contains that domain name. 
+                                             </p>
+                                             									
+                                          </li>
+                                          <li class="listitem">
+                                             										
+                                             <p>If you&apos;re using alternate domain names in your object URLs, such as http://example.com/logo.png,
+                                                the 
+                                                											<code class="code">x-host-header</code> field contains the alternate domain name, such as <code class="code">example.com</code>. To use alternate 
+                                                											domain names, you must add them to your distribution. For more information,
+                                                see <a href="CNAMEs.html">Adding and Moving Alternate Domain Names (CNAMEs)</a>.
+                                             </p>
+                                             										
+                                             <p>If you&apos;re using alternate domain names, see <code class="code">cs(Host)</code> in field 7 for the domain name that is associated 
+                                                											with your distribution.
+                                             </p>
+                                             									
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>17</td>
+                                 							
+                                 <td><code class="code">cs-protocol</code></td>
+                                 							
+                                 <td>The protocol that the viewer specified in the request, either <code class="code">http</code> or <code class="code">https</code>.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>18</td>
+                                 							
+                                 <td><code class="code">cs-bytes</code></td>
+                                 							
+                                 <td>The number of bytes of data that the viewer included in the request (client to server
+                                    bytes), including headers.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>19</td>
+                                 							
+                                 <td><code class="code">time-taken</code></td>
+                                 							
+                                 <td>The number of seconds (to the thousandth of a second, for example, 0.002) between
+                                    the time that a CloudFront edge server receives a 
+                                    								viewer&apos;s request and the time that CloudFront writes the last byte of the
+                                    response to the edge server&apos;s output queue as measured on the 
+                                    								server. From the perspective of the viewer, the total time to get the full
+                                    object will be longer than this value due to 
+                                    								network latency and TCP buffering.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>20</td>
+                                 							
+                                 <td><code class="code">x-forwarded-for</code></td>
+                                 							
+                                 <td>
+                                    <p>If the viewer used an HTTP proxy or a load balancer to send the request, the value
+                                       of <code class="code">c-ip</code> in field 5 
+                                       								is the IP address of the proxy or load balancer. In that case, <code class="code">x-forwarded-for</code> is the IP address of the 
+                                       									viewer that originated the request.
+                                    </p> 
+                                    								
+                                    <p>If the viewer did not use an HTTP proxy or a load balancer, the value of <code class="code">x-forwarded-for</code> is a hyphen (-).
+                                    </p>
+                                    								
+                                    <div class="aws-note">
+                                       <p class="aws-note">Note</p>
+                                       <p>The <code class="code">X-Forwarded-For</code> header contains IPv4 addresses (such as 192.0.2.44) and IPv6 addresses (such as 
+                                          										2001:0db8:85a3:0000:0000:8a2e:0370:7334), as applicable.
+                                       </p>
+                                    </div>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>21</td>
+                                 							
+                                 <td><code class="code">ssl-protocol</code></td>
+                                 							
+                                 <td>
+                                    <p>When <code class="code">cs-protocol</code> in field 17 is <code class="code">https</code>, the SSL protocol that the client and CloudFront negotiated 
+                                       								for transmitting the request and response. When <code class="code">cs-protocol</code> is <code class="code">http</code>, the value for <code class="code">ssl-protocol</code> 
+                                       								is a hyphen (-).
+                                    </p>
+                                    								
+                                    <p>Possible values include the following:</p>
+                                    								
+                                    <div class="itemizedlist">
+                                       									
+                                       									
+                                       									
+                                       									
+                                       								
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             <p><code class="code">SSLv3</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">TLSv1</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">TLSv1.1</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">TLSv1.2</code></p>
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>22</td>
+                                 							
+                                 <td><code class="code">ssl-cipher</code></td>
+                                 							
+                                 <td>
+                                    <p>When <code class="code">cs-protocol</code> in field 17 is <code class="code">https</code>, the SSL cipher that the client and CloudFront negotiated 
+                                       								for encrypting the request and response. When <code class="code">cs-protocol</code> is <code class="code">http</code>, the value for <code class="code">ssl-cipher</code> 
+                                       								is a hyphen (-).
+                                    </p>
+                                    								
+                                    <p>Possible values include the following:</p>
+                                    								
+                                    <div class="itemizedlist">
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       								
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             <p><code class="code">ECDHE-RSA-AES128-GCM-SHA256</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">ECDHE-RSA-AES128-SHA256</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">ECDHE-RSA-AES128-SHA</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">ECDHE-RSA-AES256-GCM-SHA384</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">ECDHE-RSA-AES256-SHA384</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">ECDHE-RSA-AES256-SHA</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">AES128-GCM-SHA256</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">AES256-GCM-SHA384</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">AES128-SHA256</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">AES256-SHA</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">AES128-SHA</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">DES-CBC3-SHA</code></p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">RC4-MD5</code></p>
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>23</td>
+                                 							
+                                 <td><code class="code">x-edge-response-result-type</code></td>
+                                 							
+                                 <td>
+                                    <p>How CloudFront classified the response just before returning the response to the viewer.
+                                       See also 
+                                       								<code class="code">x-edge-result-type</code> in field 14. 
+                                    </p> 
+                                    								
+                                    <p>Possible values include:</p>
+                                    								
+                                    <div class="itemizedlist">
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       								
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">Hit</code> &#x2013; CloudFront served the object to the viewer from the edge cache.
+                                             </p>
+                                             									
+                                          </li>
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">RefreshHit</code> &#x2013; CloudFront found the object in the edge cache but it had expired, so CloudFront
+                                                
+                                                											contacted the origin to verify that the cache has the latest version of
+                                                the object.
+                                             </p>
+                                             									
+                                          </li>
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">Miss</code> &#x2013; The request could not be satisfied by an object in the edge cache, so CloudFront
+                                                
+                                                											forwarded the request to the origin server and returned the result to the
+                                                viewer.
+                                             </p>
+                                             									
+                                          </li>
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">LimitExceeded</code> &#x2013; The request was denied because a CloudFront limit was exceeded.
+                                             </p>
+                                             									
+                                          </li>
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">CapacityExceeded</code> &#x2013; CloudFront returned a 503 error because the edge location didn&apos;t have enough capacity
+                                                
+                                                											at the time of the request to serve the object.
+                                             </p>
+                                             									
+                                          </li>
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">Error</code> &#x2013; Typically, this means the request resulted in a client error (<code class="code">sc-status</code> is 
+                                                											<code class="code">4</code><em class="replaceable"><code>xx</code></em>) or a server error (<code class="code">sc-status</code> is
+                                                											<code class="code">5</code><em class="replaceable"><code>xx</code></em>).
+                                             </p>
+                                             									
+                                          </li>
+                                          <li class="listitem">
+                                             										
+                                             <p><code class="code">Redirect</code> &#x2013; CloudFront redirects from HTTP to HTTPS.
+                                             </p>
+                                             										
+                                             <p>If <code class="code">sc-status</code> is <code class="code">403</code> and you configured CloudFront to restrict the geographic distribution 
+                                                											of your content, the request might have come from a restricted location.
+                                                For more information about geo restriction, 
+                                                											see <a href="georestrictions.html">Restricting the Geographic Distribution of Your 
+                                                   			Content</a>.
+                                             </p> 
+                                             										
+                                             <p>If the value of <code class="code">x-edge-result-type</code> is <code class="code">Error</code> and the value of 
+                                                											<code class="code">x-edge-response-result-type</code> is not <code class="code">Error</code>, the client disconnected before finishing the download.
+                                             </p>
+                                             									
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>24</td>
+                                 							
+                                 <td><code class="code">cs-protocol-version</code></td>
+                                 							
+                                 <td>The HTTP version that the viewer specified in the request. Possible values include
+                                    <code class="code">HTTP/0.9</code>, <code class="code">HTTP/1.0</code>, 
+                                    								<code class="code">HTTP/1.1</code>, and <code class="code">HTTP/2.0</code>.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>25</td>
+                                 							
+                                 <td><code class="code">fle-status</code></td>
+                                 							
+                                 <td>
+                                    <p>When <a href="./AmazonCloudFront/latest/DeveloperGuide/field-level-encryption.html" target="_blank">field-level encryption</a> is configured for a distribution, 
+                                       								a code that indicates whether the request body was successfully processed.
+                                       If field-level encryption is not configured for the distribution, 
+                                       								the value of <code class="code">fle-status</code> is a hyphen (<code class="code">-</code>).
+                                    </p>
+                                    								
+                                    <p>When CloudFront successfully processes the request body, encrypts values in the specified
+                                       fields, and forwards the request 
+                                       									to the origin, the value of the <code class="code">fle-status</code> column is <code class="code">Processed</code>. The value of 
+                                       									<code class="code">x-edge-result-type</code>, column 14, can still indicate a client-side or server-side error.
+                                    </p>
+                                    								
+                                    								
+                                    <p>If the request exceeds a field-level encryption limit, <code class="code">fle-status</code> contains one of the following 
+                                       									error codes, and CloudFront returns HTTP status code 400 to the viewer. For
+                                       a list of the current limits on 
+                                       									field-level encryption, see <a href="cloudfront-limits.html#limits-field-level-encryption">Limits on Field-Level Encryption</a>.
+                                    </p>
+                                    								
+                                    <div class="itemizedlist">
+                                       									
+                                       									
+                                       									
+                                       								
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             <p><code class="code">FieldLengthLimitClientError</code> &#x2013; A field that is configured to be encrypted 
+                                                										exceeded the length limit
+                                             </p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">FieldNumberLimitClientError</code> &#x2013; A request that CloudFront is configured to encrypt 
+                                                										contains more than the number of fields allowed
+                                             </p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">RequestLengthLimitClientError</code> &#x2013; The length of the request body exceeded the limit 
+                                                										when field-level encryption is configured
+                                             </p>
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    								
+                                    								
+                                    <p>Other possible values for fle-status include the following:</p>
+                                    								
+                                    <div class="itemizedlist">
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       									
+                                       								
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             <p><code class="code">ForwardedByContentType</code> &#x2013; CloudFront forwarded the request to the origin without parsing or 
+                                                										encryption because no content type was configured.
+                                             </p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">ForwardedByQueryArgs</code> &#x2013; CloudFront forwarded the request to the origin without parsing or 
+                                                										encryption because the request contains a query argument that wasn&apos;t in
+                                                the configuration for 
+                                                										field-level encryption.
+                                             </p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">ForwardedDueToNoProfile</code> &#x2013; CloudFront forwarded the request to the origin without parsing or 
+                                                										encryption because no profile was specified in the configuration for field-level
+                                                encryption.
+                                             </p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">MalformedContentTypeClientError</code> &#x2013; CloudFront rejected the request and returned an 
+                                                										HTTP 400 status code to the viewer because the value of the Content-Type
+                                                header was in an invalid format.
+                                             </p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">MalformedInputClientError</code> &#x2013; CloudFront rejected the request and returned an HTTP 400 status code 
+                                                										to the viewer because the request body was in an invalid format.
+                                             </p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">MalformedQueryArgsClientError</code> &#x2013; CloudFront rejected the request and returned an 
+                                                										HTTP 400 status code to the viewer because a query argument was empty or
+                                                in an invalid format.
+                                             </p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">RejectedByContentType</code> &#x2013; CloudFront rejected the request and returned an 
+                                                										HTTP 400 status code to the viewer because no content type was specified
+                                                in the configuration for 
+                                                										field-level encryption.
+                                             </p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">RejectedByQueryArgs</code> &#x2013; CloudFront rejected the request and returned an 
+                                                										HTTP 400 status code to the viewer because no query argument was specified
+                                                in the configuration for 
+                                                										field-level encryption.
+                                             </p>
+                                          </li>
+                                          <li class="listitem">
+                                             <p><code class="code">ServerError</code> &#x2013; The server returned an error.
+                                             </p>
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>26</td>
+                                 							
+                                 <td><code class="code">fle-encrypted-fields</code></td>
+                                 							
+                                 <td>
+                                    <p>The number of fields that CloudFront encrypted and forwarded to the origin. CloudFront
+                                       streams the processed request to the origin 
+                                       								as it encrypts data, so <code class="code">fle-encrypted-fields</code> can have a value even if the value of <code class="code">fle-status</code> is an error. 
+                                       								If field-level encryption is not configured for the distribution, the value
+                                       of <code class="code">fle-encrypted-fields</code> is a hyphen 
+                                       								(<code class="code">-</code>).
+                                       							
+                                    </p>
+                                 </td>
+                                 						
+                              </tr>
+                              					
+                           </tbody></table>
+                        </div>
+                     </div>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Question marks (?) in URLs and query strings are not included in the log.</p>
+                     </div>
+                     
+                     			
+                     <p>The following is an example log file for a web distribution:</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">#Version: 1.0
+#Fields: date time x-edge-location sc-bytes c-ip cs-method cs(Host) cs-uri-stem sc-status cs(Referer) cs(User-Agent) cs-uri-query cs(Cookie) x-edge-result-type x-edge-request-id x-host-header cs-protocol cs-bytes time-taken x-forwarded-for ssl-protocol ssl-cipher x-edge-response-result-type cs-protocol-version fle-status fle-encrypted-fields 
+2014-05-23 01:13:11 FRA2 182 192.0.2.10 GET d111111abcdef8.cloudfront.net /view/my/file.html 200 www.displaymyfiles.com Mozilla/4.0%20(compatible;%20MSIE%205.0b1;%20Mac_PowerPC) - zip=98101 RefreshHit MRVMF7KydIvxMWfJIglgwHQwZsbG2IhRJ07sn9AkKUFSHS9EXAMPLE== d111111abcdef8.cloudfront.net http - 0.001 - - - RefreshHit HTTP/1.1 Processed 1
+2014-05-23 01:13:12 LAX1 2390282 192.0.2.202 GET d111111abcdef8.cloudfront.net /soundtrack/happy.mp3 304 www.unknownsingers.com Mozilla/4.0%20(compatible;%20MSIE%207.0;%20Windows%20NT%205.1) a=b&amp;c=d zip=50158 Hit xGN7KWpVEmB9Dp7ctcVFQC4E-nrcOcEKS3QyAez--06dV7TEXAMPLE== d111111abcdef8.cloudfront.net http - 0.002 - - - Hit HTTP/1.1 - -</code></pre>
+                     		
+                     
+                     		<h3 id="StreamingDistributionLogFileFormat">RTMP Distribution Log File Format</h3>
+                     			
+                     			
+                     <p>Each record in an RTMP access log represents a playback event, for example, connect,
+                        				play, pause, stop, disconnect, and so on. As a result, CloudFront generates multiple
+                        log records
+                        				each time a viewer watches a video. To relate log records that stem from the same
+                        stream ID,
+                        				use the <code class="code">x-sid</code> field.
+                     </p>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Some fields have values for all events, and some have values only for Play, Stop,
+                           					Pause, Unpause, and Seek events. Usually, when the log file contains a hyphen
+                           (-) for a
+                           					field, the field isn&apos;t relevant for the corresponding event. 
+                        </p>
+                     </div>
+                     			
+                     <p>The following table describes the fields that are present in each record in the RTMP
+                        				distribution log file, regardless of the type of event. The fields appear in the
+                        log in the
+                        				order listed.
+                     </p>
+                     			
+                     <div class="table">
+                        <p class="title"><b></b></p>
+                        <div class="table-contents">
+                           <table id="w313aac33c25c12b8">
+                              						
+                              <tbody><tr>
+                                 							
+                                 <th>Field Number</th>
+                                 							
+                                 <th>Field Name</th>
+                                 							
+                                 <th>Description</th>
+                                 						
+                              </tr>
+                              					
+                              						
+                              <tr>
+                                 							
+                                 <td>1</td>
+                                 							
+                                 <td>date</td>
+                                 							
+                                 <td>The date on which the event occurred in the format yyyy-mm-dd, for example,
+                                    								2014-05-23. The date and time are in Coordinated Universal Time (UTC).
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>2</td>
+                                 							
+                                 <td>time</td>
+                                 							
+                                 <td>The time when the server received the request (in UTC), for example,
+                                    								01:42:39.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>3</td>
+                                 							
+                                 <td>x-edge-location</td>
+                                 							
+                                 <td>The edge location where the playback event occurred. Each edge location is
+                                    								identified by a three-letter code and an arbitrarily assigned number, for
+                                    example,
+                                    								DFW3. The three-letter code typically corresponds with the International Air
+                                    								Transport Association airport code for an airport near the edge location.
+                                    (These
+                                    								abbreviations might change in the future.) For a list of edge locations, see
+                                    the
+                                    								Amazon CloudFront detail page, <a href="http://aws.amazon.com/cloudfront" target="_blank">http://aws.amazon.com/cloudfront</a>.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>4</td>
+                                 							
+                                 <td>c-ip</td>
+                                 							
+                                 <td>Client IP, for example, 192.0.2.183.</td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>5</td>
+                                 							
+                                 <td>x-event</td>
+                                 							
+                                 <td>The event type. This is a Connect, Disconnect, Play, Stop, Pause, Unpause, or
+                                    								Seek event.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>6</td>
+                                 							
+                                 <td>sc-bytes</td>
+                                 							
+                                 <td>The running total number of bytes sent from the server to the client, up to the
+                                    								time of the event.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>7</td>
+                                 							
+                                 <td>x-cf-status</td>
+                                 							
+                                 <td>A code indicating the status of the event. Currently, &quot;OK&quot; is the only value
+                                    								for this field. New functionality in the future could require new status
+                                    								codes.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>8</td>
+                                 							
+                                 <td>x-cf-client-id</td>
+                                 							
+                                 <td>
+                                    <p>An opaque string identifier that can be used to differentiate
+                                       									clients.
+                                    </p>
+                                    								
+                                    <p>This value is unique for each connection.</p>
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>9</td>
+                                 							
+                                 <td>cs-uri-stem</td>
+                                 							
+                                 <td>The stem portion of the URI, including the application and the application
+                                    								instance. This is sometimes referred to as the FMS <em>connect
+                                       									string</em>. For example,
+                                    									<code class="code">rtmp://shqshne4jdp4b6.cloudfront.net/cfx/st</code>. 
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>10</td>
+                                 							
+                                 <td>cs-uri-query</td>
+                                 							
+                                 <td>The query string portion of the URI that is included on the connect
+                                    								string.
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>11</td>
+                                 							
+                                 <td>c-referrer</td>
+                                 							
+                                 <td>The URI of the referrer.</td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>12</td>
+                                 							
+                                 <td>x-page-url</td>
+                                 							
+                                 <td>The URL of the page from which the SWF is linked.</td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>13</td>
+                                 							
+                                 <td>c-user-agent</td>
+                                 							
+                                 <td>The value of the <code class="code">User-Agent</code> header in the request. The
+                                    									<code class="code">User-Agent</code> header identifies the type of device that submitted the
+                                    								request. For more information, see <a href="RequestAndResponseBehaviorCustomOrigin.html#request-custom-user-agent-header">User-Agent Header</a>.
+                                 </td>
+                                 						
+                              </tr>
+                              					
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     			
+                     <p>The following fields usually have values only for Play, Stop, Pause, Unpause, and
+                        Seek
+                        				events. For other events, they contain a single hyphen (-). These fields appear
+                        in the log
+                        				after the fields in the preceding table and in the order listed.
+                     </p>
+                     			
+                     <div class="table">
+                        <p class="title"><b></b></p>
+                        <div class="table-contents">
+                           <table id="w313aac33c25c12c12">
+                              						
+                              <tbody><tr>
+                                 							
+                                 <th>Field</th>
+                                 							
+                                 <th>Description</th>
+                                 						
+                              </tr>
+                              					
+                              						
+                              <tr>
+                                 							
+                                 <td>x-sname</td>
+                                 							
+                                 <td>The stream name.</td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>x-sname-query</td>
+                                 							
+                                 <td>The stream query string, if any.</td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>x-file-ext</td>
+                                 							
+                                 <td>The stream type, for example, FLV.</td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>x-sid</td>
+                                 							
+                                 <td>The stream ID. This is a unique integer identifier for the connection.</td>
+                                 						
+                              </tr>
+                              					
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Question marks (?) in URLs and query strings are not included in the log.</p>
+                     </div>
+                     
+                     			
+                     <p>The following is an example of a log file for an RTMP distribution:</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">#Version: 1.0
+#Fields: date time x-edge-location c-ip x-event sc-bytes x-cf-status x-cf-client-id cs-uri-stem cs-uri-query c-referrer x-page-url&#x200B;	c-user-agent x-sname x-sname-query x-file-ext x-sid
+2010-03-12	 23:51:20	 SEA4	 192.0.2.147	 connect	 2014	 OK	 bfd8a98bee0840d9b871b7f6ade9908f	 rtmp://shqshne4jdp4b6.cloudfront.net/cfx/st&#x200B;	key=value	 http://player.longtailvideo.com/player.swf	 http://www.longtailvideo.com/support/jw-player-setup-wizard?example=204	 LNX%2010,0,32,18	 -	 -	 -	 -
+2010-03-12	 23:51:21	 SEA4	 192.0.2.222	 play	 3914	 OK	 bfd8a98bee0840d9b871b7f6ade9908f	 rtmp://shqshne4jdp4b6.cloudfront.net/cfx/st&#x200B;	key=value	 http://player.longtailvideo.com/player.swf	 http://www.longtailvideo.com/support/jw-player-setup-wizard?example=204	 LNX%2010,0,32,18	 myvideo	 p=2&amp;q=4	 flv	 1
+2010-03-12	 23:53:44	 SEA4	 192.0.2.4	 stop	 323914	 OK	 bfd8a98bee0840d9b871b7f6ade9908f	 rtmp://shqshne4jdp4b6.cloudfront.net/cfx/st&#x200B;	key=value	 http://player.longtailvideo.com/player.swf	 http://www.longtailvideo.com/support/jw-player-setup-wizard?example=204	 LNX%2010,0,32,18	 dir/other/myvideo	 p=2&amp;q=4	 flv	 1
+2010-03-12	 23:53:44	 SEA4	 192.0.2.103	 play	 8783724	 OK	 bfd8a98bee0840d9b871b7f6ade9908f	 rtmp://shqshne4jdp4b6.cloudfront.net/cfx/st&#x200B;	key=value	 http://player.longtailvideo.com/player.swf	 http://www.longtailvideo.com/support/jw-player-setup-wizard?example=204	 LNX%2010,0,32,18	 dir/favs/myothervideo	 p=42&amp;q=14	 mp4	 2
+2010-03-12	 23:56:21	 SEA4	 192.0.2.199	 stop	 429822014	 OK	 bfd8a98bee0840d9b871b7f6ade9908f	 rtmp://shqshne4jdp4b6.cloudfront.net/cfx/st&#x200B;	key=value	 http://player.longtailvideo.com/player.swf	 http://www.longtailvideo.com/support/jw-player-setup-wizard?example=204	 LNX%2010,0,32,18	 dir/favs/myothervideo	 p=42&amp;q=14	 mp4	 2
+2010-03-12	 23:59:44	 SEA4	 192.0.2.14	 disconnect	 429824092	 OK	 bfd8a98bee0840d9b871b7f6ade9908f	 rtmp://shqshne4jdp4b6.cloudfront.net/cfx/st&#x200B;	key=value	 http://player.longtailvideo.com/player.swf	 http://www.longtailvideo.com/support/jw-player-setup-wizard?example=204	 LNX%2010,0,32,18	 -	 -	 -	 -	</code></pre>
+                     
+                     		
+                     	<h2 id="AccessLogsCharges">Charges for Access Logs</h2>
+                     		
+                     		
+                     <p>Access logging is an optional feature of CloudFront. There is no extra charge for
+                        enabling
+                        			access logging. However, you accrue the usual Amazon S3 charges for storing and
+                        accessing the files
+                        			on Amazon S3 (you can delete them at any time). For more information about charges
+                        for CloudFront, see
+                        				<a href="reports.html">CloudFront Reports</a>.
+                     </p>
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="cf-api-permissions-ref.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="monitoring-using-cloudwatch.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="How Logging Works"><a class="pagetoc" href="#AccessLogsOverview">How Logging Works</a></li>
+                        <li class="pagetoc" name="Choosing an Amazon S3 Bucket for Your Access Logs"><a class="pagetoc" href="#access-logs-choosing-s3-bucket">Choosing an Amazon S3 Bucket for Your Access Logs</a></li>
+                        <li class="pagetoc" name="Permissions Required to Configure Logging and to Access Your Log Files"><a class="pagetoc" href="#AccessLogsBucketAndFileOwnership">Permissions Required to Configure Logging and to Access Your Log Files</a></li>
+                        <li class="pagetoc" name="File Name Format"><a class="pagetoc" href="#AccessLogsFileNaming">File Name Format</a></li>
+                        <li class="pagetoc" name="Timing of Log File Delivery"><a class="pagetoc" href="#access-logs-timing">Timing of Log File Delivery</a></li>
+                        <li class="pagetoc" name="Analyzing Access Logs"><a class="pagetoc" href="#access-logs-analyzing">Analyzing Access Logs</a></li>
+                        <li class="pagetoc" name="Editing Your Logging Settings"><a class="pagetoc" href="#ChangeSettings">Editing Your Logging Settings</a></li>
+                        <li class="pagetoc" name="Deleting Log Files from an Amazon S3 Bucket"><a class="pagetoc" href="#DeletingLogFiles">Deleting Log Files from an Amazon S3 Bucket</a></li>
+                        <li class="pagetoc" name="Log File Format"><a class="pagetoc" href="#LogFileFormat">Log File Format</a></li>
+                        <li class="pagetoc" name="Charges for Access Logs"><a class="pagetoc" href="#AccessLogsCharges">Charges for Access Logs</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

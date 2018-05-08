@@ -1,0 +1,237 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Using AWS X-Ray - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="troubleshooting.html" title="Monitoring and Troubleshooting Lambda-based Applications">
+      <link rel="prev" href="monitoring-functions-metrics.html" title="AWS Lambda Metrics">
+      <link rel="next" href="using-x-ray.html" title="Tracing Lambda-Based Applications with
+                AWS X-Ray">
+      <meta name="description" content="A typical Lambda-based application consists of one or more functions triggered by events such as object uploads to Amazon S3, Amazon SNS notifications, and API actions. Once triggered, those functions usually call downstream resources such as DynamoDB tables or Amazon S3 buckets, or make other API calls. AWS Lambda leverages Amazon CloudWatch to automatically emit metrics and logs for all invocations of your function. However, this mechanism might not be convenient for tracing the event source that invoked your Lambda function, or for tracing downstream calls that your function made. For a complete overview of how tracing works, see">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="troubleshooting.html">Monitoring and Troubleshooting Lambda-based Applications</a> &#xBB; <span class="breadcrumb">Using AWS X-Ray</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="lambda-x-ray">Using AWS X-Ray</h1>
+                     <p>A typical Lambda-based application consists of one or more functions triggered by
+                        events such as object uploads to Amazon S3, Amazon SNS notifications, and API actions.
+                        Once
+                        triggered, those functions usually call downstream resources such as DynamoDB tables
+                        or
+                        Amazon S3 buckets, or make other API calls. AWS Lambda leverages Amazon CloudWatch
+                        to automatically emit
+                        metrics and logs for all invocations of your function. However, this mechanism might
+                        not
+                        be convenient for tracing the event source that invoked your Lambda function, or for
+                        tracing downstream calls that your function made. For a complete overview of how tracing
+                        works, see <a href="./xray/latest/devguide/" target="_blank">AWS X-Ray</a>. 
+                     </p>
+                     <h2 id="lambda-x-ray-env-variables">Using Environment Variables to
+                        Communicate with AWS X-Ray
+                     </h2>
+                     
+                     
+                     
+                     <p>AWS Lambda automatically generates three environment variables to facilitate communication
+                        with the X-Ray daemon, and set the configuration of the X-Ray SDK:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><b>_X_AMZN_TRACE_ID:</b> Contains the tracing header, which includes
+                                 the sampling decision, trace ID, and parent segment ID. (To learn more about
+                                 these properties, see <a href="./xray/latest/devguide/xray-concepts.html#xray-concepts-tracingheader" target="_blank">Tracing
+                                    Header</a>.) If Lambda receives a tracing header when your function is
+                                 invoked, that header will be used to populate the _X_AMZN_TRACE_ID
+                                 environment variable. If a tracing header was not received, Lambda will
+                                 generate one for you. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              <p><b>AWS_XRAY_CONTEXT_MISSING:</b> The X-Ray SDK uses this variable to determine its behavior in the event that your
+                                 function tries to record X-Ray data, 
+                                 but a tracing header is not available. Lambda sets this value to <code class="code">LOG_ERROR </code>by default. 
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><b>AWS_XRAY_DAEMON_ADDRESS:</b> This environment variable exposes
+                                 the X-Ray daemon&apos;s address in the following format:
+                                 <em class="replaceable"><code>IP_ADDRESS</code></em><b>:</b><em class="replaceable"><code>PORT</code></em>. You can use the X-Ray
+                                 daemon&apos;s address to send trace data to the X-Ray daemon directly, without
+                                 using the X-Ray SDK. 
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="viewing-lambda-xray-results">Lambda Traces in the AWS X-Ray Console: Examples</h2>
+                     
+                     
+                     <p>The following shows Lambda traces for two different Lambda functions. Each trace showcases
+                        a trace structure for a different invocation type: asynchronous and synchronous.
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><b>Async </b> - The example following shows an asynchronous Lambda
+                                 request with one successful invocation and one downstream call to
+                                 DynamoDB.
+                              </p>
+                              
+                              <div class="mediaobject">
+                                 
+                                 <img src="../../..//img/Trace_Console_DDB.png">
+                                 
+                                 
+                              </div> 
+                              
+                              <p>The Lambda service segment encapsulates the response time, which is the
+                                 time it took to return a response (for example, 202) to the client. It
+                                 includes subsegments for the time spent in the Lambda service queue (dwell
+                                 time) and each invocation attempt. (Only one invocation attempt appears in
+                                 the example preceding.) Each attempt subsegment in the service segment will
+                                 have a corresponding user function segment. In this example, the user
+                                 function segment contains two subsegments: the initialization subsegment
+                                 representing the function&apos;s initialization code that is run before the
+                                 handler, and a downstream call subsegment representing a
+                                 <code class="code">ListTables</code> call to DynamoDB.
+                              </p>
+                              
+                              <p>Status codes and error messages are displayed for each Invocation
+                                 subsegment and for each downstream call. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              <p><b>Synchronous</b> - The example following shows a synchronous 
+                                 request with one downstream call to Amazon S3.
+                              </p>
+                              
+                              <div class="mediaobject">
+                                 
+                                 <img src="../../..//img/Trace_Console_S3.png">
+                                 
+                                 
+                              </div>
+                              
+                              <p>The Lambda service segment captures the entire time the request spends in
+                                 the Lambda service. The service segment will have a corresponding User
+                                 function segment. In this example, the User function segment contains a
+                                 subsegment representing the function&apos;s initialization code (code run before
+                                 the handler), and a subsegment representing the <code class="code">PutObject</code> call
+                                 to Amazon S3. 
+                              </p>
+                           </li>
+                        </ul>
+                     </div>  
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>If you want to trace HTTP calls, you need to use an HTTP client. For more information,
+                           see
+                           <a href="./xray/latest/devguide/xray-sdk-java-httpclients.html" target="_blank">Tracing Calls to
+                              Downstream HTTP Web Services with the X-Ray SDK for Java</a> or <a href="./xray/latest/devguide/xray-sdk-nodejs-httpclients.html" target="_blank">Tracing Calls to
+                              Downstream HTTP Web Services with the X-Ray SDK for Node.js
+                              </a>.
+                        </p>
+                     </div>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="monitoring-functions-metrics.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="using-x-ray.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Using Environment Variables to
+                Communicate with AWS X-Ray"><a class="pagetoc" href="#lambda-x-ray-env-variables">Using Environment Variables to
+                              Communicate with AWS X-Ray</a></li>
+                        <li class="pagetoc" name="Lambda Traces in the AWS X-Ray Console: Examples"><a class="pagetoc" href="#viewing-lambda-xray-results">Lambda Traces in the AWS X-Ray Console: Examples</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,845 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>How Spot Fleet Works - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="using-spot-instances.html" title="Spot Instances">
+      <link rel="prev" href="how-spot-instances-work.html" title="How Spot Instances Work">
+      <link rel="next" href="using-spot-instances-history.html" title="Spot Instance Pricing History">
+      <meta name="description" content="Use a single Spot Fleet request to launch tens, hundreds, or thousands of Spot Instances.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-fleet.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="instance-purchasing-options.html">Instance Purchasing Options</a> &#xBB; <a href="using-spot-instances.html">Spot Instances</a> &#xBB; <span class="breadcrumb">How Spot Fleet Works</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="spot-fleet">How Spot Fleet Works</h1>
+                     <p>A <em>Spot Fleet</em> is a collection, or fleet, of Spot Instances, and optionally On-Demand Instances.
+                        
+                     </p>
+                     <p>The Spot Fleet attempts to launch the number of Spot Instances and On-Demand Instances
+                        to meet the target capacity that
+                        			you specified in the Spot Fleet request. The request for Spot Instances is fulfilled
+                        if the Spot price
+                        			exceeds the current Spot price and there is available capacity. The Spot Fleet
+                        also attempts
+                        			to maintain its target capacity fleet if your Spot Instances are interrupted due
+                        to a change in
+                        			Spot prices or available capacity.
+                     </p>
+                     <p>A <em>Spot Instance pool</em> is a set of unused EC2 instances with the same
+                        			instance type, operating system, Availability Zone, and network platform (EC2-Classic
+                        or
+                        			EC2-VPC). When you make a Spot Fleet request, you can include multiple launch
+                        			specifications, that vary by instance type, AMI, Availability Zone, or subnet.
+                        The Spot Fleet selects the Spot Instance pools that are used to fulfill the request,
+                        based on the
+                        			launch specifications included in your Spot Fleet request, and the configuration
+                        of the
+                        			Spot Fleet request. The Spot Instances come from the selected pools.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#on-demand-in-spot">On-Demand in Spot Fleet</a></li>
+                           <li><a href="#spot-fleet-allocation-strategy">Spot Fleet Allocation Strategy</a></li>
+                           <li><a href="#spot-price-overrides">Spot Price Overrides</a></li>
+                           <li><a href="#spot-instance-weighting">Spot Fleet Instance Weighting</a></li>
+                           <li><a href="#instance-weighting-walkthrough">Walkthrough: Using Spot Fleet with Instance Weighting</a></li>
+                        </ul>
+                     </div>
+                     	
+                     <h2 id="on-demand-in-spot">On-Demand in Spot Fleet</h2>
+                     			
+                     <p>To ensure that you always have instance capacity, you can include a request for On-Demand
+                        				capacity in your Spot Fleet request. In your Spot Fleet request, you specify your
+                        desired target
+                        				capacity and how much of that capacity must be On-Demand. The balance comprises
+                        Spot
+                        				capacity, which is launched if there is available EC2 capacity and availability.
+                        For
+                        				example, if in your Spot Fleet request you specify target capacity as 10 and On-Demand
+                        				capacity as 8, Amazon EC2 launches 8 capacity units as On-Demand, and 2 capacity
+                        				units (10-8=2) as Spot.
+                     </p>
+                     
+                     	
+                     <h2 id="spot-fleet-allocation-strategy">Spot Fleet Allocation Strategy</h2>
+                     
+                     	
+                     <p>The allocation strategy for your Spot Fleet determines how it fulfills your Spot Fleet
+                        request from the possible Spot Instance pools represented by its launch
+                        				specifications. The following are the allocation strategies that you can specify
+                        in
+                        				your Spot Fleet request:
+                     </p>       
+                     	
+                     <div class="variablelist">
+                        		
+                        		
+                        	
+                        <dl>
+                           			
+                           <dt><span class="term"><code class="code">lowestPrice</code></span></dt>
+                           			
+                           <dd>
+                              				
+                              <p>The Spot Instances come from the pool with the lowest price. This is the default
+                                 							strategy.
+                              </p>
+                              			
+                           </dd>
+                           		
+                           			
+                           <dt><span class="term"><code class="code">diversified</code></span></dt>
+                           			
+                           <dd>
+                              				
+                              <p>The Spot Instances are distributed across all pools.</p>
+                              			
+                           </dd>
+                           		
+                        </dl>
+                     </div>
+                     	
+                     	
+                     <p>For On-Demand target capacity, we always select the cheapest option based on the
+                        				On-Demand price, while continuing to follow the allocation strategy (either lowest
+                        				price or diversified) for Spot Instances.
+                     </p>
+                     	
+                     	
+                     		
+                     <h3 id="allocation-use-cases">Choosing an Allocation Strategy</h3>
+                     		
+                     <p>You can optimize your Spot Fleets based on your use case.</p>
+                     		
+                     <p>If your fleet is small or runs for a short time, the probability that your Spot Instances
+                        will be interrupted is low, even with all the instances in a single
+                        					Spot Instance pool. Therefore, the <code class="code">lowestPrice</code> strategy is likely
+                        					to meet your needs while providing the lowest cost.
+                     </p>
+                     		
+                     <p>If your fleet is large or runs for a long time, you can improve the availability of
+                        					your fleet by distributing the Spot Instances across multiple pools. For
+                        					example, if your Spot Fleet request specifies 10 pools and a target capacity
+                        of
+                        					100 instances, the Spot Fleet launches 10 Spot Instances in each pool. If the
+                        					Spot price for one pool exceeds your maximum price for this pool, only 10%
+                        					of your fleet is affected. Using this strategy also makes your fleet less
+                        					sensitive to increases in the Spot price in any one pool over time.
+                     </p>
+                     		
+                     <p>With the <code class="code">diversified</code> strategy, the Spot Fleet does not launch Spot Instances into any pools with a Spot
+                        price that is equal to or higher than the
+                        					<a href="https://aws.amazon.com/ec2/pricing/" target="_blank">On-Demand price</a>.
+                     </p>
+                     	
+                     
+                     
+                     				
+                     <h3 id="maintain-fleet-capacity">Maintaining Target Capacity</h3>
+                     				
+                     <p>After Spot Instances are terminated due to a change in the Spot price or available
+                        capacity of a
+                        					Spot Instance pool, the Spot Fleet launches replacement Spot Instances. If the
+                        allocation strategy is
+                        						<code class="code">lowestPrice</code>, the Spot Fleet launches replacement instances in the
+                        					pool where the Spot price is currently the lowest. If the allocation strategy
+                        is
+                        						<code class="code">diversified</code>, the Spot Fleet distributes the replacement Spot Instances across
+                        					the remaining pools.
+                     </p>
+                     			
+                     
+                     
+                     	
+                     <h2 id="spot-price-overrides">Spot Price Overrides</h2>
+                     	
+                     <p>Each Spot Fleet request can include a global maximum price, or use the default
+                        		(the On-Demand price). Spot Fleet uses this as the default maximum price for each
+                        
+                        		of its launch specifications.
+                     </p>
+                     
+                     <p>You can optionally specify a maximum price in one or more launch specifications. 
+                        				This price is specific to the launch specification. If a launch specification
+                        				includes a specific price, the Spot Fleet uses this maximum price, overriding
+                        the 
+                        				global maximum price. Any other launch specifications that do not include a specific
+                        
+                        				maximum price still use the global maximum price.
+                     </p>
+                     
+                     			
+                     <h2 id="spot-instance-weighting">Spot Fleet Instance Weighting</h2>
+                     
+                     			
+                     <p>When you request a fleet of Spot Instances, you can define the capacity units that
+                        each
+                        				instance type would contribute to your application&apos;s performance, and adjust your
+                        				maximum price for each Spot Instance pool accordingly using <em>instance 
+                           				weighting</em>.
+                     </p>
+                     			
+                     <p>By default, the price that you specify is <em>per instance hour</em>. 
+                        				When you use the instance weighting feature, the price that you specify is <em>per unit hour</em>.
+                        				You can calculate your price per unit hour by dividing your price for an
+                        				instance type by the number of units that it represents. Spot Fleet calculates
+                        				the number of Spot Instances to launch by dividing the target capacity by the
+                        				instance weight. If the result isn&apos;t an integer, the Spot Fleet rounds it up to
+                        the
+                        				next integer, so that the size of your fleet is not below its target capacity.
+                        Spot Fleet can select any pool that you specify in your launch specification, even
+                        if the
+                        				capacity of the instances launched exceeds the requested target capacity.
+                     </p>
+                     
+                     			
+                     <p>The following table includes examples of calculations to determine the price per unit
+                        				for a Spot Fleet request with a target capacity of 10.
+                     </p>
+                     			
+                     <div class="table">
+                        <p class="title"><b></b></p>
+                        <div class="table-contents">
+                           <table id="w185aac17c13c18c27c17b9">
+                              						
+                              <tbody><tr>
+                                 							
+                                 <th>Instance type</th>
+                                 							
+                                 <th>Instance weight</th>
+                                 							
+                                 <th>Price per instance hour</th>
+                                 							
+                                 <th>Price per unit hour</th>
+                                 							
+                                 <th>Number of instances launched</th>
+                                 						
+                              </tr>
+                              					
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    <p><code class="code">r3.xlarge</code></p>
+                                 </td>
+                                 							
+                                 <td>
+                                    <p>2</p>
+                                 </td>
+                                 							
+                                 <td>
+                                    <p>$0.05</p>
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>.025</p>
+                                    								
+                                    <p>(.05 divided by 2)</p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>5</p>
+                                    								
+                                    <p>(10 divided by 2)</p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    <p><code class="code">r3.8xlarge</code></p>
+                                 </td>
+                                 							
+                                 <td>
+                                    <p>8</p>
+                                 </td>
+                                 							
+                                 <td>
+                                    <p>$0.10</p>
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>.0125</p>
+                                    								
+                                    <p>(.10 divided by 8)</p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>2</p>
+                                    								
+                                    <p>(10 divided by 8, result rounded up)</p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>	
+                              					
+                           </tbody></table>
+                        </div>
+                     </div>
+                     			
+                     			
+                     <p>Use Spot Fleet instance weighting as follows to provision the target capacity that
+                        you want in
+                        				the pools with the lowest price per unit at the time of fulfillment:
+                     </p>
+                     			
+                     <ol>
+                        <li>
+                           					
+                           <p>Set the target capacity for your Spot Fleet either in instances (the default) or in
+                              the
+                              						units of your choice, such as virtual CPUs, memory, storage, or
+                              						throughput.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Set the price per unit.</p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>For each launch configuration, specify the weight, which is the number of units 
+                              						that the instance type represents toward the target capacity.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     
+                     			
+                     	
+                     <p class="title"><b>Instance Weighting Example</b></p>
+                     	
+                     <p>Consider a Spot Fleet request with the following configuration:</p>
+                     
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>A target capacity of 24</p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>A launch specification with an instance type <code class="code">r3.2xlarge</code> and a
+                                 					    weight of 6
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>A launch specification with an instance type <code class="code">c3.xlarge</code> and a
+                                 						weight of 5
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     			
+                     <p>The weights represent the number of units that instance type represents toward the
+                        target
+                        				capacity. If the first launch specification provides the lowest price per unit
+                        				(price for <code class="code">r3.2xlarge</code> per instance hour divided by 6), the Spot
+                        				Fleet would launch four of these instances (24 divided by 6).
+                     </p>
+                     			
+                     <p>If the second launch specification provides the lowest price per unit (price for
+                        				<code class="code">c3.xlarge</code> per instance hour divided by 5), the Spot Fleet would
+                        				launch five of these instances (24 divided by 5, result rounded up).
+                     </p>
+                     
+                     			
+                     				
+                     <p class="title"><b>Instance Weighting and Allocation Strategy</b></p>
+                     				
+                     <p>Consider a Spot Fleet request with the following configuration:</p>
+                     			
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>A target capacity of 30</p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>A launch specification with an instance type <code class="code">c3.2xlarge</code> and a
+                                 						weight of 8
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>A launch specification with an instance type <code class="code">m3.xlarge</code> and a
+                                 						weight of 8
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>A launch specification with an instance type <code class="code">r3.xlarge</code> and a
+                                 						weight of 8
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     			
+                     <p>The Spot Fleet would launch four instances (30 divided by 8, result rounded up). With
+                        the
+                        				<code class="code">lowestPrice</code> strategy, all four instances come from the pool that
+                        				provides the lowest price per unit. With the <code class="code">diversified</code> strategy,
+                        				the Spot Fleet launches 1 instance in each of the three pools, and the fourth
+                        				instance in whichever of the three pools provides the lowest price per unit.
+                     </p>
+                     
+                     		
+                     			
+                     <h2 id="instance-weighting-walkthrough">Walkthrough: Using Spot Fleet with Instance Weighting</h2>
+                     			
+                     <p>This walkthrough uses a fictitious company called Example Corp to illustrate the process
+                        of
+                        				requesting a Spot Fleet using instance weighting.
+                     </p>
+                     
+                     			
+                     				
+                     <h3 id="instance-weighting-walkthrough-objective">Objective</h3>
+                     				
+                     <p>Example Corp, a pharmaceutical company, wants to leverage the
+                        					computational power of Amazon EC2 for screening chemical compounds that
+                        					might be used to fight cancer.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="instance-weighting-walkthrough-planning">Planning</h3>
+                     				
+                     <p>Example Corp first reviews <a href="https://aws.amazon.com/ec2/spot/getting-started/#bestpractices" target="_blank">Spot Best
+                           						Practices</a>. Next, Example Corp determines the following requirements
+                        					for their Spot Fleet.
+                     </p>
+                     				
+                     					
+                     <p class="title"><b>Instance Types</b></p>
+                     					
+                     <p>Example Corp has a compute- and memory-intensive application that performs best with
+                        at
+                        						least 60 GB of memory and eight virtual CPUs (vCPUs). They want to maximize
+                        						these resources for the application at the lowest possible price. Example
+                        						Corp decides that any of the following EC2 instance types would meet their
+                        						needs:
+                     </p>
+                     				
+                     				
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac17c13c18c27c19b7b7">
+                              							
+                              <tbody><tr>
+                                 								
+                                 <th>Instance type</th>
+                                 								
+                                 <th>Memory (GiB)</th>
+                                 								
+                                 <th>vCPUs</th>
+                                 							
+                              </tr>
+                              						
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p>r3.2xlarge</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>61</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>8</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p>r3.4xlarge</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>122</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>16</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p>r3.8xlarge</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>244</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>32</p>
+                                 </td>
+                                 							
+                              </tr>
+                              						
+                           </tbody></table>
+                        </div>
+                     </div>			
+                     
+                     				
+                     					
+                     <p class="title"><b>Target Capacity in Units</b></p>
+                     					
+                     <p>With instance weighting, target capacity can equal a number of instances (the default)
+                        or
+                        						a combination of factors such as cores (vCPUs), memory (GiBs), and storage
+                        						(GBs). By considering the base for their application (60 GB of RAM and eight
+                        						vCPUs) as 1 unit, Example Corp decides that 20 times this amount would meet
+                        						their needs. So the company sets the target capacity of their Spot Fleet
+                        						request to 20.
+                     </p>
+                     				
+                     
+                     				
+                     					
+                     <p class="title"><b>Instance Weights</b></p>
+                     					
+                     <p>After determining the target capacity, Example Corp calculates instance weights. 
+                        						To calculate the instance weight for each instance type, they determine the
+                        units
+                        						of each instance type that are required to reach the target capacity as follows:
+                     </p>
+                     				
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>r3.2xlarge (61.0 GB, 8 vCPUs) = 1 unit of 20</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>r3.4xlarge (122.0 GB, 16 vCPUs) = 2 units of 20</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>r3.8xlarge (244.0 GB, 32 vCPUs) = 4 units of 20</p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     				
+                     <p>Therefore, Example Corp assigns instance weights of 1, 2, and 4 to the respective
+                        launch
+                        					configurations in their Spot Fleet request.
+                     </p>
+                     
+                     				
+                     					
+                     <p class="title"><b>Price Per Unit Hour</b></p>
+                     					
+                     <p>Example Corp uses the <a href="https://aws.amazon.com/ec2/pricing/" target="_blank">On-Demand price</a>
+                        						per instance hour as a starting point for their price. They could also
+                        						use recent Spot prices, or a combination of the two. To calculate the price
+                        						per unit hour, they divide their starting price per instance hour by the
+                        						weight. For example:
+                     </p>
+                     				
+                     				
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac17c13c18c27c19b7c19">
+                              							
+                              <tbody><tr>
+                                 								
+                                 <th>Instance type</th>
+                                 								
+                                 <th>On-Demand price</th>
+                                 								
+                                 <th>Instance weight</th>
+                                 								
+                                 <th>Price per unit hour</th>
+                                 							
+                              </tr>
+                              						
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p>r3.2xLarge</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>$0.7</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>1</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>$0.7</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p>r3.4xLarge</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>$1.4</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>2</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>$0.7</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p>r3.8xLarge</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>$2.8</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>4</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>$0.7</p>
+                                 </td>
+                                 							
+                              </tr>
+                              						
+                           </tbody></table>
+                        </div>
+                     </div>
+                     				
+                     <p>Example Corp could use a global price per unit hour of $0.7 and be competitive 
+                        					for all three instance types. They could also use a global price per unit hour
+                        					of $0.7 and a specific price per unit hour of $0.9 in the <code class="code">r3.8xlarge</code> 
+                        					launch specification.
+                     </p>
+                     
+                     			
+                     
+                     			
+                     				
+                     <h3 id="instance-weighting-walkthrough-permissions">Verifying Permissions</h3>
+                     				
+                     <p>Before creating a Spot Fleet request, Example Corp verifies that it has an IAM role
+                        with
+                        					the required permissions. For more information, see <a href="spot-fleet-requests.html#spot-fleet-prerequisites">Spot Fleet Prerequisites</a>.
+                     </p>
+                     			
+                     			
+                     			
+                     				
+                     <h3 id="instance-weighting-walkthrough-request">Creating the Request</h3>
+                     				
+                     <p>Example Corp creates a file, <code>config.json</code>, with the following
+                        					configuration for its Spot Fleet request:
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+  &quot;SpotPrice&quot;: &quot;0.70&quot;,
+  &quot;TargetCapacity&quot;: 20,
+  &quot;IamFleetRole&quot;: &quot;arn:aws:iam::123456789012:role/aws-ec2-spot-fleet-tagging-role&quot;,
+  &quot;LaunchSpecifications&quot;: [
+    {
+      &quot;ImageId&quot;: &quot;ami-1a2b3c4d&quot;,
+      &quot;InstanceType&quot;: &quot;r3.2xlarge&quot;,
+      &quot;SubnetId&quot;: &quot;subnet-482e4972&quot;,
+      &quot;WeightedCapacity&quot;: 1
+    },
+    {
+      &quot;ImageId&quot;: &quot;ami-1a2b3c4d&quot;,
+      &quot;InstanceType&quot;: &quot;r3.4xlarge&quot;,
+      &quot;SubnetId&quot;: &quot;subnet-482e4972&quot;,
+      &quot;WeightedCapacity&quot;: 2
+    }
+    {
+      &quot;ImageId&quot;: &quot;ami-1a2b3c4d&quot;,
+      &quot;InstanceType&quot;: &quot;r3.8xlarge&quot;,
+      &quot;SubnetId&quot;: &quot;subnet-482e4972&quot;,
+      &quot;SpotPrice&quot;: &quot;0.90&quot;,
+      &quot;WeightedCapacity&quot;: 4
+    }
+  ]
+}</code></pre>
+                     				<p>Example Corp creates the Spot Fleet request using the following <a href="./cli/latest/reference/ec2/request-spot-fleet.html" target="_blank">request-spot-fleet</a>
+                        					command:
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 request-spot-fleet --spot-fleet-request-config file://config.json</code></strong></code></pre>
+                     
+                     				<p>For more information, see <a href="spot-fleet-requests.html">Spot Fleet Requests</a>.
+                     </p>
+                     			
+                     			
+                     			
+                     				
+                     <h3 id="instance-weighting-walkthrough-fulfillment">Fulfillment</h3>
+                     				
+                     <p>The allocation strategy determines which Spot Instance pools your Spot Instances come
+                        					from.
+                     </p>
+                     			    
+                     <p>With the <code class="code">lowestPrice</code> strategy (which is the default strategy), the Spot
+                        					Instances come from the pool with the lowest price per unit at the time of
+                        					fulfillment. To provide 20 units of capacity, the Spot Fleet launches either
+                        20
+                        						<code class="code">r3.2xlarge</code> instances (20 divided by 1), 10
+                        						<code class="code">r3.4xlarge</code> instances (20 divided by 2), or 5
+                        						<code class="code">r3.8xlarge</code> instances (20 divided by 4).
+                     </p>
+                     			    
+                     <p>If Example Corp used the <code class="code">diversified</code> strategy, the Spot Instances would
+                        					come from all three pools. The Spot Fleet would launch 6 <code class="code">r3.2xlarge</code>
+                        					instances (which provide 6 units), 3 <code class="code">r3.4xlarge</code> instances (which
+                        					provide 6 units), and 2 <code class="code">r3.8xlarge</code> instances (which provide 8
+                        					units), for a total of 20 units.
+                     </p>
+                     						
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="how-spot-instances-work.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="using-spot-instances-history.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="On-Demand in Spot Fleet"><a class="pagetoc" href="#on-demand-in-spot">On-Demand in Spot Fleet</a></li>
+                        <li class="pagetoc" name="Spot Fleet Allocation Strategy"><a class="pagetoc" href="#spot-fleet-allocation-strategy">Spot Fleet Allocation Strategy</a></li>
+                        <li class="pagetoc" name="Spot Price Overrides"><a class="pagetoc" href="#spot-price-overrides">Spot Price Overrides</a></li>
+                        <li class="pagetoc" name="Spot Fleet Instance Weighting"><a class="pagetoc" href="#spot-instance-weighting">Spot Fleet Instance Weighting</a></li>
+                        <li class="pagetoc" name="Walkthrough: Using Spot Fleet with Instance Weighting"><a class="pagetoc" href="#instance-weighting-walkthrough">Walkthrough: Using Spot Fleet with Instance Weighting</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

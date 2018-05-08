@@ -1,0 +1,446 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Specifying Server-Side Encryption with Customer-Provided Encryption Keys Using the
+         AWS SDK for Java - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ServerSideEncryptionCustomerKeys.html" title="Protecting Data Using Server-Side Encryption
+		with Customer-Provided Encryption Keys (SSE-C)">
+      <link rel="prev" href="ServerSideEncryptionCustomerKeys.html" title="Protecting Data Using Server-Side Encryption
+		with Customer-Provided Encryption Keys (SSE-C)">
+      <link rel="next" href="sse-c-using-dot-net-sdk.html" title="Specifying Server-Side Encryption with Customer-Provided
+			Encryption Keys Using the AWS SDK for .NET">
+      <meta name="description" content="Use the AWS SDK for Java to specify server-side encryption with customer-provided encryption keys (SSE-C) in Amazon S3.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/sse-c-using-java-sdk.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="DataDurability.html">Protecting Data in Amazon S3</a> &#xBB; <a href="UsingEncryption.html">Protecting Data Using Encryption</a> &#xBB; <a href="serv-side-encryption.html">Protecting Data Using Server-Side Encryption</a> &#xBB; <a href="ServerSideEncryptionCustomerKeys.html">Protecting Data Using Server-Side Encryption
+                                    		with Customer-Provided Encryption Keys (SSE-C)</a> &#xBB; <span class="breadcrumb">Specifying Server-Side Encryption with Customer-Provided Encryption Keys Using the
+                                    AWS SDK for Java</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="sse-c-using-java-sdk">Specifying Server-Side Encryption with Customer-Provided Encryption Keys Using the
+                        AWS SDK for Java
+                     </h1>
+                     <p>The following example shows how to request server-side encryption with customer-provided
+                        keys
+                        		(SSE-C) for objects. The example performs the following operations. Each operation
+                        shows how
+                        		to specify SSE-C-related headers in the request:
+                     </p>
+                     <div class="itemizedlist">
+                        		
+                        		
+                        		
+                        		
+                        	
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              			
+                              <p><span class="topcom">Put object</span>&#x2014;Uploads an object and requests server-side
+                                 				encryption using a customer-provided encryption key.
+                              </p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p><span class="topcom">Get object</span>&#x2014;Downloads the object uploaded in the
+                                 				previous step. In the request, you provide the same encryption information that
+                                 you
+                                 				provided when you uploaded the object. Amazon S3 needs this information to decrypt
+                                 the
+                                 				object so that it can return it to you.
+                              </p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p><span class="topcom">Get object metadata</span>&#x2014;Retrieves the object&apos;s metadata.
+                                 				You provide the same encryption information used when the object was created.
+                              </p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p><span class="topcom">Copy object</span>&#x2014;Makes a copy of the previously uploaded
+                                 				object. Because the source object is stored using SSE-C, you must provide its
+                                 				encryption information in your copy request. By default, Amazon S3 encrypts the
+                                 copy of
+                                 				the object only if you explicitly request it. This example directs Amazon S3 to
+                                 store an
+                                 				encrypted copy of the object using a new SSE-C key.
+                              </p>
+                              		
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>This example shows how to upload an object in a single operation. When using the Multipart
+                           			Upload API to upload large objects, you provide encryption information in the same
+                           way
+                           			shown in this example. For examples of multipart uploads that use the AWS SDK for
+                           Java, see
+                           				<a href="usingHLmpuJava.html">Using the AWS Java SDK for Multipart Upload (High-Level
+                              			API)</a> and <a href="mpListPartsJavaAPI.html">Using the AWS Java SDK for a Multipart Upload (Low-Level
+                              			API)</a>.
+                        </p>
+                     </div>
+                     <p>To add the required encryption information, you include an <code class="code">SSECustomerKey</code> in
+                        		your request. For more information about the <code class="code">SSECustomerKey</code> class, see <a href="ServerSideEncryptionCustomerKeys.html#sse-c-how-to-programmatically-intro">Using SSE-C</a>.
+                     </p>
+                     <p>For information about SSE-C, see <a href="ServerSideEncryptionCustomerKeys.html">Protecting Data Using Server-Side Encryption
+                           		with Customer-Provided Encryption Keys (SSE-C)</a>. For instructions on creating and
+                        		testing a working sample, see <a href="UsingTheMPJavaAPI.html#TestingJavaSamples">Testing the Amazon S3 Java Code Examples</a>. 
+                     </p>
+                     <div class="example">
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+
+import javax.crypto.KeyGenerator;
+
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.CopyObjectRequest;
+import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.services.s3.model.SSECustomerKey;
+
+public class ServerSideEncryptionUsingClientSideEncryptionKey {
+    private static SSECustomerKey SSE_KEY;
+    private static AmazonS3 S3_CLIENT;
+    private static KeyGenerator KEY_GENERATOR;
+
+    public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
+        String clientRegion = &quot;*** Client region ***&quot;;
+        String bucketName = &quot;*** Bucket name ***&quot;;
+        String keyName = &quot;*** Key name ***&quot;;
+        String uploadFileName = &quot;*** File path ***&quot;;
+        String targetKeyName = &quot;*** Target key name ***&quot;;
+        
+        // Create an encryption key.
+        KEY_GENERATOR = KeyGenerator.getInstance(&quot;AES&quot;);
+        KEY_GENERATOR.init(256, new SecureRandom());
+        SSE_KEY = new SSECustomerKey(KEY_GENERATOR.generateKey());
+
+        try {
+            S3_CLIENT = AmazonS3ClientBuilder.standard()
+                    .withCredentials(new ProfileCredentialsProvider())
+                    .withRegion(clientRegion)
+                    .build();
+
+            // Upload an object.
+            uploadObject(bucketName, keyName, new File(uploadFileName));
+    
+            // Download the object.
+            downloadObject(bucketName, keyName);
+    
+            // Verify that the object is properly encrypted by attempting to retrieve it
+            // using the encryption key.
+            retrieveObjectMetadata(bucketName, keyName);
+    
+            // Copy the object into a new object that also uses SSE-C.
+            copyObject(bucketName, keyName, targetKeyName);
+        }
+        catch(AmazonServiceException e) {
+            // The call was transmitted successfully, but Amazon S3 couldn&apos;t process 
+            // it, so it returned an error response.
+            e.printStackTrace();
+        }
+        catch(SdkClientException e) {
+            // Amazon S3 couldn&apos;t be contacted for a response, or the client
+            // couldn&apos;t parse the response from Amazon S3.
+            e.printStackTrace();
+        }
+    }
+
+    private static void uploadObject(String bucketName, String keyName, File file) {
+        PutObjectRequest putRequest = new PutObjectRequest(bucketName, keyName, file).withSSECustomerKey(SSE_KEY);
+        S3_CLIENT.putObject(putRequest);
+        System.out.println(&quot;Object uploaded&quot;);
+    }
+
+    private static void downloadObject(String bucketName, String keyName) throws IOException {
+        GetObjectRequest getObjectRequest = new GetObjectRequest(bucketName, keyName).withSSECustomerKey(SSE_KEY);
+        S3Object object = S3_CLIENT.getObject(getObjectRequest);
+
+        System.out.println(&quot;Object content: &quot;);
+        displayTextInputStream(object.getObjectContent());
+    }
+
+    private static void retrieveObjectMetadata(String bucketName, String keyName) {
+        GetObjectMetadataRequest getMetadataRequest = new GetObjectMetadataRequest(bucketName, keyName)
+                                                                .withSSECustomerKey(SSE_KEY);
+        ObjectMetadata objectMetadata = S3_CLIENT.getObjectMetadata(getMetadataRequest);
+        System.out.println(&quot;Metadata retrieved. Object size: &quot; + objectMetadata.getContentLength());
+    }
+    
+    private static void copyObject(String bucketName, String keyName, String targetKeyName)
+            throws NoSuchAlgorithmException {
+        // Create a new encryption key for target so that the target is saved using SSE-C.
+        SSECustomerKey newSSEKey = new SSECustomerKey(KEY_GENERATOR.generateKey());
+
+        CopyObjectRequest copyRequest = new CopyObjectRequest(bucketName, keyName, bucketName, targetKeyName)
+                .withSourceSSECustomerKey(SSE_KEY)
+				.withDestinationSSECustomerKey(newSSEKey);
+
+        S3_CLIENT.copyObject(copyRequest);
+        System.out.println(&quot;Object copied&quot;);
+    }
+
+    private static void displayTextInputStream(S3ObjectInputStream input) throws IOException {
+        // Read one line at a time from the input stream and display each line.
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            System.out.println(line);
+        }
+        System.out.println();
+    }
+}
+</code></pre></div>
+                     </div>
+                     		
+                     <h2 id="sse-c-java-other-api">Other Amazon S3 Operations with SSE-C using the AWS SDK for Java</h2>
+                     		
+                     <p>The example in the preceding section shows how to request server-side encryption with
+                        			customer-provided keys (SSE-C) in the PUT, GET, Head, and Copy operations. This
+                        			section describes other APIs that support SSE-C.
+                     </p>
+                     		
+                     <p>To upload large objects, you can use multipart upload API (see <a href="uploadobjusingmpu.html">Uploading Objects Using Multipart Upload API</a>). You can use either
+                        			high-level or low-level APIs to upload large objects. These APIs support encryption-related
+                        headers in the request.
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>When using the high-level <code class="code">TransferManager</code> API, you provide the
+                                 					encryption-specific headers in the <code class="code">PutObjectRequest</code> (see <a href="usingHLmpuJava.html">Using the AWS Java SDK for Multipart Upload (High-Level
+                                    			API)</a>). 
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>When using the low-level API, you provide encryption-related information in the
+                                 						<code class="code">InitiateMultipartUploadRequest</code>, followed by identical
+                                 					encryption information in each <code class="code">UploadPartRequest</code>. You do not need to provide any
+                                 					encryption-specific headers in your <code class="code">CompleteMultipartUploadRequest</code>. For
+                                 					examples, see <a href="mpListPartsJavaAPI.html">Using the AWS Java SDK for a Multipart Upload (Low-Level
+                                    			API)</a>. 
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <p>The following example uses <code class="code">TransferManager</code> to create objects and shows how
+                        			to provide SSE-C related information. The example does the following:
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>Creates an object using the <code class="code">TransferManager.upload()</code> method. In the
+                                 						<code class="code">PutObjectRequest</code> instance, you provide encryption key
+                                 					information to request. Amazon S3 encrypts the object using the customer-provided
+                                 					encryption key.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Makes a copy of the object by calling the <code class="code">TransferManager.copy()</code> method. The
+                                 					example directs Amazon S3 to encrypt the object copy using a new <code class="code">SSECustomerKey</code>. Because the source
+                                 					object is encrypted using SSE-C, the <code class="code">CopyObjectRequest</code> also
+                                 					provides the encryption key of the source object so that Amazon S3 can decrypt
+                                 the
+                                 					object before copying it. 
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <div class="example">
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">import java.io.File;
+import java.security.SecureRandom;
+
+import javax.crypto.KeyGenerator;
+
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.CopyObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.SSECustomerKey;
+import com.amazonaws.services.s3.transfer.Copy;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
+import com.amazonaws.services.s3.transfer.Upload;
+
+public class ServerSideEncryptionCopyObjectUsingHLwithSSEC {
+
+    public static void main(String[] args) throws Exception {
+        String clientRegion = &quot;*** Client region ***&quot;;
+        String bucketName = &quot;*** Bucket name ***&quot;;
+        String fileToUpload = &quot;*** File path ***&quot;;
+        String keyName = &quot;*** New object key name ***&quot;;
+        String targetKeyName = &quot;*** Key name for object copy ***&quot;;
+
+        try {
+            AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
+                                    .withRegion(clientRegion)
+                                    .withCredentials(new ProfileCredentialsProvider())
+                                    .build();
+            TransferManager tm = TransferManagerBuilder.standard()
+                                    .withS3Client(s3Client)
+                                    .build();
+
+            // Create an object from a file.
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, keyName, new File(fileToUpload));
+    
+            // Create an encryption key.
+            KeyGenerator keyGenerator = KeyGenerator.getInstance(&quot;AES&quot;);
+            keyGenerator.init(256, new SecureRandom());
+            SSECustomerKey sseCustomerEncryptionKey = new SSECustomerKey(keyGenerator.generateKey());
+    
+            // Upload the object. TransferManager uploads asynchronously, so this call returns immediately.
+            putObjectRequest.setSSECustomerKey(sseCustomerEncryptionKey);
+            Upload upload = tm.upload(putObjectRequest);
+            
+            // Optionally, wait for the upload to finish before continuing.
+            upload.waitForCompletion();
+            System.out.println(&quot;Object created.&quot;);
+    
+            // Copy the object and store the copy using SSE-C with a new key.
+            CopyObjectRequest copyObjectRequest = new CopyObjectRequest(bucketName, keyName, bucketName, targetKeyName);
+            SSECustomerKey sseTargetObjectEncryptionKey = new SSECustomerKey(keyGenerator.generateKey());
+            copyObjectRequest.setSourceSSECustomerKey(sseCustomerEncryptionKey);
+            copyObjectRequest.setDestinationSSECustomerKey(sseTargetObjectEncryptionKey);
+    
+            // Copy the object. TransferManager copies asynchronously, so this call returns immediately.
+            Copy copy = tm.copy(copyObjectRequest);
+            
+            // Optionally, wait for the upload to finish before continuing.
+            copy.waitForCompletion();
+            System.out.println(&quot;Copy complete.&quot;);
+        }
+        catch(AmazonServiceException e) {
+            // The call was transmitted successfully, but Amazon S3 couldn&apos;t process 
+            // it, so it returned an error response.
+            e.printStackTrace();
+        }
+        catch(SdkClientException e) {
+            // Amazon S3 couldn&apos;t be contacted for a response, or the client
+            // couldn&apos;t parse the response from Amazon S3.
+            e.printStackTrace();
+        }
+    }
+}</code></pre></div>
+                     </div>
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ServerSideEncryptionCustomerKeys.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="sse-c-using-dot-net-sdk.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Other Amazon S3 Operations with SSE-C using the AWS SDK for Java"><a class="pagetoc" href="#sse-c-java-other-api">Other Amazon S3 Operations with SSE-C using the AWS SDK for Java</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

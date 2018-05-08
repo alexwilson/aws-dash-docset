@@ -1,0 +1,271 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Throttle API Requests for Better
+         Throughput - Amazon API Gateway
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="set-up-stages.html" title="Set up a Stage in API Gateway">
+      <link rel="prev" href="stages.html" title="Set up a Stage Using the API Gateway Console">
+      <link rel="next" href="api-gateway-caching.html" title="">
+      <meta name="description" content="Understand and change API request throttling limits on an account level, stage level, and method level.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon API Gateway">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-request-throttling.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/apigateway">Amazon API Gateway</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="how-to-deploy-api.html">Deploying an API in Amazon API Gateway</a> &#xBB; <a href="set-up-stages.html">Set up a Stage in API Gateway</a> &#xBB; <span class="breadcrumb">Throttle API Requests for Better
+                                    Throughput</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="api-gateway-request-throttling">Throttle API Requests for Better
+                        Throughput
+                     </h1>
+                     <p> To prevent your API from being overwhelmed by too many requests, Amazon API Gateway
+                        throttles
+                        requests to your API using the <a href="https://en.wikipedia.org/wiki/Token_bucket" target="_blank">token
+                           bucket algorithm</a>, where a token counts for a request. Specifically, API Gateway sets a
+                        limit on a steady-state rate and a burst of request submissions against all APIs in
+                        your
+                        account. In the token bucket algorithm, the burst is the maximum bucket size. 
+                     </p>
+                     <p> When request submissions exceed the steady-state request rate and burst limits, API
+                        Gateway
+                        fails the limit-exceeding requests and returns <code class="code">429 Too Many Requests</code> error
+                        responses to the client. Upon catching such exceptions, the client can resubmit the
+                        failed
+                        requests in a rate-limiting fashion, while complying with the API Gateway throttling
+                        limits. 
+                     </p>
+                     <p> As an API developer, you can set the limits for individual API stages or methods
+                        to
+                        improve overall performance across all APIs in your account. Alternatively, you can
+                        enable
+                        <a href="api-gateway-api-usage-plans.html">usage plans</a> to restrict client
+                        request submissions to within specified request rates and quotas. This restricts the
+                        overall
+                        request submissions so that they don&apos;t go significantly past the account-level throttling
+                        limits. 
+                     </p>
+                     
+                     <h2 id="apig-request-throttling-account-level-limits">Account-Level
+                        Throttling
+                     </h2>
+                     
+                     
+                     <p> By default, API Gateway limits the steady-state request rate to 10,000 requests per
+                        second
+                        (rps). It limits the burst (that is, the maximum bucket size) to 5,000 requests across
+                        all APIs within an AWS account. In API Gateway, the burst limit corresponds to the
+                        maximum
+                        number of concurrent request submissions that API Gateway can fulfill at any moment
+                        without
+                        returning <code class="code">429 Too Many Requests</code> error responses. 
+                     </p>
+                     
+                     <p>To help understand these throttling limits, here are a few examples, given the burst
+                        limit and the default account-level rate limit:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>If a caller submits 10,000 requests in a one second period evenly (for
+                                 example, 10 requests every millisecond), API Gateway processes all requests without
+                                 dropping any. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>If the caller sends 10,000 requests in the first millisecond, API Gateway serves
+                                 5,000 of those requests and throttles the rest in the one-second period.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>If the caller submits 5,000 requests in the first millisecond and then evenly
+                                 spreads another 5,000 requests through the remaining 999 milliseconds (for
+                                 example, about 5 requests every millisecond), API Gateway processes all 10,000
+                                 requests in the one-second period without returning <code class="code">429 Too Many
+                                    Requests</code> error responses. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>If the caller submits 5,000 requests in the first millisecond and waits until
+                                 the 101st millisecond to submit another 5,000 requests, API Gateway processes 6,000
+                                 requests and throttles the rest in the one-second period. This is because at the
+                                 rate of 10,000 rps, API Gateway has served 1,000 requests after the first 100
+                                 milliseconds and thus emptied the bucket by the same amount. Of the next spike
+                                 of 5,000 requests, 1,000 fill the bucket and are queued to be processed. The
+                                 other 4,000 exceed the bucket capacity and are discarded.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>If the caller submits 5,000 requests in the first millisecond, submits 1,000
+                                 requests at the 101st millisecond, and then evenly spreads another 4,000
+                                 requests through the remaining 899 milliseconds, API Gateway processes all 10,000
+                                 requests in the one-second period without throttling.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p> More generally, at any given moment, when a bucket contains <code class="code">b</code> and the
+                        maximum bucket capacity is <code class="code">B</code>, the maximum additional tokens that can be
+                        added to the bucket is <code class="code">&#x394;=B-b</code>. This maximum number of additional
+                        tokens corresponds to the maximum number of additional concurrent requests that a
+                        client
+                        can submit without receiving any <code class="code">429</code> error responses. In general,
+                        <code class="code">&#x394;</code> varies in time. The value ranges from zero when the bucket is
+                        full (that is, <code class="code">b=B</code>) to <code class="code">B</code> when the bucket is empty (that is,
+                        <code class="code">b=0</code>). The range depends on the request-processing rate, which is the
+                        rate at which tokens are removed from the bucket, and the rate limit rate, which is
+                        the
+                        rate at which tokens are added to the bucket. 
+                     </p>
+                     
+                     <p> The following schematic shows the general behaviors of <code class="code">&#x394;</code>, the
+                        maximum additional concurrent requests, as a function of time. The schematic assumes
+                        that the tokens in the bucket decrease at a combined rate of <code class="code">r</code>, starting
+                        from an empty bucket. 
+                     </p>
+                     
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/tokenBucketBurst.png" alt="
+                Burst as a function of time given the token bucket size and a combined burn
+                    rate
+            " style="max-width:100%">
+                        
+                        
+                        
+                     </div>
+                     
+                     <p>The account-level rate limit can be increased upon request. To request an increase
+                        of
+                        account-level throttling limits, contact the <a href="https://console.aws.amazon.com/support/home#/" target="_blank">AWS
+                           Support Center</a>. For more information, see <a href="limits.html#api-gateway-limits">API Gateway Limits</a>. 
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>The burst limit cannot be increased.</p>
+                     </div>
+                     
+                     
+                     <h2 id="apig-request-throttling-stage-and-method-level-limits">Default Method
+                        Throttling
+                     </h2>
+                     
+                     
+                     <p> As an API owner, you can set the default method throttling to override the
+                        account-level request throttling limits for a specific stage or for individual methods
+                        in an API. The Default method throttling limits are bounded by the account-level rate
+                        limits, even if you set the default method throttling limits higher than the
+                        account-level limits. 
+                     </p>
+                     
+                     <p> You can set the default method throttling limits by using the API Gateway console
+                        or by
+                        calling the <a href="api-ref.html">API Gateway REST API</a>. For instructions on using
+                        the console, see <a href="stages.html#how-to-stage-settings">Update Stage Settings</a>. 
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="stages.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="api-gateway-caching.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Account-Level
+                Throttling"><a class="pagetoc" href="#apig-request-throttling-account-level-limits">Account-Level
+                              Throttling</a></li>
+                        <li class="pagetoc" name="Default Method
+                Throttling"><a class="pagetoc" href="#apig-request-throttling-stage-and-method-level-limits">Default Method
+                              Throttling</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon API Gateway';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

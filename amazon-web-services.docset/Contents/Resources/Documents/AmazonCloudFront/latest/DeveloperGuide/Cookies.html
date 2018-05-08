@@ -1,0 +1,326 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Configuring CloudFront to Cache Objects Based on Cookies - Amazon CloudFront</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="WorkingWithObjects.html" title="Working with Objects">
+      <link rel="prev" href="QueryStringParameters.html" title="Configuring CloudFront to Cache Based on Query String Parameters">
+      <link rel="next" href="header-caching.html" title="Configuring CloudFront to Cache Objects Based on Request Headers">
+      <meta name="description" content="Describes how CloudFront forwards, caches, and logs cookies to your origin.">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Cookies.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="WorkingWithObjects.html">Working with Objects</a> &#xBB; <span class="breadcrumb">Configuring CloudFront to Cache Objects Based on Cookies</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="Cookies">Configuring CloudFront to Cache Objects Based on Cookies</h1>
+                     <p>For web distributions, you can choose whether you want CloudFront to forward cookies
+                        to your
+                        			origin and to cache separate versions of your objects based on cookie values in
+                        viewer
+                        			requests. 
+                     </p>
+                     <p>For Real Time Messaging Protocol (RTMP) distributions, you cannot configure CloudFront
+                        to
+                        			process cookies. When CloudFront requests an object from the origin server, it
+                        removes any cookies
+                        			before forwarding the request to your origin. If your origin returns any cookies
+                        along with
+                        			the object, CloudFront removes them before returning the object to the viewer.
+                        For RTMP
+                        			distributions, CloudFront does not cache cookies in edge caches.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Amazon S3 and some HTTP servers do not process cookies. Do not configure CloudFront
+                           cache behaviors
+                           				to forward cookies to an origin that doesn&apos;t process cookies, or you&apos;ll adversely
+                           affect
+                           				cacheability and, therefore, performance. For more information about cache behaviors,
+                           see
+                           					<a href="distribution-web-values-specify.html#DownloadDistValuesCacheBehavior">Cache Behavior Settings</a>.
+                        </p>
+                     </div>
+                     <p>For HTTP and HTTPS web distributions, you can choose whether you want CloudFront to
+                        forward
+                        			cookies to your origin. For RTMP distributions, you cannot configure CloudFront
+                        to process
+                        			cookies.
+                     </p>
+                     <p>For web distributions, CloudFront by default doesn&apos;t consider cookies when caching
+                        your objects
+                        			in edge locations. If your origin returns two objects and they differ only by the
+                        values in
+                        			the <code class="code">Set-Cookie</code> header, CloudFront caches only one version of the object. 
+                     </p>
+                     <p>You can configure CloudFront to forward to your origin some or all of the cookies
+                        in viewer
+                        			requests. CloudFront uses the cookies in viewer requests to uniquely identify an
+                        object in the
+                        			cache. For example, suppose that requests for <code class="code">locations.html</code> contain a
+                        				<code class="code">country</code> cookie that has a value of either <code class="code">uk</code> or <code class="code">fr</code>.
+                        			When you configure CloudFront to cache your objects based on the value of the <code class="code">country</code>
+                        			cookie, CloudFront forwards requests for <code class="code">locations.html</code> to the origin and includes the
+                        				<code class="code">country</code> cookie and cookie values. Your origin returns
+                        				<code class="code">locations.html</code>, and CloudFront caches the object once for requests in which the value
+                        			of the <code class="code">country</code> cookie is <code class="code">uk</code> and once for requests in which the value
+                        			is <code class="code">fr</code>.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>If you configure CloudFront to forward cookies to your origin, CloudFront caches based
+                           on cookie
+                           				values. This is true even if your origin ignores the cookie values in the request
+                           and, in
+                           				the previous example, always returns the same version of <code class="code">locations.html</code> to
+                           				CloudFront. As a result, CloudFront forwards more requests to your origin server
+                           for the same object,
+                           				which slows performance and increases the load on your origin server. If your
+                           origin server
+                           				does not vary its response based on the value of a given cookie, we recommend
+                           that you do
+                           				not configure CloudFront to forward that cookie to your origin.
+                        </p>
+                     </div>
+                     <p>You can configure each cache behavior in a web distribution to do one of the
+                        			following:
+                     </p>
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p><b>Forward all cookies to your origin &#x2013; </b> CloudFront
+                                 					forwards viewer requests to your origin, including all cookies. When your origin
+                                 returns a
+                                 					response, CloudFront caches the response, and the cookies and cookie values in
+                                 the viewer
+                                 					request. (If your origin returns cookies that were not in the viewer request,
+                                 CloudFront does
+                                 					not cache them.) CloudFront returns to the viewer the requested object and all
+                                 cookies and
+                                 					cookie values, including cookies that were not in the viewer request.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><b>Forward a whitelist of cookies that you specify &#x2013;
+                                    					</b> CloudFront removes any cookies that aren&apos;t on the whitelist before forwarding
+                                 					requests to your origin. CloudFront caches the response from your origin as well
+                                 as the
+                                 					specified cookies and their values. (If your origin returns both whitelisted
+                                 cookies and
+                                 					cookies that aren&apos;t on your whitelist, CloudFront caches only the whitelisted
+                                 cookies.) CloudFront
+                                 					also returns to the viewer the object, including the specified cookies and cookie
+                                 values.
+                                 					If the response from the origin includes cookies that aren&apos;t on the whitelist,
+                                 CloudFront
+                                 					returns those cookies to the viewer, too.
+                              </p>
+                              				
+                              <p>For information about specifying wildcards in cookie names, see <a href="distribution-web-values-specify.html#DownloadDistValuesWhitelistCookies">Whitelist Cookies (Amazon EC2 and Other 
+                                    					Custom Origins Only)</a>.
+                              </p>
+                              				
+                              <p>For the current limit on the number of cookie names that you can whitelist for each
+                                 					cache behavior, see <a href="./general/latest/gr/aws_service_limits.html#limits_cloudfront" target="_blank">Amazon CloudFront
+                                    						Limits</a> in the <em>Amazon Web Services General Reference</em>. To request a higher
+                                 					limit, go to <a href="https://console.aws.amazon.com/support/home#/case/create?issueType=service-limit-increase&amp;limitType=service-code-cloudfront-distributions" target="_blank">https://console.aws.amazon.com/support/home#/case/create?issueType=service-limit-increase&amp;limitType=service-code-cloudfront-distributions</a>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><b>Don&apos;t forward cookies to your origin &#x2013; </b>CloudFront
+                                 					doesn&apos;t cache your objects based on cookie values. In addition, CloudFront removes
+                                 the
+                                 						<code class="code">Cookie</code> header from requests that it forwards to your origin and removes the
+                                 						<code class="code">Set-Cookie</code> header from responses that it returns to your viewers.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     <p>Note the following about specifying the cookies that you want to forward:</p>
+                     <div class="variablelist">
+                        			
+                        			
+                        			
+                        			
+                        			
+                        			
+                        		
+                        <dl>
+                           				
+                           <dt><b><span class="term">Access Logs</span></b></dt>
+                           				
+                           <dd>
+                              					
+                              <p>If you configure CloudFront to log requests and to log cookies, CloudFront logs all
+                                 cookies and
+                                 						all cookie attributes, even if you configure CloudFront not to forward cookies
+                                 to your origin
+                                 						or if you configure CloudFront to forward only a specified list of cookies.
+                                 For more
+                                 						information about CloudFront logging, see <a href="AccessLogs.html">Access Logs</a>.
+                              </p>
+                              				
+                           </dd>
+                           			
+                           				
+                           <dt><b><span class="term">Case Sensitivity</span></b></dt>
+                           				
+                           <dd>
+                              					
+                              <p>Cookie names and values are both case sensitive. For example, if two cookies for the
+                                 						same object are identical except for case, CloudFront will cache the object
+                                 twice.
+                              </p>
+                              				
+                           </dd>
+                           			
+                           				
+                           <dt><b><span class="term">CloudFront Sorts Cookies</span></b></dt>
+                           				
+                           <dd>
+                              					
+                              <p>CloudFront sorts the cookies in natural order by cookie name before forwarding the
+                                 request
+                                 						to your origin.
+                              </p>
+                              				
+                           </dd>
+                           			
+                           				
+                           <dt><b><span class="term">If-Modified-Since and If-None-Match</span></b></dt>
+                           				
+                           <dd>
+                              					
+                              <p><code class="code">If-Modified-Since</code> and <code class="code">If-None-Match</code> conditional requests
+                                 						are not supported.
+                              </p>
+                              				
+                           </dd>
+                           			
+                           				
+                           <dt><b><span class="term">Suspending Caching Based on Cookies</span></b></dt>
+                           				
+                           <dd>
+                              					
+                              <p>If you want CloudFront to temporarily stop caching cookies and cookie attributes,
+                                 						configure your origin server to add the following header in responses to CloudFront:
+                              </p>
+                              					
+                              <p><code class="code">no-cache=&quot;Set-Cookie&quot;</code></p>
+                              				
+                           </dd>
+                           			
+                           				
+                           <dt><b><span class="term">Total Length of Cookie Names</span></b></dt>
+                           				
+                           <dd>
+                              					
+                              <p>The total number of bytes in all of the cookie names that you configure CloudFront
+                                 to
+                                 						forward to your origin can&apos;t exceed:
+                              </p>
+                              					
+                              <p><code class="code">512 &#x2013; (the number of cookies that you&apos;re forwarding)</code></p>
+                              					
+                              <p>For example, if you configure CloudFront to forward 10 cookies to your origin, the
+                                 						combined length of the names of the 10 cookies can&apos;t exceed 502 bytes (512 &#x2013;
+                                 10). If you
+                                 						configure CloudFront to forward all cookies to your origin, the length of cookie
+                                 names doesn&apos;t
+                                 						matter.
+                              </p>
+                              				
+                           </dd>
+                           			
+                        </dl>
+                     </div>
+                     <p>For information about using the CloudFront console to update a distribution so CloudFront
+                        forwards
+                        			cookies to the origin, see <a href="HowToUpdateDistribution.html">Viewing and Updating CloudFront Distributions</a>. For information about using the CloudFront API to
+                        			update a distribution, see <a href="./cloudfront/latest/APIReference/PutConfig.html" target="_blank">PUT Distribution
+                           				Config</a> in the <em>Amazon CloudFront API Reference</em>.
+                     </p>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="QueryStringParameters.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="header-caching.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

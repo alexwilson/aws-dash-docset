@@ -1,0 +1,531 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Using Signed URLs - Amazon CloudFront</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="PrivateContent.html" title="Serving Private Content through CloudFront">
+      <link rel="prev" href="private-content-choosing-signed-urls-cookies.html" title="Choosing Between Signed URLs and Signed Cookies">
+      <link rel="next" href="private-content-creating-signed-url-canned-policy.html" title="Creating a Signed URL Using a Canned Policy">
+      <meta name="description" content="Describes the basics for using signed URLs to control access to your objects.">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-signed-urls.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="PrivateContent.html">Serving Private Content through CloudFront</a> &#xBB; <span class="breadcrumb">Using Signed URLs</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="private-content-signed-urls">Using Signed URLs</h1>
+                     <div class="highlights">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#private-content-choosing-canned-custom-policy">Choosing Between Canned and
+                                 				Custom Policies for Signed URLs</a></li>
+                           <li><a href="#private-content-how-signed-urls-work">How Signed URLs Work</a></li>
+                           <li><a href="#private-content-overview-choosing-duration">Choosing How Long Signed URLs Are
+                                 				Valid</a></li>
+                           <li><a href="#private-content-check-expiration">When Does CloudFront Check the Expiration Date
+                                 				and Time in a Signed URL?</a></li>
+                           <li><a href="#private-content-overview-sample-code">Sample Code and Third-Party
+                                 				Tools</a></li>
+                           <li><a href="private-content-creating-signed-url-canned-policy.html">Creating a Signed URL Using a Canned Policy</a></li>
+                           <li><a href="private-content-creating-signed-url-custom-policy.html">Creating a Signed URL Using a Custom Policy</a></li>
+                        </ul>
+                     </div>
+                     <p>A signed URL includes additional information, for example, an expiration date and
+                        time,
+                        			that gives you more control over access to your content. This additional information
+                        appears
+                        			in a policy statement, which is based on either a canned policy or a custom policy.
+                        The
+                        			differences between canned and custom policies are explained in the next two sections.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You can create some signed URLs using canned policies and create some signed URLs
+                           using
+                           				custom policies for the same distribution.
+                        </p>
+                     </div>
+                     <h2 id="private-content-choosing-canned-custom-policy">Choosing Between Canned and
+                        				Custom Policies for Signed URLs
+                     </h2>
+                     			
+                     			
+                     <p>When you create a signed URL, you write a policy statement in JSON format that specifies
+                        				the restrictions on the signed URL, for example, how long the URL is valid. You
+                        can use
+                        				either a canned policy or a custom policy. Here&apos;s how canned and custom policies
+                        				compare:
+                     </p>
+                     
+                     			
+                     <div class="table">
+                        <p class="title"><b></b></p>
+                        <div class="table-contents">
+                           <table id="w313aac27c45b9b4">
+                              						
+                              <tbody><tr>
+                                 							
+                                 <th>Description</th>
+                                 							
+                                 <th>Canned Policy</th>
+                                 							
+                                 <th>Custom Policy</th>
+                                 						
+                              </tr>
+                              					
+                              
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    <p>You can reuse the policy statement for multiple objects. To reuse the
+                                       									policy statement, you must use wildcard characters in the <code class="code">Resource</code>
+                                       									object. For more information, see <a href="private-content-creating-signed-url-custom-policy.html#private-content-custom-policy-statement-values">Values that You Specify
+                                          in the Policy Statement for a Signed URL That Uses a Custom Policy</a>.)
+                                       								
+                                    </p>
+                                 </td>
+                                 							
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 						
+                              </tr>
+                              
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    <p>You can specify the date and time that users can begin to access your
+                                       									content.
+                                    </p>
+                                 </td>
+                                 							
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                                 <td>
+                                    <p>Yes (optional)</p>
+                                 </td>
+                                 						
+                              </tr>
+                              
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    <p>You can specify the date and time that users can no longer access your
+                                       									content.
+                                    </p>
+                                 </td>
+                                 							
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 						
+                              </tr>
+                              
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    <p>You can specify the IP address or range of IP addresses of the users who
+                                       									can access your content.
+                                    </p>
+                                 </td>
+                                 							
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                                 <td>
+                                    <p>Yes (optional)</p>
+                                 </td>
+                                 						
+                              </tr>
+                              
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    <p>The signed URL includes a base64-encoded version of the policy, which
+                                       									results in a longer URL.
+                                    </p>
+                                 </td>
+                                 							
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 						
+                              </tr>
+                              
+                              					
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     			
+                     <p>For information about creating signed URLs using a canned policy, see <a href="private-content-creating-signed-url-canned-policy.html">Creating a Signed URL Using a Canned Policy</a>.
+                     </p>
+                     			
+                     <p>For information about creating signed URLs using a custom policy, see <a href="private-content-creating-signed-url-custom-policy.html">Creating a Signed URL Using a Custom Policy</a>.
+                     </p>
+                     
+                     
+                     			
+                     		
+                     			
+                     <h2 id="private-content-how-signed-urls-work">How Signed URLs Work</h2>
+                     
+                     			
+                     <p>Here&apos;s an overview of how you configure CloudFront and Amazon S3 for signed URLs and
+                        how CloudFront
+                        				responds when a user uses a signed URL to request an object. 
+                     </p>
+                     
+                     			
+                     <ol>
+                        <li>
+                           					
+                           <p>In your CloudFront distribution, specify one or more trusted signers, which are the
+                              AWS
+                              						accounts that you want to have permission to create signed URLs.
+                           </p>
+                           					
+                           <p>For more information, see <a href="private-content-trusted-signers.html">Specifying the AWS Accounts That Can Create Signed URLs and Signed Cookies (Trusted
+                                 Signers)</a>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>You develop your application to determine whether a user should have access to your
+                              						content and to create signed URLs for the objects or parts of your application
+                              that you
+                              						want to restrict access to. For more information, see the applicable topic:
+                           </p>
+                           					
+                           <div class="itemizedlist">
+                              						
+                              						
+                              					
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    							
+                                    <p><a href="private-content-creating-signed-url-canned-policy.html">Creating a Signed URL Using a Canned Policy</a></p>
+                                    						
+                                 </li>
+                                 <li class="listitem">
+                                    							
+                                    <p><a href="private-content-creating-signed-url-custom-policy.html">Creating a Signed URL Using a Custom Policy</a></p>
+                                    						
+                                 </li>
+                              </ul>
+                           </div>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>A user requests an object for which you want to require signed URLs.</p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Your application verifies that the user is entitled to access the object: they&apos;ve
+                              						signed in, they&apos;ve paid for access to the content, or they&apos;ve met some other
+                              requirement
+                              						for access.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Your application creates and returns a signed URL to the user.</p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>The signed URL allows the user to download or stream the content.</p>
+                           					
+                           <p>This step is automatic; the user usually doesn&apos;t have to do anything additional to
+                              						access the content. For example, if a user is accessing your content in a web
+                              browser,
+                              						your application returns the signed URL to the browser. The browser immediately
+                              uses the
+                              						signed URL to access the object in the CloudFront edge cache without any intervention
+                              from the
+                              						user.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>CloudFront uses the public key to validate the signature and confirm that the URL
+                              hasn&apos;t
+                              						been tampered with. If the signature is invalid, the request is rejected. 
+                           </p>
+                           					
+                           <p>If the signature is valid, CloudFront looks at the policy statement in the URL (or
+                              						constructs one if you&apos;re using a canned policy) to confirm that the request
+                              is still
+                              						valid. For example, if you specified a beginning and ending date and time for
+                              the URL,
+                              						CloudFront confirms that the user is trying to access your content during the
+                              time period that
+                              						you want to allow access. 
+                           </p>
+                           					
+                           <p>If the request meets the requirements in the policy statement, CloudFront performs
+                              the
+                              						standard operations: determines whether the object is already in the edge cache,
+                              						forwards the request to the origin if necessary, and returns the object to the
+                              						user.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     
+                     		
+                     <h2 id="private-content-overview-choosing-duration">Choosing How Long Signed URLs Are
+                        				Valid
+                     </h2>
+                     			
+                     			
+                     <p>You can distribute private content using a signed URL that is valid for only a short
+                        				time&#x2014;possibly for as little as a few minutes. Signed URLs that are valid for such
+                        a
+                        				short period are good for distributing content on-the-fly to a user for a limited
+                        purpose,
+                        				such as distributing movie rentals or music downloads to customers on demand.
+                        If your signed
+                        				URLs will be valid for just a short period, you&apos;ll probably want to generate them
+                        				automatically using an application that you develop. When the user starts to download
+                        an
+                        				object or starts to play a media file, CloudFront compares the expiration time
+                        in the URL with the
+                        				current time to determine whether the URL is still valid.
+                     </p>
+                     			
+                     <p>You can also distribute private content using a signed URL that is valid for a longer
+                        				time, possibly for years. Signed URLs that are valid for a longer period are useful
+                        for
+                        				distributing private content to known users, such as distributing a business plan
+                        to
+                        				investors or distributing training materials to employees. You can develop an
+                        application to
+                        				generate these longer-term signed URLs for you, or you can use one of the third-party
+                        GUI
+                        				tools listed in <a href="Resources.html#resources-distributing-private-content">Tools and Code Examples for Configuring
+                           Private Content</a>.
+                     </p>
+                     		
+                     <h2 id="private-content-check-expiration">When Does CloudFront Check the Expiration Date
+                        				and Time in a Signed URL?
+                     </h2>
+                     			
+                     			
+                     <p>When CloudFront checks the expiration date and time in a signed URL to determine whether
+                        the
+                        				URL is still valid depends on whether the URL is for a web distribution or an
+                        RTMP
+                        				distribution:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><b>Web distributions</b> &#x2013; CloudFront checks the
+                                 						expiration date and time in a signed URL at the time of the HTTP request. If
+                                 a client
+                                 						begins to download a large object immediately before the expiration time, the
+                                 download
+                                 						should complete even if the expiration time passes during the download. If the
+                                 TCP
+                                 						connection drops and the client tries to restart the download after the expiration
+                                 time
+                                 						passes, the download will fail.
+                              </p>
+                              					
+                              <p>If a client uses Range GETs to get an object in smaller pieces, any GET request that
+                                 						occurs after the expiration time passes will fail. For more information about
+                                 Range
+                                 						GETs, see <a href="RangeGETs.html">How CloudFront Processes Partial Requests for an Object (Range GETs)</a>.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><b>RTMP distributions</b> &#x2013; CloudFront checks the
+                                 						expiration time in a signed URL at the start of a play event. If a client starts
+                                 to play
+                                 						a media file before the expiration time passes, CloudFront allows the entire
+                                 media file to
+                                 						play. However, depending on the media player, pausing and restarting might trigger
+                                 						another play event. Skipping to another position in the media file will trigger
+                                 another
+                                 						play event. If the subsequent play event occurs after the expiration time passes,
+                                 CloudFront
+                                 						won&apos;t serve the media file.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <h2 id="private-content-overview-sample-code">Sample Code and Third-Party
+                        				Tools
+                     </h2>
+                     			
+                     			
+                     
+                     			
+                     <p>For sample code that creates the hashed and signed part of signed URLs, see the
+                        				following topics:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><a href="CreateURLPerl.html">Create a URL Signature Using Perl</a></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><a href="CreateURL_PHP.html">Create a URL Signature Using PHP</a></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><a href="CreateSignatureInCSharp.html">Create a URL Signature Using C# and the .NET Framework</a></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><a href="CFPrivateDistJavaDevelopment.html">Create a URL Signature Using Java</a></p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     			
+                     <p>For information about third-party tools that support private content, including creating
+                        				signed URLs, see <a href="Resources.html#resources-distributing-private-content">Tools and Code Examples for Configuring
+                           Private Content</a>.
+                     </p>
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="private-content-choosing-signed-urls-cookies.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="private-content-creating-signed-url-canned-policy.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Choosing Between Canned and
+				Custom Policies for Signed URLs"><a class="pagetoc" href="#private-content-choosing-canned-custom-policy">Choosing Between Canned and
+                              				Custom Policies for Signed URLs</a></li>
+                        <li class="pagetoc" name="How Signed URLs Work"><a class="pagetoc" href="#private-content-how-signed-urls-work">How Signed URLs Work</a></li>
+                        <li class="pagetoc" name="Choosing How Long Signed URLs Are
+				Valid"><a class="pagetoc" href="#private-content-overview-choosing-duration">Choosing How Long Signed URLs Are
+                              				Valid</a></li>
+                        <li class="pagetoc" name="When Does CloudFront Check the Expiration Date
+				and Time in a Signed URL?"><a class="pagetoc" href="#private-content-check-expiration">When Does CloudFront Check the Expiration Date
+                              				and Time in a Signed URL?</a></li>
+                        <li class="pagetoc" name="Sample Code and Third-Party
+				Tools"><a class="pagetoc" href="#private-content-overview-sample-code">Sample Code and Third-Party
+                              				Tools</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

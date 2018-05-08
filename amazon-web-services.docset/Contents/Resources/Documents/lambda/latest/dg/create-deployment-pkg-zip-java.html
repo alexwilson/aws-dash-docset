@@ -1,0 +1,333 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Creating a .zip Deployment Package (Java) - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="lambda-java-how-to-create-deployment-package.html" title="Creating a Deployment Package (Java)">
+      <link rel="prev" href="java-create-jar-pkg-maven-and-eclipse.html" title="Creating a .jar Deployment Package Using Maven and Eclipse IDE (Java)">
+      <link rel="next" href="java-author-using-eclipse-sdk-plugin.html" title="Authoring Lambda Functions Using Eclipse IDE and
+        AWS SDK Plugin (Java)">
+      <meta name="description" content="This section provides examples of creating .zip file as your deployment package. You can use any build and packaging tool you like to create this zip. Regardless of the tools you use, the resulting .zip file must have the following structure:">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/create-deployment-pkg-zip-java.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-introduction-function.html">Lambda Functions</a> &#xBB; <a href="lambda-app.html">Building Lambda Functions</a> &#xBB; <a href="deployment-package-v2.html">Creating a Deployment Package</a> &#xBB; <a href="lambda-java-how-to-create-deployment-package.html">Creating a Deployment Package (Java)</a> &#xBB; <span class="breadcrumb">Creating a .zip Deployment Package (Java)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="create-deployment-pkg-zip-java">Creating a .zip Deployment Package (Java)</h1>
+                     <p>This section provides examples of creating .zip file as your deployment package. You
+                        can
+                        use any build and packaging tool you like to create this zip. Regardless of the tools
+                        you
+                        use, the resulting .zip file must have the following structure:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>All compiled class files and resource files at the root level. </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>All required jars to run the code in the <code class="code">/lib</code> directory.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You can also build a standalone .jar (also a zipped file) as your deployment
+                           package. For examples of creating standalone .jar using Maven, see <a href="lambda-java-how-to-create-deployment-package.html">Creating a Deployment Package (Java)</a>.
+                        </p>
+                     </div>
+                     <p>The following examples use Gradle build and deployment tool to create the .zip.</p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Gradle version 2.0 or later is required.</p>
+                     </div>
+                     <h2 id="create-deployment-pkg-zip-java-before-you-begin">Before You Begin</h2>
+                     
+                     
+                     <p>You will need to download Gradle. For instructions, go to the 
+                        gradle website, <a href="https://gradle.org/" target="_blank">https://gradle.org/</a> .
+                     </p>
+                     
+                     <h2 id="create-deployment-pkg-zip-java-using-central-repository">Example 1:
+                        Creating .zip Using Gradle and the Maven Central Repository
+                     </h2>
+                     
+                     
+                     <p>At the end of this walkthrough, you will have a project directory
+                        (<code class="code"><em class="replaceable"><code>project-dir</code></em></code>) with content having the
+                        following structure:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><em class="replaceable"><code>project-dir</code></em>/build.gradle 
+<em class="replaceable"><code>project-dir</code></em>/src/main/java/</code></pre>
+                     <p>The<code class="code"> /java</code> folder will contain your code. For example, if your package
+                        name is <code class="code">example</code>, and you have a <code class="code">Hello.java</code> class in it, the
+                        structure will be:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><em class="replaceable"><code>project-dir</code></em>/src/main/java/example/Hello.java</code></pre>
+                     <p>After you build the project, the resulting .zip file (that is, your deployment
+                        package), will be in the
+                        <code class="code"><em class="replaceable"><code>project-dir</code></em>/build/distributions</code>
+                        subdirectory.
+                     </p>
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>Create a project directory (<code class="code"><em class="replaceable"><code>project-dir</code></em></code>). 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <code class="code"><em class="replaceable"><code>project-dir</code></em></code>, create
+                              <code class="code">build.gradle</code> file and add the following content:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">apply plugin: &apos;java&apos;
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile (
+        &apos;com.amazonaws:aws-lambda-java-core:1.1.0&apos;,
+        &apos;com.amazonaws:aws-lambda-java-events:1.1.0&apos;
+    )
+}
+
+task buildZip(type: Zip) {
+    from compileJava
+    from processResources              
+    into(&apos;lib&apos;) {
+        from configurations.runtime
+    }           
+}
+
+build.dependsOn buildZip</code></pre>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       
+                                       <p>The repositories section refers to Maven Central Repository. At
+                                          the build time, it fetches the dependencies (that is, the two AWS Lambda
+                                          libraries) from Maven Central.
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p>The <code class="code">buildZip</code> task describes how to create the
+                                          deployment package .zip file. 
+                                       </p>
+                                       
+                                       <p>For example, if you unzip the resulting .zip file you should find
+                                          any of the compiled class files and resource files at the root
+                                          level. You should also find a <code class="code">/lib</code> directory with the
+                                          required jars for running the code.
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p>If you are following other tutorial topics in this guide, the
+                                          specific tutorials might require you to add more dependencies.
+                                          Make sure to add those dependencies as required.
+                                       </p>
+                                       
+                                    </li>
+                                 </ul>
+                              </div>
+                           </div>
+                           
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <code class="code"><em class="replaceable"><code>project-dir</code></em></code>, create the
+                              following structure:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><em class="replaceable"><code>project-dir</code></em>/src/main/java/ </code></pre>
+                           
+                           </li>
+                        <li>
+                           <p>Under the <code class="code">/java</code> subdirectory you add your Java files and folder structure, if
+                              any. For example, if you Java package name is <code class="code">example</code>, and source
+                              code is <code class="code">Hello.java</code>, then your directory structure looks like
+                              this:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="code" copy="true"><em class="replaceable"><code>project-dir</code></em>/src/main/java/example/Hello.java</code></code></pre></li>
+                        <li>
+                           
+                           <p>Run the following gradle command to build and package the project in a .zip
+                              file.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><em class="replaceable"><code>project-dir</code></em>&gt; gradle build  </code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Verify the resulting <code class="code"><em class="replaceable"><code>project-dir</code></em>.zip</code> file in
+                              the <code class="code"><em class="replaceable"><code>project-dir</code></em>/build/distributions</code>
+                              subdirectory.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Now you can upload the .zip file, your deployment package to AWS Lambda to create
+                              a
+                              Lambda function and test it by manually invoking it using sample event data. For
+                              instruction, see 
+                              <a href="get-started-step4-optional.html">(Optional) Create a Lambda Function Authored in
+                                 Java</a>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="create-deployment-pkg-zip-java-without-central-repository">Example 2:
+                        Creating .zip Using Gradle Using Local Jars
+                     </h2>
+                     
+                     
+                     <p>You may choose not to use the Maven Central repository. Instead have all the
+                        dependencies in the project folder. In this case your project folder
+                        (<code class="code"><em class="replaceable"><code>project-dir</code></em></code>) will have the following
+                        structure:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><em class="replaceable"><code>project-dir</code></em>/jars/           (all jars go here)   &#xA0; &#xA0;&#xA0;&#xA0;&#xA0;&#xA0;
+<em class="replaceable"><code>project-dir</code></em>/build.gradle   &#xA0;&#xA0;&#xA0; &#xA0;&#xA0;&#xA0;&#xA0;
+<em class="replaceable"><code>project-dir</code></em>/src/main/java/  (your code goes here)  </code></pre>
+                     <p>So if your Java code has <code class="code">example</code> package and <code class="code">Hello.java</code>
+                        class, the code will be in the following subdirectory:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><em class="replaceable"><code>project-dir</code></em>/src/main/java/example/Hello.java</code></pre>
+                     <p>You <code class="code">build.gradle</code> file should be as follows:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">apply plugin: &apos;java&apos;
+
+dependencies {
+    compile fileTree(dir: &apos;jars&apos;, include: &apos;*.jar&apos;)
+}
+
+task buildZip(type: Zip) {
+    from compileJava
+    from processResources              
+    into(&apos;lib&apos;) {
+        from configurations.runtime
+    }           
+}
+
+build.dependsOn buildZip</code></pre>
+                     <p>Note that the dependencies specify <code class="code">fileTree</code> which identifies
+                        <code class="code"><em class="replaceable"><code>project-dir</code></em>/jars</code> as the subdirectory
+                        that will include all the required jars.
+                     </p>
+                     
+                     <p>Now you build the package. Run the following gradle command to build and package the
+                        project in a .zip file.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><em class="replaceable"><code>project-dir</code></em>&gt; gradle build  </code></pre>
+                     
+                     
+                     </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="java-create-jar-pkg-maven-and-eclipse.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="java-author-using-eclipse-sdk-plugin.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Before You Begin"><a class="pagetoc" href="#create-deployment-pkg-zip-java-before-you-begin">Before You Begin</a></li>
+                        <li class="pagetoc" name="Example 1:
+            Creating .zip Using Gradle and the Maven Central Repository"><a class="pagetoc" href="#create-deployment-pkg-zip-java-using-central-repository">Example 1:
+                              Creating .zip Using Gradle and the Maven Central Repository</a></li>
+                        <li class="pagetoc" name="Example 2:
+            Creating .zip Using Gradle Using Local Jars"><a class="pagetoc" href="#create-deployment-pkg-zip-java-without-central-repository">Example 2:
+                              Creating .zip Using Gradle Using Local Jars</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

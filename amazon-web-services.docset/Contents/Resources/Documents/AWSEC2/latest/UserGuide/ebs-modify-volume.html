@@ -1,0 +1,227 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Modifying the Size, IOPS, or Type of an EBS Volume on Linux - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="EBSVolumes.html" title="Amazon EBS Volumes">
+      <link rel="prev" href="ebs-deleting-volume.html" title="Deleting an Amazon EBS Volume">
+      <link rel="next" href="volume_constraints.html" title="Constraints on Modifying EBS Volume Size">
+      <meta name="description" content="Modify the size, IOPS capacity, or volume type of an existing EBS volume.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-modify-volume.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Storage.html">Storage</a> &#xBB; <a href="AmazonEBS.html">Amazon Elastic Block Store (Amazon EBS)</a> &#xBB; <a href="EBSVolumes.html">Amazon EBS Volumes</a> &#xBB; <span class="breadcrumb">Modifying the Size, IOPS, or Type of an EBS Volume on Linux</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ebs-modify-volume">Modifying the Size, IOPS, or Type of an EBS Volume on <span>Linux</span></h1>
+                     <p>If your current-generation Amazon EBS volume is attached to a current-generation EC2
+                        instance
+                        type, you can increase its size, change its volume type, or (for an <code class="code">io1</code> volume)
+                        adjust its IOPS performance, all without detaching it. You can apply these changes
+                        to detached
+                        volumes as well. For more information about the current generation instance types,
+                        see <a href="./AWSEC2/latest/UserGuide/instance-types.html#current-gen-instances" target="_blank">Current Generation
+                           Instances</a>.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Many previous-generation instance types also support modification of EBS volumes without
+                           detachment. (The warnings appearing for some of these instance types may be safely
+                           ignored.)
+                           These include:
+                        </p>
+                        <div class="itemizedlist">          
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           <ul class="itemizedlist" type="disc">
+                              <li class="listitem">
+                                 <p>C1 (with warning)</p>
+                              </li>
+                              <li class="listitem">
+                                 
+                                 <p>C3</p>
+                                 
+                              </li>
+                              <li class="listitem">
+                                 <p>CC2 (with warning)</p>
+                              </li>
+                              <li class="listitem">
+                                 <p>CR1 (with warning)</p>
+                              </li>
+                              <li class="listitem">
+                                 
+                                 <p>G2</p>
+                                 
+                              </li>
+                              <li class="listitem">
+                                 
+                                 <p>I2</p>
+                              </li>
+                              <li class="listitem">
+                                 
+                                 <p>M1 (with warning)</p>
+                                 
+                              </li>
+                              <li class="listitem">
+                                 
+                                 <p>M3</p>
+                                 
+                              </li>
+                              <li class="listitem">
+                                 <p>R3</p>
+                              </li>
+                           </ul>
+                        </div>
+                        <p>If you are using an unsupported previous-generation instance type, or if you encounter
+                           an
+                           error while attempting a volume modification, follow the procedures in <a href="stop-start.html">Appendix: Starting and Stopping an Instance to Modify an EBS Volume</a>.
+                        </p>
+                     </div>
+                     <p>In general, the following steps are involved in modifying a volume:</p>
+                     <div class="orderedlist">
+                        
+                        
+                        
+                        
+                        <ol>
+                           <li>
+                              
+                              <p><b>Issue the modification command.</b> For more information,
+                                 see <a href="console-modify.html">Modifying an EBS Volume from the Console</a> and <a href="cli-modify.html">Modifying an EBS Volume from the Command Line</a>.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p><b>Monitor the progress of the modification.</b> For more
+                                 information, see <a href="monitoring_mods.html">Monitoring the Progress of Volume Modifications</a>.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p><b>If the size of the volume was modified, extend the volume&apos;s file
+                                    system to take advantage of the increased storage capacity.</b> For more
+                                 information, see <a href="recognize-expanded-volume-linux.html">Extending a Linux File System after Resizing
+                                    the Volume</a>
+                                 .
+                              </p>
+                              
+                           </li>
+                        </ol>
+                     </div>
+                     <p>Additionally, you can use <a href="./AmazonCloudWatch/latest/events/" target="_blank">Amazon CloudWatch Events</a> and <a href="./AWSCloudFormation/latest/UserGuide/" target="_blank">AWS CloudFormation</a> to automate the actions associated with volume
+                        modification.
+                     </p>
+                     <p>There is no charge to modify the configuration of a volume. You are charged at the
+                        new
+                        volume configuration price after a modification starts. For more information, see
+                        the
+                        <em>Amazon Elastic Block Store</em> section on the <a href="https://aws.amazon.com/ebs/pricing" target="_blank">Amazon EBS Pricing</a> page.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Before modifying a volume that contains valuable data, it is a best practice to create
+                           a
+                           snapshot of the volume in case you need to roll back your changes. For information
+                           about EBS
+                           snapshots, see <a href="./AWSEC2/latest/UserGuide/ebs-creating-snapshot.html" target="_blank">Creating an Amazon EBS
+                              Snapshot</a>.
+                        </p>
+                     </div>
+                     <div class="highlights">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="volume_constraints.html">Constraints on Modifying EBS Volume Size</a></li>
+                           <li><a href="console-modify.html">Modifying an EBS Volume from the Console</a></li>
+                           <li><a href="cli-modify.html">Modifying an EBS Volume from the Command Line</a></li>
+                           <li><a href="monitoring_mods.html">Monitoring the Progress of Volume Modifications</a></li>
+                           <li><a href="expand-linux-partition.html">Expanding a Linux Partition</a></li>
+                           <li><a href="recognize-expanded-volume-linux.html">Extending a Linux File System after Resizing
+                                 the Volume</a></li>
+                           <li><a href="limitations.html">Limitations When Modifying EBS Volumes</a></li>
+                           <li><a href="stop-start.html">Appendix: Starting and Stopping an Instance to Modify an EBS Volume</a></li>
+                        </ul>
+                     </div>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ebs-deleting-volume.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="volume_constraints.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

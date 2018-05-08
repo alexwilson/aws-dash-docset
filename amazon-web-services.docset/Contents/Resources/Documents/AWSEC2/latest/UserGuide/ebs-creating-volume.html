@@ -1,0 +1,262 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Creating an Amazon EBS Volume - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="EBSVolumes.html" title="Amazon EBS Volumes">
+      <link rel="prev" href="EBSVolumeTypes.html" title="Amazon EBS Volume Types">
+      <link rel="next" href="ebs-restoring-volume.html" title="Restoring an Amazon EBS Volume from a Snapshot">
+      <meta name="description" content="Create an EBS volume that you can then attach to any EC2 instance within the same Availability Zone.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-creating-volume.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Storage.html">Storage</a> &#xBB; <a href="AmazonEBS.html">Amazon Elastic Block Store (Amazon EBS)</a> &#xBB; <a href="EBSVolumes.html">Amazon EBS Volumes</a> &#xBB; <span class="breadcrumb">Creating an Amazon EBS Volume</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ebs-creating-volume">Creating an Amazon EBS Volume</h1>
+                     <p>You can create an Amazon EBS volume that you can then attach to any EC2 instance within
+                        the
+                        same Availability Zone. You can choose to create an encrypted EBS volume, but encrypted
+                        volumes can only be attached to selected instance types. For more information, see
+                        <a href="EBSEncryption.html#EBSEncryption_supported_instances">Supported Instance Types</a>. You can use IAM policies to enforce
+                        encryption on new volumes. For more information, see the example IAM policies in <a href="ExamplePolicies_EC2.html#iam-example-manage-volumes">4. Working with Volumes</a> and <a href="ExamplePolicies_EC2.html#iam-example-runinstances">6: Launching Instances (RunInstances)</a>.
+                     </p>
+                     <p>You can also create and attach EBS volumes when you launch instances by specifying
+                        a block
+                        device mapping. For more information, see <a href="launching-instance.html">Launching an Instance Using the Launch Instance Wizard</a> and <a href="block-device-mapping-concepts.html">Block Device Mapping</a>. You can restore volumes from previously
+                        created snapshots. For more information, see <a href="ebs-restoring-volume.html">Restoring an Amazon EBS Volume from a Snapshot</a>.
+                     </p>
+                     <p>You can apply tags to EBS volumes at the time of creation. With tagging, you can simplify
+                        tracking of your Amazon EC2 resource inventory. Tagging on creation can be combined
+                        with an IAM
+                        policy to enforce tagging on new volumes. For more information, see <a href="./AWSEC2/latest/UserGuide/Using_Tags.html" target="_blank">Tagging Your Resources</a>.
+                     </p>
+                     <p>If you are creating a volume for a high-performance storage scenario, you should make
+                        sure
+                        to use a Provisioned IOPS SSD (<code class="code">io1</code>) volume and attach it to an instance with enough bandwidth to support
+                        your application, such as an EBS-optimized instance or an instance with 10-Gigabit
+                        network
+                        connectivity. The same advice holds for Throughput Optimized HDD (<code class="code">st1</code>) and Cold HDD (<code class="code">sc1</code>) volumes. For
+                        more information, see <a href="ebs-ec2-config.html">Amazon EC2 Instance Configuration</a>.
+                     </p>
+                     <p>New EBS volumes receive their maximum performance the moment that they are available
+                        and
+                        do not require initialization (formerly known as pre-warming). However, storage blocks
+                        on
+                        volumes that were restored from snapshots must be initialized (pulled down from Amazon
+                        S3 and
+                        written to the volume) before you can access the block. This preliminary action takes
+                        time and
+                        can cause a significant increase in the latency of an I/O operation the first time
+                        each block
+                        is accessed. For most applications, amortizing this cost over the lifetime of the
+                        volume is
+                        acceptable. Performance is restored after the data is accessed once. For more information,
+                        see
+                        <a href="ebs-initialize.html">Initializing Amazon EBS Volumes</a>.
+                     </p>
+                     <p class="title"><b>To create an EBS volume using the console</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>From the navigation bar, select the region in which you would like to create your
+                              volume. This choice is important because some Amazon EC2 resources can be shared between
+                              regions, while others can&apos;t. For more information, see <a href="resources.html">Resource Locations</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the navigation pane, choose <b>ELASTIC BLOCK STORE</b>, 
+                              <b>Volumes</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Create Volume</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Volume Type</b>, choose a volume type. For more information, see 
+                              <a href="EBSVolumeTypes.html">Amazon EBS Volume Types</a>.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>Some AWS accounts created before 2012 might have access to Availability Zones in
+                                 us-west-1 or ap-northeast-1 that do not support Provisioned IOPS SSD (<code class="code">io1</code>) volumes. If
+                                 you are unable to create an <code class="code">io1</code> volume (or launch an instance with an <code class="code">io1</code>
+                                 volume in its block device mapping) in one of these regions, try a different Availability
+                                 Zone in the region. You can verify that an Availability Zone supports <code class="code">io1</code> volumes
+                                 by creating a 4 GiB <code class="code">io1</code> volume in that zone.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Size (GiB)</b>, type the size of the volume.
+                           </p>
+                           
+                           
+                           
+                        </li>
+                        <li>
+                           
+                           <p>With a Provisioned IOPS SSD volume, for <b>IOPS</b>, type the maximum number of
+                              input/output operations per second (IOPS) that the volume should support.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Availability Zone</b>, choose the Availability Zone in which to
+                              create the volume. EBS volumes can only be attached to EC2 instances within the
+                              same Availability Zone.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) To create an encrypted volume, select the <b>Encrypted</b>
+                              box and choose the master key you want to use when encrypting the volume. You can
+                              choose
+                              the default master key for your account, or you can choose any customer master key
+                              (CMK)
+                              that you have previously created using the AWS Key Management Service. Available keys
+                              are visible in the
+                              <b>Master Key</b> menu, or you can paste the full ARN of any key that you
+                              have access to. For more information, see the <a href="./kms/latest/developerguide/" target="_blank">AWS Key Management Service Developer Guide</a>.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>Encrypted volumes can only be attached to selected instance types. For more
+                                 information, see <a href="EBSEncryption.html#EBSEncryption_supported_instances">Supported Instance Types</a>.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           				
+                           <p>(Optional) Choose <b>Create additional tags</b> to add tags to the volume. 
+                              				    For each tag, provide a tag key and a tag value.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Create Volume</b>. 
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     <div class="itemizedlist">
+                        
+                        <p class="title"><b>To create an EBS volume using the command line</b></p>
+                        
+                        <p>You can use one of the following commands. For more information about these command
+                           line
+                           interfaces, see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./cli/latest/reference/ec2/create-volume.html" target="_blank">create-volume</a> (AWS CLI)
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="./powershell/latest/reference/items/New-EC2Volume.html" target="_blank">New-EC2Volume</a>
+                                 (AWS Tools for Windows PowerShell)
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="EBSVolumeTypes.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ebs-restoring-volume.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

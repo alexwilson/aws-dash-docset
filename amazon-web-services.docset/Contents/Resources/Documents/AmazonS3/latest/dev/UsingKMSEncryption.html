@@ -1,0 +1,352 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Protecting Data Using Server-Side Encryption with 
+         AWS KMS&#x2013;Managed Keys (SSE-KMS) - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="serv-side-encryption.html" title="Protecting Data Using Server-Side Encryption">
+      <link rel="prev" href="serv-side-encryption.html" title="Protecting Data Using Server-Side Encryption">
+      <link rel="next" href="kms-using-sdks.html" title="Specifying the AWS Key Management Service in Amazon S3 Using the AWS SDKs">
+      <meta name="description" content="Use server-side encryption so that Amazon S3 manages encryption and decryption for you.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingKMSEncryption.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="DataDurability.html">Protecting Data in Amazon S3</a> &#xBB; <a href="UsingEncryption.html">Protecting Data Using Encryption</a> &#xBB; <a href="serv-side-encryption.html">Protecting Data Using Server-Side Encryption</a> &#xBB; <span class="breadcrumb">Protecting Data Using Server-Side Encryption with 
+                                    AWS KMS&#x2013;Managed Keys (SSE-KMS)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="UsingKMSEncryption">Protecting Data Using Server-Side Encryption with 
+                        AWS KMS&#x2013;Managed Keys (SSE-KMS)
+                     </h1>
+                     <p>Server-side encryption is about protecting data at rest. AWS Key Management Service
+                        (AWS KMS) is a service that
+                        combines secure, highly available hardware and software to provide a key management
+                        system
+                        scaled for the cloud. AWS KMS uses customer master keys (CMKs) to encrypt your Amazon
+                        S3 objects. You
+                        use AWS KMS via the Encryption Keys section in the IAM console or via AWS KMS APIs
+                        to centrally
+                        create encryption keys, define the policies that control how keys can be used, and
+                        audit key
+                        usage to prove they are being used correctly. You can use these keys to protect your
+                        data in
+                        Amazon S3 buckets.
+                     </p>
+                     <p>The first time you add an SSE-KMS&#x2013;encrypted object to a bucket in a region, a default
+                        CMK is created for you automatically. This key is used for SSE-KMS encryption unless
+                        you select
+                        a CMK that you created separately using AWS Key Management Service. Creating your
+                        own CMK gives you more
+                        flexibility, including the ability to create, rotate, disable, and define access controls,
+                        and
+                        to audit the encryption keys used to protect your data.
+                     </p>
+                     <p>For more information, see <a href="./kms/latest/developerguide/overview.html" target="_blank">What is AWS Key Management Service?</a>
+                        in the <em>AWS Key Management Service Developer Guide</em>. If you use AWS KMS, there are additional charges
+                        for using AWS-KMS keys. For more information, see <a href="https://aws.amazon.com/kms/pricing" target="_blank">AWS Key Management Service Pricing</a>.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>If you are uploading or accessing objects encrypted by SSE-KMS, you need to use AWS
+                           Signature Version 4 for added security. For more information on how to do this using
+                           an AWS
+                           SDK, see <a href="./AmazonS3/latest/dev/UsingAWSSDK.html#specify-signature-version" target="_blank">Specifying
+                              Signature Version in Request Authentication</a>.
+                        </p>
+                     </div>
+                     <p>The highlights of SSE-KMS are:</p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>You can choose to create and manage encryption keys yourself, or you can choose to
+                                 use your
+                                 default service key uniquely generated on a customer by service by region level. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The ETag in the response is not the MD5 of the object data.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The data keys used to encrypt your data are also encrypted and stored alongside the
+                                 data
+                                 they protect. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Auditable master keys can be created, rotated, and disabled from the IAM console.
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The security controls in AWS KMS can help you meet encryption-related compliance
+                                 requirements.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <p>Amazon S3 supports bucket policies that you can use if you require server-side encryption
+                        for all
+                        objects that are stored in your bucket. For example, the following bucket policy denies
+                        upload
+                        object (<code class="code">s3:PutObject</code>) permission to everyone if the request does not include the
+                        <code class="code">x-amz-server-side-encryption</code> header requesting server-side encryption with
+                        SSE-KMS.
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{
+   &quot;Version&quot;:&quot;2012-10-17&quot;,
+   &quot;Id&quot;:&quot;PutObjPolicy&quot;,
+   &quot;Statement&quot;:[{
+         &quot;Sid&quot;:&quot;DenyUnEncryptedObjectUploads&quot;,
+         &quot;Effect&quot;:&quot;Deny&quot;,
+         &quot;Principal&quot;:&quot;*&quot;,
+         &quot;Action&quot;:&quot;s3:PutObject&quot;,
+         &quot;Resource&quot;:&quot;arn:aws:s3:::YourBucket/*&quot;,
+         &quot;Condition&quot;:{
+            &quot;StringNotEquals&quot;:{
+               &quot;s3:x-amz-server-side-encryption&quot;:&quot;aws:kms&quot;
+            }
+         }
+      }
+   ]
+}</code></pre><p>Amazon S3 also supports the <code class="code">s3:x-amz-server-side-encryption-aws-kms-key-id</code> condition
+                        key, which you can use to require a specific KMS key for object encryption. The KMS
+                        key you specify in the policy must use the
+                        &quot;<code class="code">arn:aws:kms:<em class="replaceable"><code>region</code></em>:<em class="replaceable"><code>acct-id</code></em>:key/<em class="replaceable"><code>key-id</code></em>&quot;
+                           </code> format.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>When you upload an object, you can specify the KMS key using the
+                           <code class="code">x-amz-server-side-encryption-aws-kms-key-id</code> header. If the header
+                           is not present in the request, Amazon S3 assumes the default KMS key. Regardless,
+                           the KMS
+                           key ID that Amazon S3 uses for object encryption must match the KMS key ID in the
+                           policy,
+                           otherwise Amazon S3 denies the request.
+                        </p>
+                     </div>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>All GET and PUT requests for an object protected by AWS KMS will fail if they are
+                           not made via SSL
+                           or by using SigV4. 
+                        </p>
+                     </div>
+                     <p>SSE-KMS encrypts only the object data. Any object metadata is not encrypted.</p>
+                     <h2 id="kms-encryption-s3-console">Using AWS Key Management Service in the Amazon S3 Management
+                        Console
+                     </h2>
+                     
+                     
+                     
+                     <p>For more information about using KMS-Managed Encryption Keys in the Amazon S3 Management
+                        Console, see <a href="./AmazonS3/latest/user-guide/upload-objects.html" target="_blank">Uploading S3 Objects</a> 
+                        in the <em>Amazon Simple Storage Service User Guide</em>.
+                     </p>
+                     
+                     
+                     <h2 id="APISupportforKMSEncryption">API Support for AWS Key Management Service in Amazon S3</h2>
+                     
+                     
+                     <p>The object creation REST APIs (see <a href="KMSUsingRESTAPI.html">Specifying the AWS Key Management Service in Amazon S3 Using the REST API</a>) provide a request header,
+                        <code class="code">x-amz-server-side-encryption</code> that you can use to request SSE-KMS with the value
+                        of <code class="code">aws:kms</code>. There&apos;s also
+                        <code class="code">x-amz-server-side-encryption-aws-kms-key-id</code>, which specifies the ID of the AWS KMS 
+                        master encryption key that was used for the object. The Amazon S3 API also supports
+                        encryption
+                        context, with the <code class="code">x-amz-server-side-encryption-context</code> header.
+                     </p>
+                     
+                     
+                     <p>The encryption context can be any value that you want, provided that the header adheres
+                        to
+                        the Base64-encoded JSON format. However, because the encryption context is not encrypted
+                        and
+                        because it is logged if AWS CloudTrail logging is turned on, the encryption context
+                        should not
+                        include sensitive information. We further recommend that your context describe the
+                        data being
+                        encrypted or decrypted so that you can better understand the CloudTrail events produced
+                        by AWS KMS. 
+                        For more information, see <a href="./kms/latest/developerguide/encryption-context.html" target="_blank">Encryption
+                           Context</a> in the <em>AWS Key Management Service Developer Guide</em>.
+                     </p>
+                     
+                     
+                     <p>Also, Amazon S3 may append a predefined key of aws:s3:arn with the value equal to
+                        the object&apos;s
+                        ARN for the encryption context that you provide. This only happens if the key aws:s3:arn
+                        is
+                        not already in the encryption context that you provided, in which case this predefined
+                        key is
+                        appended when Amazon S3 processes your Put requests. If this aws:s3:arn key is already
+                        present in
+                        your encryption context, the key is not appended a second time to your encryption
+                        context.
+                     </p>
+                     
+                     
+                     <p>Having this predefined key as a part of your encryption context means that you can
+                        track
+                        relevant requests in CloudTrail, so you&#x2019;ll always be able to see which S3 object&apos;s
+                        ARN was
+                        used with which encryption key. In addition, this predefined key as a part of your
+                        encryption
+                        context guarantees that the encryption context is not identical between different
+                        S3 objects,
+                        which provides additional security for your objects. Your full encryption context
+                        will be
+                        validated to have the value equal to the object&apos;s ARN.
+                     </p>
+                     
+                     
+                     <p>The following Amazon S3 APIs support these request headers.</p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>PUT operation &#x2014; When uploading data using the PUT API (see <a href="./AmazonS3/latest/API/RESTObjectPUT.html" target="_blank">PUT Object</a>), you can specify these request
+                                 headers. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Initiate Multipart Upload &#x2014; When uploading large objects using the multipart
+                                 upload API, you can specify these headers. You specify these headers in the initiate
+                                 request (see <a href="./AmazonS3/latest/API/mpUploadInitiate.html" target="_blank">Initiate Multipart
+                                    Upload</a>).
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>POST operation &#x2014; When using a POST operation to upload an object (see <a href="./AmazonS3/latest/API/RESTObjectPOST.html" target="_blank">POST Object</a>), instead of the request
+                                 headers, you provide the same information in the form fields.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>COPY operation &#x2014; When you copy an object (see <a href="./AmazonS3/latest/API/RESTObjectCOPY.html" target="_blank">PUT Object - Copy</a>), you have both a source
+                                 object and a target object. When you pass SSE-KMS headers with the COPY operation,
+                                 they
+                                 will be applied only to the target object.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>The AWS SDKs also provide wrapper APIs for you to request SSE-KMS with
+                        Amazon S3.
+                        
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="serv-side-encryption.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="kms-using-sdks.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Using AWS Key Management Service in the Amazon S3 Management
+      Console"><a class="pagetoc" href="#kms-encryption-s3-console">Using AWS Key Management Service in the Amazon S3 Management
+                              Console</a></li>
+                        <li class="pagetoc" name="API Support for AWS Key Management Service in Amazon S3"><a class="pagetoc" href="#APISupportforKMSEncryption">API Support for AWS Key Management Service in Amazon S3</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

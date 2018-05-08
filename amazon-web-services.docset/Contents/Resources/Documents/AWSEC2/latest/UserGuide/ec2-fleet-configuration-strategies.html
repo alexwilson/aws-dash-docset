@@ -1,0 +1,1149 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>EC2 Fleet Configuration Strategies - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ec2-fleet.html" title="Launching an EC2 Fleet">
+      <link rel="prev" href="ec2-fleet.html" title="Launching an EC2 Fleet">
+      <link rel="next" href="manage-ec2-fleet.html" title="Managing an EC2 Fleet Monitoring Your EC2 Fleet">
+      <meta name="description" content="Use a single EC2 Fleet request to launch tens, hundreds, or thousands of On-Demand Instances and Spot Instances.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-fleet-configuration-strategies.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="ec2-instance-lifecycle.html">Instance Lifecycle</a> &#xBB; <a href="LaunchingAndUsingInstances.html">Launch Your Instance</a> &#xBB; <a href="ec2-fleet.html">Launching an EC2 Fleet</a> &#xBB; <span class="breadcrumb">EC2 Fleet Configuration Strategies</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ec2-fleet-configuration-strategies">EC2 Fleet Configuration Strategies</h1>
+                     <p>An <em>EC2 Fleet</em> is a group of On-Demand Instances and Spot Instances. 
+                     </p>
+                     <p>The EC2 Fleet attempts to launch the number of On-Demand Instances and Spot Instances
+                        to meet the specified
+                        			target capacity. The request for Spot Instances is fulfilled if the specified Spot
+                        price exceeds
+                        			the current Spot price and there is available capacity. The fleet also attempts
+                        to
+                        			maintain its target capacity if your Spot Instances are interrupted due to a change
+                        in Spot
+                        			prices or available capacity.
+                     </p>
+                     <p>A <em>Spot Instance pool</em> is a set of unused EC2 instances with the same instance
+                        			type, operating system, Availability Zone, and network platform (EC2-Classic or
+                        			EC2-VPC). When you create an EC2 Fleet, you can include multiple launch specifications,
+                        which
+                        			vary by instance type, Availability Zone, subnet, and maximum price. The fleet
+                        selects
+                        			the Spot Instance pools that are used to fulfill the request, based on the launch
+                        specifications
+                        			included in your request, and the configuration of the request. The Spot Instances
+                        come from the
+                        			selected pools.
+                     </p>
+                     <p>An EC2 Fleet enables you to provision large amounts of EC2 capacity that makes sense
+                        for
+                        			your application based on number of cores or instances, or amount of memory. For
+                        			example, you can specify an EC2 Fleet to launch a target capacity of 200 instances,
+                        of which
+                        			130 are On-Demand Instances and the rest are Spot Instances. Or you can request
+                        1000 cores with a minimum of 2
+                        			GB of RAM per core. The fleet determines the combination of Amazon EC2 options
+                        to launch that
+                        			capacity at the absolute lowest cost.
+                     </p>
+                     <p>Use the appropriate configuration strategies to create an EC2 Fleet that meets your
+                        			needs.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#plan-ec2-fleet">Planning an EC2 Fleet</a></li>
+                           <li><a href="#ec2-fleet-request-type">EC2 Fleet Request Types</a></li>
+                           <li><a href="#ec2-fleet-allocation-strategy">Allocation Strategy for Spot Instances</a></li>
+                           <li><a href="#ec2-fleet-on-demand-backup">Configuring EC2 Fleet for On-Demand
+                                 						Backup</a></li>
+                           <li><a href="#ec2-fleet-price-overrides">Maximum Price Overrides</a></li>
+                           <li><a href="#ec2-fleet-instance-weighting">EC2 Fleet Instance Weighting</a></li>
+                           <li><a href="#ec2-fleet-instance-weighting-walkthrough">Walkthrough: Using EC2 Fleet with
+                                 					Instance Weighting</a></li>
+                           <li><a href="#ec2-fleet-on-demand-walkthrough">Walkthrough: Using EC2 Fleet with On-Demand as the
+                                 					Primary Capacity</a></li>
+                        </ul>
+                     </div>
+                     			
+                     <h2 id="plan-ec2-fleet">Planning an EC2 Fleet</h2>
+                     			
+                     <p>When planning your EC2 Fleet, we recommend that you do the following:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>Determine whether you want to create an EC2 Fleet that submits a one-time request
+                                 for the
+                                 						desired target capacity, or one that maintains a target capacity over time.
+                                 						For more information, see <a href="ec2-fleet-configuration-strategies.html#ec2-fleet-request-type">EC2 Fleet Request Types</a>.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Determine the instance types that meet your application
+                                 						requirements.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>If you plan to include Spot Instances in your EC2 Fleet, review <a href="https://aws.amazon.com/ec2/spot/getting-started/#bestpractices" target="_blank">Spot Best
+                                    							Practices</a> before you create the fleet. Use these best practices
+                                 						when you plan your fleet so that you can provision the instances at the
+                                 						lowest possible price.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Determine the target capacity for your EC2 Fleet. You can set target capacity
+                                 						in instances or in custom units. For more information, see <a href="ec2-fleet-configuration-strategies.html#ec2-fleet-instance-weighting">EC2 Fleet Instance Weighting</a>.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Determine what portion of the EC2 Fleet target capacity must be On-Demand
+                                 						capacity and Spot capacity. You can specify 0 for On-Demand capacity or Spot
+                                 						capacity, or both.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Determine your price per unit, if you are using instance weighting. To
+                                 						calculate the price per unit, divide the price per instance hour by the
+                                 						number of units (or weight) that this instance represents. If you are not
+                                 						using instance weighting, the default price per unit is the price per
+                                 						instance hour.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Review the possible options for your EC2 Fleet. For more information, see the <a href="manage-ec2-fleet.html#ec2-fleet-json-reference">EC2 Fleet JSON Configuration File
+                                    						Reference</a>. For EC2 Fleet configuration
+                                 						examples, see <a href="ec2-fleet-examples.html">EC2 Fleet Example Configurations</a>.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     			
+                     <h2 id="ec2-fleet-request-type">EC2 Fleet Request Types</h2>
+                     			
+                     <p>There are two types of EC2 Fleet requests: <code class="code">request</code> and <code class="code">maintain</code>. You
+                        				can create a fleet to submit a one-time request for your desired capacity, or
+                        				require it to maintain the target capacity over time.
+                     </p>
+                     			
+                     <p>If you configure the fleet type as <code class="code">request</code>, EC2 Fleet places a one-time
+                        				request for the target capacity, and does not attempt to replenish Spot Instances
+                        if capacity
+                        				is diminished. If capacity is not available, the fleet does not submit requests
+                        in
+                        				alternative Spot Instance pools.
+                     </p>
+                     			
+                     <p>If you configure the fleet type as <code class="code">maintain</code>, EC2 Fleet places requests to
+                        				meet the target capacity, and automatically replenishes any interrupted
+                        				Spot Instances.
+                     </p>
+                     			
+                     <p>You cannot modify the target capacity of a one-time request after it&apos;s been submitted.
+                        To
+                        				change the target capacity of a one-time request, delete the EC2 Fleet and create
+                        a new
+                        				one.
+                     </p>
+                     			
+                     <p>Both types of requests benefit from an allocation strategy. For more information,
+                        				see <a href="ec2-fleet-configuration-strategies.html#ec2-fleet-allocation-strategy">Allocation Strategy for Spot Instances</a>.
+                     </p>
+                     		
+                     				
+                     <h2 id="ec2-fleet-allocation-strategy">Allocation Strategy for Spot Instances</h2>
+                     				
+                     <p>The allocation strategy for your EC2 Fleet determines how it fulfills your request
+                        for Spot Instances
+                        				from the possible Spot Instance pools represented by its launch specifications.
+                        The following
+                        				are the allocation strategies that you can specify in your fleet:
+                     </p>
+                     				
+                     <div class="variablelist">
+                        					
+                        					
+                        				
+                        <dl>
+                           						
+                           <dt><span class="term"><code class="code">lowestPrice</code></span></dt>
+                           						
+                           <dd>
+                              							
+                              <p>The Spot Instances come from the pool with the lowest price. This is the
+                                 								default strategy.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><span class="term"><code class="code">diversified</code></span></dt>
+                           						
+                           <dd>
+                              							
+                              <p>The Spot Instances are distributed across all pools.</p>
+                              						
+                           </dd>
+                           					
+                        </dl>
+                     </div>
+                     				
+                     					
+                     <h3 id="ec2-fleet-maintain-fleet-capacity">Maintaining Target
+                        							Capacity
+                     </h3>
+                     					
+                     <p>After Spot Instances are terminated due to a change in the Spot price or available
+                        						capacity of a Spot Instance pool, the EC2 Fleet launches replacement Spot Instances.
+                        If the
+                        						allocation strategy is <code class="code">lowestPrice</code>, the fleet launches
+                        						replacement instances in the pool where the Spot price is currently the
+                        						lowest. If the allocation strategy is <code class="code">diversified</code>, the fleet
+                        						distributes the replacement Spot Instances across the remaining pools.
+                     </p>
+                     				
+                     				
+                     					
+                     <h3 id="ec2-fleet-strategy-cost-optimization">Configuring EC2 Fleet for
+                        							Cost Optimization
+                     </h3>
+                     					
+                     <p>To optimize the costs for your use of Spot Instances, specify the
+                        							<code class="code">lowestPrice</code> allocation strategy so that EC2 Fleet automatically
+                        						deploys the cheapest combination of instance types and Availability Zones
+                        						based on the current Spot price.
+                     </p>
+                     					
+                     <p>For On-Demand Instance target capacity, EC2 Fleet always selects the cheapest instance
+                        type
+                        						based on the public On-Demand price, while continuing to follow the
+                        						allocation strategy (either <code class="code">lowestPrice</code> or
+                        							<code class="code">diversified</code>) for Spot Instances.
+                     </p>
+                     				
+                     				
+                     					
+                     <h3 id="ec2-fleet-allocation-use-cases">Choosing the Appropriate Allocation
+                        						Strategy
+                     </h3>
+                     					
+                     <p>You can optimize your fleet based on your use case.</p>
+                     					
+                     <p>If your fleet is small or runs for a short time, the probability that your
+                        						Spot Instances will be interrupted is low, even with all the instances in a
+                        single
+                        						Spot Instance pool. Therefore, the <code class="code">lowestPrice</code> strategy is likely to
+                        						meet your needs while providing the lowest cost.
+                     </p>
+                     					
+                     <p>If your fleet is large or runs for a long time, you can improve the
+                        						availability of your fleet by distributing the Spot Instances across multiple
+                        pools.
+                        						For example, if your EC2 Fleet specifies 10 pools and a target capacity of 100
+                        						instances, the fleet launches 10 Spot Instances in each pool. If the Spot price
+                        for
+                        						one pool exceeds your maximum price for this pool, only 10% of your fleet is
+                        						affected. Using this strategy also makes your fleet less sensitive to
+                        						increases in the Spot price in any one pool over time.
+                     </p>
+                     					
+                     <p>With the <code class="code">diversified</code> strategy, the EC2 Fleet does not launch Spot Instances
+                        						into any pools with a Spot price that is equal to or higher than the <a href="https://aws.amazon.com/ec2/pricing/" target="_blank">On-Demand price</a>.
+                     </p>
+                     				
+                     			
+                     				
+                     <h2 id="ec2-fleet-on-demand-backup">Configuring EC2 Fleet for On-Demand
+                        						Backup
+                     </h2>
+                     				
+                     <p>If you have urgent, unpredictable scaling needs, such as a news website that
+                        					must scale during a major news event or game launch, we recommend that you
+                        					specify alternative instance types for your On-Demand Instances, in the event
+                        that your
+                        					preferred option does not have sufficient available capacity. For example, you
+                        					might prefer <code class="code">c5.2xlarge</code> On-Demand Instances, but if there is insufficient
+                        					available capacity, you&apos;d be willing to use some <code class="code">c4.2xlarge</code>
+                        					instances during peak load. In this case, EC2 Fleet attempts to fulfill all your
+                        					target capacity using <code class="code">c5.2xlarge</code> instances, but if there is
+                        					insufficient capacity, it automatically launches <code class="code">c4.2xlarge</code>
+                        					instances to fulfill the target capacity.
+                     </p>
+                     			
+                     			
+                     <h2 id="ec2-fleet-price-overrides">Maximum Price Overrides</h2>
+                     			
+                     <p>Each EC2 Fleet can include a global maximum price, or use the default (the On-Demand
+                        				price). The fleet uses this as the default maximum price for each of its launch
+                        				specifications.
+                     </p>
+                     			
+                     <p>You can optionally specify a maximum price in one or more launch specifications.
+                        				This price is specific to the launch specification. If a launch specification
+                        				includes a specific price, the EC2 Fleet uses this maximum price, overriding the
+                        global
+                        				maximum price. Any other launch specifications that do not include a specific
+                        				maximum price still use the global maximum price.
+                     </p>
+                     		
+                     			
+                     <h2 id="ec2-fleet-instance-weighting">EC2 Fleet Instance Weighting</h2>
+                     			
+                     <p>When you create an EC2 Fleet, you can define the capacity units that each instance
+                        type would
+                        				contribute to your application&apos;s performance, and adjust your maximum price for
+                        each
+                        				launch specification accordingly using <em>instance
+                           				weighting</em>.
+                     </p>
+                     			
+                     <p>By default, the price that you specify is <em>per instance hour</em>.
+                        				When you use the instance weighting feature, the price that you specify is
+                        					<em>per unit hour</em>. You can calculate your price per unit hour
+                        				by dividing your price for an instance type by the number of units that it
+                        				represents. EC2 Fleet calculates the number of instances to launch by dividing
+                        the target
+                        				capacity by the instance weight. If the result isn&apos;t an integer, the fleet rounds
+                        it
+                        				up to the next integer, so that the size of your fleet is not below its target
+                        				capacity. The fleet can select any pool that you specify in your launch
+                        				specification, even if the capacity of the instances launched exceeds the requested
+                        				target capacity.
+                     </p>
+                     			
+                     <p>The following table includes examples of calculations to determine the price per
+                        				unit for an EC2 Fleet with a target capacity of 10.
+                     </p>
+                     			
+                     <div class="table">
+                        <p class="title"><b></b></p>
+                        <div class="table-contents">
+                           <table id="w185aac17c15c21c25c21c25b9">
+                              						
+                              <tbody><tr>
+                                 							
+                                 <th>Instance type</th>
+                                 							
+                                 <th>Instance weight</th>
+                                 							
+                                 <th>Target capacity</th>
+                                 							
+                                 <th>Number of instances launched</th>
+                                 							
+                                 <th>Price per instance hour</th>
+                                 							
+                                 <th>Price per unit hour</th>
+                                 						
+                              </tr>
+                              					
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    								
+                                    <p><code class="code">r3.xlarge</code></p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>2</p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>10</td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>5</p>
+                                    								
+                                    <p>(10 divided by 2)</p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>$0.05</p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>.025</p>
+                                    								
+                                    <p>(.05 divided by 2)</p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    								
+                                    <p><code class="code">r3.8xlarge</code></p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>8</p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>10</td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>2</p>
+                                    								
+                                    <p>(10 divided by 8, result rounded up)</p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>$0.10</p>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>.0125</p>
+                                    								
+                                    <p>(.10 divided by 8)</p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              					
+                           </tbody></table>
+                        </div>
+                     </div>
+                     			
+                     <p>Use EC2 Fleet instance weighting as follows to provision the target capacity that
+                        you
+                        				want in the pools with the lowest price per unit at the time of fulfillment:
+                     </p>
+                     			
+                     <ol>
+                        <li>
+                           					
+                           <p>Set the target capacity for your EC2 Fleet either in instances (the default) or
+                              						in the units of your choice, such as virtual CPUs, memory, storage, or
+                              						throughput.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Set the price per unit.</p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>For each launch specification, specify the weight, which is the number of
+                              						units that the instance type represents toward the target capacity.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     			
+                     				
+                     <p class="title"><b>Instance Weighting Example</b></p>
+                     				
+                     <p>Consider an EC2 Fleet request with the following configuration:</p>
+                     			
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>A target capacity of 24</p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>A launch specification with an instance type <code class="code">r3.2xlarge</code> and a
+                                 						weight of 6
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>A launch specification with an instance type <code class="code">c3.xlarge</code> and a
+                                 						weight of 5
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>The weights represent the number of units that instance type represents toward the
+                        				target capacity. If the first launch specification provides the lowest price per
+                        				unit (price for <code class="code">r3.2xlarge</code> per instance hour divided by 6), the EC2 Fleet
+                        				would launch four of these instances (24 divided by 6).
+                     </p>
+                     			
+                     <p>If the second launch specification provides the lowest price per unit (price for
+                        					<code class="code">c3.xlarge</code> per instance hour divided by 5), the EC2 Fleet would launch
+                        				five of these instances (24 divided by 5, result rounded up).
+                     </p>
+                     			
+                     				
+                     <p class="title"><b>Instance Weighting and Allocation Strategy</b></p>
+                     				
+                     <p>Consider an EC2 Fleet request with the following configuration:</p>
+                     			
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>A target capacity of 30 Spot Instances</p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>A launch specification with an instance type <code class="code">c3.2xlarge</code> and a
+                                 						weight of 8
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>A launch specification with an instance type <code class="code">m3.xlarge</code> and a
+                                 						weight of 8
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>A launch specification with an instance type <code class="code">r3.xlarge</code> and a
+                                 						weight of 8
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>The EC2 Fleet would launch four instances (30 divided by 8, result rounded up). With
+                        				the <code class="code">lowestPrice</code> strategy, all four instances come from the pool that
+                        				provides the lowest price per unit. With the <code class="code">diversified</code> strategy, the
+                        				fleet launches one instance in each of the three pools, and the fourth instance
+                        in
+                        				whichever of the three pools provides the lowest price per unit.
+                     </p>
+                     		
+                     			
+                     <h2 id="ec2-fleet-instance-weighting-walkthrough">Walkthrough: Using EC2 Fleet with
+                        					Instance Weighting
+                     </h2>
+                     			
+                     <p>This walkthrough uses a fictitious company called Example Corp to illustrate the
+                        				process of requesting an EC2 Fleet using instance weighting.
+                     </p>
+                     			
+                     				
+                     <h3 id="ec2-fleet-instance-weighting-walkthrough-objective">Objective</h3>
+                     				
+                     <p>Example Corp, a pharmaceutical company, wants to use the computational power
+                        					of Amazon EC2 for screening chemical compounds that might be used to fight
+                        					cancer.
+                     </p>
+                     			
+                     			
+                     				
+                     <h3 id="ec2-fleet-instance-weighting-walkthrough-planning">Planning</h3>
+                     				
+                     <p>Example Corp first reviews <a href="https://aws.amazon.com/ec2/spot/getting-started/#bestpractices" target="_blank">Spot Best
+                           						Practices</a>. Next, Example Corp determines the requirements for their
+                        					EC2 Fleet.
+                     </p>
+                     				
+                     					
+                     <p class="title"><b>Instance Types</b></p>
+                     					
+                     <p>Example Corp has a compute- and memory-intensive application that performs
+                        						best with at least 60 GB of memory and eight virtual CPUs (vCPUs). They want
+                        						to maximize these resources for the application at the lowest possible
+                        						price. Example Corp decides that any of the following EC2 instance types
+                        						would meet their needs:
+                     </p>
+                     				
+                     				
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac17c15c21c25c21c27b7b7">
+                              							
+                              <tbody><tr>
+                                 								
+                                 <th>Instance type</th>
+                                 								
+                                 <th>Memory (GiB)</th>
+                                 								
+                                 <th>vCPUs</th>
+                                 							
+                              </tr>
+                              						
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    									
+                                    <p>r3.2xlarge</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>61</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>8</p>
+                                    								
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    									
+                                    <p>r3.4xlarge</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>122</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>16</p>
+                                    								
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    									
+                                    <p>r3.8xlarge</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>244</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>32</p>
+                                    								
+                                 </td>
+                                 							
+                              </tr>
+                              						
+                           </tbody></table>
+                        </div>
+                     </div>
+                     				
+                     					
+                     <p class="title"><b>Target Capacity in Units</b></p>
+                     					
+                     <p>With instance weighting, target capacity can equal a number of instances
+                        						(the default) or a combination of factors such as cores (vCPUs), memory
+                        						(GiBs), and storage (GBs). By considering the base for their application (60
+                        						GB of RAM and eight vCPUs) as one unit, Example Corp decides that 20 times
+                        						this amount would meet their needs. So the company sets the target capacity
+                        						of their EC2 Fleet request to 20.
+                     </p>
+                     				
+                     				
+                     					
+                     <p class="title"><b>Instance Weights</b></p>
+                     					
+                     <p>After determining the target capacity, Example Corp calculates instance
+                        						weights. To calculate the instance weight for each instance type, they
+                        						determine the units of each instance type that are required to reach the
+                        						target capacity as follows:
+                     </p>
+                     				
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>r3.2xlarge (61.0 GB, 8 vCPUs) = 1 unit of 20</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>r3.4xlarge (122.0 GB, 16 vCPUs) = 2 units of 20</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>r3.8xlarge (244.0 GB, 32 vCPUs) = 4 units of 20</p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>Therefore, Example Corp assigns instance weights of 1, 2, and 4 to the
+                        					respective launch configurations in their EC2 Fleet request.
+                     </p>
+                     				
+                     					
+                     <p class="title"><b>Price Per Unit Hour</b></p>
+                     					
+                     <p>Example Corp uses the <a href="https://aws.amazon.com/ec2/pricing/" target="_blank">On-Demand
+                           							price</a> per instance hour as a starting point for their price.
+                        						They could also use recent Spot prices, or a combination of the two. To
+                        						calculate the price per unit hour, they divide their starting price per
+                        						instance hour by the weight. For example:
+                     </p>
+                     				
+                     				
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac17c15c21c25c21c27b7c19">
+                              							
+                              <tbody><tr>
+                                 								
+                                 <th>Instance type</th>
+                                 								
+                                 <th>On-Demand price</th>
+                                 								
+                                 <th>Instance weight</th>
+                                 								
+                                 <th>Price per unit hour</th>
+                                 							
+                              </tr>
+                              						
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    									
+                                    <p>r3.2xLarge</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>$0.7</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>1</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>$0.7</p>
+                                    								
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    									
+                                    <p>r3.4xLarge</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>$1.4</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>2</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>$0.7</p>
+                                    								
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    									
+                                    <p>r3.8xLarge</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>$2.8</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>4</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p>$0.7</p>
+                                    								
+                                 </td>
+                                 							
+                              </tr>
+                              						
+                           </tbody></table>
+                        </div>
+                     </div>
+                     				
+                     <p>Example Corp could use a global price per unit hour of $0.7 and be competitive
+                        					for all three instance types. They could also use a global price per unit hour
+                        					of $0.7 and a specific price per unit hour of $0.9 in the
+                        						<code class="code">r3.8xlarge</code> launch specification.
+                     </p>
+                     			
+                     			
+                     				
+                     <h3 id="ec2-fleet-instance-weighting-walkthrough-permissions">Verifying
+                        						Permissions
+                     </h3>
+                     				
+                     <p>Before creating an EC2 Fleet, Example Corp verifies that it has an IAM role with
+                        					the required permissions. For more information, see <a href="manage-ec2-fleet.html#ec2-fleet-prerequisites">EC2 Fleet Prerequisites</a>.
+                     </p>
+                     			
+                     			
+                     				
+                     <h3 id="ec2-fleet-instance-weighting-walkthrough-request">Creating the
+                        						EC2 Fleet
+                     </h3>
+                     				
+                     <p>Example Corp creates a file, <code>config.json</code>, with the
+                        					following configuration for its EC2 Fleet:
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{ 
+    &quot;LaunchTemplateConfigs&quot;: [
+        {
+            &quot;LaunchTemplateSpecification&quot;: {
+                &quot;LaunchTemplateId&quot;: &quot;lt-07b3bc7625cdab851&quot;, 
+                &quot;Version&quot;: &quot;1&quot;
+            }, 
+            &quot;Overrides&quot;: [
+                {
+                    &quot;InstanceType&quot;: &quot;r3.2xlarge&quot;, 
+                    &quot;SubnetId&quot;: &quot;subnet-482e4972&quot;, 
+                    &quot;WeightedCapacity&quot;: 1
+                }
+                {
+                    &quot;InstanceType&quot;: &quot;r3.4xlarge&quot;, 
+                    &quot;SubnetId&quot;: &quot;subnet-482e4972&quot;, 
+                    &quot;WeightedCapacity&quot;: 2
+                }
+                {
+                    &quot;InstanceType&quot;: &quot;r3.8xlarge&quot;, 
+                    &quot;MaxPrice&quot;: &quot;0.90&quot;, 
+                    &quot;SubnetId&quot;: &quot;subnet-482e4972&quot;, 
+                    &quot;WeightedCapacity&quot;: 4
+                }
+            ]
+        }
+    ], 
+    &quot;TargetCapacitySpecification&quot;: {
+        &quot;TotalTargetCapacity&quot;: 20, 
+        &quot;DefaultTargetCapacityType&quot;: &quot;spot&quot;
+    }, 
+    ]
+}</code></pre>
+                     				<p>Example Corp creates the EC2 Fleet using the following <a href="./cli/latest/reference/ec2/request-spot-fleet.html" target="_blank">create-fleet</a>
+                        					command:
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 create-fleet --cli-input-json file://config.json</code></strong></code></pre>
+                     				<p>For more information, see <a href="manage-ec2-fleet.html#create-ec2-fleet">Creating an EC2 Fleet</a>.
+                     </p>
+                     			
+                     			
+                     				
+                     <h3 id="ec2-fleet-instance-weighting-walkthrough-fulfillment">Fulfillment</h3>
+                     				
+                     <p>The allocation strategy determines which Spot Instance pools your Spot Instances come
+                        					from.
+                     </p>
+                     				
+                     <p>With the <code class="code">lowestPrice</code> strategy (which is the default strategy),
+                        					the Spot Instances come from the pool with the lowest price per unit at the time
+                        of
+                        					fulfillment. To provide 20 units of capacity, the EC2 Fleet launches either 20
+                        						<code class="code">r3.2xlarge</code> instances (20 divided by 1), 10
+                        						<code class="code">r3.4xlarge</code> instances (20 divided by 2), or 5
+                        						<code class="code">r3.8xlarge</code> instances (20 divided by 4).
+                     </p>
+                     				
+                     <p>If Example Corp used the <code class="code">diversified</code> strategy, the Spot Instances would
+                        					come from all three pools. The EC2 Fleet would launch 6 <code class="code">r3.2xlarge</code>
+                        					instances (which provide 6 units), 3 <code class="code">r3.4xlarge</code> instances (which
+                        					provide 6 units), and 2 <code class="code">r3.8xlarge</code> instances (which provide 8
+                        					units), for a total of 20 units.
+                     </p>
+                     			
+                     		
+                     			
+                     <h2 id="ec2-fleet-on-demand-walkthrough">Walkthrough: Using EC2 Fleet with On-Demand as the
+                        					Primary Capacity
+                     </h2>
+                     			
+                     <p>This walkthrough uses a fictitious company called ABC Online to illustrate the process
+                        of
+                        				requesting an EC2 Fleet with On-Demand as the primary capacity, and Spot capacity
+                        if
+                        				available.
+                     </p>
+                     			
+                     				
+                     <h3 id="ec2-fleet-on-demand-walkthrough-objective">Objective</h3>
+                     				
+                     <p>ABC Online, a restaurant delivery company, wants to be able to provision Amazon EC2
+                        capacity
+                        					across EC2 instance types and purchase models to achieve their desired scale,
+                        					performance, and cost.
+                     </p>
+                     			
+                     			
+                     				
+                     <h3 id="ec2-fleet-on-demand-walkthrough-planning">Planning</h3>
+                     				
+                     <p>ABC Online requires a fixed capacity to operate during peak periods, but would
+                        					like to benefit from increased capacity at a lower price. ABC Online determines
+                        					the following requirements for their EC2 Fleet:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>On-Demand Instance capacity &#x2013; ABC Online requires 15 On-Demand Instances to ensure
+                                 they
+                                 							can accommodate traffic at peak periods.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>Spot Instance capacity &#x2013; ABC Online would like to improve performance,
+                                 							but at a lower price, by provisioning 5 Spot Instances.
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     			
+                     				
+                     <h3 id="ec2-fleet-on-demand-walkthrough-permissions">Verifying
+                        						Permissions
+                     </h3>
+                     				
+                     <p>Before creating an EC2 Fleet, ABC Online verifies that it has an IAM role with
+                        					the required permissions. For more information, see <a href="manage-ec2-fleet.html#ec2-fleet-prerequisites">EC2 Fleet Prerequisites</a>.
+                     </p>
+                     			
+                     			
+                     				
+                     <h3 id="ec2-fleet-on-demand-walkthrough-request">Creating the
+                        						EC2 Fleet
+                     </h3>
+                     				
+                     <p>ABC Online creates a file, <code>config.json</code>, with the
+                        					following configuration for its EC2 Fleet:
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;LaunchTemplateConfigs&quot;: [
+        {
+            &quot;LaunchTemplateSpecification&quot;: {
+                &quot;LaunchTemplateId&quot;: &quot;lt-07b3bc7625cdab851&quot;,
+                &quot;Version&quot;: &quot;2&quot;
+            }
+
+        }
+    ],
+    &quot;TargetCapacitySpecification&quot;: {
+        &quot;TotalTargetCapacity&quot;: 20,
+	    &quot;OnDemandTargetCapacity&quot;:15,
+        &quot;DefaultTargetCapacityType&quot;: &quot;spot&quot;
+    }
+}</code></pre>
+                     				<p>ABC Online creates the EC2 Fleet using the following <a href="./cli/latest/reference/ec2/request-spot-fleet.html" target="_blank">create-fleet</a>
+                        					command:
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 create-fleet --cli-input-json file://config.json</code></strong></code></pre>
+                     				<p>For more information, see <a href="manage-ec2-fleet.html#create-ec2-fleet">Creating an EC2 Fleet</a>.
+                     </p>
+                     			
+                     			
+                     				
+                     <h3 id="ec2-fleet-on-demand-walkthrough-fulfillment">Fulfillment</h3>
+                     				
+                     <p>The allocation strategy determines that the On-Demand capacity is always
+                        					fulfilled, while the balance of the target capacity is fulfilled as Spot if
+                        					there is capacity and availability.
+                     </p>
+                     			
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ec2-fleet.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="manage-ec2-fleet.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Planning an EC2 Fleet"><a class="pagetoc" href="#plan-ec2-fleet">Planning an EC2 Fleet</a></li>
+                        <li class="pagetoc" name="EC2 Fleet Request Types"><a class="pagetoc" href="#ec2-fleet-request-type">EC2 Fleet Request Types</a></li>
+                        <li class="pagetoc" name="Allocation Strategy for Spot Instances"><a class="pagetoc" href="#ec2-fleet-allocation-strategy">Allocation Strategy for Spot Instances</a></li>
+                        <li class="pagetoc" name="Configuring EC2 Fleet for On-Demand
+						Backup"><a class="pagetoc" href="#ec2-fleet-on-demand-backup">Configuring EC2 Fleet for On-Demand
+                              						Backup</a></li>
+                        <li class="pagetoc" name="Maximum Price Overrides"><a class="pagetoc" href="#ec2-fleet-price-overrides">Maximum Price Overrides</a></li>
+                        <li class="pagetoc" name="EC2 Fleet Instance Weighting"><a class="pagetoc" href="#ec2-fleet-instance-weighting">EC2 Fleet Instance Weighting</a></li>
+                        <li class="pagetoc" name="Walkthrough: Using EC2 Fleet with
+					Instance Weighting"><a class="pagetoc" href="#ec2-fleet-instance-weighting-walkthrough">Walkthrough: Using EC2 Fleet with
+                              					Instance Weighting</a></li>
+                        <li class="pagetoc" name="Walkthrough: Using EC2 Fleet with On-Demand as the
+					Primary Capacity"><a class="pagetoc" href="#ec2-fleet-on-demand-walkthrough">Walkthrough: Using EC2 Fleet with On-Demand as the
+                              					Primary Capacity</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

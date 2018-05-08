@@ -1,0 +1,491 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Forwarding Custom Headers to Your Origin (Web Distributions Only) - Amazon CloudFront</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="WorkingWithObjects.html" title="Working with Objects">
+      <link rel="prev" href="header-caching.html" title="Configuring CloudFront to Cache Objects Based on Request Headers">
+      <link rel="next" href="AddRemoveReplaceObjects.html" title="Adding, Removing, or Replacing Objects in a Distribution">
+      <meta name="description" content="Serve compressed files to make downloads faster for your users.">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/forward-custom-headers.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="WorkingWithObjects.html">Working with Objects</a> &#xBB; <span class="breadcrumb">Forwarding Custom Headers to Your Origin (Web Distributions Only)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="forward-custom-headers">Forwarding Custom Headers to Your Origin (Web Distributions Only)</h1>
+                     <p>You can configure CloudFront to include custom headers whenever it forwards a request
+                        to your origin. You can specify the names and values of 
+                        		custom headers for each origin, both for custom origins and for Amazon S3 buckets.
+                        Custom headers have a variety of uses, such as the following: 
+                     </p>
+                     <div class="itemizedlist">
+                        		
+                        		
+                        		
+                        		
+                        	
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>You can identify the requests that are forwarded to your custom origin by CloudFront.
+                                 This is useful if you want to know 
+                                 			whether users are bypassing CloudFront or if you&apos;re using more than one CDN and
+                                 you want information about which requests are coming from each CDN. 
+                                 			(If you&apos;re using an Amazon S3 origin and you enable <a href="./AmazonS3/latest/dev/ServerLogs.html" target="_blank">Amazon S3 server access logging</a>, the 
+                                 			logs don&apos;t include header information.)
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>If you&apos;ve configured more than one CloudFront distribution to use the same origin,
+                                 you can specify different custom headers 
+                                 			for the origins in each distribution and use the logs for your web server to distinguish
+                                 between the requests that CloudFront forwards 
+                                 			for each distribution.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>If some of your users use viewers that don&apos;t support cross-origin resource sharing
+                                 (CORS), you can configure CloudFront to forward the 
+                                 			<code class="code">Origin</code> header to your origin. That will cause your origin to return the <code class="code">Access-Control-Allow-Origin</code> header 
+                                 			for every request.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>You can use custom headers together and, optionally, signed URLs or signed cookies,
+                                 to control access to content on a 
+                                 			custom origin. If you configure your custom origin to respond to requests only
+                                 if they include a custom header, you can prevent users 
+                                 			from bypassing CloudFront and submitting requests directly to your origin. 
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#forward-custom-headers-configure">Configuring CloudFront to Forward Custom Headers to Your Origin</a></li>
+                           <li><a href="#forward-custom-headers-blacklist">Custom Headers that CloudFront Can&apos;t Forward to Your Origin</a></li>
+                           <li><a href="#forward-custom-headers-cors">Using Custom Headers for Cross-Origin Resource Sharing (CORS)</a></li>
+                           <li><a href="#forward-custom-headers-restrict-access">Using Custom Headers to Restrict Access to Your Content on a Custom Origin</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="forward-custom-headers-configure">Configuring CloudFront to Forward Custom Headers to Your Origin</h2>
+                     		
+                     		
+                     <p>To configure a web distribution to forward custom headers to your origin, you update
+                        the configuration of the applicable origins by using 
+                        			one of the following methods: 
+                     </p>
+                     		
+                     		
+                     <div class="variablelist">
+                        			
+                        			
+                        			
+                        		
+                        <dl>
+                           				
+                           <dt><b><span class="term">CloudFront console</span></b></dt>
+                           				
+                           <dd>
+                              <p>When you create or update a distribution, specify header names and values in the <b>Origin Custom Headers</b> 
+                                 					settings. For more information, see <a href="distribution-web-creating-console.html">Creating a Web Distribution</a>.
+                              </p>
+                           </dd>
+                           			
+                           				
+                           <dt><b><span class="term">CloudFront API</span></b></dt>
+                           				
+                           <dd>
+                              <p>For each origin that you want to forward custom headers to, add header names and values
+                                 to the <code class="code">CustomHeaders</code> section 
+                                 					of the <code class="code">DistributionConfig</code> complex type. For more information, see 
+                                 					<a href="./cloudfront/latest/APIReference/API_CreateDistribution.html" target="_blank">Create Distribution</a> (to create a new distribution) 
+                                 					or <a href="./cloudfront/latest/APIReference/API_UpdateDistribution.html" target="_blank">Update Distribution</a> (to update an existing distribution). 
+                              </p>
+                           </dd>
+                           			
+                        </dl>
+                     </div>
+                     		
+                     <p>If the header names and values that you specify are not already present in the viewer
+                        request, CloudFront adds them. If a header is present, 
+                        			CloudFront overwrites the header value before forwarding the request to the origin.
+                     </p>
+                     		
+                     <p>For the current limits related to forwarding custom headers to the origin, see <a href="cloudfront-limits.html">Limits</a>.
+                     </p>
+                     	
+                     <h2 id="forward-custom-headers-blacklist">Custom Headers that CloudFront Can&apos;t Forward to Your Origin</h2>
+                     		
+                     		
+                     <p>You can&apos;t configure CloudFront to forward the following custom headers to your origin.
+                        
+                     </p>
+                     		
+                     		
+                     <div class="table">
+                        <p class="title"><b></b></p>
+                        <div class="table-contents">
+                           <table id="w313aac23c31c11b4">
+                              					
+                              					
+                              <tbody><tr>
+                                 						
+                                 <td>
+                                    <p>Accept-Encoding</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>Proxy-Authenticate</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>Cache-Control</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>Proxy-Authorization</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>Connection</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>Proxy-Connection</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>Content-Length</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>Range</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>Cookie</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>Request-Range</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>Host</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>TE</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>If-Match</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>Trailer</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>If-Modified-Since</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>Transfer-Encoding</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>If-None-Match</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>Upgrade</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>If-Range</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>Via</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>If-Unmodified-Since</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>Headers that begin with X-Amz-*</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>Max-Forwards</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>Headers that begin with X-Edge-*</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    <p>Pragma</p>
+                                 </td>
+                                 						
+                                 <td>
+                                    <p>X-Real-Ip</p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              					
+                              
+                              				
+                           </tbody></table>
+                        </div>
+                     </div>
+                     		
+                     	
+                     <h2 id="forward-custom-headers-cors">Using Custom Headers for Cross-Origin Resource Sharing (CORS)</h2>
+                     		
+                     		
+                     <p>You can configure CloudFront to always forward the applicable headers to your origin
+                        to accommodate viewers that don&apos;t automatically include 
+                        			those headers in requests. You also need to configure CloudFront to respect CORS
+                        settings. For more information, see 
+                        			<a href="header-caching.html#header-caching-web-cors">Configuring CloudFront to Respect Cross-Origin Resource
+                           					Sharing (CORS) Settings</a>.
+                     </p>
+                     	
+                     <h2 id="forward-custom-headers-restrict-access">Using Custom Headers to Restrict Access to Your Content on a Custom Origin</h2>
+                     		
+                     		
+                     <p>If you&apos;re using a custom origin, you can use custom headers to prevent users from
+                        bypassing CloudFront and requesting content directly from your origin. 
+                        			You can also optionally restrict access to your content by requiring that your
+                        users access your objects by using either signed URLs or signed cookies. 
+                        			For more information about private content, see <a href="PrivateContent.html">Serving Private Content through CloudFront</a>.
+                     </p>
+                     
+                     		
+                     <p>To require that users access your content through CloudFront, change the following
+                        settings in your CloudFront distributions:
+                     </p>
+                     
+                     		
+                     <div class="variablelist">
+                        			
+                        			
+                        			
+                        		
+                        <dl>
+                           				
+                           <dt><b><span class="term">Origin Custom Headers</span></b></dt>
+                           				
+                           <dd>
+                              <p>Configure CloudFront to forward custom headers to your origin. 
+                                 					See <a href="forward-custom-headers.html#forward-custom-headers-configure">Configuring CloudFront to Forward Custom Headers to Your Origin</a>.
+                              </p>
+                           </dd>
+                           			
+                           				
+                           <dt><b><span class="term">Viewer Protocol Policy</span></b></dt>
+                           				
+                           <dd>
+                              <p>Configure your distribution to require viewers to use HTTPS to access CloudFront.
+                                 
+                                 					See <a href="distribution-web-values-specify.html#DownloadDistValuesViewerProtocolPolicy">Viewer Protocol Policy</a>.
+                              </p>
+                           </dd>
+                           			
+                           				
+                           <dt><b><span class="term">Origin Protocol Policy</span></b></dt>
+                           				
+                           <dd>
+                              <p>Configure your distribution to require CloudFront to use the same protocol as viewers
+                                 to forward requests to the origin. 
+                                 					See <a href="distribution-web-values-specify.html#DownloadDistValuesOriginProtocolPolicy">Origin Protocol Policy (Amazon EC2, Elastic Load Balancing, and 
+                                    					Other Custom Origins Only)</a>.
+                              </p>
+                           </dd>
+                           			
+                        </dl>
+                     </div>
+                     		
+                     		
+                     <p>The combination of <b>Viewer Protocol Policy</b> and <b>Origin Protocol Policy</b> ensure that your 
+                        			custom headers are encrypted between the viewer and your origin. However, we recommend
+                        that you periodically perform the following tasks 
+                        			to rotate the custom headers that CloudFront forwards to your origin:
+                     </p>
+                     		
+                     <div class="orderedlist">
+                        			
+                        			
+                        			
+                        		
+                        <ol>
+                           <li>
+                              <p>Update your CloudFront distribution to begin forwarding a new header to your custom
+                                 origin.
+                              </p>
+                           </li>
+                           <li>
+                              <p>Update your application to accept the new header as confirmation that the request
+                                 is coming from CloudFront.
+                              </p>
+                           </li>
+                           <li>
+                              <p>When viewer requests no longer include the header that you&apos;re replacing, update your
+                                 application to no longer accept 
+                                 				the old header as confirmation that the request is coming from CloudFront.
+                              </p>
+                           </li>
+                        </ol>
+                     </div>
+                     		
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="header-caching.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="AddRemoveReplaceObjects.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Configuring CloudFront to Forward Custom Headers to Your Origin"><a class="pagetoc" href="#forward-custom-headers-configure">Configuring CloudFront to Forward Custom Headers to Your Origin</a></li>
+                        <li class="pagetoc" name="Custom Headers that CloudFront Can&apos;t Forward to Your Origin"><a class="pagetoc" href="#forward-custom-headers-blacklist">Custom Headers that CloudFront Can&apos;t Forward to Your Origin</a></li>
+                        <li class="pagetoc" name="Using Custom Headers for Cross-Origin Resource Sharing (CORS)"><a class="pagetoc" href="#forward-custom-headers-cors">Using Custom Headers for Cross-Origin Resource Sharing (CORS)</a></li>
+                        <li class="pagetoc" name="Using Custom Headers to Restrict Access to Your Content on a Custom Origin"><a class="pagetoc" href="#forward-custom-headers-restrict-access">Using Custom Headers to Restrict Access to Your Content on a Custom Origin</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

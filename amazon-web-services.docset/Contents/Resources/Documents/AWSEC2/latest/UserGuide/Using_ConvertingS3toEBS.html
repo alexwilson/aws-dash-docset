@@ -1,0 +1,323 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Converting your Instance Store-Backed AMI to an
+         			Amazon EBS-Backed AMI - Amazon Elastic Compute Cloud
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="creating-an-ami-instance-store.html" title="Creating an Instance Store-Backed Linux AMI">
+      <link rel="prev" href="create-instance-store-ami.html" title="Creating an AMI from an Instance Store-Backed
+			Instance">
+      <link rel="next" href="ami-tools-commands.html" title="AMI Tools Reference">
+      <meta name="description" content="You can convert an instance store-backed Linux AMI that you own to an Amazon EBS-backed Linux AMI.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_ConvertingS3toEBS.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="AMIs.html">Amazon Machine Images (AMI)</a> &#xBB; <a href="creating-an-ami-instance-store.html">Creating an Instance Store-Backed Linux AMI</a> &#xBB; <span class="breadcrumb">Converting your Instance Store-Backed AMI to an
+                                    			Amazon EBS-Backed AMI</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="Using_ConvertingS3toEBS">Converting your Instance Store-Backed AMI to an
+                        			Amazon EBS-Backed AMI
+                     </h1>
+                     <p>You can convert an instance store-backed Linux AMI that you own to an Amazon EBS-backed
+                        			Linux AMI. 
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>You can&apos;t convert an instance store-backed Windows AMI to an Amazon EBS-backed
+                           				Windows AMI and you cannot convert an AMI that you do not own.
+                        </p>
+                     </div>
+                     <p class="title"><b>To convert an instance store-backed AMI to an Amazon EBS-backed AMI</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Launch an Amazon Linux instance from an Amazon EBS-backed AMI. For more information,
+                              see
+                              						<a href="launching-instance.html">Launching an Instance Using the Launch Instance Wizard</a>.
+                              					Amazon Linux instances have the AWS CLI and AMI tools pre-installed.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Upload the X.509 private key that you used to bundle your instance
+                              					store-backed AMI to your instance. We use this key to ensure that only you and
+                              					Amazon EC2 can access your AMI.
+                           </p>
+                           				
+                           <ol>
+                              <li>
+                                 						
+                                 <p>Create a temporary directory on your instance for your X.509 private
+                                    							key as follows:
+                                 </p>
+                                 						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>mkdir /tmp/cert</code></strong></code></pre>
+                                 					</li>
+                              <li>
+                                 						
+                                 <p>Copy your X.509 private key from your computer to the
+                                    								<code>/tmp/cert</code> directory on your instance, using a
+                                    							secure copy tool such as <a href="AccessingInstancesLinux.html#AccessingInstancesLinuxSCP">scp</a>. The <em class="replaceable"><code>my-private-key</code></em> parameter
+                                    							in the following command is the private key you use to connect to your
+                                    							instance with SSH. For example:
+                                 </p>
+                                 						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">you@your_computer:~ $ </code><strong class="userinput"><code>scp -i <em class="replaceable"><code>my-private-key</code></em>.pem <em class="replaceable"><code>/path/to/pk-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem</code></em> ec2-user@<em class="replaceable"><code>ec2-203-0-113-25.compute-1.amazonaws.com</code></em>:/tmp/cert/</code></strong>
+pk-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem  100%  717     0.7KB/s   00:00</code></pre>
+                                 					</li>
+                           </ol>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Set environment variables for your AWS access key and secret key.</p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>export AWS_ACCESS_KEY_ID=<em class="replaceable"><code>your_access_key_id</code></em></code></strong>
+<code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>export AWS_SECRET_ACCESS_KEY=<em class="replaceable"><code>your_secret_access_key</code></em></code></strong></code></pre>
+                           			</li>
+                        <li>
+                           				
+                           <p>Prepare an Amazon EBS volume for your new AMI.</p>
+                           				
+                           <ol>
+                              <li>
+                                 						
+                                 <p>Create an empty Amazon EBS volume in the same Availability Zone as your
+                                    							instance using the <a href="./cli/latest/reference/ec2/create-volume.html" target="_blank">create-volume</a> command. Note the volume ID in the command output.
+                                 </p>
+                                 <div class="aws-note">
+                                    <p class="aws-note">Important</p>
+                                    <p> This Amazon EBS volume must be the same size or larger than the
+                                       									original instance store root volume.
+                                    </p>
+                                 </div>
+                                 						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>aws ec2 create-volume --size 10 --region <em class="replaceable"><code>us-west-2</code></em> --availability-zone <em class="replaceable"><code>us-west-2b</code></em></code></strong>						</code></pre>
+                                 					</li>
+                              <li>
+                                 						
+                                 <p>Attach the volume to your Amazon EBS-backed instance using the <a href="./cli/latest/reference/ec2/attach-volume.html" target="_blank">attach-volume</a>
+                                    							command.
+                                 </p>
+                                 						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>aws ec2 attach-volume --volume-id <em class="replaceable"><code>volume_id</code></em> --instance-id <em class="replaceable"><code>instance_id</code></em> --device /dev/sdb --region <em class="replaceable"><code>us-west-2</code></em></code></strong></code></pre>
+                                 					</li>
+                           </ol>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Create a folder for your bundle.</p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>mkdir /tmp/bundle</code></strong></code></pre>
+                           			</li>
+                        <li>
+                           				
+                           <p>Download the bundle for your instance store-based AMI to
+                              						<code>/tmp/bundle</code> using the <a href="ami-tools-commands.html#ami-download-bundle">ec2-download-bundle</a>
+                              					command.
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>ec2-download-bundle -b <em class="replaceable"><code>my-s3-bucket</code></em>/<em class="replaceable"><code>bundle_folder</code></em>/<em class="replaceable"><code>bundle_name</code></em> -m image.manifest.xml -a $AWS_ACCESS_KEY_ID -s $AWS_SECRET_ACCESS_KEY --privatekey <em class="replaceable"><code>/path/to/pk-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem</code></em> -d /tmp/bundle</code></strong></code></pre>
+                           			</li>
+                        <li>
+                           				
+                           <p>Reconstitute the image file from the bundle using the <a href="ami-tools-commands.html#ami-unbundle">ec2-unbundle</a> command.
+                           </p>
+                           				
+                           <ol>
+                              <li>
+                                 						
+                                 <p>Change directories to the bundle folder.</p>
+                                 						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>cd /tmp/bundle/</code></strong></code></pre>
+                                 					</li>
+                              <li>
+                                 						
+                                 <p>Run the <a href="ami-tools-commands.html#ami-unbundle">ec2-unbundle</a>
+                                    							command.
+                                 </p>
+                                 						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user bundle]$ </code><strong class="userinput"><code>ec2-unbundle -m image.manifest.xml --privatekey <em class="replaceable"><code>/path/to/pk-HKZYKTAIG2ECMXYIBH3HXV4ZBEXAMPLE.pem</code></em></code></strong></code></pre>
+                                 					</li>
+                           </ol>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Copy the files from the unbundled image to the new Amazon EBS volume.</p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user bundle]$ </code><strong class="userinput"><code><b>sudo dd</b> if=/tmp/bundle/image of=/dev/sdb bs=1M</code></strong></code></pre>
+                           			</li>
+                        <li>
+                           				
+                           <p>Probe the volume for any new partitions that were unbundled.</p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user bundle]$ </code><strong class="userinput"><code>sudo partprobe /dev/sdb1</code></strong></code></pre>
+                           			</li>
+                        <li>
+                           				
+                           <p>List the block devices to find the device name to mount.</p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user bundle]$ </code><strong class="userinput"><code>lsblk</code></strong>
+NAME         MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+/dev/sda    202:0    0   8G  0 disk
+&#x2514;&#x2500;/dev/sda1 202:1    0   8G  0 part /
+/dev/sdb    202:80   0  10G  0 disk
+&#x2514;&#x2500;/dev/sdb1 202:81   0  10G  0 part</code></pre>
+                           				<p>In this example, the partition to mount is <code>/dev/sdb1</code>, but
+                              					your device name will likely be different. If your volume is not partitioned,
+                              					then the device to mount will be similar to <code>/dev/sdb</code>
+                              					(without a device partition trailing digit).
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Create a mount point for the new Amazon EBS volume and mount the volume.</p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user bundle]$ </code><strong class="userinput"><code>sudo mkdir /mnt/ebs</code></strong>
+[ec2-user bundle]$ <strong class="userinput"><code>sudo mount <em class="replaceable"><code>/dev/sdb1</code></em> /mnt/ebs</code></strong></code></pre>
+                           			</li>
+                        <li>
+                           				
+                           <p>Open the <code>/etc/fstab</code> file on the EBS volume with your
+                              					favorite text editor (such as <b>vim</b> or <b>nano</b>)
+                              					and remove any entries for instance store (ephemeral) volumes. Because the Amazon
+                              EBS
+                              					volume is mounted on <code>/mnt/ebs</code>, the
+                              						<code>fstab</code> file is located at
+                              						<code>/mnt/ebs/etc/fstab</code>.
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user bundle]$ </code><strong class="userinput"><code>sudo nano /mnt/ebs/etc/fstab</code></strong>
+#
+LABEL=/     /           ext4    defaults,noatime  1   1
+tmpfs       /dev/shm    tmpfs   defaults        0   0
+devpts      /dev/pts    devpts  gid=5,mode=620  0   0
+sysfs       /sys        sysfs   defaults        0   0
+proc        /proc       proc    defaults        0   0
+<em class="replaceable"><code>/dev/sdb        /media/ephemeral0       auto    defaults,comment=cloudconfig    0       2</code></em></code></pre>
+                           				<p>In this example, the last line should be removed.</p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Unmount the volume and detach it from the instance.</p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user bundle]$ </code><strong class="userinput"><code>sudo umount /mnt/ebs</code></strong>
+<code class="prompt" copy="false">[ec2-user bundle]$ </code><strong class="userinput"><code>aws ec2 detach-volume --volume-id <em class="replaceable"><code>volume_id</code></em> --region <em class="replaceable"><code>us-west-2</code></em></code></strong></code></pre>
+                           			</li>
+                        <li>
+                           				
+                           <p>Create an AMI from the new Amazon EBS volume as follows.</p>
+                           				
+                           <ol>
+                              <li>
+                                 						
+                                 <p>Create a snapshot of the new Amazon EBS volume.</p>
+                                 						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user bundle]$ </code><strong class="userinput"><code>aws ec2 create-snapshot --region <em class="replaceable"><code>us-west-2</code></em> --description &quot;<em class="replaceable"><code>your_snapshot_description</code></em>&quot; --volume-id <em class="replaceable"><code>volume_id</code></em></code></strong></code></pre>
+                                 					</li>
+                              <li>
+                                 						
+                                 <p>Check to see that your snapshot is complete.</p>
+                                 						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user bundle]$ </code><strong class="userinput"><code>aws ec2 describe-snapshots --region <em class="replaceable"><code>us-west-2</code></em> --snapshot-id <em class="replaceable"><code>snapshot_id</code></em></code></strong></code></pre>
+                                 					</li>
+                              <li>
+                                 						
+                                 <p>Identify the processor architecture, virtualization type, and the
+                                    							kernel image (<code class="code">aki</code>) used on the original AMI with the
+                                    								<b>describe-images</b> command. You need the AMI ID of
+                                    							the original instance store-backed AMI for this step.
+                                 </p>
+                                 						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user bundle]$ </code><strong class="userinput"><code>aws ec2 describe-images --region <strong class="userinput"><code><em class="replaceable"><code>us-west-2</code></em></code></strong> --image-id <em class="replaceable"><code>ami-id</code></em> --output text</code></strong>
+IMAGES	x86_64	amazon/amzn-ami-pv-2013.09.2.x86_64-s3	<em class="replaceable"><code>ami-8ef297be</code></em>	amazon	available	public	machine	aki-fc8f11cc	instance-store	paravirtual	xen</code></pre>
+                                 						<p>In this example, the architecture is <code class="code">x86_64</code> and the
+                                    							kernel image ID is <code class="code">aki-fc8f11cc</code>. Use these values in the
+                                    							following step. If the output of the above command also lists an
+                                    								<code class="code">ari</code> ID, take note of that as well.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>Register your new AMI with the snapshot ID of your new Amazon EBS volume
+                                    							and the values from the previous step. If the previous command output
+                                    							listed an <code class="code">ari</code> ID, include that in the following command
+                                    							with <code class="code">--ramdisk-id <em class="replaceable"><code>ari_id</code></em></code>.
+                                 </p>
+                                 						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user bundle]$ </code><strong class="userinput"><code>aws ec2 register-image --region <em class="replaceable"><code>us-west-2</code></em> --name <em class="replaceable"><code>your_new_ami_name</code></em> --block-device-mappings DeviceName=<em class="replaceable"><code>device-name</code></em>,Ebs={SnapshotId=<em class="replaceable"><code>snapshot_id</code></em>} --virtualization-type paravirtual --architecture x86_64 --kernel-id <em class="replaceable"><code>aki-fc8f11cc</code></em> --root-device-name <em class="replaceable"><code>device-name</code></em></code></strong></code></pre>
+                                 					</li>
+                           </ol>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>(Optional) After you have tested that you can launch an instance from your new
+                              					AMI, you can delete the Amazon EBS volume that you created for this procedure.
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code><b>aws ec2 delete-volume</b> --volume-id <em class="replaceable"><code>volume_id</code></em></code></strong></code></pre>
+                           			</li>
+                     </ol>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="create-instance-store-ami.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ami-tools-commands.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

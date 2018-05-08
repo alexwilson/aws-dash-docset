@@ -1,0 +1,168 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Setting Lifecycle Configuration on a
+         Bucket - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="object-lifecycle-mgmt.html" title="Object Lifecycle Management">
+      <link rel="prev" href="lifecycle-configuration-examples.html" title="Examples of Lifecycle
+            Configuration">
+      <link rel="next" href="manage-lifecycle-using-console.html" title="Manage an Object&apos;s Lifecycle Using the Amazon S3 Console">
+      <meta name="description" content="How to set a lifecycle configuration on a bucket programmatically, by using the Amazon S3 API, or by using the Amazon S3 console.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/how-to-set-lifecycle-configuration-intro.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="UsingObjects.html">Working with Amazon S3 Objects</a> &#xBB; <a href="object-lifecycle-mgmt.html">Object Lifecycle Management</a> &#xBB; <span class="breadcrumb">Setting Lifecycle Configuration on a
+                                    Bucket</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="how-to-set-lifecycle-configuration-intro">Setting Lifecycle Configuration on a
+                        Bucket
+                     </h1>
+                     <div class="highlights">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="manage-lifecycle-using-console.html">Manage an Object&apos;s Lifecycle Using the Amazon S3 Console</a></li>
+                           <li><a href="set-lifecycle-cli.html">Set Lifecycle Configurations Using the AWS CLI</a></li>
+                           <li><a href="manage-lifecycle-using-java.html">Managing Object Lifecycles Using the AWS SDK for Java</a></li>
+                           <li><a href="manage-lifecycle-using-dot-net.html">Manage an Object&apos;s Lifecycle Using the
+                                 AWS SDK for .NET</a></li>
+                           <li><a href="manage-lifecycle-using-ruby.html">Manage an Object&apos;s Lifecycle Using the AWS SDK for Ruby</a></li>
+                           <li><a href="manage-lifecycle-using-rest.html">Manage an Object&apos;s Lifecycle Using the REST
+                                 API</a></li>
+                        </ul>
+                     </div>
+                     <p>This section explains how you can set lifecycle configuration on a bucket
+                        programmatically using AWS SDKs, or by using the Amazon S3 console, or the AWS CLI.
+                        Note the
+                        following:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>When you add a lifecycle configuration to a bucket, there is usually some lag
+                                 before a new or updated lifecycle configuration is fully propagated to all the
+                                 Amazon S3 systems. Expect a delay of a few minutes before the lifecycle configuration
+                                 fully takes effect. This delay can also occur when you delete a lifecycle
+                                 configuration.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>When you disable or delete a lifecycle rule, after a small delay Amazon S3 stops
+                                 scheduling new objects for deletion or transition. Any objects that were already
+                                 scheduled will be unscheduled and they won&apos;t be deleted or transitioned.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>When you add a lifecycle configuration to a bucket, the configuration rules
+                                 apply to both existing objects and objects that you add later. For example, if
+                                 you add a lifecycle configuration rule today with an expiration action that
+                                 causes objects with a specific prefix to expire 30 days after creation, Amazon S3
+                                 will queue for removal any existing objects that are more than 30 days
+                                 old.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>There may be a lag between when the lifecycle configuration rules are
+                                 satisfied and when the action triggered by satisfying the rule is taken.
+                                 However, changes in billing happen as soon as the lifecycle configuration rule
+                                 is satisfied even if the action is not yet taken. One example is you are not
+                                 charged for storage after the object expiration time even if the object is not
+                                 deleted immediately. Another example is you are charged Amazon Glacier storage rates
+                                 as
+                                 soon as the object transition time elapses even if the object is not
+                                 transitioned to Amazon Glacier immediately. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <p>For information about lifecycle configuration, see 
+                        <a href="object-lifecycle-mgmt.html">Object Lifecycle Management</a>.
+                     </p>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="lifecycle-configuration-examples.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="manage-lifecycle-using-console.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

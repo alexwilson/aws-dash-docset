@@ -1,0 +1,924 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Tutorial: Hosting a WordPress Blog with Amazon Linux - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ec2-tutorials.html" title="Tutorials for Amazon EC2 Instances Running Linux">
+      <link rel="prev" href="install-LAMP.html" title="Tutorial: Install a LAMP Web Server with the Amazon Linux AMI">
+      <link rel="next" href="SSL-on-an-instance.html" title="Tutorial: Configure Apache Web Server on Amazon Linux 2 to Use
+            SSL/TLS">
+      <meta name="description" content="Tutorial - install, configure, and secure a WordPress blog on your Amazon Linux instance.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/hosting-wordpress.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="ec2-tutorials.html">Tutorials for Amazon EC2 Instances Running Linux</a> &#xBB; <span class="breadcrumb">Tutorial: Hosting a WordPress Blog with Amazon Linux</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="hosting-wordpress">Tutorial: Hosting a WordPress Blog with Amazon Linux</h1>
+                     <p>The following procedures will help you install, configure, and secure a WordPress
+                        blog on
+                        your Amazon Linux instance. This tutorial is a good introduction to using Amazon EC2
+                        in that you have
+                        full control over a web server that hosts your WordPress blog, which is not typical
+                        with a
+                        traditional hosting service.
+                     </p>
+                     <p>You are responsible for updating the software packages and maintaining security patches
+                        for your server. For a more automated WordPress installation that does not require
+                        direct
+                        interaction with the web server configuration, the AWS CloudFormation service provides
+                        a WordPress
+                        template that can also get you started quickly. For more information, see <a href="./AWSCloudFormation/latest/UserGuide/GettingStarted.Walkthrough.html" target="_blank">Getting Started</a> in the
+                        <em>AWS CloudFormation User Guide</em>. If you&apos;d prefer to host your WordPress blog on a
+                        Windows instance, see <a href="./AWSEC2/latest/WindowsGuide/EC2Win_CreateWordPressBlog.html" target="_blank">Deploying a WordPress Blog on Your Amazon EC2 Windows Instance</a> in the
+                        <em>Amazon EC2 User Guide for Windows Instances</em>. If you need a high-availability solution with
+                        a decoupled database, see <a href="./elasticbeanstalk/latest/dg/php-hawordpress-tutorial.html" target="_blank">Deploying
+                           a High-Availability WordPress Website</a> in the
+                        <em>AWS Elastic Beanstalk Developer Guide</em>.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>These procedures are intended for use with Amazon Linux. For more information about
+                           other
+                           distributions, see their specific documentation. Many steps in this tutorial do not
+                           work
+                           on Ubuntu instances. For help installing WordPress on an Ubuntu instance, see <a href="https://help.ubuntu.com/community/WordPress" target="_blank">WordPress</a> in the Ubuntu
+                           documentation. 
+                        </p>
+                     </div>
+                     <h2 id="hosting-wordpress-prereqs">Prerequisites</h2>
+                     
+                     
+                     <p>This tutorial assumes that you have launched an Amazon Linux instance with a functional
+                        web
+                        server with PHP and database (either MySQL or MariaDB) support by following all of
+                        the
+                        steps in <a href="install-LAMP.html">Tutorial: Install a LAMP Web Server with the Amazon Linux AMI</a> for Amazon Linux AMI or
+                        <a href="ec2-lamp-amazon-linux-2.html">Tutorial: Install a LAMP Web Server on Amazon Linux 2</a>
+                        for Amazon Linux 2. This tutorial also has steps for configuring a security group
+                        to allow
+                        <code class="code">HTTP</code> and <code class="code">HTTPS</code> traffic, as well as several steps to ensure
+                        that file permissions are set properly for your web server. For information about
+                        adding
+                        rules to your security group, see <a href="using-network-security.html#adding-security-group-rule">Adding Rules to a Security Group</a>.
+                     </p>
+                     
+                     <p>We strongly recommend that you associate an Elastic IP address (EIP) to the instance
+                        you are using to host a WordPress blog. This prevents the public DNS address for your
+                        instance from changing and breaking your installation. If you own a domain name and
+                        you
+                        want to use it for your blog, you can update the DNS record for the domain name to
+                        point
+                        to your EIP address (for help with this, contact your domain name registrar). You
+                        can
+                        have one EIP address associated with a running instance at no charge. For more
+                        information, see <a href="elastic-ip-addresses-eip.html">Elastic IP Addresses</a>.
+                     </p>
+                     
+                     <p>If you don&apos;t already have a domain name for your blog, you can register a domain name
+                        with Route&#xA0;53 and associate your instance&apos;s EIP address with your domain name. For
+                        more
+                        information, see <a href="./Route53/latest/DeveloperGuide/registrar.html" target="_blank">Registering Domain Names Using
+                           Amazon Route 53</a> in the <em>Amazon Route&#xA0;53 Developer Guide</em>.
+                     </p>
+                     
+                     <h2 id="install-wordpress">Install WordPress</h2>
+                     
+                     
+                     <p>Connect to your instance, and download the WordPress installation package.</p>
+                     
+                     <p class="title"><b>To download and unzip the WordPress installation package</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Download the latest WordPress installation package with the
+                              <b>wget</b> command. The following command should always
+                              download the latest
+                              release.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>wget https://wordpress.org/latest.tar.gz</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Unzip and unarchive the installation package. The installation folder is
+                              unzipped to a folder called
+                              <code>wordpress</code>.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>tar -xzf latest.tar.gz</code></strong></code></pre>
+                           </li>
+                     </ol>
+                     <a id="create_user_and_database"></a><p class="title"><b>To create a database user and database for
+                           your WordPress installation</b></p>
+                     <p>Your WordPress installation needs to store information, such as blog post entries
+                        and user comments, in a database. This procedure helps you create a database for
+                        your blog and a user that is authorized to read and save information to that
+                        database. 
+                     </p>
+                     <ol>
+                        <li>
+                           
+                           <p>Start the database server.</p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><b>Amazon Linux AMI</b>: <strong class="userinput"><code>sudo service mysqld
+                                             start</code></strong></p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><b>Amazon Linux 2</b>: <strong class="userinput"><code>sudo systemctl start
+                                             mariadb</code></strong></p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Log in to the database server as the <code class="code">root</code> user. Enter your
+                              database <code class="code">root</code> password when prompted; this may be different than
+                              your <code class="code">root</code> system password, or it may even be empty if you have not
+                              secured your database server.
+                           </p>
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If you have not secured your database server yet, it is very important
+                                 that you do so. For more information, see <a href="install-LAMP.html#SecuringMySQLProcedure">To secure the database server</a>.
+                              </p>
+                           </div><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>mysql -u root -p</code></strong></code></pre>
+                           </li>
+                        <li><a id="create_database_user"></a>
+                           
+                           <p>Create a user and password for your MySQL database. Your WordPress
+                              installation uses these values to communicate with your MySQL database. Enter
+                              the following command, substituting a unique user name and password.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>CREATE USER &apos;<em class="replaceable"><code>wordpress-user</code></em>&apos;@&apos;localhost&apos; IDENTIFIED BY &apos;<em class="replaceable"><code>your_strong_password</code></em>&apos;;</code></strong></code></pre>
+                           <p>Make sure that you create a strong password for your user. Do not use the
+                              single quote character ( &apos; ) in your password, because this will break the
+                              preceding command. For more information about creating a secure password, go to
+                              <a href="http://www.pctools.com/guides/password/" target="_blank">http://www.pctools.com/guides/password/</a>. Do not reuse an existing
+                              password, and make sure to store this password in a safe place.
+                           </p>
+                           
+                        </li>
+                        <li><a id="create_database"></a>
+                           
+                           <p>Create your database. Give your database a descriptive, meaningful name, such
+                              as <code class="code">wordpress-db</code>.
+                           </p>
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>The punctuation marks surrounding the database name in the command
+                                 below are called backticks. The backtick (<code class="code">`</code>) key is
+                                 usually located above the <code class="code">Tab</code> key on a standard
+                                 keyboard. Backticks are not always required, but they allow you to use
+                                 otherwise illegal characters, such as hyphens, in database names.
+                              </p>
+                           </div><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>CREATE DATABASE `<em class="replaceable"><code>wordpress-db</code></em>`;</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Grant full privileges for your database to the WordPress user that you created
+                              earlier.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>GRANT ALL PRIVILEGES ON `<em class="replaceable"><code>wordpress-db</code></em>`.* TO &quot;<em class="replaceable"><code>wordpress-user</code></em>&quot;@&quot;localhost&quot;;</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Flush the database privileges to pick up all of your changes.</p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>FLUSH PRIVILEGES;</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Exit the <code class="code">mysql</code>
+                              client.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>exit</code></strong></code></pre>
+                           </li>
+                     </ol>
+                     
+                     <p class="title"><b>To create and edit the wp-config.php file</b></p>
+                     <p>The WordPress installation folder contains a sample configuration file called
+                        <code>wp-config-sample.php</code>. In this procedure, you copy this file
+                        and edit it to fit your specific configuration.
+                     </p>
+                     <ol>
+                        <li>
+                           
+                           <p>Copy the <code>wp-config-sample.php</code> file to a file called
+                              <code>wp-config.php</code>. This creates a new configuration file
+                              and keeps the original sample file intact as a
+                              backup.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user wordpress]$ </code><strong class="userinput"><code>cp wordpress/wp-config-sample.php wordpress/wp-config.php</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Edit the <code>wp-config.php</code> file with your favorite text
+                              editor (such as <b>nano</b> or <b>vim</b>) and enter
+                              values for your installation. If you do not have a favorite text editor,
+                              <code class="code">nano</code> is much easier for beginners to
+                              use.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user wordpress]$ </code><strong class="userinput"><code>nano wordpress/wp-config.php</code></strong></code></pre>
+                           <ol>
+                              <li>
+                                 
+                                 <p>Find the line that defines <code class="code">DB_NAME</code> and change
+                                    <code class="code">database_name_here</code> to the database name that you
+                                    created in <a href="hosting-wordpress.html#create_database">Step&#xA0;4</a> of <a href="hosting-wordpress.html#create_user_and_database">To create a database user and database for
+                                       your WordPress installation</a>.
+                                 </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">define(&apos;DB_NAME&apos;, &apos;<em class="replaceable"><code>wordpress-db</code></em>&apos;);</code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>Find the line that defines <code class="code">DB_USER</code> and change
+                                    <code class="code">username_here</code> to the database user that you
+                                    created in <a href="hosting-wordpress.html#create_database_user">Step&#xA0;3</a> of <a href="hosting-wordpress.html#create_user_and_database">To create a database user and database for
+                                       your WordPress installation</a>.
+                                 </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">define(&apos;DB_USER&apos;, &apos;<em class="replaceable"><code>wordpress-user</code></em>&apos;);</code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>Find the line that defines <code class="code">DB_PASSWORD</code> and change
+                                    <code class="code">password_here</code> to the strong password that you
+                                    created in <a href="hosting-wordpress.html#create_database_user">Step&#xA0;3</a> of <a href="hosting-wordpress.html#create_user_and_database">To create a database user and database for
+                                       your WordPress installation</a>.
+                                 </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">define(&apos;DB_PASSWORD&apos;, &apos;<em class="replaceable"><code>your_strong_password</code></em>&apos;);</code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>Find the section called <code class="code">Authentication Unique Keys and
+                                       Salts</code>. These <code class="code">KEY</code> and
+                                    <code class="code">SALT</code> values provide a layer of encryption to the
+                                    browser cookies that WordPress users store on their local machines.
+                                    Basically, adding long, random values here makes your site more secure.
+                                    Visit <a href="https://api.wordpress.org/secret-key/1.1/salt/" target="_blank">https://api.wordpress.org/secret-key/1.1/salt/</a> to randomly
+                                    generate a set of key values that you can copy and paste into your
+                                    <code>wp-config.php</code> file. To paste text into a PuTTY
+                                    terminal, place the cursor where you want to paste the text and
+                                    right-click your mouse inside the PuTTY terminal.
+                                 </p>
+                                 
+                                 <p>For more information about security keys, go to <a href="http://codex.wordpress.org/Editing_wp-config.php#Security_Keys" target="_blank">http://codex.wordpress.org/Editing_wp-config.php#Security_Keys</a>.
+                                 </p>
+                                 <div class="aws-note">
+                                    <p class="aws-note">Note</p>
+                                    <p>The values below are for example purposes only; do not use
+                                       these values for your installation.
+                                    </p>
+                                 </div><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">define(&apos;AUTH_KEY&apos;,         &apos;<em class="replaceable"><code> #U$$+[RXN8:b^-L 0(WU_+ c+WFkI~c]o]-bHw+)/Aj[wTwSiZ&lt;Qb[mghEXcRh-</code></em>&apos;);
+define(&apos;SECURE_AUTH_KEY&apos;,  &apos;<em class="replaceable"><code>Zsz._P=l/|y.Lq)XjlkwS1y5NJ76E6EJ.AV0pCKZZB,*~*r ?6OP$eJT@;+(ndLg</code></em>&apos;);
+define(&apos;LOGGED_IN_KEY&apos;,    &apos;<em class="replaceable"><code>ju}qwre3V*+8f_zOWf?{LlGsQ]Ye@2Jh^,8x&gt;)Y |;(^[Iw]Pi+LG#A4R?7N`YB3</code></em>&apos;);
+define(&apos;NONCE_KEY&apos;,        &apos;<em class="replaceable"><code>P(g62HeZxEes|LnI^i=H,[XwK9I&amp;[2s|:?0N}VJM%?;v2v]v+;+^9eXUahg@::Cj</code></em>&apos;);
+define(&apos;AUTH_SALT&apos;,        &apos;<em class="replaceable"><code>C$DpB4Hj[JK:?{ql`sRVa:{:7yShy(9A@5wg+`JJVb1fk%_-Bx*M4(qc[Qg%JT!h</code></em>&apos;);
+define(&apos;SECURE_AUTH_SALT&apos;, &apos;<em class="replaceable"><code>d!uRu#}+q#{f$Z?Z9uFPG.${+S{n~1M&amp;%@~gL&gt;U&gt;NV&lt;zpD-@2-Es7Q1O-bp28EKv</code></em>&apos;);
+define(&apos;LOGGED_IN_SALT&apos;,   &apos;<em class="replaceable"><code>;j{00P*owZf)kVD+FVLn-~ &gt;.|Y%Ug4#I^*LVd9QeZ^&amp;XmK|e(76miC+&amp;W&amp;+^0P/</code></em>&apos;);
+define(&apos;NONCE_SALT&apos;,       &apos;<em class="replaceable"><code>-97r*V/cgxLmp?Zy4zUU4r99QQ_rGs2LTd%P;|_e1tS)8_B/,.6[=UK&lt;J_y9?JWG</code></em>&apos;);</code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>Save the file and exit your text editor.</p>
+                                 
+                              </li>
+                           </ol>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p class="title"><b>To install your WordPress files under the Apache document root</b></p>
+                     <ol>
+                        <li>
+                           <p>Now that you&apos;ve unzipped the installation folder, created a MySQL database and
+                              user, and customized the WordPress configuration file, you are ready to copy your
+                              installation files to your web server document root so you can run the installation
+                              script that completes your installation. The location of these files depends on
+                              whether you want your WordPress blog to be available at the actual root of your web
+                              server (for example,
+                              <code class="code"><em class="replaceable"><code>my.public.dns.amazonaws.com</code></em></code>) or in
+                              a subdirectory or folder under the root (for example,
+                              <code class="code"><em class="replaceable"><code>my.public.dns.amazonaws.com/blog</code></em></code>).
+                           </p>
+                        </li>
+                        <li> 
+                           <p>If you want Wordpress to run at your document root, copy the contents of the
+                              wordpress installation directory (but not the directory itself) as follows: 
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>cp -r wordpress/* /var/www/html/</code></strong></code></pre>
+                           </li>
+                        <li> 
+                           <p>If you want Wordpress to run in an alternative directory under the document root,
+                              first create that directory, and then copy the files to it. In this example,
+                              Wordpress will run from the directory <code class="code">blog</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>mkdir /var/www/html/blog</code></strong>
+<code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>cp -r wordpress/* /var/www/html/blog/</code></strong></code></pre></li>
+                     </ol>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>For security purposes, if you are not moving on to the next procedure immediately,
+                           stop the Apache web server (<code class="code">httpd</code>) now. After you move your
+                           installation under the Apache document root, the WordPress installation script is
+                           unprotected and an attacker could gain access to your blog if the Apache web server
+                           were running. To stop the Apache web server, enter the command <b>sudo service
+                              httpd stop</b>. If you are moving on to the next procedure, you do not
+                           need to stop the Apache web server.
+                        </p>
+                     </div>
+                     
+                     <p class="title"><b>To allow WordPress to use permalinks</b></p>
+                     <p>WordPress permalinks need to use Apache <code>.htaccess</code> files to
+                        work properly, but this is not enabled by default on Amazon Linux. Use this
+                        procedure to allow all overrides in the Apache document root.
+                     </p>
+                     <ol>
+                        <li>
+                           
+                           <p>Open the <code>httpd.conf</code> file with your favorite text editor
+                              (such as <b>nano</b> or <b>vim</b>). If you do not have
+                              a favorite text editor, <code class="code">nano</code> is much easier for beginners to
+                              use.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user wordpress]$ </code><strong class="userinput"><code>sudo vim /etc/httpd/conf/httpd.conf</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Find the section that starts with <code class="code">&lt;Directory
+                                 &quot;/var/www/html&quot;&gt;</code>.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&lt;Directory &quot;/var/www/html&quot;&gt;
+    #
+    # Possible values for the Options directive are &quot;None&quot;, &quot;All&quot;,
+    # or any combination of:
+    #   Indexes Includes FollowSymLinks SymLinksifOwnerMatch ExecCGI MultiViews
+    #
+    # Note that &quot;MultiViews&quot; must be named *explicitly* --- &quot;Options All&quot;
+    # doesn&apos;t give it to you.
+    #
+    # The Options directive is both complicated and important.  Please see
+    # http://httpd.apache.org/docs/2.4/mod/core.html#options
+    # for more information.
+    #
+    Options Indexes FollowSymLinks
+
+    #
+    # AllowOverride controls what directives may be placed in .htaccess files.
+    # It can be &quot;All&quot;, &quot;None&quot;, or any combination of the keywords:
+    #   Options FileInfo AuthConfig Limit
+    #
+    <b>AllowOverride <em class="replaceable"><code>None</code></em></b>
+
+    #
+    # Controls who can get stuff from this server.
+    #
+    Require all granted
+&lt;/Directory&gt;</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Change the <code class="code">AllowOverride None</code> line in the above section to
+                              read <code class="code">AllowOverride <em class="replaceable"><code>All</code></em></code>.
+                           </p>
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>There are multiple <code class="code">AllowOverride</code> lines in this
+                                 file; be sure you change the line in the <code class="code">&lt;Directory
+                                    &quot;/var/www/html&quot;&gt;</code> section.
+                              </p>
+                           </div><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">AllowOverride <em class="replaceable"><code>All</code></em></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Save the file and exit your text editor.</p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p class="title"><b>To fix file permissions for the Apache web server</b></p>
+                     <p>Some of the available features in WordPress require write access to the Apache
+                        document root (such as uploading media though the Administration screens). If you
+                        have not already done so, apply the following group memberships and permissions (as
+                        described in greater detail in the <a href="install-LAMP.html">LAMP web server
+                           tutorial</a>).
+                     </p>
+                     <ol>
+                        <li>
+                           
+                           <p>Change the file ownership of <code>/var/www</code> and its contents to
+                              the <code class="code">apache</code>
+                              user.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user wordpress]$ </code><strong class="userinput"><code>sudo chown -R apache /var/www</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Change the group ownership of <code>/var/www</code> and its contents
+                              to the <code class="code">apache</code>
+                              group.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user wordpress]$ </code><strong class="userinput"><code>sudo chgrp -R apache /var/www</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Change the directory permissions of <code>/var/www</code> and its
+                              subdirectories to add group write permissions and to set the group ID on future
+                              subdirectories.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user wordpress]$ </code><strong class="userinput"><code>sudo chmod 2775 /var/www</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Recursively change the file permissions of <code>/var/www</code> and
+                              its subdirectories to add group write
+                              permissions.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user wordpress]$ </code><strong class="userinput"><code>find /var/www -type d -exec sudo chmod 2775 {} \;</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Restart the Apache web server to pick up the new group and
+                              permissions.
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><b>Amazon Linux AMI</b>: <strong class="userinput"><code>sudo service httpd
+                                             restart</code></strong></p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><b>Amazon Linux 2</b>: <strong class="userinput"><code>sudo systemctl restart
+                                             httpd</code></strong></p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p class="title"><b>To run the WordPress installation script</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Use the <b>chkconfig</b> command to ensure that the
+                              <code class="code">httpd</code> and database services start at every system boot.
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><b>Amazon Linux AMI</b>: <strong class="userinput"><code>sudo chkconfig enable httpd
+                                             &amp;&amp; sudo chkconfig enable mysql</code></strong></p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><b>Amazon Linux 2</b>: <strong class="userinput"><code>sudo systemctl enable httpd
+                                             &amp;&amp; sudo systemctl enable mariadb</code></strong></p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Verify that the database server is running.</p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><b>Amazon Linux AMI</b>: <strong class="userinput"><code>sudo service mysqld
+                                             status</code></strong></p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><b>Amazon Linux 2</b>: <strong class="userinput"><code>sudo systemctl status
+                                             mariadb</code></strong></p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           <p>If the database service is not running, start it.</p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><b>Amazon Linux AMI</b>: <strong class="userinput"><code>sudo service mysqld
+                                             start</code></strong></p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><b>Amazon Linux 2</b>: <strong class="userinput"><code>sudo systemctl start
+                                             mariadb</code></strong></p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Verify that your Apache web server (<code class="code">httpd</code>) is
+                              running.
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><b>Amazon Linux AMI</b>: <strong class="userinput"><code>sudo service httpd
+                                             status</code></strong></p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><b>Amazon Linux 2</b>: <strong class="userinput"><code>sudo systemctl status
+                                             httpd</code></strong></p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           <p>If
+                              the <code class="code">httpd</code> service is not running, start
+                              it.
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><b>Amazon Linux AMI</b>: <strong class="userinput"><code>sudo service httpd
+                                             start</code></strong></p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><b>Amazon Linux 2</b>: <strong class="userinput"><code>sudo systemctl start
+                                             httpd</code></strong></p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In a web browser, enter the URL of your WordPress blog (either the public DNS
+                              address for your instance, or that address followed by the
+                              <code class="code">blog</code> folder). You should see the WordPress installation
+                              screen.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">http://<em class="replaceable"><code>my.public.dns.amazonaws.com</code></em></code></pre>
+                           <div class="mediaobject">
+                              
+                              <img src="../../..//img/wordpress_install.png" alt="
+                        Wordpress installation screen
+                    ">
+                              
+                              
+                              
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Enter the remaining installation information into the WordPress installation
+                              wizard.
+                           </p>
+                           
+                           <div class="table">
+                              <div class="table-contents">
+                                 <table id="w185aac13c11c11c18c10b3">
+                                    
+                                    <tbody><tr>
+                                       
+                                       <th>Field</th>
+                                       
+                                       <th>Value</th>
+                                       
+                                    </tr>
+                                    
+                                    
+                                    <tr>
+                                       
+                                       <td><b>Site Title</b></td>
+                                       
+                                       <td>Enter a name for your WordPress site.</td>
+                                       
+                                    </tr>
+                                    
+                                    <tr>
+                                       
+                                       <td><b>Username</b></td>
+                                       
+                                       <td>Enter a name for your WordPress administrator. For security
+                                          purposes, you should choose a unique name for this user, because
+                                          it will be more difficult to exploit than the default user name,
+                                          <code class="code">admin</code>.
+                                       </td>
+                                       
+                                    </tr>
+                                    
+                                    <tr>
+                                       
+                                       <td><b>Password</b></td>
+                                       
+                                       <td>Enter a strong password, and then enter it again to confirm.
+                                          Do not reuse an existing password, and make sure to store this
+                                          password in a safe place.
+                                       </td>
+                                       
+                                    </tr>
+                                    
+                                    <tr>
+                                       
+                                       <td><b>Your E-mail</b></td>
+                                       
+                                       <td>Enter the email address you want to use for
+                                          notifications.
+                                       </td>
+                                       
+                                    </tr>
+                                    
+                                 </tbody></table>
+                              </div>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Click <b>Install WordPress</b> to complete the
+                              installation.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p>Congratulations, you should now be able to log into your WordPress blog and start
+                        posting entries.
+                     </p>
+                     
+                     <h2 id="wordpress-next-steps">Next Steps</h2>
+                     
+                     
+                     <p>After you have tested your initial WordPress blog, consider updating its
+                        configuration.
+                     </p>
+                     
+                     
+                     
+                     <p class="title"><b>Use a Custom Domain Name</b></p>
+                     
+                     <p>If you have a domain name associated with your EC2 instance&apos;s EIP address, you can
+                        configure your blog to use that name instead of the EC2 public DNS address. For more
+                        information, see <a href="http://codex.wordpress.org/Changing_The_Site_URL" target="_blank">http://codex.wordpress.org/Changing_The_Site_URL</a>.
+                     </p>
+                     
+                     
+                     
+                     
+                     <p class="title"><b>Configure Your Blog</b></p>
+                     
+                     <p>You can configure your blog to use different <a href="https://wordpress.org/themes/" target="_blank">themes</a> and <a href="https://wordpress.org/plugins/" target="_blank">plugins</a> to offer a more
+                        personalized experience for your readers. However, sometimes the installation
+                        process can backfire, causing you to lose your entire blog. We strongly recommend
+                        that you create a backup Amazon Machine Image (AMI) of your instance before attempting
+                        to
+                        install any themes or plugins so you can restore your blog if anything goes wrong
+                        during installation. For more information, see <a href="AMIs.html#creating-an-ami">Creating Your Own AMI</a>.
+                     </p>
+                     
+                     
+                     
+                     
+                     <p class="title"><b>Increase Capacity</b></p>
+                     
+                     <p>If your WordPress blog becomes popular and you need more compute power or storage,
+                        consider the following steps:
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Expand the storage space on your instance. For more information, see <a href="ebs-modify-volume.html">Modifying the Size, IOPS, or Type of an EBS Volume on <span>Linux</span></a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Move your MySQL database to <a href="https://aws.amazon.com/rds" target="_blank">Amazon RDS</a>
+                                 to take advantage of the service&apos;s ability to scale easily.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Migrate to a larger instance type. For more information, see <a href="ec2-instance-resize.html">Resizing Your Instance</a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Add additional instances. For more information, see <a href="ec2-increase-availability.html">Tutorial: Increase the Availability of Your
+                                    			Application on Amazon EC2</a>.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     <p class="title"><b>Learn More about WordPress</b></p>
+                     
+                     <p>For information about WordPress, see the WordPress Codex help documentation at
+                        <a href="http://codex.wordpress.org/" target="_blank">http://codex.wordpress.org/</a>.
+                        For more information about troubleshooting your installation, go to <a href="http://codex.wordpress.org/Installing_WordPress#Common_Installation_Problems" target="_blank">http://codex.wordpress.org/Installing_WordPress#Common_Installation_Problems</a>.
+                        For information about making your WordPress blog more secure, go to <a href="http://codex.wordpress.org/Hardening_WordPress" target="_blank">http://codex.wordpress.org/Hardening_WordPress</a>. For information about
+                        keeping your WordPress blog up-to-date, go to <a href="http://codex.wordpress.org/Updating_WordPress" target="_blank">http://codex.wordpress.org/Updating_WordPress</a>.
+                     </p>
+                     
+                     
+                     <h2 id="wordpress-troubleshooting">Help! My Public DNS Name Changed and now my Blog
+                        is Broken
+                     </h2>
+                     
+                     
+                     <p>Your WordPress installation is automatically configured using the public DNS address
+                        for your EC2 instance. If you stop and restart the instance, the public DNS address
+                        changes (unless it is associated with an Elastic IP address) and your blog will not
+                        work
+                        anymore because it references resources at an address that no longer exists (or is
+                        assigned to another EC2 instance). A more detailed description of the problem and
+                        several possible solutions are outlined in <a href="http://codex.wordpress.org/Changing_The_Site_URL" target="_blank">http://codex.wordpress.org/Changing_The_Site_URL</a>.
+                     </p>
+                     
+                     <p>If this has happened to your WordPress installation, you may be able to recover your
+                        blog with the procedure below, which uses the <b>wp-cli</b> command line
+                        interface for WordPress.
+                     </p>
+                     
+                     <p class="title"><b>To change your WordPress site URL with the <b>wp-cli</b></b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Connect to your EC2 instance with SSH. </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Note the old site URL and the new site URL for your instance. The old site URL
+                              is likely the public DNS name for your EC2 instance when you installed
+                              WordPress. The new site URL is the current public DNS name for your EC2
+                              instance. If you are not sure of your old site URL, you can use
+                              <b>curl</b> to find it with the following
+                              command.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl localhost | grep wp-content</code></strong></code></pre>
+                           <p>You should see references to your old public DNS name in the output, which will
+                              look like this (old site URL in
+                              red):
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&lt;script type=&apos;text/javascript&apos; src=&apos;<em class="replaceable"><code>http://ec2-52-8-139-223.us-west-1.compute.amazonaws.com</code></em>/wp-content/themes/twentyfifteen/js/functions.js?ver=20150330&apos;&gt;&lt;/script&gt;</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Download the <b>wp-cli</b> with the following
+                              command.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Search and replace the old site URL in your WordPress installation with the
+                              following command. Substitute the old and new site URLs for your EC2 instance
+                              and the path to your WordPress installation (usually
+                              <code>/var/www/html</code> or
+                              <code>/var/www/html/blog</code>).
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>php wp-cli.phar search-replace &apos;<em class="replaceable"><code>old_site_url</code></em>&apos; &apos;<em class="replaceable"><code>new_site_url</code></em>&apos; --path=<em class="replaceable"><code>/path/to/wordpress/installation</code></em> --skip-columns=guid</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>In a web browser, enter the new site URL of your WordPress blog to verify that
+                              the site is working properly again. If it is not, see <a href="http://codex.wordpress.org/Changing_The_Site_URL" target="_blank">http://codex.wordpress.org/Changing_The_Site_URL</a> and <a href="http://codex.wordpress.org/Installing_WordPress#Common_Installation_Problems" target="_blank">http://codex.wordpress.org/Installing_WordPress#Common_Installation_Problems</a>
+                              for more information.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="install-LAMP.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="SSL-on-an-instance.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Prerequisites"><a class="pagetoc" href="#hosting-wordpress-prereqs">Prerequisites</a></li>
+                        <li class="pagetoc" name="Install WordPress"><a class="pagetoc" href="#install-wordpress">Install WordPress</a></li>
+                        <li class="pagetoc" name="Next Steps"><a class="pagetoc" href="#wordpress-next-steps">Next Steps</a></li>
+                        <li class="pagetoc" name="Help! My Public DNS Name Changed and now my Blog
+            is Broken"><a class="pagetoc" href="#wordpress-troubleshooting">Help! My Public DNS Name Changed and now my Blog
+                              is Broken</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

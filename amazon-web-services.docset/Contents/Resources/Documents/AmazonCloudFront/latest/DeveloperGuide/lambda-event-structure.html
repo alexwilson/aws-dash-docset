@@ -1,0 +1,802 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Lambda@Edge Event Structure - Amazon CloudFront</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="lambda-at-the-edge.html" title="Using CloudFront with Lambda@Edge">
+      <link rel="prev" href="lambda-edge-delete-replicas.html" title="Deleting Lambda@Edge Functions 
+		and Replicas">
+      <link rel="next" href="lambda-generating-http-responses.html" title="Generating HTTP Responses in Request Triggers">
+      <meta name="description" content="This is the format for the Lambda@Edge event structure for request and response events.">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-event-structure.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-at-the-edge.html">Using CloudFront with Lambda@Edge</a> &#xBB; <span class="breadcrumb">Lambda@Edge Event Structure</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="lambda-event-structure">Lambda@Edge Event Structure</h1>
+                     <p>The examples in this section show request and response events that CloudFront passes
+                        to or returns from a Lambda@Edge 
+                        			function when it&apos;s triggered.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#lambda-event-content-based-routing">
+                                 			Content-Based Dynamic Origin Selection</a></li>
+                           <li><a href="#lambda-event-structure-request">Request Event</a></li>
+                           <li><a href="#lambda-event-structure-response">Response Event</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="lambda-event-content-based-routing">
+                        			Content-Based Dynamic Origin Selection
+                     </h2>
+                     			
+                     <p>You can use the path pattern in a cache behavior to route requests to an origin, based
+                        on
+                        				the path and name of the requested object, such as images/*.jpg. Using Lambda@Edge,
+                        you
+                        				can also route requests to an origin based on other characteristics, such as the
+                        values
+                        				in request headers. 
+                     </p>
+                     			
+                     <p>There are a number of ways this content-based dynamic origin selection can be useful.
+                        For example, you can 
+                        				distribute requests across origins in different geographic areas to help with
+                        global load balancing. Or you
+                        				can selectively route requests to different origins that each serve a particular
+                        				function: bot handling, SEO optimization, authentication, and so on. For code
+                        samples that demonstrate
+                        				how to use this feature, see <a href="./AmazonCloudFront/latest/DeveloperGuide/lambda-examples.html#lambda-examples-content-based-routing-examples" target="_blank">
+                           					Example Functions for Content-Based Dynamic Origin Selection</a>.
+                     </p>
+                     			
+                     <p>In the CloudFront origin request event, the origin element in the event structure
+                        contains information 
+                        				about the Amazon S3 or custom origin that the request would be routed to, based
+                        on the path pattern. You can update
+                        				the values in the origin object to route a request to a different origin. The
+                        origin
+                        				doesn&apos;t need to be defined in the distribution, and you can replace an Amazon
+                        S3 origin object
+                        				with a custom origin object and vice versa. 
+                     </p>
+                     			
+                     <p>You can specify either a custom origin or an Amazon S3 origin in a single request,
+                        but not
+                        				both.
+                     </p>
+                     			
+                     		
+                     <h2 id="lambda-event-structure-request">Request Event</h2>
+                     
+                     			
+                     <p>Here&apos;s the format of the event object that CloudFront passes to a Lambda function
+                        when the
+                        				function is triggered by a CloudFront viewer request event or an origin request
+                        				event:
+                     </p>
+                     
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">{
+  &quot;Records&quot;: [
+    {
+      &quot;cf&quot;: {
+        &quot;config&quot;: {
+          &quot;distributionDomainName&quot;: &quot;d123.cloudfront.net&quot;,
+          &quot;distributionId&quot;: &quot;EDFDVBD6EXAMPLE&quot;,
+          &quot;eventType&quot;: &quot;viewer-request&quot;,
+          &quot;requestId&quot;: &quot;MRVMF7KydIvxMWfJIglgwHQwZsbG2IhRJ07sn9AkKUFSHS9EXAMPLE==&quot;
+        },
+        &quot;request&quot;: {
+          &quot;clientIp&quot;: &quot;2001:0db8:85a3:0:0:8a2e:0370:7334&quot;,
+          &quot;querystring&quot;: &quot;size=large&quot;,
+          &quot;uri&quot;: &quot;/picture.jpg&quot;,
+          &quot;method&quot;: &quot;GET&quot;,
+          &quot;headers&quot;: {
+            &quot;host&quot;: [
+              {
+                &quot;key&quot;: &quot;Host&quot;,
+                &quot;value&quot;: &quot;d111111abcdef8.cloudfront.net&quot;
+              }
+            ],
+            &quot;user-agent&quot;: [
+              {
+                &quot;key&quot;: &quot;User-Agent&quot;,
+                &quot;value&quot;: &quot;curl/7.51.0&quot;
+              }
+            ]
+          },
+          &quot;origin&quot;: {
+            &quot;custom&quot;: {
+              &quot;customHeaders&quot;: {
+                &quot;my-origin-custom-header&quot;: [
+                  {
+                    &quot;key&quot;: &quot;My-Origin-Custom-Header&quot;,
+                    &quot;value&quot;: &quot;Test&quot;
+                  }
+                ]
+              },
+              &quot;domainName&quot;: &quot;example.com&quot;,
+              &quot;keepaliveTimeout&quot;: 5,
+              &quot;path&quot;: &quot;/custom_path&quot;,
+              &quot;port&quot;: 443,
+              &quot;protocol&quot;: &quot;https&quot;,
+              &quot;readTimeout&quot;: 5,
+              &quot;sslProtocols&quot;: [
+                &quot;TLSv1&quot;,
+                &quot;TLSv1.1&quot;
+              ]
+            },
+            &quot;s3&quot;: {
+              &quot;authMethod&quot;: &quot;origin-access-identity&quot;,
+              &quot;customHeaders&quot;: {
+                &quot;my-origin-custom-header&quot;: [
+                  {
+                    &quot;key&quot;: &quot;My-Origin-Custom-Header&quot;,
+                    &quot;value&quot;: &quot;Test&quot;
+                  }
+                ]
+              },
+              &quot;domainName&quot;: &quot;my-bucket.s3.amazonaws.com&quot;,
+              &quot;path&quot;: &quot;/s3_path&quot;,
+              &quot;region&quot;: &quot;us-east-1&quot;
+            }
+          }
+        }
+      }
+    }
+  ]
+}</code></pre>
+                     		
+                     		<p>Request events include the following values:</p>
+                     		
+                     <p><u><b>Config Values</b></u></p>
+                     			
+                     <div class="variablelist">
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <dl>
+                           					
+                           <dt><b><span class="term">distributionDomainName (read-only)</span></b></dt>
+                           					
+                           <dd>
+                              <p>The domain name of the distribution that&apos;s associated with the request.</p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">distributionID (read-only)</span></b></dt>
+                           					
+                           <dd>
+                              <p>The ID of the distribution that&apos;s associated with the request.</p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">eventType (read-only)</span></b></dt>
+                           					
+                           <dd>
+                              <p>The type of trigger that&apos;s associated with the request.</p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">requestId (read-only, viewer request events only)</span></b></dt>
+                           					
+                           <dd>
+                              <p>An encrypted string that uniquely identifies a request. The <code class="code">requestId</code> value also
+                                 							appears in CloudFront access logs as <code class="code">x-edge-request-id</code>. For more
+                                 							information, see <a href="AccessLogs.html">Access Logs</a>
+                                 							and <a href="AccessLogs.html#BasicDistributionFileFormat">Web Distribution Log File Format</a>.
+                              </p>
+                           </dd>
+                           				
+                        </dl>
+                     </div>
+                     		
+                     <p><u><b>Request Values - General</b></u></p>
+                     			
+                     <div class="variablelist">
+                        				
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <dl>
+                           					
+                           <dt><b><span class="term">clientIp (read-only)</span></b></dt>
+                           					
+                           <dd>
+                              <p>The IP address of the viewer that made the request. If the viewer used an HTTP proxy
+                                 or a load
+                                 							balancer to send the request, the value is the IP address of the proxy
+                                 							or load balancer.
+                              </p>
+                              					
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">headers (read/write)</span></b></dt>
+                           					
+                           <dd>
+                              <p>The headers in the request. The keys in the <code class="code">headers</code> object are lowercase versions
+                                 							of the header names in the HTTP request. These lowercase keys give you
+                                 							case-insensitive access to the header values. Each header (for example,
+                                 								<code class="code">headers[&quot;accept&quot;]</code> or <code class="code">headers[&quot;host&quot;]</code>) is
+                                 							an array of key-value pairs, where <code class="code">key</code> is the
+                                 							case-sensitive name of the header as it appears in an HTTP request and
+                                 								<code class="code">value</code> is a header value. The number of elements in the
+                                 							array is the number of times that a header is repeated in an HTTP
+                                 							request.
+                              </p>
+                              						
+                              <p>For information about restrictions on header usage, see 
+                                 							<a href="lambda-requirements-limits.html#lambda-header-restrictions">Headers</a>.
+                              </p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">method (read-only)</span></b></dt>
+                           					
+                           <dd>
+                              <p>The HTTP method of the viewer request.</p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">querystring</span></b></dt>
+                           					
+                           <dd>
+                              <p>The query string, if any, that CloudFront received in the viewer request. 
+                                 						If the viewer request doesn&apos;t include a query string, the event structure still
+                                 includes <code class="code">querystring</code> with an 
+                                 						empty value. For more information about query strings, see <a href="QueryStringParameters.html">Configuring CloudFront to Cache Based on Query String Parameters</a>.
+                              </p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">uri (read/write)</span></b></dt>
+                           					
+                           <dd>
+                              <p>The relative path of the requested object. Note the following:</p>
+                              						
+                              <div class="itemizedlist">
+                                 							
+                                 							
+                                 							
+                                 						
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p>The new relative path must begin with a slash (like this: /).</p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>If a function changes the URI for a request, that changes the object that the viewer
+                                          is requesting. 
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>If a function changes the URI for a request, that doesn&apos;t change the cache behavior
+                                          for the request or the origin that 
+                                          								the request is forwarded to.
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              					
+                           </dd>
+                           				
+                        </dl>
+                     </div>
+                     			
+                     		
+                     <p><u><b>Request Values - Custom Origin</b></u></p>
+                     			
+                     <p>You can specify either a custom origin or an Amazon S3 origin in a single request;
+                        not both.
+                     </p>
+                     			
+                     <div class="variablelist">
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <dl>
+                           					
+                           <dt><b><span class="term">customHeaders</span></b></dt>
+                           					
+                           <dd>
+                              <p>You can include custom headers with the request by specifying a header name and value
+                                 pair for each custom header. You can&apos;t add headers that are blacklisted
+                                 						for origin custom headers or hooks, and a header with the same name can&apos;t be
+                                 present in request.headers or in request.origin.custom.customHeaders.
+                                 						The restrictions for request.headers also apply to custom headers. For more
+                                 information, see 
+                                 						<a href="forward-custom-headers.html#forward-custom-headers-blacklist">Custom Headers that CloudFront Can&apos;t Forward to Your Origin</a> and 
+                                 						<a href="lambda-requirements-limits.html#lambda-blacklisted-headers">Blacklisted Headers</a>.
+                              </p>
+                              					
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">domainName</span></b></dt>
+                           					
+                           <dd>
+                              <p>The domain name of the origin server, like www.example.com. The domain name can&apos;t
+                                 be empty,
+                                 							can&apos;t include a colon (:), and can&apos;t use the IPV4 address format. The domain
+                                 name can be up to 253 characters.
+                              </p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">keepaliveTimeout</span></b></dt>
+                           					
+                           <dd>
+                              <p>How long, in seconds, that CloudFront should try to maintain the connection to your
+                                 origin after
+                                 							receiving the last packet of a response. The value must be a number in
+                                 							the range of 1 to 60 seconds.
+                              </p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">path</span></b></dt>
+                           					
+                           <dd>
+                              <p>The directory path at the server where the request should locate content. The path
+                                 should start with a slash (/) but
+                                 						should have no trailing / (like path/). The path should be URL encoded, with
+                                 a maximum length of 255 characters.
+                              </p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">port</span></b></dt>
+                           					
+                           <dd>
+                              <p>The port at your custom origin. The port must be 80 or 443, or a number in the range
+                                 of 1024 to 65535.
+                              </p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">protocol</span></b></dt>
+                           					
+                           <dd>
+                              <p>The origin protocol policy that CloudFront should use when fetching objects from your
+                                 origin. The value can be <code class="code">http</code> or 
+                                 						<code class="code">https</code>.
+                              </p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">readTimeout</span></b></dt>
+                           					
+                           <dd>
+                              <p>How long, in seconds, CloudFront should wait for a response after forwarding a request
+                                 to the origin, and how long CloudFront should wait
+                                 					after receiving a packet of a response before receiving the next packet. The
+                                 value must be a number in the range of 4 to 60 seconds.
+                              </p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">sslProtocols</span></b></dt>
+                           					
+                           <dd>
+                              <p>The SSL protocols that CloudFront can use when establishing an HTTPS connection with
+                                 your origin. Values can be the
+                                 					following: <code class="code">TLSv1.2</code>, <code class="code">TLSv1.1</code>, <code class="code">TLSv1</code>, <code class="code">SSLv3</code>.
+                              </p>
+                           </dd>
+                           				
+                        </dl>
+                     </div>
+                     			
+                     		
+                     <p><u><b>Request Values - Amazon S3 Origin</b></u></p>
+                     			
+                     <p>You can specify either a custom origin or an Amazon S3 origin in a single request,
+                        but not both.
+                     </p>
+                     			
+                     <div class="variablelist">
+                        				
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <dl>
+                           					
+                           <dt><b><span class="term">authMethod</span></b></dt>
+                           					
+                           <dd>
+                              <p>Set to <code class="code">origin-access-identity</code> if your Amazon S3 bucket has an origin access identity (OAI) set up, or <code class="code">none</code> 
+                                 						if you aren&#x2019;t using OAI. If you set authMethod to <code class="code">origin-access-identity</code>, there are several requirements: 
+                              </p>
+                              						
+                              <div class="itemizedlist">
+                                 							
+                                 							
+                                 							
+                                 						
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p>You must specify a region in your header.</p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>You must use the same OAI when you switch from one Amazon S3 origin to another.</p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>You can&#x2019;t use an OAI when you switch from a custom origin to an Amazon S3 origin.</p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              						
+                              <p>For more information about using an OAI, see <a href="private-content-restricting-access-to-s3.html">Using an Origin Access Identity to Restrict Access to Your Amazon S3 Content</a>.
+                              </p>
+                              					
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">customHeaders</span></b></dt>
+                           					
+                           <dd>
+                              <p>You can include custom headers with the request by specifying a header name and value
+                                 pair for each custom header. You can&apos;t add 
+                                 						headers that are blacklisted for origin custom headers or hooks, and a header
+                                 with the same name can&apos;t be present in request.headers or in 
+                                 						request.origin.custom.customHeaders. The restrictions for request.headers also
+                                 apply to custom headers. For more information, see 
+                                 						<a href="forward-custom-headers.html#forward-custom-headers-blacklist">Custom Headers that CloudFront Can&apos;t Forward to Your Origin</a> and 
+                                 						<a href="lambda-requirements-limits.html#lambda-blacklisted-headers">Blacklisted Headers</a>.
+                              </p>
+                              					
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">domainName</span></b></dt>
+                           					
+                           <dd>
+                              <p>The domain name of the Amazon S3 origin server, like <code class="code">my-bucket.s3.amazonaws.com</code>. The
+                                 							domain name can&apos;t be empty, and must be an allowed bucket name (as
+                                 							defined by Amazon S3). Do not use a region-specific endpoint, like
+                                 								<code class="code">my-bucket.s3-eu-west-1.amazonaws.com</code>. The name can be
+                                 							up to 128 characters, and must be all lowercase.
+                              </p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">path</span></b></dt>
+                           					
+                           <dd>
+                              <p>The directory path at the server where the request should locate content. The path
+                                 should start with a slash (/) but
+                                 						should have no trailing / (like path/).
+                              </p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">region</span></b></dt>
+                           					
+                           <dd>
+                              <p>The region for your Amazon S3 bucket. This is required only if you use OAI.</p>
+                           </dd>
+                           				
+                        </dl>
+                     </div>
+                     			
+                     		
+                     <h2 id="lambda-event-structure-response">Response Event</h2>
+                     			
+                     		
+                     			
+                     <p>Here&apos;s the format of the event object that CloudFront passes to a Lambda function
+                        when the
+                        				function is triggered by a CloudFront viewer response event or an origin response
+                        				event:
+                     </p>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">{
+    &quot;Records&quot;: [
+        {
+            &quot;cf&quot;: {
+                &quot;config&quot;: {
+                    &quot;distributionDomainName&quot;: &quot;d123.cloudfront.net&quot;,
+                    &quot;distributionId&quot;: &quot;EDFDVBD6EXAMPLE&quot;,
+                    &quot;eventType&quot;: &quot;viewer-response&quot;,
+                    &quot;requestId&quot;: &quot;xGN7KWpVEmB9Dp7ctcVFQC4E-nrcOcEKS3QyAez--06dV7TEXAMPLE==&quot;
+                },
+                &quot;request&quot;: {
+                    &quot;clientIp&quot;: &quot;2001:0db8:85a3:0:0:8a2e:0370:7334&quot;,
+                    &quot;method&quot;: &quot;GET&quot;,
+                    &quot;uri&quot;: &quot;/picture.jpg&quot;,
+                    &quot;querystring&quot;: &quot;size=large&quot;,
+                    &quot;headers&quot;: {
+                        &quot;host&quot;: [
+                            {
+                                &quot;key&quot;: &quot;Host&quot;,
+                                &quot;value&quot;: &quot;d111111abcdef8.cloudfront.net&quot;
+                            }
+                        ],
+                        &quot;user-agent&quot;: [
+                            {
+                                &quot;key&quot;: &quot;User-Agent&quot;,
+                                &quot;value&quot;: &quot;curl/7.18.1&quot;
+                            }
+                        ]
+                    }
+                },
+                &quot;response&quot;: {
+                    &quot;status&quot;: &quot;200&quot;,
+                    &quot;statusDescription&quot;: &quot;OK&quot;,
+                    &quot;headers&quot;: {
+                        &quot;server&quot;: [
+                            {
+                                &quot;key&quot;: &quot;Server&quot;,
+                                &quot;value&quot;: &quot;MyCustomOrigin&quot;
+                            }
+                        ],
+                        &quot;set-cookie&quot;: [
+                            {
+                                &quot;key&quot;: &quot;Set-Cookie&quot;,
+                                &quot;value&quot;: &quot;theme=light&quot;
+                            },
+                            {
+                                &quot;key&quot;: &quot;Set-Cookie&quot;,
+                                &quot;value&quot;: &quot;sessionToken=abc123; Expires=Wed, 09 Jun 2021 10:18:14 GMT&quot;
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ]
+}</code></pre>
+                     		
+                     			<p>Response events include the values that appear in the corresponding request event,
+                        and in
+                        				addition, the following values. If your Lambda@Edge function generates an HTTP
+                        				response, see <a href="lambda-generating-http-responses.html">Generating HTTP Responses in Request Triggers</a>.
+                     </p>
+                     			
+                     <div class="variablelist">
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <dl>
+                           					
+                           <dt><b><span class="term">distributionID (read-only)</span></b></dt>
+                           					
+                           <dd>
+                              <p>The ID of the distribution that&apos;s associated with the request.</p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">eventType (read-only)</span></b></dt>
+                           					
+                           <dd>
+                              <p>The type of trigger that&apos;s associated with the response.</p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">headers</span></b></dt>
+                           					
+                           <dd>
+                              <p>Headers that you want CloudFront to return in the generated response. Note the following:</p>
+                              						
+                              <div class="itemizedlist">
+                                 							
+                                 							
+                                 							
+                                 							
+                                 						
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p>The keys in the <code class="code">headers</code> object are lowercase versions of standard HTTP header names. Using lowercase keys
+                                          gives you
+                                          								case-insensitive access to the header values.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Each header (for example, <code class="code">headers[&quot;accept&quot;]</code> or <code class="code">headers[&quot;host&quot;]</code>) is
+                                          								an array of key-value pairs. For a given header, the array
+                                          								contains one key-value pair for each value in the generated
+                                          								response.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Specify <code class="code">key</code> as the case-sensitive name of the header as it appears in an HTTP request; for example,
+                                          <code class="code">accept</code> 
+                                          								or <code class="code">host</code>.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Specify <code class="code">value</code> as a header value.
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              						
+                              <p>For information about restrictions on header usage, see <a href="lambda-requirements-limits.html#lambda-header-restrictions">Headers</a>.
+                              </p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">requestId (read-only, viewer response events only)</span></b></dt>
+                           					
+                           <dd>
+                              <p>An encrypted string that 
+                                 						uniquely identifies a request. The <code class="code">requestId</code> value also appears in CloudFront access logs as the <code class="code">x-edge-request-id</code>. 
+                                 						For more information, see <a href="AccessLogs.html">Access Logs</a> and 
+                                 						<a href="AccessLogs.html#BasicDistributionFileFormat">Web Distribution Log File Format</a>.
+                              </p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">request &#x2013; One of the following:</span></b></dt>
+                           					
+                           <dd>
+                              <div class="itemizedlist">
+                                 						
+                                 						
+                                 					
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p>Viewer response &#x2013; The request that CloudFront received from the viewer and that might
+                                          have been 
+                                          							modified by the Lambda function that was triggered by a viewer request event
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Origin response &#x2013; The request that CloudFront forwarded to the origin and that might
+                                          have been 
+                                          							modified by the Lambda function that was triggered by an origin request event
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              						
+                              <p>If the Lambda function modifies the request object, the changes are ignored.</p>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">response &#x2013; One of the following:</span></b></dt>
+                           					
+                           <dd>
+                              <div class="itemizedlist">
+                                 						
+                                 						
+                                 					
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p>Viewer response &#x2013; The response that CloudFront will return to the viewer for viewer
+                                          response events.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Origin response &#x2013; The response that CloudFront received from the origin for origin
+                                          response events.
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">status</span></b></dt>
+                           					
+                           <dd>
+                              <p>The HTTP status code that CloudFront returns to the viewer.</p>
+                              					
+                           </dd>
+                           				
+                           					
+                           <dt><b><span class="term">statusDescription</span></b></dt>
+                           					
+                           <dd>
+                              <p>The HTTP status description that CloudFront returns to the viewer.</p>
+                           </dd>
+                           				
+                        </dl>
+                     </div>
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="lambda-edge-delete-replicas.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="lambda-generating-http-responses.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="
+			Content-Based Dynamic Origin Selection"><a class="pagetoc" href="#lambda-event-content-based-routing">
+                              			Content-Based Dynamic Origin Selection</a></li>
+                        <li class="pagetoc" name="Request Event"><a class="pagetoc" href="#lambda-event-structure-request">Request Event</a></li>
+                        <li class="pagetoc" name="Response Event"><a class="pagetoc" href="#lambda-event-structure-response">Response Event</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

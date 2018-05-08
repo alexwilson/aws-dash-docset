@@ -1,0 +1,1255 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Managing an EC2 Fleet - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ec2-fleet.html" title="Launching an EC2 Fleet">
+      <link rel="prev" href="ec2-fleet-configuration-strategies.html" title="EC2 Fleet Configuration Strategies">
+      <link rel="next" href="ec2-fleet-examples.html" title="EC2 Fleet Example Configurations">
+      <meta name="description" content="Create an EC2 Fleet that specifies the launch configuration for your On-Demand Instances and Spot Instances, including the price that you are willing to pay per unit hour.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/manage-ec2-fleet.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="ec2-instance-lifecycle.html">Instance Lifecycle</a> &#xBB; <a href="LaunchingAndUsingInstances.html">Launch Your Instance</a> &#xBB; <a href="ec2-fleet.html">Launching an EC2 Fleet</a> &#xBB; <span class="breadcrumb">Managing an EC2 Fleet</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="manage-ec2-fleet">Managing an EC2 Fleet</h1>
+                     <p>To use an EC2 Fleet, you create a request that includes the target capacity, On-Demand
+                        capacity,
+                        			Spot capacity, one or more launch specifications for the instances, and the maximum
+                        			price that you are willing to pay. The fleet request must include a launch template
+                        that
+                        			defines the information that the fleet needs to launch an instance, such as an
+                        AMI,
+                        			instance type, subnet or Availability Zone, and one or more security groups. You
+                        can
+                        			specify launch specification overrides for the instance type, subnet, Availability
+                        Zone,
+                        			and maximum price you&apos;re willing to pay, and you can assign weighted capacity to
+                        each
+                        			launch specification override.
+                     </p>
+                     <p>If your fleet includes Spot Instances, Amazon EC2 attempts to maintain your fleet
+                        target capacity as
+                        			Spot prices change.
+                     </p>
+                     <p>An EC2 Fleet request remains active until it expires or you delete it. When you delete
+                        a
+                        			fleet, you may specify whether deletion terminates the instances in that fleet.
+                     </p>
+                     <div class="highlights">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#EC2-fleet-states">EC2 Fleet Request States</a></li>
+                           <li><a href="#ec2-fleet-prerequisites">EC2 Fleet Prerequisites</a></li>
+                           <li><a href="#ec2-fleet-health-checks">EC2 Fleet Health Checks</a></li>
+                           <li><a href="#ec2-fleet-cli-skeleton">Generating an EC2 Fleet JSON Configuration
+                                 					File</a></li>
+                           <li><a href="#create-ec2-fleet">Creating an EC2 Fleet</a></li>
+                           <li><a href="#manage-ec2-fleet">Monitoring Your EC2 Fleet</a></li>
+                           <li><a href="#modify-ec2-fleet">Modifying an EC2 Fleet</a></li>
+                           <li><a href="#delete-fleet">Deleting an EC2 Fleet</a></li>
+                           <li><a href="ec2-fleet-examples.html">EC2 Fleet Example Configurations</a></li>
+                        </ul>
+                     </div>
+                     			
+                     <h2 id="EC2-fleet-states">EC2 Fleet Request States</h2>
+                     			
+                     <p>An EC2 Fleet request can be in one of the following states:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><code class="code">submitted</code> &#x2013; The EC2 Fleet request is being evaluated and
+                                 						Amazon EC2 is preparing to launch the target number of instances, which can
+                                 						include On-Demand Instances, Spot Instances, or both.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">active</code> &#x2013; The EC2 Fleet request has been validated and Amazon EC2
+                                 						is attempting to maintain the target number of running instances. The
+                                 						request remains in this state until it is modified or deleted.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">modifying</code> &#x2013; The EC2 Fleet request is being modified. The
+                                 						request remains in this state until the modification is fully processed or
+                                 						the request is deleted. A one-time <code class="code">request</code> cannot be modified,
+                                 						and this state does not apply to such requests.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">deleted_running</code> &#x2013; The EC2 Fleet request is deleted and does
+                                 						not launch additional instances. Its existing instances continue to run
+                                 						until they are interrupted or terminated. The request remains in this state
+                                 						until all instances are interrupted or terminated.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">deleted_terminating</code> &#x2013; The EC2 Fleet request is deleted and
+                                 						its instances are terminating. The request remains in this state until all
+                                 						instances are terminated.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">deleted</code> &#x2013; The EC2 Fleet is deleted and has no running
+                                 						instances. The request is deleted two days after its instances are
+                                 						terminated.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>The following illustration represents the transitions between the EC2 Fleet request
+                        				states. If you exceed your fleet limits, the request is deleted immediately.
+                     </p>
+                     			
+                     <div class="mediaobject">
+                        				
+                        					<img src="../../..//img/EC2_fleet_states.png" alt="
+					EC2 Fleet request states
+				" style="max-width:50%">
+                        				
+                        				
+                        			
+                     </div>
+                     		
+                     			
+                     <h2 id="ec2-fleet-prerequisites">EC2 Fleet Prerequisites</h2>
+                     			
+                     <p>To create an EC2 Fleet, the following prerequisites must be in place:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><a href="manage-ec2-fleet.html#ec2-fleet-prerequisites-launch-template">Launch template</a></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><a href="manage-ec2-fleet.html#ec2-fleet-prerequisites-role">IAM role for EC2 Fleet</a></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><a href="manage-ec2-fleet.html#ec2-fleet-service-linked-role">Service-linked role for EC2 Fleet</a></p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     				
+                     <h3 id="ec2-fleet-prerequisites-launch-template">Launch
+                        						Template
+                     </h3>
+                     				
+                     <p>A launch template includes information about the instances to launch, such as
+                        					the instance type, Availability Zone, and the maximum price that you are willing
+                        					to pay. For more information, see <a href="ec2-launch-templates.html">Launching an Instance from a Launch Template</a>.
+                     </p>
+                     			
+                     			
+                     				
+                     <h3 id="ec2-fleet-prerequisites-role">IAM Role for EC2 Fleet</h3>
+                     				
+                     <p>The <code class="code">aws-ec2-fleet-tagging-role</code> grants the EC2 Fleet permission to request, launch,
+                        					terminate, and tag instances on your behalf. Ensure that this role exists before
+                        					you use the AWS CLI or an API to create an EC2 Fleet. To create the role, use
+                        the IAM
+                        					console as follows. 
+                     </p>
+                     				
+                     <p class="title"><b>To create the IAM role for EC2 Fleet</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the IAM console at
+                              <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           						
+                           <p>In the navigation pane, choose <b>Roles</b>.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>On the <b>Select type of trusted entity</b> page, choose
+                              								<b>AWS service</b>, <b>EC2</b>,
+                              								<b>EC2 - Fleet Tagging</b>, and then choose
+                              								<b>Next: Permissions</b>.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>On the <b>Attached permissions policy</b> page, choose
+                              								<b>Next:Review</b>.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>On the <b>Review</b> page, type a name for the role (for
+                              							example, <strong class="userinput"><code>aws-ec2-fleet-tagging-role</code></strong>) and choose
+                              								<b>Create role</b>.
+                           </p>
+                           					
+                        </li>
+                     </ol>
+                     			
+                     			
+                     				
+                     <h3 id="ec2-fleet-iam-users">EC2 Fleet and IAM Users</h3>
+                     				
+                     <p>If your IAM users will create or manage an EC2 Fleet, be sure to grant them the
+                        					required permissions as follows.
+                     </p>
+                     				
+                     <p class="title"><b>To grant an IAM user permissions for EC2 Fleet</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the IAM console at
+                              <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           						
+                           <p>In the navigation pane, choose <b>Policies</b>,
+                              								<b>Create policy</b>.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>On the <b>Create policy</b> page, choose the
+                              								<b>JSON</b> tab, replace the text with the following,
+                              							and choose <b>Review policy</b>.
+                           </p>
+                           						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [
+        {
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: [
+                &quot;ec2:*&quot;
+            ],
+            &quot;Resource&quot;: &quot;*&quot;
+        },
+        {
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: [
+              &quot;iam:ListRoles&quot;,
+              &quot;iam:PassRole&quot;,
+              &quot;iam:ListInstanceProfiles&quot;
+            ],
+            &quot;Resource&quot;: &quot;*&quot;
+        }
+    ]
+}</code></pre>
+                           						<p>The <code class="code">ec2:*</code> grants an IAM user permission to call all
+                              							Amazon EC2 API actions. To limit the user to specific Amazon EC2 API actions,
+                              							specify those actions instead.
+                           </p>
+                           						
+                           <p>An IAM user must have permission to call the
+                              								<code class="code">iam:ListRoles</code> action to enumerate existing IAM roles,
+                              							the <code class="code">iam:PassRole</code> action to specify the EC2 Fleet role, and the
+                              								<code class="code">iam:ListInstanceProfiles</code> action to enumerate existing
+                              							instance profiles.
+                           </p>
+                           						
+                           <p>(Optional) To enable an IAM user to create roles or instance
+                              							profiles using the IAM console, you must also add the following
+                              							actions to the policy:
+                           </p>
+                           						
+                           <div class="itemizedlist">
+                              							
+                              							
+                              							
+                              							
+                              							
+                              							
+                              						
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    								
+                                    <p><code class="code">iam:AddRoleToInstanceProfile</code></p>
+                                    							
+                                 </li>
+                                 <li class="listitem">
+                                    								
+                                    <p><code class="code">iam:AttachRolePolicy</code></p>
+                                    							
+                                 </li>
+                                 <li class="listitem">
+                                    								
+                                    <p><code class="code">iam:CreateInstanceProfile</code></p>
+                                    							
+                                 </li>
+                                 <li class="listitem">
+                                    								
+                                    <p><code class="code">iam:CreateRole</code></p>
+                                    							
+                                 </li>
+                                 <li class="listitem">
+                                    								
+                                    <p><code class="code">iam:GetRole</code></p>
+                                    							
+                                 </li>
+                                 <li class="listitem">
+                                    								
+                                    <p><code class="code">iam:ListPolicies</code></p>
+                                    							
+                                 </li>
+                              </ul>
+                           </div>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>On the <b>Review policy</b> page, type a policy name and
+                              							description, and then choose <b>Create policy</b>.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>In the navigation pane, choose <b>Users</b> and select
+                              							the user.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>On the <b>Permissions</b> tab, choose <b>Add
+                                 								permissions</b>.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>Choose <b>Attach existing policies directly</b>. Select
+                              							the policy that you created earlier and choose <b>Next:
+                                 								Review</b>.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>Choose <b>Add permissions</b>.
+                           </p>
+                           					
+                        </li>
+                     </ol>
+                     			
+                     		
+                     		
+                     			
+                     <h3 id="ec2-fleet-service-linked-role">Service-Linked Role for EC2 Fleet
+                        					Requests
+                     </h3>
+                     			
+                     <p>Before you create an EC2 Fleet, you need to create a service-linked role named
+                        					<b>AWSServiceRoleForEC2Fleet</b>. A service-linked role includes
+                        				all the permissions that Amazon EC2 requires to call other AWS services on your
+                        behalf.
+                        				If you try to create a fleet before the role is created, you get an error. Create
+                        				the role using the IAM console. For more information, see <a href="./IAM/latest/UserGuide/using-service-linked-roles.html" target="_blank">Using Service-Linked
+                           					Roles</a> in the <em>IAM User Guide</em>.
+                     </p>
+                     			
+                     <p>Amazon EC2 uses the service-linked role named
+                        					<b>AWSServiceRoleForEC2Fleet</b> to complete the following
+                        				actions:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:RequestSpotInstances</code> &#x2013; Request Spot Instances.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:TerminateInstances</code> &#x2013; Terminate Spot Instances.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:DescribeImages</code> &#x2013; Describe Amazon Machine Images
+                                 						(AMI) for the Spot Instances.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:DescribeInstanceStatus</code> &#x2013; Describe the status of
+                                 						the Spot Instances.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:DescribeSubnets</code> &#x2013; Describe the subnets for
+                                 						Spot Instances.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:CreateTags</code> - Add system tags to Spot Instances.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>If you no longer need to use EC2 Fleet, we recommend that you delete the
+                        					<b>AWSServiceRoleForEC2Fleet</b> role. After this role is deleted
+                        				from your account, you can create the role again if you create another fleet.
+                     </p>
+                     			
+                     		
+                     		
+                     			
+                     <h2 id="ec2-fleet-health-checks">EC2 Fleet Health Checks</h2>
+                     			
+                     <p>EC2 Fleet checks the health status of the instances in the fleet every two minutes.
+                        The
+                        				health status of an instance is either <code class="code">healthy</code> or
+                        					<code class="code">unhealthy</code>. The fleet determines the health status of an instance
+                        				using the status checks provided by Amazon EC2. If the status of either the instance
+                        				status check or the system status check is <code class="code">impaired</code> for three
+                        				consecutive health checks, the health status of the instance is
+                        					<code class="code">unhealthy</code>. Otherwise, the health status is <code class="code">healthy</code>.
+                        				For more information, see <a href="monitoring-system-instance-status-check.html">Status Checks for Your Instances</a>.
+                     </p>
+                     			
+                     <p>You can configure your EC2 Fleet to replace unhealthy instances. After enabling health
+                        				check replacement, an instance is replaced after its health status is reported
+                        as
+                        					<code class="code">unhealthy</code>. The fleet could go below its target capacity for up to a
+                        				few minutes while an unhealthy instance is being replaced.
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        <p class="title"><b>Requirements</b></p>
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>Health check replacement is supported only with EC2 Fleets that maintain a
+                                 						target capacity, not with one-time fleets.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>You can configure your EC2 Fleet to replace unhealthy instances only when you
+                                 						create it.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>IAM users can use health check replacement only if they have permission
+                                 						to call the <code class="code">ec2:DescribeInstanceStatus</code> action.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     			
+                     <h2 id="ec2-fleet-cli-skeleton">Generating an EC2 Fleet JSON Configuration
+                        					File
+                     </h2>
+                     			
+                     <p>To create an EC2 Fleet, you need only specify the launch template, target capacity,
+                        and whether
+                        				the default purchasing model is On-Demand or Spot. If you do not specify a
+                        				parameter, the fleet uses the default value. To view the full list of fleet
+                        				configuration parameters, you can generate a JSON file as follows.
+                     </p>
+                     			
+                     <p class="title"><b>To generate a JSON file with all possible EC2 Fleet parameters  using the command
+                           line</b></p>
+                     <ul>
+                        <li>
+                           					
+                           <p>Use the <a href="./cli/latest/reference/ec2/get-launch-template-data.html" target="_blank">create-fleet</a> (AWS CLI) command and the
+                              							<code class="code">--generate-cli-skeleton</code> parameter to generate an EC2 Fleet JSON
+                              						file:
+                           </p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">aws ec2 create-fleet --generate-cli-skeleton</code></pre>
+                           					<p>The following EC2 Fleet parameters are available:</p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">    {
+    &quot;DryRun&quot;: true, 
+    &quot;ClientToken&quot;: &quot;&quot;, 
+    &quot;SpotOptions&quot;: {
+        &quot;AllocationStrategy&quot;: &quot;diversified&quot;, 
+        &quot;InstanceInterruptionBehavior&quot;: &quot;stop&quot;
+    }, 
+    &quot;ExcessCapacityTerminationPolicy&quot;: &quot;no-termination&quot;, 
+    &quot;LaunchTemplateConfigs&quot;: [
+        {
+            &quot;LaunchTemplateSpecification&quot;: {
+                &quot;LaunchTemplateId&quot;: &quot;&quot;, 
+                &quot;LaunchTemplateName&quot;: &quot;&quot;, 
+                &quot;Version&quot;: &quot;&quot;
+            }, 
+            &quot;Overrides&quot;: [
+                {
+                    &quot;InstanceType&quot;: &quot;t2.micro&quot;, 
+                    &quot;MaxPrice&quot;: &quot;&quot;, 
+                    &quot;SubnetId&quot;: &quot;&quot;, 
+                    &quot;AvailabilityZone&quot;: &quot;&quot;, 
+                    &quot;WeightedCapacity&quot;: null
+                }
+            ]
+        }
+    ], 
+    &quot;TargetCapacitySpecification&quot;: {
+        &quot;TotalTargetCapacity&quot;: 0, 
+        &quot;OnDemandTargetCapacity&quot;: 0, 
+        &quot;SpotTargetCapacity&quot;: 0, 
+        &quot;DefaultTargetCapacityType&quot;: &quot;spot&quot;
+    }, 
+    &quot;TerminateInstancesWithExpiration&quot;: true, 
+    &quot;Type&quot;: &quot;request&quot;, 
+    &quot;ValidFrom&quot;: &quot;1970-01-01T00:00:00&quot;, 
+    &quot;ValidUntil&quot;: &quot;1970-01-01T00:00:00&quot;, 
+    &quot;ReplaceUnhealthyInstances&quot;: true, 
+    &quot;TagSpecifications&quot;: [
+        {
+            &quot;ResourceType&quot;: &quot;reserved-instances&quot;, 
+            &quot;Tags&quot;: [
+                {
+                    &quot;Key&quot;: &quot;&quot;, 
+                    &quot;Value&quot;: &quot;&quot;
+                }
+            ]
+        }
+    ]
+}</code></pre>
+                           				</li>
+                     </ul>
+                     			
+                     				
+                     <h3 id="ec2-fleet-json-reference">EC2 Fleet JSON Configuration File
+                        						Reference
+                     </h3>
+                     				
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Use lowercase for all parameter values; otherwise, you get an error when Amazon EC2
+                           uses the
+                           						JSON file to launch the EC2 Fleet.
+                        </p>
+                     </div>
+                     				
+                     <div class="variablelist">
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        				
+                        <dl>
+                           						
+                           <dt><b><span class="term">AllocationStrategy</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) Indicates how to allocate the Spot Instance target capacity across the
+                                 Spot Instance pools
+                                 								specified by the EC2 Fleet. Valid values are <code class="code">lowest-price</code>
+                                 								and <code class="code">diversified</code>. The default is
+                                 									<code class="code">lowest-price</code>. Specify the allocation strategy that
+                                 								meets your needs. For more information, see <a href="ec2-fleet-configuration-strategies.html#ec2-fleet-allocation-strategy">Allocation Strategy for Spot Instances</a>.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">InstanceInterruptionBehavior</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) The behavior when a Spot Instance is interrupted. Valid values
+                                 								are <code class="code">hibernate</code>, <code class="code">stop</code>, and
+                                 									<code class="code">terminate</code>. By default, the Spot service terminates
+                                 								Spot Instances when they are interrupted. If the fleet type is
+                                 									<code class="code">maintain</code>, you can specify that the Spot service
+                                 								hibernates or stops Spot Instances when they are interrupted.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">ExcessCapacityTerminationPolicy</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) Indicates whether running instances should be
+                                 								terminated if the total target capacity of the EC2 Fleet is decreased
+                                 								below the current size of the EC2 Fleet. Valid values are
+                                 									<code class="code">no-termination</code> and <code class="code">termination</code>.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">LaunchTemplateId</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>The ID of the launch template to use. You must specify either the
+                                 								launch template ID or launch template name. The launch template must
+                                 								specify an Amazon Machine Image (AMI). For more information about
+                                 								creating launch templates, see <a href="ec2-launch-templates.html">Launching an Instance from a Launch Template</a>.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">LaunchTemplateName</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>The name of the launch template to use. You must specify either the launch template
+                                 ID
+                                 								or launch template name. The launch template must specify an Amazon
+                                 								Machine Image (AMI). For more information, see <a href="ec2-launch-templates.html">Launching an Instance from a Launch Template</a>.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">Version</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>The version number of the launch template.</p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">InstanceType</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) The instance type. If entered, this value overrides the launch template.
+                                 The
+                                 								instance types must have the minimum hardware specifications that
+                                 								you need (vCPUs, memory, or storage).
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">MaxPrice</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) The maximum price per unit hour that you are willing to pay for a Spot
+                                 Instance. If
+                                 								entered, this value overrides the launch template. You can use the
+                                 								default maximum price (the On-Demand price) or specify the maximum
+                                 								price that you are willing to pay. Your Spot Instances are not launched if
+                                 								your maximum price is lower than the Spot price for the instance
+                                 								types that you specified.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">SubnetId</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) The ID of the subnet in which to launch the instances.
+                                 								If entered, this value overrides the launch template. Your account
+                                 								supports either the EC2-Classic and EC2-VPC platforms, or the
+                                 								EC2-VPC platform only. To find out which platforms your account
+                                 								supports, see <a href="ec2-supported-platforms.html">Supported Platforms</a>.
+                              </p>
+                              							
+                              <p>[New VPC] To create a new VPC, go the Amazon VPC console. When you are done, return
+                                 to the
+                                 								JSON file and enter the new subnet ID.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">AvailabilityZone</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) The Availability Zone in which to launch the instances. The default is
+                                 to
+                                 								let AWS choose the zones for your instances. If you prefer, you can
+                                 								specify specific zones. If entered, this value overrides the launch
+                                 								template. 
+                              </p>
+                              							
+                              <p>[EC2-VPC] Specify one or more Availability Zones. If you have more than one subnet
+                                 in a
+                                 								zone, specify the appropriate subnet. To add subnets, go to the
+                                 								Amazon VPC console. When you are done, return to the JSON file and enter
+                                 								the new subnet ID.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">WeightedCapacity</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) The number of units provided by the specified instance
+                                 								type. If entered, this value overrides the launch template.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">TotalTargetCapacity</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>The number of instances to launch. You can choose instances or performance
+                                 								characteristics that are important to your application workload,
+                                 								such as vCPUs, memory, or storage. If the request type is
+                                 									<code class="code">maintain</code>, you can specify a target capacity of 0
+                                 								and add capacity later.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">OnDemandTargetCapacity</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) The number of On-Demand Instances to launch. This number must be
+                                 								less than the <code class="code">TotalTargetCapacity</code>.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">SpotTargetCapacity</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) The number of Spot Instances to launch. This number must be less
+                                 								than the <code class="code">TotalTargetCapacity</code>.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">DefaultTargetCapacityType</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>If the value for <code class="code">TotalTargetCapacity</code> is higher than
+                                 								the combined values for <code class="code">OnDemandTargetCapacity</code> and
+                                 									<code class="code">SpotTargetCapacity</code>, the difference is launched as
+                                 								the instance purchasing model specified here. Valid values are
+                                 									<code class="code">on-demand</code> or <code class="code">spot</code>.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">TerminateInstancesWithExpiration</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) By default, Amazon EC2 terminates your instances when the EC2 Fleet request
+                                 expires.
+                                 								The default value is <code class="code">true</code>. To keep them running after
+                                 								your request expires, do not enter a value for this
+                                 								parameter.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">Type</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) Indicates whether EC2 Fleet only requests the target capacity, or also
+                                 attempts
+                                 								to maintain it. Valid values are <code class="code">maintain</code> and
+                                 									<code class="code">request</code>. The default value is
+                                 								<code class="code">maintain</code>. If the value is <code class="code">request</code>, EC2 Fleet
+                                 								only places the required requests. It does not attempt to replenish
+                                 								instances if capacity is diminished, and does not submit requests in
+                                 								alternative capacity pools if capacity is unavailable. If the value
+                                 								is <code class="code">maintain</code>, the fleet places the required requests to
+                                 								meet the target capacity. It also automatically replenishes any
+                                 								interrupted Spot Instances. 
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">ValidFrom</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) To create a request that is valid only during a
+                                 								specific time period, enter a start date.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">ValidUntil</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) To create a request that is valid only during a
+                                 								specific time period, enter an end date.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">ReplaceUnhealthyInstances</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) To replace unhealthy instances in an EC2 Fleet that is
+                                 								configured to <code class="code">maintain</code> the fleet, enter
+                                 									<code class="code">true</code>. Otherwise, leave this parameter empty.
+                              </p>
+                              						
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">TagSpecifications</span></b></dt>
+                           						
+                           <dd>
+                              							
+                              <p>(Optional) The key-value pair for tagging Amazon EC2 resources.</p>
+                              						
+                           </dd>
+                           					
+                        </dl>
+                     </div>
+                     			
+                     		
+                     			
+                     <h2 id="create-ec2-fleet">Creating an EC2 Fleet</h2>
+                     			
+                     <p>When you create an EC2 Fleet, you must specify a launch template that includes
+                        				information about the instances to launch, such as the instance type, Availability
+                        				Zone, and the maximum price you are willing to pay.
+                     </p>
+                     			
+                     <p>You can create an EC2 Fleet that includes multiple launch specifications that override
+                        				the launch template. The launch specifications can vary by instance type,
+                        				Availability Zone, subnet, and maximum price, and can include a different weighted
+                        				capacity.
+                     </p>
+                     			
+                     <p>When you create an EC2 Fleet, use a JSON file to specify information about the instances
+                        to
+                        				launch. For more information, see <a href="manage-ec2-fleet.html#ec2-fleet-json-reference">EC2 Fleet JSON Configuration File
+                           						Reference</a>. 
+                     </p>
+                     			
+                     <p class="title"><b>To create an EC2 Fleet using the AWS CLI</b></p>
+                     <ul>
+                        <li>
+                           					
+                           <p>Use the following <a href="./cli/latest/reference/ec2/request-spot-fleet.html" target="_blank">create-fleet</a> (AWS CLI) command to create an EC2 Fleet:
+                           </p>
+                           				
+                        </li>
+                     </ul>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 create-fleet</code></strong> --cli-input-json file://<em class="replaceable"><code>file_name.json</code></em></code></pre>
+                     			<p>For example configuration files, see <a href="ec2-fleet-examples.html">EC2 Fleet Example Configurations</a>.
+                     </p>
+                     			
+                     <p>The following is example output:</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;FleetId&quot;: &quot;fleet-12a34b55-67cd-8ef9-ba9b-9208dEXAMPLE&quot;
+} </code></pre>
+                     		
+                     			<h2 id="manage-ec2-fleet">Monitoring Your EC2 Fleet</h2>
+                     			
+                     <p>The EC2 Fleet launches On-Demand Instances when there is available capacity, and launches
+                        Spot Instances when
+                        				your maximum price exceeds the Spot price and capacity is available. The On-Demand
+                        Instances run
+                        				until you terminate them, and the Spot Instances run until they are interrupted
+                        or you
+                        				terminate them.
+                     </p>
+                     			
+                     <p>The returned list of running instances is refreshed periodically and might be out
+                        				of date.
+                     </p>
+                     			
+                     				
+                     <p class="title"><b>To monitor your EC2 Fleet using the AWS CLI</b></p>
+                     				
+                     <p>Use the following <a href="./cli/latest/reference/ec2/describe-fleet.html" target="_blank">describe-fleets</a> command to describe your EC2 Fleets:
+                     </p>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-fleets</code></strong></code></pre>
+                     			<p>The following is example output:</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+    &quot;Fleets&quot;: [
+        {
+            &quot;Type&quot;: &quot;maintain&quot;, 
+            &quot;FulfilledCapacity&quot;: 2.0, 
+            &quot;LaunchTemplateConfigs&quot;: [
+                {
+                    &quot;LaunchTemplateSpecification&quot;: {
+                        &quot;Version&quot;: &quot;2&quot;, 
+                        &quot;LaunchTemplateId&quot;: &quot;lt-07b3bc7625cdab851&quot;
+                    }
+                }
+            ], 
+            &quot;TerminateInstancesWithExpiration&quot;: false, 
+            &quot;TargetCapacitySpecification&quot;: {
+                &quot;OnDemandTargetCapacity&quot;: 0, 
+                &quot;SpotTargetCapacity&quot;: 2, 
+                &quot;TotalTargetCapacity&quot;: 2, 
+                &quot;DefaultTargetCapacityType&quot;: &quot;spot&quot;
+            }, 
+            &quot;FulfilledOnDemandCapacity&quot;: 0.0, 
+            &quot;ActivityStatus&quot;: &quot;fulfilled&quot;, 
+            &quot;FleetId&quot;: &quot;fleet-76e13e99-01ef-4bd6-ba9b-9208de883e7f&quot;, 
+            &quot;ReplaceUnhealthyInstances&quot;: false, 
+            &quot;SpotOptions&quot;: {
+                &quot;InstanceInterruptionBehavior&quot;: &quot;terminate&quot;, 
+                &quot;AllocationStrategy&quot;: &quot;lowestPrice&quot;
+            }, 
+            &quot;FleetState&quot;: &quot;active&quot;, 
+            &quot;ExcessCapacityTerminationPolicy&quot;: &quot;termination&quot;, 
+            &quot;CreateTime&quot;: &quot;2018-04-10T16:46:03.000Z&quot;
+        }
+    ]
+}</code></pre>
+                     			<p>Use the following <a href="./cli/latest/reference/ec2/describe-fleet-instances.html" target="_blank">describe-fleet-instances</a> command to describe the instances for the
+                        				specified EC2 Fleet:
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-fleet-instances --fleet-id <em class="replaceable"><code>fleet-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE</code></em></code></strong></code></pre>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+    &quot;ActiveInstances&quot;: [
+        {
+            &quot;InstanceId&quot;: &quot;i-09cd595998cb3765e&quot;, 
+            &quot;InstanceHealth&quot;: &quot;healthy&quot;, 
+            &quot;InstanceType&quot;: &quot;m4.large&quot;, 
+            &quot;SpotInstanceRequestId&quot;: &quot;sir-86k84j6p&quot;
+        }, 
+        {
+            &quot;InstanceId&quot;: &quot;i-09cf95167ca219f17&quot;, 
+            &quot;InstanceHealth&quot;: &quot;healthy&quot;, 
+            &quot;InstanceType&quot;: &quot;m4.large&quot;, 
+            &quot;SpotInstanceRequestId&quot;: &quot;sir-dvxi7fsm&quot;
+        }
+    ], 
+    &quot;FleetId&quot;: &quot;fleet-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE&quot;
+}</code></pre>
+                     			<p>Use the following <a href="./cli/latest/reference/ec2/describe-spot-fleet-request-history.html" target="_blank">describe-fleet-history</a> command to describe the history for the
+                        				specified EC2 Fleet for the specified time: 
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-fleet-history --fleet-request-id <em class="replaceable"><code>fleet-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE</code></em> --start-time 2018-04-10T00:00:00Z</code></strong></code></pre>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+    &quot;HistoryRecords&quot;: [], 
+    &quot;FleetId&quot;: &quot;fleet-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE&quot;, 
+    &quot;LastEvaluatedTime&quot;: &quot;1970-01-01T00:00:00.000Z&quot;, 
+    &quot;StartTime&quot;: &quot;2018-04-09T23:53:20.000Z&quot;
+}</code></pre>
+                     		
+                     			<h2 id="modify-ec2-fleet">Modifying an EC2 Fleet</h2>
+                     			
+                     <p>You can modify an EC2 Fleet that is in the <code class="code">submitted</code> or <code class="code">active</code> state.
+                        				When you modify a fleet, it enters the <code class="code">modifying</code> state.
+                     </p>
+                     			
+                     <p>You can modify the following parameters of an EC2 Fleet:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><code class="code">target-capacity</code> &#x2013; Increase or decrease the target
+                                 						capacity.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">excess-capacity-termination-policy</code> &#x2013; Whether running instances should
+                                 						be terminated if the total target capacity of the EC2 Fleet is decreased below
+                                 						the current size of the fleet. Valid values are <code class="code">no-termination</code>
+                                 						and <code class="code">termination</code>.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You can only modify an EC2 Fleet that has
+                           					<code class="code">Type</code>=<code class="code">maintain</code>.
+                        </p>
+                     </div>
+                     			
+                     <p>When you increase the target capacity, the EC2 Fleet launches the additional instances
+                        				according to the instance purchasing model specified for
+                        					<code class="code">DefaultTargetCapacityType</code>, which are either On-Demand Instances or Spot Instances.
+                     </p>
+                     			
+                     <p>If the <code class="code">DefaultTargetCapacityType</code> is <code class="code">spot</code>, the EC2 Fleet launches the
+                        				additional Spot Instances according to its allocation strategy. If the allocation
+                        strategy is
+                        					<code class="code">lowestPrice</code>, the fleet launches the instances from the
+                        				lowest-priced Spot Instance pool in the request. If the allocation strategy is
+                        					<code class="code">diversified</code>, the fleet distributes the instances across the pools
+                        				in the request.
+                     </p>
+                     			
+                     <p>When you decrease the target capacity, the EC2 Fleet deletes any open requests that
+                        exceed the
+                        				new target capacity. You can request that the fleet terminate instances until
+                        the
+                        				size of the fleet reaches the new target capacity. If the allocation strategy
+                        is
+                        					<code class="code">lowestPrice</code>, the fleet terminates the instances with the highest
+                        				price per unit. If the allocation strategy is <code class="code">diversified</code>, the fleet
+                        				terminates instances across the pools. Alternatively, you can request that EC2
+                        Fleet keep
+                        				the fleet at its current size, but not replace any Spot Instances that are interrupted
+                        or any
+                        				instances that you terminate manually.
+                     </p>
+                     			
+                     <p>When an EC2 Fleet terminates a Spot Instance because the target capacity was decreased,
+                        the
+                        				instance receives a Spot Instance interruption notice.
+                     </p>
+                     			
+                     				
+                     <p class="title"><b>To modify an EC2 Fleet using the AWS CLI</b></p>
+                     				
+                     <p>Use the following <a href="./cli/latest/reference/ec2/modify-spot-fleet-request.html" target="_blank">modify-fleet</a> command to update the target capacity of the specified
+                        					EC2 Fleet:
+                     </p>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 modify-fleet --fleet-id <em class="replaceable"><code>fleet-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE</code></em> --target-capacity <em class="replaceable"><code>20</code></em></code></strong></code></pre>
+                     			<p>If you are decreasing the target capacity but want to keep the fleet at its
+                        				current size, you can modify the previous command as follows:
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 modify-fleet --fleet-id <em class="replaceable"><code>fleet-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE</code></em> --target-capacity <em class="replaceable"><code>10</code></em></code></strong> --excess-capacity-termination-policy no-termination</code></pre>
+                     		
+                     			<h2 id="delete-fleet">Deleting an EC2 Fleet</h2>
+                     			
+                     <p>If you no longer require an EC2 Fleet, you can delete it. After you delete a fleet,
+                        it launches
+                        				no new instances.
+                     </p>
+                     			
+                     <p>You must specify whether the EC2 Fleet must terminate its instances. If you specify
+                        that the
+                        				instances must be terminated when the fleet is deleted, it enters the
+                        					<code class="code">deleted_terminating</code> state. Otherwise, it enters the
+                        					<code class="code">deleted_running</code> state, and the instances continue to run until they
+                        				are interrupted or you terminate them manually.
+                     </p>
+                     			
+                     				
+                     <p class="title"><b>To delete an EC2 Fleet using the AWS CLI</b></p>
+                     				
+                     <p>Use the <a href="./cli/latest/reference/ec2/cancel-spot-fleet-requests.html" target="_blank">delete-fleets</a> command and the <code class="code">--terminate-instances</code> parameter to
+                        					delete the specified EC2 Fleet and terminate the instances:
+                     </p>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 delete-fleets --fleet-ids <em class="replaceable"><code>fleet-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE</code></em> --terminate-instances</code></strong></code></pre>
+                     			<p>The following is example output:</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;UnsuccessfulFleetDeletions&quot;: [], 
+    &quot;SuccessfulFleetDeletions&quot;: [
+        {
+            &quot;CurrentFleetState&quot;: &quot;deleted_terminating&quot;, 
+            &quot;PreviousFleetState&quot;: &quot;active&quot;, 
+            &quot;FleetId&quot;: &quot;fleet-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE&quot;
+        }
+    ]
+}</code></pre>
+                     			<p>You can modify the previous command using the <code class="code">--no-terminate-instances</code>
+                        				parameter to delete the specified EC2 Fleet without terminating the instances:
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 delete-fleets --fleet-ids <em class="replaceable"><code>fleet-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE</code></em> --no-terminate-instances</code></strong></code></pre>
+                     			<p>The following is example output:</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;UnsuccessfulFleetDeletions&quot;: [], 
+    &quot;SuccessfulFleetDeletions&quot;: [
+        {
+            &quot;CurrentFleetState&quot;: &quot;deleted_running&quot;, 
+            &quot;PreviousFleetState&quot;: &quot;active&quot;, 
+            &quot;FleetId&quot;: &quot;fleet-4b8aaae8-dfb5-436d-a4c6-3dafa4c6b7dcEXAMPLE&quot;
+        }
+    ]
+}</code></pre>
+                     		</div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ec2-fleet-configuration-strategies.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ec2-fleet-examples.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="EC2 Fleet Request States"><a class="pagetoc" href="#EC2-fleet-states">EC2 Fleet Request States</a></li>
+                        <li class="pagetoc" name="EC2 Fleet Prerequisites"><a class="pagetoc" href="#ec2-fleet-prerequisites">EC2 Fleet Prerequisites</a></li>
+                        <li class="pagetoc" name="EC2 Fleet Health Checks"><a class="pagetoc" href="#ec2-fleet-health-checks">EC2 Fleet Health Checks</a></li>
+                        <li class="pagetoc" name="Generating an EC2 Fleet JSON Configuration
+					File"><a class="pagetoc" href="#ec2-fleet-cli-skeleton">Generating an EC2 Fleet JSON Configuration
+                              					File</a></li>
+                        <li class="pagetoc" name="Creating an EC2 Fleet"><a class="pagetoc" href="#create-ec2-fleet">Creating an EC2 Fleet</a></li>
+                        <li class="pagetoc" name="Monitoring Your EC2 Fleet"><a class="pagetoc" href="#manage-ec2-fleet">Monitoring Your EC2 Fleet</a></li>
+                        <li class="pagetoc" name="Modifying an EC2 Fleet"><a class="pagetoc" href="#modify-ec2-fleet">Modifying an EC2 Fleet</a></li>
+                        <li class="pagetoc" name="Deleting an EC2 Fleet"><a class="pagetoc" href="#delete-fleet">Deleting an EC2 Fleet</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

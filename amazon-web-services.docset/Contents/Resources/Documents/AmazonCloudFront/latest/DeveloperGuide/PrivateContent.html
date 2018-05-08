@@ -1,0 +1,274 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Serving Private Content through CloudFront - Amazon CloudFront</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="Introduction.html" title="What Is Amazon CloudFront?">
+      <link rel="prev" href="HTTPStatusCodes.html" title="How CloudFront Processes and Caches HTTP 4xx and 5xx Status Codes from Your Origin">
+      <link rel="next" href="private-content-task-list.html" title="Task List: Serving Private Content">
+      <meta name="description" content="Limit access to private content by using CloudFront signed URLs and signed cookies.">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PrivateContent.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <span class="breadcrumb">Serving Private Content through CloudFront</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="PrivateContent">Serving Private Content through CloudFront</h1>
+                     <p>Many companies that distribute content via the internet want to restrict access to
+                        documents, business data, media streams, or content 
+                        		that is intended for selected users, for example, users who have paid a fee. To
+                        securely serve this private content using CloudFront, you can 
+                        		do the following:
+                     </p>
+                     <div class="itemizedlist">
+                        		
+                        		
+                        	
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              			
+                              <p>Require that your users access your private content by using special CloudFront signed
+                                 URLs or signed cookies. 
+                              </p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p>Require that your users access your Amazon S3 content using CloudFront URLs, not Amazon
+                                 S3 URLs. Requiring CloudFront URLs isn&apos;t required, but we recommend it to 
+                                 				prevent users from bypassing the restrictions that you specify in signed URLs
+                                 or signed cookies.
+                              </p>
+                              		
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="highlights">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#private-content-overview">Overview of Private Content</a></li>
+                           <li><a href="#private-content-overview-choosing-origin">Using an HTTP Server for Private Content</a></li>
+                           <li><a href="private-content-task-list.html">Task List: Serving Private Content</a></li>
+                           <li><a href="private-content-restricting-access-to-s3.html">Using an Origin Access Identity to Restrict Access to Your Amazon S3 Content</a></li>
+                           <li><a href="private-content-trusted-signers.html">Specifying the AWS Accounts That Can Create Signed URLs and Signed Cookies (Trusted
+                                 Signers)</a></li>
+                           <li><a href="private-content-choosing-signed-urls-cookies.html">Choosing Between Signed URLs and Signed Cookies</a></li>
+                           <li><a href="private-content-signed-urls.html">Using Signed URLs</a></li>
+                           <li><a href="private-content-signed-cookies.html">Using Signed Cookies</a></li>
+                           <li><a href="private-content-linux-openssl.html">Using a Linux Command and OpenSSL for Base64-Encoding and Encryption</a></li>
+                           <li><a href="PrivateCFSignatureCodeAndExamples.html">Code Examples for Creating a Signature for a Signed URL</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="private-content-overview">Overview of Private Content</h2>
+                     		
+                     
+                     		
+                     <p>You can control user access to your private content in two ways, as shown in the following
+                        illustration:
+                     </p>
+                     		
+                     <div class="orderedlist">
+                        			
+                        			
+                        		
+                        <ol>
+                           <li>
+                              <p>Restrict access to objects in CloudFront edge caches</p>
+                           </li>
+                           <li>
+                              <p>Restrict access to objects in your Amazon S3 bucket</p>
+                           </li>
+                        </ol>
+                     </div>
+                     
+                     			
+                     <div class="mediaobject">
+                        				
+                        					
+                        					<img src="../../..//img/PrivateContent_TwoParts.png" alt="
+					Basic flow for access logs
+				">
+                        					
+                        					
+                        				
+                        				
+                        			
+                     </div>
+                     
+                     		
+                     <h3 id="private-content-overview-edge-caches">Restricting Access to Objects in CloudFront Edge Caches</h3>
+                     			
+                     			
+                     <p>You can configure CloudFront to require that users access your objects using either
+                        <b>signed URLs</b> or 
+                        				<b>signed cookies</b>. You then develop your application either to create and distribute signed URLs to
+                        
+                        				authenticated users or to send <code class="code">Set-Cookie</code> headers that set signed cookies on the viewers for authenticated users. 
+                        				(To give a few users long-term access to a limited number of objects, you can
+                        also create signed URLs manually.) 
+                     </p>
+                     			
+                     <p>When you create signed URLs or signed cookies to control access to your objects, you
+                        can specify the following restrictions:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>An ending date and time, after which the URL is no longer valid. </p>
+                           </li>
+                           <li class="listitem">
+                              <p>(Optional) The date and time that the URL becomes valid.</p>
+                           </li>
+                           <li class="listitem">
+                              <p>(Optional) The IP address or range of addresses of the computers that can be used
+                                 to access your content. 
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>One part of a signed URL or a signed cookie is hashed and signed using the private
+                        key from a public/private key pair. When someone uses a 
+                        				signed URL or signed cookie to access an object, CloudFront compares the signed
+                        and unsigned portions of the URL or cookie. If they don&apos;t 
+                        				match, CloudFront doesn&apos;t serve the object.
+                     </p>
+                     		
+                     
+                     		
+                     <h3 id="private-content-overview-s3">Restricting Access to Objects in Amazon S3 Buckets</h3>
+                     			
+                     			
+                     <p>You can optionally secure the content in your Amazon S3 bucket so users can access
+                        it through CloudFront but cannot access it directly by using Amazon S3 URLs. 
+                        				This prevents anyone from bypassing CloudFront and using the Amazon S3 URL to
+                        get content that you want to restrict access to. This step isn&apos;t required 
+                        				to use signed URLs, but we recommend it.
+                     </p>
+                     			
+                     <p>To require that users access your content through CloudFront URLs, you perform the
+                        following tasks:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Create a special CloudFront user called an <b>origin access identity</b>.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Give the origin access identity permission to read the objects in your bucket.</p>
+                           </li>
+                           <li class="listitem">
+                              <p>Remove permission for anyone else to use Amazon S3 URLs to read the objects.</p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     
+                     	
+                     <h2 id="private-content-overview-choosing-origin">Using an HTTP Server for Private Content</h2>
+                     		
+                     		
+                     <p>You can use signed URLs or signed cookies for any CloudFront distribution, regardless
+                        of whether the origin is an Amazon S3 bucket or an HTTP server. 
+                        			However, for CloudFront to get your objects from an HTTP server, the objects must
+                        remain publicly accessible. When the objects are publicly 
+                        			accessible, anyone who has the URL for an object on your HTTP server can access
+                        the object without logging in or paying for your content. 
+                        			If you use signed URLs or signed cookies and your origin is an HTTP server, do
+                        not give the URLs for the objects on your HTTP server to 
+                        			your customers or to others outside your organization.
+                     </p>
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="HTTPStatusCodes.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="private-content-task-list.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Overview of Private Content"><a class="pagetoc" href="#private-content-overview">Overview of Private Content</a></li>
+                        <li class="pagetoc" name="Using an HTTP Server for Private Content"><a class="pagetoc" href="#private-content-overview-choosing-origin">Using an HTTP Server for Private Content</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

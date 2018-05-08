@@ -1,0 +1,171 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Booting from the Wrong Volume - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ec2-instance-troubleshoot.html" title="Troubleshooting Instances">
+      <link rel="prev" href="instance-console.html" title="Getting Console Output
+   and
+   Rebooting Instances">
+      <link rel="next" href="DocumentHistory.html" title="Document History">
+      <meta name="description" content="Troubleshoot an issue when your instance boots from a different volume.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-booting-from-wrong-volume.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="ec2-instance-troubleshoot.html">Troubleshooting Instances</a> &#xBB; <span class="breadcrumb">Booting from the Wrong Volume</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="instance-booting-from-wrong-volume">Booting from the Wrong Volume</h1>
+                     <p>In some situations, you may find that a volume other than the volume attached to
+                        <code>/dev/xvda</code> or <code>/dev/sda</code> has become the root volume of
+                        your instance. This can happen when you have attached the root volume of another instance,
+                        or a
+                        volume created from the snapshot of a root volume, to an instance with an existing
+                        root
+                        volume.
+                     </p>
+                     <p>This is due to how the initial ramdisk in Linux works. It chooses the volume defined
+                        as
+                        <code>/</code> in the <code>/etc/fstab</code>, and in some distributions,
+                        including Amazon Linux, this is determined by the label attached to the volume partition.
+                        Specifically,
+                        you find that your <code>/etc/fstab</code> looks something like the following: 
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">LABEL=/ / ext4 defaults,noatime 1 1 
+tmpfs /dev/shm tmpfs defaults 0 0 
+devpts /dev/pts devpts gid=5,mode=620 0 0 
+sysfs /sys sysfs defaults 0 0 
+proc /proc proc defaults 0 0</code></pre><p>If you check the label of both volumes, you see that they both contain the
+                        <code>/</code> label: 
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo e2label /dev/xvda1</code></strong> 
+<code class="computeroutput" copy="false">/</code> 
+<code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo e2label /dev/xvdf1</code></strong> 
+<code class="computeroutput" copy="false">/</code></code></pre><p>In this example, you could end up having <code>/dev/xvdf1</code> become the root
+                        device that your instance boots to after the initial ramdisk runs, instead of the
+                        <code>/dev/xvda1</code> volume from which you had intended to boot. To solve this, use
+                        the same <b>e2label</b> command to change the label of the attached volume that you
+                        do not want to boot from.
+                     </p>
+                     <p>In some cases, specifying a UUID in <code>/etc/fstab</code> can resolve this.
+                        However, if both volumes come from the same snapshot, or the secondary is created
+                        from a snapshot
+                        of the primary volume, they share a UUID.
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo blkid</code></strong><code class="computeroutput" copy="false"> 
+/dev/xvda1: LABEL=&quot;/&quot; UUID=73947a77-ddbe-4dc7-bd8f-3fe0bc840778 TYPE=&quot;ext4&quot; PARTLABEL=&quot;Linux&quot; PARTUUID=d55925ee-72c8-41e7-b514-7084e28f7334 
+/dev/xvdf1: LABEL=&quot;old/&quot; UUID=73947a77-ddbe-4dc7-bd8f-3fe0bc840778 TYPE=&quot;ext4&quot; PARTLABEL=&quot;Linux&quot; PARTUUID=d55925ee-72c8-41e7-b514-7084e28f7334</code></code></pre><p class="title"><b>To change the label of an attached ext4 volume</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Use the <b>e2label</b> command to change the label of the volume to something
+                              other than <code>/</code>.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo e2label /dev/xvdf1 <em class="replaceable"><code>old/</code></em></code></strong> 
+</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Verify that the volume has the new label.</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo e2label /dev/xvdf1</code></strong> 
+<code class="computeroutput" copy="false">old/</code></code></pre>
+                           </li>
+                     </ol>
+                     <p class="title"><b>To change the label of an attached xfs volume</b></p>
+                     <ul>
+                        <li>
+                           
+                           <p>Use the <b>xfs_admin</b> command to change the label of the volume to
+                              something other than <code>/</code>.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo xfs_admin -L <em class="replaceable"><code>old/</code></em> /dev/xvdf1</code></strong>
+writing all SBs
+new label = &quot;old/&quot;</code></pre>
+                           </li>
+                     </ul>
+                     <p>After changing the volume label as shown, you should be able to reboot the instance
+                        and have
+                        the proper volume selected by the initial ramdisk when the instance boots.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>If you intend to detach the volume with the new label and return it to another instance
+                           to
+                           use as the root volume, you must perform the above procedure again and change the
+                           volume label
+                           back to its original value. Otherwise, the other instance does not boot because the
+                           ramdisk is
+                           unable to find the volume with the label <code>/</code>.
+                        </p>
+                     </div>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="instance-console.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="DocumentHistory.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

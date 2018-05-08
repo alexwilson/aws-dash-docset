@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Managing Tags Using the AWS SDK for
+         .NET - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="tagging-managing.html" title="Managing Object Tags">
+      <link rel="prev" href="tagging-manage-javasdk.html" title="Managing Tags Using the AWS SDK for Java">
+      <link rel="next" href="object-lifecycle-mgmt.html" title="Object Lifecycle Management">
+      <meta name="description" content="A .NET C# code example for managing S3 objects tags.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/tagging-manage-dotnet.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="UsingObjects.html">Working with Amazon S3 Objects</a> &#xBB; <a href="object-tagging.html">Object Tagging</a> &#xBB; <a href="tagging-managing.html">Managing Object Tags</a> &#xBB; <span class="breadcrumb">Managing Tags Using the AWS SDK for
+                                    .NET</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="tagging-manage-dotnet">Managing Tags Using the AWS SDK for
+                        .NET
+                     </h1>
+                     <p>The following example shows how to use the AWS SDK for .NET to set the tags for a
+                        new
+                        object and retrieve or replace the tags for an existing object. For more information
+                        about object tagging, see <a href="object-tagging.html">Object Tagging</a>. 
+                     </p>
+                     <p>For instructions on how to create and test a working sample, see <a href="UsingTheMPDotNetAPI.html#TestingDotNetApiSamples">Running the Amazon S3 .NET Code Examples</a>.
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="cs ">using Amazon.S3;
+using Amazon.S3.Model;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace Amazon.DocSamples.S3
+{
+    public class ObjectTagsTest
+    {
+        private const string bucketName = &quot;*** bucket name ***&quot;;
+        private const string keyName = &quot;*** key name for the new object ***&quot;;
+        private const string filePath = @&quot;*** file path ***&quot;;
+        // Specify your bucket region (an example region is shown).
+        private static readonly RegionEndpoint bucketRegion = RegionEndpoint.USWest2;
+        private static IAmazonS3 client;
+
+        public static void Main()
+        {
+            client = new AmazonS3Client(bucketRegion);
+            PutObjectWithTagsTestAsync().Wait();
+        }
+
+        static async Task PutObjectWithTagsTestAsync()
+        {
+            try
+            {
+                // 1. Put an object with tags.
+                var putRequest = new PutObjectRequest
+                {
+                    BucketName = bucketName,
+                    Key = keyName,
+                    FilePath = filePath,
+                    TagSet = new List&lt;Tag&gt;{
+                        new Tag { Key = &quot;Keyx1&quot;, Value = &quot;Value1&quot;},
+                        new Tag { Key = &quot;Keyx2&quot;, Value = &quot;Value2&quot; }
+                    }
+                };
+
+                PutObjectResponse response = await client.PutObjectAsync(putRequest);
+                // 2. Retrieve the object&apos;s tags.
+                GetObjectTaggingRequest getTagsRequest = new GetObjectTaggingRequest
+                {
+                    BucketName = bucketName,
+                    Key = keyName
+                };
+
+                GetObjectTaggingResponse objectTags = await client.GetObjectTaggingAsync(getTagsRequest);
+                for (int i = 0; i &lt; objectTags.Tagging.Count; i++)
+                    Console.WriteLine(&quot;Key: {0}, Value: {1}&quot;, objectTags.Tagging[i].Key, objectTags.Tagging[0].Value);
+
+
+                // 3. Replace the tagset.
+
+                Tagging newTagSet = new Tagging();
+                newTagSet.TagSet = new List&lt;Tag&gt;{
+                    new Tag { Key = &quot;Key3&quot;, Value = &quot;Value3&quot;},
+                    new Tag { Key = &quot;Key4&quot;, Value = &quot;Value4&quot; }
+                };
+
+
+                PutObjectTaggingRequest putObjTagsRequest = new PutObjectTaggingRequest()
+                {
+                    BucketName = bucketName,
+                    Key = keyName,
+                    Tagging = newTagSet
+                };
+                PutObjectTaggingResponse response2 = await client.PutObjectTaggingAsync(putObjTagsRequest);
+
+                // 4. Retrieve the object&apos;s tags.
+                GetObjectTaggingRequest getTagsRequest2 = new GetObjectTaggingRequest();
+                getTagsRequest2.BucketName = bucketName;
+                getTagsRequest2.Key = keyName;
+                GetObjectTaggingResponse objectTags2 = await client.GetObjectTaggingAsync(getTagsRequest2);
+                for (int i = 0; i &lt; objectTags2.Tagging.Count; i++)
+                    Console.WriteLine(&quot;Key: {0}, Value: {1}&quot;, objectTags2.Tagging[i].Key, objectTags2.Tagging[0].Value);
+
+            }
+            catch (AmazonS3Exception e)
+            {
+                Console.WriteLine(
+                        &quot;Error encountered ***. Message:&apos;{0}&apos; when writing an object&quot;
+                        , e.Message);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(
+                    &quot;Encountered an error. Message:&apos;{0}&apos; when writing an object&quot;
+                    , e.Message);
+            }
+        }
+    }
+}
+</code></pre></div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="tagging-manage-javasdk.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="object-lifecycle-mgmt.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

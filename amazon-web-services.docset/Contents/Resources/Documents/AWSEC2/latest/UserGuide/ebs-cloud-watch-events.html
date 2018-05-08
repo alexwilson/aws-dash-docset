@@ -1,0 +1,671 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Amazon CloudWatch Events for Amazon EBS - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="AmazonEBS.html" title="Amazon Elastic Block Store (Amazon EBS)">
+      <link rel="prev" href="benchmark_procedures.html" title="Benchmark EBS Volumes">
+      <link rel="next" href="InstanceStorage.html" title="Amazon EC2 Instance Store">
+      <meta name="description" content="Use Amazon EBS-specific CloudWatch events to trigger custom AWS Lambda functions and run custom code.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-cloud-watch-events.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Storage.html">Storage</a> &#xBB; <a href="AmazonEBS.html">Amazon Elastic Block Store (Amazon EBS)</a> &#xBB; <span class="breadcrumb">Amazon CloudWatch Events for Amazon EBS</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ebs-cloud-watch-events">Amazon CloudWatch Events for Amazon EBS</h1>
+                     <p>Amazon EBS emits notifications based on Amazon CloudWatch Events for a variety of
+                        snapshot and encryption
+                        status changes. With CloudWatch Events, you can establish rules that trigger programmatic
+                        actions in
+                        response to a change in snapshot or encryption key state. For example,
+                        when a snapshot is created, you can trigger an AWS Lambda function to share the completed
+                        snapshot with another account or copy it to another region for disaster-recovery
+                        purposes.
+                     </p>
+                     <p>For more information, see <a href="./AmazonCloudWatch/latest/DeveloperGuide/WhatIsCloudWatchEvents.html" target="_blank">Using
+                           Events</a> in the <em>Amazon CloudWatch User Guide</em>.
+                     </p>
+                     
+                     <h2 id="volume-events">EBS Volume Events</h2>
+                     
+                     <p>This section defines the supported Amazon EBS volume events and provides examples
+                        of event
+                        output for specific scenarios. Events in CloudWatch are represented as JSON objects.
+                        For more
+                        information about the format and content of event objects, see <a href="./AmazonCloudWatch/latest/DeveloperGuide/CloudWatchEventsandEventPatterns.html" target="_blank">Events and Event
+                           Patterns</a> in the <em>Amazon CloudWatch Events User Guide</em>.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Additional information about EBS volumes that is not captured by Cloudwatch is
+                           available through the 
+                        </p>
+                        <p><a href="./AWSEC2/latest/APIReference/API_DescribeVolumes.html" target="_blank">DescribeVolumes</a> API and
+                           the <a href="./cli/latest/reference/ec2/describe-volumes.html" target="_blank">describe-volumes</a> CLI command.
+                        </p>
+                     </div>
+                     
+                     <p>The fields that are unique to EBS events are contained in the &quot;detail&quot; section of
+                        the
+                        JSON objects shown below. The &quot;event&quot; field contains the event name. The &quot;result&quot;
+                        field
+                        contains the completed status of the action that triggered the event.
+                     </p>
+                     
+                     
+                     <h3 id="create-volume">Create Volume (<code class="code">createVolume</code>) 
+                     </h3>
+                     
+                     <p>The <code class="code">createVolume</code> event is sent to your AWS account when an action to
+                        create a volume completes. This event can have a result of either
+                        <code class="code">available</code> or <code class="code">failed</code>. Creation will fail if an invalid
+                        KMS key was provided, as shown in the examples below.
+                     </p>
+                     
+                     
+                     <p class="title"><b>Event Data</b></p>
+                     
+                     <p>The listing below is an example of a JSON object emitted by EBS for a
+                        successful <code class="code">createVolume</code> event. 
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+   &quot;version&quot;: &quot;0&quot;,
+   &quot;id&quot;: &quot;<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>012345678901</code></em>&quot;,
+   &quot;detail-type&quot;: &quot;EBS Volume Notification&quot;,
+   &quot;source&quot;: &quot;aws.ec2&quot;,
+   &quot;account&quot;: &quot;<em class="replaceable"><code>012345678901</code></em>&quot;,
+   &quot;time&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+   &quot;region&quot;: &quot;<em class="replaceable"><code>us-east-1</code></em>&quot;,
+   &quot;resources&quot;: [
+      &quot;arn:aws:ec2:<em class="replaceable"><code>us-east-1</code></em>:<em class="replaceable"><code>012345678901</code></em>:volume/vol-<em class="replaceable"><code>01234567</code></em>&quot;
+   ],
+   &quot;detail&quot;: {
+      &quot;result&quot;: &quot;available&quot;,
+      &quot;cause&quot;: &quot;&quot;,
+      &quot;event&quot;: &quot;createVolume&quot;,
+      &quot;request-id&quot;: &quot;<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123456789ab</code></em>&quot;
+   }
+}</code></pre>
+                     <p>The listing below is an example of a JSON object emitted by EBS after a failed
+                        <code class="code">createVolume</code> event. The cause for the failure was a disabled KMS
+                        key.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+  &quot;version&quot;: &quot;0&quot;,
+  &quot;id&quot;: &quot;<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123456789ab</code></em>&quot;,
+  &quot;detail-type&quot;: &quot;EBS Volume Notification&quot;,
+  &quot;source&quot;: &quot;aws.ec2&quot;,
+  &quot;account&quot;: &quot;<em class="replaceable"><code>012345678901</code></em>&quot;,
+  &quot;time&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+  &quot;region&quot;: &quot;<em class="replaceable"><code>sa-east-1</code></em>&quot;,
+  &quot;resources&quot;: [
+    &quot;arn:aws:ec2:<em class="replaceable"><code>sa-east-1</code></em>:<em class="replaceable"><code>0123456789ab</code></em>:volume/vol-<em class="replaceable"><code>01234567</code></em>&quot;,
+  ],
+  &quot;detail&quot;: {
+    &quot;event&quot;: &quot;createVolume&quot;,
+    &quot;result&quot;: &quot;failed&quot;,
+    &quot;cause&quot;: &quot;arn:aws:kms:<em class="replaceable"><code>sa-east-1</code></em>:<em class="replaceable"><code>0123456789ab</code></em>:key/<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123456789ab</code></em> is disabled.&quot;,
+    &quot;request-id&quot;: &quot;<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123456789ab</code></em>&quot;,
+  }
+}</code></pre>
+                     <p>The following is an example of a JSON object that is emitted by EBS after a failed
+                        <code class="code">createVolume</code> event. The cause for the failure was a KMS key pending
+                        import.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{  
+  &quot;version&quot;: &quot;0&quot;,  
+  &quot;id&quot;: &quot;<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123456789ab</code></em>&quot;,  
+  &quot;detail-type&quot;: &quot;EBS Volume Notification&quot;,  
+  &quot;source&quot;: &quot;aws.ec2&quot;,  
+  &quot;account&quot;: &quot;<em class="replaceable"><code>012345678901</code></em>&quot;,  
+  &quot;time&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,  
+  &quot;region&quot;: &quot;<em class="replaceable"><code>sa-east-1</code></em>&quot;,  
+  &quot;resources&quot;: [    
+    &quot;arn:aws:ec2:<em class="replaceable"><code>sa-east-1</code></em>:<em class="replaceable"><code>0123456789ab</code></em>:volume/vol-<em class="replaceable"><code>01234567</code></em>&quot;,  
+  ],  
+  &quot;detail&quot;: {    
+    &quot;event&quot;: &quot;createVolume&quot;,    
+    &quot;result&quot;: &quot;failed&quot;,    
+    &quot;cause&quot;: &quot;arn:aws:kms:<em class="replaceable"><code>sa-east-1</code></em>:<em class="replaceable"><code>0123456789ab</code></em>:key/<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123456789ab</code></em> is pending import.&quot;,    
+    &quot;request-id&quot;: &quot;<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123456789ab</code></em>&quot;,  
+  }
+}</code></pre>
+                     
+                     
+                     <h3 id="delete-volume">Delete Volume (<code class="code">deleteVolume</code>)
+                     </h3>
+                     
+                     <p>The <code class="code">deleteVolume</code> event is sent to your AWS account when an action to
+                        delete a volume completes. This event has the result <code class="code">deleted</code>. If the
+                        deletion does not complete, the event is never sent.
+                     </p>
+                     
+                     
+                     <p class="title"><b>Event Data</b></p>
+                     
+                     <p>The listing below is an example of a JSON object emitted by EBS for a
+                        successful <code class="code">deleteVolume</code> event. 
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+   &quot;version&quot;: &quot;0&quot;,
+   &quot;id&quot;: &quot;<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>012345678901</code></em>&quot;,
+   &quot;detail-type&quot;: &quot;EBS Volume Notification&quot;,
+   &quot;source&quot;: &quot;aws.ec2&quot;,
+   &quot;account&quot;: &quot;<em class="replaceable"><code>012345678901</code></em>&quot;,
+   &quot;time&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+   &quot;region&quot;: &quot;<em class="replaceable"><code>us-east-1</code></em>&quot;,
+   &quot;resources&quot;: [
+      &quot;arn:aws:ec2:<em class="replaceable"><code>us-east-1</code></em>: <em class="replaceable"><code>012345678901</code></em>:volume/vol-<em class="replaceable"><code>01234567</code></em>&quot;
+   ],
+   &quot;detail&quot;: {
+      &quot;result&quot;: &quot;deleted&quot;,
+      &quot;cause&quot;: &quot;&quot;,
+      &quot;event&quot;: &quot;deleteVolume&quot;,
+      &quot;request-id&quot;: &quot;<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123456789ab</code></em>&quot;
+   }
+}</code></pre>
+                     
+                     
+                     <h3 id="attach-fail-key">Volume Attach or Reattach
+                        (<code class="code">attachVolume</code>, <code class="code">reattachVolume</code>)
+                     </h3>
+                     
+                     <p>The <code class="code">attachVolume</code> or <code class="code">reattachVolume</code> event is sent to your
+                        AWS account if a volume fails to attach or reattach to an instance. If you use a
+                        KMS key to encrypt an EBS volume and the key becomes invalid, EBS will emit an event
+                        if that key is later used to attach or reattach to an instance, as shown in the
+                        examples below.
+                     </p>
+                     
+                     
+                     <p class="title"><b>Event Data</b></p>
+                     
+                     <p>The listing below is an example of a JSON object emitted by EBS after a failed
+                        <code class="code">attachVolume</code> event. The cause for the failure was a KMS key
+                        pending deletion.
+                     </p>
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>AWS may attempt to reattach to a volume following routine server
+                           maintenance.
+                        </p>
+                     </div>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+  &quot;version&quot;: &quot;0&quot;,    
+  &quot;id&quot;: &quot;<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123456789ab</code></em>&quot;,
+  &quot;detail-type&quot;: &quot;EBS Volume Notification&quot;,
+  &quot;source&quot;: &quot;aws.ec2&quot;,
+  &quot;account&quot;: &quot;<em class="replaceable"><code>012345678901</code></em>&quot;,
+  &quot;time&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+  &quot;region&quot;: &quot;<em class="replaceable"><code>us-east-1</code></em>&quot;,
+  &quot;resources&quot;: [
+  &quot;arn:aws:ec2:<em class="replaceable"><code>us-east-1</code></em>:<em class="replaceable"><code>0123456789ab</code></em>:volume/vol-<em class="replaceable"><code>01234567</code></em>&quot;,
+  &quot;arn:aws:kms:<em class="replaceable"><code>us-east-1</code></em>:<em class="replaceable"><code>0123456789ab</code></em>:key/<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123456789ab</code></em>&quot;
+  ],
+  &quot;detail&quot;: {
+    &quot;event&quot;: &quot;attachVolume&quot;,
+    &quot;result&quot;: &quot;failed&quot;,
+    &quot;cause&quot;: &quot;arn:aws:kms:<em class="replaceable"><code>us-east-1</code></em>:<em class="replaceable"><code>0123456789ab</code></em>:key/<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123456789ab</code></em> is pending deletion.&quot;,
+    &quot;request-id&quot;: &quot;&quot;
+  }
+}</code></pre>
+                     <p>The listing below is an example of a JSON object emitted by EBS after a failed
+                        <code class="code">reattachVolume</code> event. The cause for the failure was a KMS key
+                        pending deletion.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+  &quot;version&quot;: &quot;0&quot;,    
+  &quot;id&quot;: &quot;<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123456789ab</code></em>&quot;,
+  &quot;detail-type&quot;: &quot;EBS Volume Notification&quot;,
+  &quot;source&quot;: &quot;aws.ec2&quot;,
+  &quot;account&quot;: &quot;<em class="replaceable"><code>012345678901</code></em>&quot;,
+  &quot;time&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+  &quot;region&quot;: &quot;<em class="replaceable"><code>us-east-1</code></em>&quot;,
+  &quot;resources&quot;: [
+  &quot;arn:aws:ec2:<em class="replaceable"><code>us-east-1</code></em>:<em class="replaceable"><code>0123456789ab</code></em>:volume/vol-<em class="replaceable"><code>01234567</code></em>&quot;,
+  &quot;arn:aws:kms:<em class="replaceable"><code>us-east-1</code></em>:<em class="replaceable"><code>0123456789ab</code></em>:key/<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123456789ab</code></em>&quot;
+  ],
+  &quot;detail&quot;: {
+    &quot;event&quot;: &quot;reattachVolume&quot;,
+    &quot;result&quot;: &quot;failed&quot;,
+    &quot;cause&quot;: &quot;arn:aws:kms:<em class="replaceable"><code>us-east-1</code></em>:<em class="replaceable"><code>0123456789ab</code></em>:key/<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123456789ab</code></em> is pending deletion.&quot;,
+    &quot;request-id&quot;: &quot;&quot;
+  }
+}</code></pre>
+                     
+                     
+                     <h2 id="snapshot-events">EBS Snapshot Events</h2>
+                     
+                     
+                     
+                     <h3 id="create-snapshot-complete">Create Snapshot
+                        (<code class="code">createSnapshot</code>)
+                     </h3>
+                     
+                     <p>The <code class="code">createSnapshot</code> event is sent to your AWS account when an action
+                        to create a snapshot completes. This event can have a result of either
+                        <code class="code">succeeded</code> or <code class="code">failed</code>.
+                     </p>
+                     
+                     
+                     <p class="title"><b>Event Data</b></p>
+                     
+                     <p>The listing below is an example of a JSON object emitted by EBS for a
+                        successful <code class="code">createSnapshot</code> event. In the <code class="code">detail</code>
+                        section, the <code class="code">source</code> field contains the ARN of the source volume.
+                        The <code class="code">StartTime</code> and <code class="code">EndTime</code> fields indicate when
+                        creation of the snapshot started and completed.
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+  &quot;version&quot;: &quot;0&quot;,
+  &quot;id&quot;: &quot;<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>012345678901</code></em>&quot;,
+  &quot;detail-type&quot;: &quot;EBS Snapshot Notification&quot;,
+  &quot;source&quot;: &quot;aws.ec2&quot;,
+  &quot;account&quot;: &quot;<em class="replaceable"><code>012345678901</code></em>&quot;,
+  &quot;time&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+  &quot;region&quot;: &quot;<em class="replaceable"><code>us-east-1</code></em>&quot;,
+  &quot;resources&quot;: [
+     &quot;arn:aws:ec2::<em class="replaceable"><code>us-west-2</code></em>:snapshot/snap-<em class="replaceable"><code>01234567</code></em>&quot;
+  ],
+  &quot;detail&quot;: {
+    &quot;event&quot;: &quot;createSnapshot&quot;,
+    &quot;result&quot;: &quot;succeeded&quot;,
+    &quot;cause&quot;: &quot;&quot;,
+    &quot;request-id&quot;: &quot;&quot;,
+    &quot;snapshot_id&quot;: &quot;arn:aws:ec2::<em class="replaceable"><code>us-west-2</code></em>:snapshot/snap-<em class="replaceable"><code>01234567</code></em>&quot;,
+    &quot;source&quot;: &quot;arn:aws:ec2::<em class="replaceable"><code>us-west-2</code></em>:volume/vol-<em class="replaceable"><code>01234567</code></em>&quot;,
+    &quot;StartTime&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+    &quot;EndTime&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;  }
+}</code></pre>
+                     
+                     
+                     <h3 id="copy-snapshot-complete">Copy Snapshot
+                        (<code class="code">copySnapshot</code>)
+                     </h3>
+                     
+                     <p>The <code class="code">copySnapshot</code> event is sent to your AWS account when an action to
+                        copy a snapshot completes. This event can have a result of either
+                        <code class="code">succeeded</code> or <code class="code">failed</code>.
+                     </p>
+                     
+                     
+                     <p class="title"><b>Event Data</b></p>
+                     
+                     <p>The listing below is an example of a JSON object emitted by EBS after a
+                        successful <code class="code">copySnapshot</code> event. The value of
+                        <code class="code">snapshot_id</code> is the ARN of the newly created snapshot. In the
+                        <code class="code">detail</code> section, the value of <code class="code">source</code> is the ARN of
+                        the source snapshot. <code class="code">StartTime</code> and <code class="code">EndTime</code> represent
+                        when the copy-snapshot action started and ended.
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+  &quot;version&quot;: &quot;0&quot;,
+  &quot;id&quot;: &quot;<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>012345678901</code></em>&quot;,
+  &quot;detail-type&quot;: &quot;EBS Snapshot Notification&quot;,
+  &quot;source&quot;: &quot;aws.ec2&quot;,
+  &quot;account&quot;: &quot;<em class="replaceable"><code>123456789012</code></em>&quot;,
+  &quot;time&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+  &quot;region&quot;: &quot;<em class="replaceable"><code>us-east-1</code></em>&quot;,
+  &quot;resources&quot;: [
+    &quot;arn:aws:ec2::<em class="replaceable"><code>us-west-2</code></em>:snapshot/snap-<em class="replaceable"><code>01234567</code></em>&quot;
+  ],
+  &quot;detail&quot;: {
+    &quot;event&quot;: &quot;copySnapshot&quot;,
+    &quot;result&quot;: &quot;succeeded&quot;,
+    &quot;cause&quot;: &quot;&quot;,
+    &quot;request-id&quot;: &quot;&quot;,
+    &quot;snapshot_id&quot;: &quot;arn:aws:ec2::<em class="replaceable"><code>us-west-2</code></em>:snapshot/snap-<em class="replaceable"><code>01234567</code></em>&quot;,
+    &quot;source&quot;: &quot;arn:aws:ec2::<em class="replaceable"><code>eu-west-1</code></em>:snapshot/snap-<em class="replaceable"><code>76543210</code></em>&quot;,
+    &quot;StartTime&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+    &quot;EndTime&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+    &quot;Incremental&quot;: &quot;True&quot;
+  }
+}</code></pre>
+                     
+                     <p>The listing below is an example of a JSON object emitted by EBS after a failed
+                        <code class="code">copySnapshot</code> event. The cause for the failure was an invalid
+                        source snapshot ID. The value of <code class="code">snapshot_id</code> is the ARN of the
+                        failed snapshot. In the <code class="code">detail</code> section, the value of
+                        <code class="code">source</code> is the ARN of the source snapshot.
+                        <code class="code">StartTime</code> and <code class="code">EndTime</code> represent when the
+                        copy-snapshot action started and ended. 
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+  &quot;version&quot;: &quot;0&quot;,
+  &quot;id&quot;: &quot;<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>012345678901</code></em>&quot;,
+  &quot;detail-type&quot;: &quot;EBS Snapshot Notification&quot;,
+  &quot;source&quot;: &quot;aws.ec2&quot;,
+  &quot;account&quot;: &quot;<em class="replaceable"><code>123456789012</code></em>&quot;,
+  &quot;time&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+  &quot;region&quot;: &quot;<em class="replaceable"><code>us-east-1</code></em>&quot;,
+  &quot;resources&quot;: [
+    &quot;arn:aws:ec2::<em class="replaceable"><code>us-west-2</code></em>:snapshot/snap-<em class="replaceable"><code>01234567</code></em>&quot;
+  ],
+  &quot;detail&quot;: {
+    &quot;event&quot;: &quot;copySnapshot&quot;,
+    &quot;result&quot;: &quot;failed&quot;,
+    &quot;cause&quot;: &quot;Source snapshot ID is not valid&quot;,
+    &quot;request-id&quot;: &quot;&quot;,
+    &quot;snapshot_id&quot;: &quot;arn:aws:ec2::<em class="replaceable"><code>us-west-2</code></em>:snapshot/snap-<em class="replaceable"><code>01234567</code></em>&quot;,
+    &quot;source&quot;: &quot;arn:aws:ec2::<em class="replaceable"><code>eu-west-1</code></em>:snapshot/snap-<em class="replaceable"><code>76543210</code></em>&quot;,
+    &quot;StartTime&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+    &quot;EndTime&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;
+  }
+}</code></pre>
+                     
+                     
+                     <h3 id="snapshot-shared">Share Snapshot
+                        (<code class="code">shareSnapshot</code>)
+                     </h3>
+                     
+                     <p>The <code class="code">shareSnapshot</code> event is sent to your AWS account when another
+                        account shares a snapshot with it. The result is always
+                        <code class="code">succeeded</code>.
+                     </p>
+                     
+                     
+                     <p class="title"><b>Event Data</b></p>
+                     
+                     <p>The listing below is an example of a JSON object emitted by EBS after a
+                        completed <code class="code">shareSnapshot</code> event. In the <code class="code">detail</code> section,
+                        the value of <code class="code">source</code> is the AWS account number of the user that
+                        shared the snapshot with you. <code class="code">StartTime</code> and <code class="code">EndTime</code>
+                        represent when the share-snapshot action started and ended. The
+                        <code class="code">shareSnapshot</code> event is emitted only when a private snapshot is
+                        shared with another user. Sharing a public snapshot does not trigger the
+                        event.
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+  &quot;version&quot;: &quot;0&quot;,
+  &quot;id&quot;: &quot;<em class="replaceable"><code>01234567</code></em>-<em class="replaceable"><code>01234</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>0123</code></em>-<em class="replaceable"><code>012345678901</code></em>&quot;,
+  &quot;detail-type&quot;: &quot;EBS Snapshot Notification&quot;,
+  &quot;source&quot;: &quot;aws.ec2&quot;,
+  &quot;account&quot;: &quot;<em class="replaceable"><code>012345678901</code></em>&quot;,
+  &quot;time&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+  &quot;region&quot;: &quot;<em class="replaceable"><code>us-east-1</code></em>&quot;,
+  &quot;resources&quot;: [
+    &quot;arn:aws:ec2::<em class="replaceable"><code>us-west-2</code></em>:snapshot/snap-<em class="replaceable"><code>01234567</code></em>&quot;
+  ],
+  &quot;detail&quot;: {
+    &quot;event&quot;: &quot;shareSnapshot&quot;,
+    &quot;result&quot;: &quot;succeeded&quot;,
+    &quot;cause&quot;: &quot;&quot;,
+    &quot;request-id&quot;: &quot;&quot;,
+    &quot;snapshot_id&quot;: &quot;arn:aws:ec2::<em class="replaceable"><code>us-west-2</code></em>:snapshot/snap-<em class="replaceable"><code>01234567</code></em>&quot;,
+    &quot;source&quot;: <em class="replaceable"><code>012345678901</code></em>,
+    &quot;StartTime&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+    &quot;EndTime&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;
+  }
+}</code></pre>
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     <h2 id="using_lambda">Using Amazon Lambda To Handle CloudWatch Events</h2>
+                     
+                     <p>You can use Amazon EBS and CloudWatch Events to automate your data-backup workflow.
+                        This requires you
+                        to create an IAM policy, a AWS Lambda function to handle the event, and an Amazon
+                        CloudWatch Events
+                        rule that matches incoming events and routes them to the Lambda function.
+                     </p>
+                     
+                     <p>The following procedure uses the <code class="code">createSnapshot</code> event to automatically
+                        copy a completed snapshot to another region for disaster recovery. 
+                     </p>
+                     
+                     <p class="title"><b>To copy a completed snapshot to another region</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Create an IAM policy, such as the one shown in the following example, to
+                              provide permissions to execute a <code class="code">CopySnapshot</code> action and write to
+                              the CloudWatch Events log. Assign the policy to the IAM user that will handle the
+                              CloudWatch
+                              event.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Action&quot;: [
+        &quot;logs:CreateLogGroup&quot;,
+        &quot;logs:CreateLogStream&quot;,
+        &quot;logs:PutLogEvents&quot;
+      ],
+      &quot;Resource&quot;: &quot;arn:aws:logs:*:*:*&quot;
+    },
+    {
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Action&quot;: [
+        &quot;ec2:CopySnapshot&quot;
+      ],
+      &quot;Resource&quot;: &quot;*&quot;
+    }
+  ]
+}</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Define a function in Lambda that will be available from the CloudWatch console.
+                              The sample Lambda function below, written in Node.js, is invoked by CloudWatch when
+                              a
+                              matching <code class="code">createSnapshot</code> event is emitted by Amazon EBS (signifying that
+                              a snapshot was completed). When invoked, the function copies the snapshot from
+                              <code class="code">us-east-2</code> to <code class="code">us-east-1</code>.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="java ">// Sample Lambda function to copy an EBS snapshot to a different region
+ 
+var AWS = require(&apos;aws-sdk&apos;);
+var ec2 = new AWS.EC2();
+ 
+// define variables
+var destinationRegion = &apos;<em class="replaceable"><code>us-east-1</code></em>&apos;;
+var sourceRegion = &apos;<em class="replaceable"><code>us-east-2</code></em>&apos;;
+console.log (&apos;Loading function&apos;);
+ 
+//main function
+exports.handler = (event, context, callback) =&gt; {
+ 
+    // Get the EBS snapshot ID from the CloudWatch event details
+    var snapshotArn = event.detail.snapshot_id.split(&apos;/&apos;);
+    const snapshotId = snapshotArn[1];
+    const description = `Snapshot copy from ${snapshotId} in ${sourceRegion}.`;
+    console.log (&quot;snapshotId:&quot;, snapshotId);
+
+    // Load EC2 class and update the configuration to use destination region to initiate the snapshot.
+    AWS.config.update({region: destinationRegion});
+    var ec2 = new AWS.EC2();
+
+    // Prepare variables for ec2.modifySnapshotAttribute call
+    const copySnapshotParams = {
+        Description: description,
+        DestinationRegion: destinationRegion,
+        SourceRegion: sourceRegion,
+        SourceSnapshotId: snapshotId
+    };
+ 
+    // Execute the copy snapshot and log any errors
+    ec2.copySnapshot(copySnapshotParams, (err, data) =&gt; {
+        if (err) {
+            const errorMessage = `Error copying snapshot ${snapshotId} to region ${destinationRegion}.`;
+            console.log(errorMessage);
+            console.log(err);
+            callback(errorMessage);
+        } else {
+            const successMessage = `Successfully started copy of snapshot ${snapshotId} to region ${destinationRegion}.`;
+            console.log(successMessage);
+            console.log(data);
+            callback(null, successMessage);
+        }
+    });
+};                </code></pre>
+                           <p>To ensure that your Lambda function is available from the CloudWatch console,
+                              create it in the region where the CloudWatch event will occur. For more information,
+                              see the <a href="./lambda/latest/dg/" target="_blank">AWS Lambda Developer Guide</a>.
+                           </p>
+                           
+                           
+                        </li>
+                        <li>
+                           <p>Open the CloudWatch console at
+                              <a href="https://console.aws.amazon.com/cloudwatch/" target="_blank">https://console.aws.amazon.com/cloudwatch/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Events</b>, <b>Create rule</b>,
+                              <b>Select event source</b>, and <b>Amazon EBS
+                                 Snapshots</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Specific Event(s)</b>, choose
+                              <b>createSnapshot</b> and for <b>Specific
+                                 Result(s)</b>, choose <b>succeeded</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Rule target</b>, find and choose the sample function that
+                              you previously created.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Target</b>, <b>Add Target</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Lambda function</b>, select the Lambda function that you
+                              previously created and choose <b>Configure details</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>On the <b>Configure rule details</b> page, type values for
+                              <b>Name</b> and <b>Description</b>. Select the
+                              <b>State</b> check box to activate the function (setting it to
+                              <b>Enabled</b>). 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Create rule</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p>Your rule should now appear on the <b>Rules</b> tab. In the example
+                        shown, the event that you configured should be emitted by EBS the next time you copy
+                        a
+                        snapshot.
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="benchmark_procedures.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="InstanceStorage.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="EBS Volume Events"><a class="pagetoc" href="#volume-events">EBS Volume Events</a></li>
+                        <li class="pagetoc" name="EBS Snapshot Events"><a class="pagetoc" href="#snapshot-events">EBS Snapshot Events</a></li>
+                        <li class="pagetoc" name="Using Amazon Lambda To Handle CloudWatch Events"><a class="pagetoc" href="#using_lambda">Using Amazon Lambda To Handle CloudWatch Events</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

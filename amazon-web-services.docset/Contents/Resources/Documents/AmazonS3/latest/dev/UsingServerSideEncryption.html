@@ -1,0 +1,276 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Protecting Data Using Server-Side Encryption
+         			with Amazon S3-Managed Encryption Keys (SSE-S3) - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="serv-side-encryption.html" title="Protecting Data Using Server-Side Encryption">
+      <link rel="prev" href="KMSUsingRESTAPI.html" title="Specifying the AWS Key Management Service in Amazon S3 Using the REST API">
+      <link rel="next" href="SSEUsingJavaSDK.html" title="Specifying Server-Side Encryption Using the
+				AWS SDK for Java">
+      <meta name="description" content="With server-side encryption, Amazon S3 manages encryption and decryption for you.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="DataDurability.html">Protecting Data in Amazon S3</a> &#xBB; <a href="UsingEncryption.html">Protecting Data Using Encryption</a> &#xBB; <a href="serv-side-encryption.html">Protecting Data Using Server-Side Encryption</a> &#xBB; <span class="breadcrumb">Protecting Data Using Server-Side Encryption
+                                    			with Amazon S3-Managed Encryption Keys (SSE-S3)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="UsingServerSideEncryption">Protecting Data Using Server-Side Encryption
+                        			with Amazon S3-Managed Encryption Keys (SSE-S3)
+                     </h1>
+                     <p>Server-side encryption protects data at rest. Server-side encryption with Amazon S3-managed
+                        		encryption keys (SSE-S3) uses strong multi-factor encryption. Amazon S3 encrypts
+                        each object with
+                        		a unique key. As an additional safeguard, it encrypts the key itself with a master
+                        key that
+                        		it rotates regularly. Amazon S3 server-side encryption uses one of the strongest
+                        block ciphers
+                        		available, 256-bit Advanced Encryption Standard (AES-256), to encrypt your data.
+                     </p>
+                     <p>If you need server-side encryption for all of the objects that are stored in a bucket,
+                        use a
+                        		bucket policy. For example, the following bucket policy denies permissions to upload
+                        an
+                        		object unless the request includes the <code class="code">x-amz-server-side-encryption</code> header to
+                        		request server-side
+                        		encryption:
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Id&quot;: &quot;PutObjPolicy&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Sid&quot;: &quot;DenyIncorrectEncryptionHeader&quot;,
+      &quot;Effect&quot;: &quot;Deny&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Action&quot;: &quot;s3:PutObject&quot;,
+      &quot;Resource&quot;: &quot;arn:aws:s3:::<em class="replaceable"><code>YourBucket</code></em>/*&quot;,
+      &quot;Condition&quot;: {
+        &quot;StringNotEquals&quot;: {
+          &quot;s3:x-amz-server-side-encryption&quot;: &quot;AES256&quot;
+        }
+      }
+    },
+    {
+      &quot;Sid&quot;: &quot;DenyUnEncryptedObjectUploads&quot;,
+      &quot;Effect&quot;: &quot;Deny&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Action&quot;: &quot;s3:PutObject&quot;,
+      &quot;Resource&quot;: &quot;arn:aws:s3:::<em class="replaceable"><code>YourBucket</code></em>/*&quot;,
+      &quot;Condition&quot;: {
+        &quot;Null&quot;: {
+          &quot;s3:x-amz-server-side-encryption&quot;: &quot;true&quot;
+        }
+      }
+    }
+  ]
+}</code></pre><p>Server-side encryption encrypts only the object
+                        		data,
+                        		not
+                        		object
+                        		metadata. 
+                     </p>
+                     		
+                     <h2 id="APISupportforServer-SideEncryption">API Support for Server-Side
+                        				Encryption
+                     </h2>
+                     		
+                     <p>To request
+                        			server-side encryption using
+                        			the
+                        			object creation REST
+                        			APIs,
+                        			provide
+                        			the
+                        			, <code class="code">x-amz-server-side-encryption</code>
+                        			request
+                        			header.
+                        			For information about the REST APIs, see <a href="SSEUsingRESTAPI.html">Specifying Server-Side Encryption Using the REST
+                           				API</a>.
+                     </p>
+                     		
+                     <p>The following Amazon S3 APIs support
+                        			this
+                        			header:
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>PUT
+                                 					operations&#x2014;Specify
+                                 					the request header
+                                 					when
+                                 					uploading data using the PUT
+                                 					API.
+                                 					For more information, see <a href="./AmazonS3/latest/API/RESTObjectPUT.html" target="_blank">PUT
+                                    						Object</a>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Initiate
+                                 					Multipart
+                                 					Upload&#x2014;Specify
+                                 					the header in the initiate request
+                                 					when
+                                 					uploading large objects using the multipart upload API
+                                 					.
+                                 					For more information,
+                                 					see
+                                 						<a href="./AmazonS3/latest/API/mpUploadInitiate.html" target="_blank">Initiate Multipart
+                                    						Upload</a>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>POST
+                                 					operations&#x2014;When
+                                 					using a POST operation to upload an
+                                 					object,
+                                 					instead of
+                                 					providing
+                                 					the request
+                                 					header,
+                                 					provide
+                                 					the same information in the form
+                                 					fields.
+                                 					For more information, see <a href="./AmazonS3/latest/API/RESTObjectPOST.html" target="_blank">POST
+                                    						Object</a>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>COPY
+                                 					operations&#x2014;When
+                                 					you copy an
+                                 					object,
+                                 					you have both a
+                                 					source
+                                 					object and a target
+                                 					object.
+                                 					For more information, see <a href="./AmazonS3/latest/API/RESTObjectCOPY.html" target="_blank">PUT
+                                    						Object - Copy</a>.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <p>The
+                        			AWS SDKs also provide wrapper APIs
+                        			that
+                        			you can use to request server-side encryption. You can also use the
+                        			AWS Management Console to upload objects and request server-side
+                        			encryption.
+                     </p>
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You
+                           				can&apos;t enforce
+                           				SSE-S3
+                           				encryption on  objects
+                           				that
+                           				are uploaded using presigned URLs.
+                           				You
+                           				can specify server-side encryption only
+                           				with
+                           				the AWS Management Console
+                           				or
+                           				an HTTP request header. For more information, see <a href="amazon-s3-policy-keys.html">Specifying Conditions in a Policy</a>.
+                        </p>
+                     </div>
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="KMSUsingRESTAPI.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="SSEUsingJavaSDK.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="API Support for Server-Side
+				Encryption"><a class="pagetoc" href="#APISupportforServer-SideEncryption">API Support for Server-Side
+                              				Encryption</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

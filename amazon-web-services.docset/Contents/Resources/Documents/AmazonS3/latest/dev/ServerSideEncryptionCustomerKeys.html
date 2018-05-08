@@ -1,0 +1,535 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Protecting Data Using Server-Side Encryption
+         		with Customer-Provided Encryption Keys (SSE-C) - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="serv-side-encryption.html" title="Protecting Data Using Server-Side Encryption">
+      <link rel="prev" href="SSEUsingConsole.html" title="Specifying Server-Side Encryption Using the
+				AWS Management Console">
+      <link rel="next" href="sse-c-using-java-sdk.html" title="Specifying Server-Side Encryption with Customer-Provided Encryption Keys Using the AWS SDK for Java">
+      <meta name="description" content="To use your own custom keys to encrypt the objects that you store on Amazon S3, use server-side encryption with customer-provided encryption keys (SSE-C).">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="DataDurability.html">Protecting Data in Amazon S3</a> &#xBB; <a href="UsingEncryption.html">Protecting Data Using Encryption</a> &#xBB; <a href="serv-side-encryption.html">Protecting Data Using Server-Side Encryption</a> &#xBB; <span class="breadcrumb">Protecting Data Using Server-Side Encryption
+                                    		with Customer-Provided Encryption Keys (SSE-C)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ServerSideEncryptionCustomerKeys">Protecting Data Using Server-Side Encryption
+                        		with Customer-Provided Encryption Keys (SSE-C)
+                     </h1>
+                     <p>Server-side encryption is about protecting data at rest. Using server-side encryption
+                        with customer-provided 
+                        		encryption keys (SSE-C) allows you to set your own encryption keys. With the encryption
+                        key you provide as part 
+                        		of your request, Amazon S3 manages both the encryption, as it writes to disks, and
+                        decryption, when you access your objects. 
+                        		Therefore, you don&apos;t need to maintain any code to perform data encryption and decryption.
+                        The only thing you do is 
+                        		manage the encryption keys you provide.
+                     </p>
+                     <p>When you upload an object, Amazon S3 uses the encryption key you provide to apply
+                        AES-256
+                        		encryption to your data and removes the encryption key from memory.
+                        		
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Amazon S3 does not store the encryption key you provide. Instead, we store a randomly
+                           			salted HMAC value of the encryption key in order to validate future requests. The
+                           salted
+                           			HMAC value cannot be used to derive the value of the encryption key or to decrypt
+                           the
+                           			contents of the encrypted object. That means, if you lose the encryption key, you
+                           lose
+                           			the object.  
+                        </p>
+                     </div>
+                     <p>When you retrieve an object, you must provide the same encryption key as part of your
+                        request.
+                        		Amazon S3 first verifies that the encryption key you provided matches, and then
+                        decrypts the
+                        		object before returning the object data to you. 
+                     </p>
+                     <p>The highlights of SSE-C are:</p>
+                     <div class="itemizedlist">
+                        			
+                        			
+                        						
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p> You must use https.  </p>
+                              	
+                              				
+                              <div class="aws-note">
+                                 <p class="aws-note">Important</p>
+                                 <p>Amazon S3 will reject any requests made over http when using SSE-C. For
+                                    						security considerations, we recommend you consider any key you send
+                                    						erroneously using http to be compromised. You should discard the key, and
+                                    						rotate as appropriate.
+                                 </p>
+                              </div>
+                              			
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>The ETag in the response is not the MD5 of the object data. </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>You manage a mapping of which encryption key was used to encrypt which object. Amazon
+                                 S3
+                                 				does not store encryption keys. You are responsible for tracking which encryption
+                                 				key you provided for which object.
+                              </p>
+                              				
+                              <div class="itemizedlist">
+                                 					
+                                 					
+                                 				
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       						
+                                       <p>If your bucket is versioning-enabled, each object version you upload using this feature
+                                          						can have its own encryption key. You are responsible for tracking which
+                                          						encryption key was used for which object version. 
+                                       </p>
+                                       					
+                                    </li>
+                                    <li class="listitem">
+                                       						
+                                       <p>Because you manage encryption keys on the client side, you manage any
+                                          							additional safeguards, such as key rotation, on the client side.
+                                       </p>
+                                       					
+                                    </li>
+                                 </ul>
+                              </div>
+                              				
+                              <div class="aws-note">
+                                 <p class="aws-note">Warning</p>
+                                 <p>If you lose the encryption key any GET request for an object without its encryption
+                                    key
+                                    					will fail, and you lose the object.
+                                 </p>
+                              </div>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     <h2 id="sse-c-how-to-programmatically-intro">Using SSE-C</h2>
+                     		
+                     		
+                     <p>When using server-side encryption with customer-provided encryption keys (SSE-C),
+                        you must
+                        			provide encryption key information using the following request headers. 
+                     </p>
+                     			
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac29c15b9c19c15b4">
+                              						
+                              <tbody><tr>
+                                 							
+                                 <th> Name </th>
+                                 							
+                                 <th> Description </th>
+                                 						
+                              </tr>
+                              					
+                              						
+                              						
+                              <tr>
+                                 							
+                                 <td><code class="code">x-amz-server-side&#x200B;-encryption&#x200B;-customer-algorithm</code>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>Use this header to specify the encryption algorithm. The header value must be
+                                       									&quot;AES256&quot;. 
+                                    </p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td><code class="code">x-amz-server-side&#x200B;-encryption&#x200B;-customer-key</code>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>Use this header to provide the 256-bit, base64-encoded encryption key for Amazon S3
+                                       to use
+                                       								to encrypt or decrypt your data. 
+                                    </p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td><code class="code">x-amz-server-side&#x200B;-encryption&#x200B;-customer-key-MD5</code>
+                                    							
+                                 </td>
+                                 							
+                                 <td>
+                                    								
+                                    <p>Use this header to provide the base64-encoded 128-bit MD5
+                                       									digest of the encryption key according to 
+                                       									<a href="http://tools.ietf.org/html/rfc1321" target="_blank">RFC 1321</a>.
+                                       									Amazon S3 uses this header for a message integrity check to ensure
+                                       									the encryption key was transmitted without error.
+                                    </p>
+                                    							
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              					
+                           </tbody></table>
+                        </div>
+                     </div>
+                     		
+                     		
+                     <p>You can use AWS SDK wrapper libraries to add these headers to your request. If you
+                        need to,
+                        			you can make the Amazon S3 REST API calls directly in your application. 
+                     </p>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You cannot use the Amazon S3 console to upload an object and request SSE-C. You also
+                           				cannot use the console to update (for example, change the storage class or add
+                           metadata) an
+                           				existing object stored using SSE-C.
+                        </p>
+                     </div>		
+                     		
+                     <p>The following Amazon S3 APIs support these headers.</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>GET operation &#x2014; When retrieving objects using the GET API (see 
+                                 						<a href="./AmazonS3/latest/API/RESTObjectGET.html" target="_blank">GET Object</a>), you can specify
+                                 						the request headers. Torrents are not supported for objects encrypted using
+                                 						SSE-C.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>HEAD operation &#x2014; To retrieve object metadata using the HEAD API (see <a href="./AmazonS3/latest/API/RESTObjectHEAD.html" target="_blank">HEAD Object</a>), you can specify these request headers.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>PUT operation &#x2014; When uploading data using the PUT API (see <a href="./AmazonS3/latest/API/RESTObjectPUT.html" target="_blank">PUT Object</a>), you can specify these request headers. 
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Multipart Upload &#x2014; When uploading large objects using the multipart upload API, you
+                                 					can specify these headers. You specify these headers in the initiate request
+                                 					(see <a href="./AmazonS3/latest/API/mpUploadInitiate.html" target="_blank">Initiate Multipart
+                                    						Upload</a>) and each subsequent part upload request (<a href="./AmazonS3/latest/API/mpUploadUploadPart.html" target="_blank">Upload Part</a>). For each
+                                 					part upload request, the encryption information must be the same as what you
+                                 					provided in the initiate multipart upload request.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>POST operation  &#x2014;  When using a POST operation to upload an object 
+                                 						(see <a href="./AmazonS3/latest/API/RESTObjectPOST.html" target="_blank">POST Object</a>),
+                                 						instead of the request headers, you provide the same information in the form
+                                 fields.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Copy operation &#x2014; When you copy an object (see <a href="./AmazonS3/latest/API/RESTObjectCOPY.html" target="_blank">PUT Object - Copy</a>), you have both a source object and a target
+                                 						object. Accordingly, you have the following to consider:
+                              </p>
+                              					
+                              <div class="itemizedlist">
+                                 						
+                                 						
+                                 						
+                                 					
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       							
+                                       <p>If you want the target object encrypted using server-side encryption with AWS-managed
+                                          								keys, you must provide the <code class="code">x-amz-server-side&#x200B;-encryption</code> request
+                                          								header.
+                                       </p>
+                                       						
+                                    </li>
+                                    <li class="listitem">
+                                       							
+                                       <p> If you want the target object encrypted using SSE-C, you must provide encryption
+                                          								information using the three headers described in the preceding
+                                          								table.
+                                       </p>
+                                       						
+                                    </li>
+                                    <li class="listitem">
+                                       							
+                                       <p> If the source object is encrypted using SSE-C, you must provide encryption key 
+                                          								information using the following headers so that Amazon S3 
+                                          								can decrypt the object for copying.
+                                       </p>
+                                       								
+                                       <div class="table">
+                                          <div class="table-contents">
+                                             <table id="w70aac29c15b9c19c15c12c11b3b5b3">
+                                                											
+                                                <tbody><tr>
+                                                   												
+                                                   <th> Name </th>
+                                                   												
+                                                   <th> Description </th>
+                                                   											
+                                                </tr>
+                                                										
+                                                											
+                                                											
+                                                <tr>
+                                                   												
+                                                   <td><code class="code">x-amz-copy-source&#x200B;-server-side&#x200B;-encryption&#x200B;-customer-algorithm</code>
+                                                      												
+                                                   </td>
+                                                   												
+                                                   <td>
+                                                      													
+                                                      <p>Include this header to specify the algorithm Amazon S3 should use to decrypt the
+                                                         												source object. This value must be <code class="code">AES256</code>.
+                                                      </p>
+                                                      												
+                                                   </td>
+                                                   											
+                                                </tr>
+                                                											
+                                                <tr>
+                                                   												
+                                                   <td>
+                                                      												
+                                                      <p><code class="code">x-amz-copy-source&#x200B;-server-side&#x200B;-encryption&#x200B;-customer-key</code>
+                                                         												
+                                                      </p>
+                                                      												
+                                                   </td>
+                                                   												
+                                                   <td>
+                                                      													
+                                                      <p>Include this header to provide the base64-encoded encryption key for Amazon S3 to
+                                                         												use to decrypt the source object. This encryption
+                                                         												key must be the one that you provided Amazon S3
+                                                         												when you created the source object; otherwise,
+                                                         												Amazon S3 will not be able to decrypt the
+                                                         												object.
+                                                      </p>
+                                                      												
+                                                   </td>
+                                                   											
+                                                </tr>
+                                                											
+                                                <tr>
+                                                   												
+                                                   <td><code class="code">x-amz-copy-source-&#x200B;server-side&#x200B;-encryption&#x200B;-customer-key-MD5</code>
+                                                      												
+                                                   </td>
+                                                   												
+                                                   <td>
+                                                      												
+                                                      <p>Include this header to provide the base64-encoded 128-bit MD5 digest of the
+                                                         													encryption key according to <a href="http://tools.ietf.org/html/rfc1321" target="_blank">RFC 1321</a>. 
+                                                         												
+                                                      </p>
+                                                      												
+                                                   </td>
+                                                   											
+                                                </tr>
+                                                											
+                                                										
+                                             </tbody></table>
+                                          </div>
+                                       </div>							
+                                       						
+                                    </li>
+                                 </ul>
+                              </div>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                     <h2 id="ssec-and-presignedurl">Presigned URL and SSE-C</h2>
+                     		
+                     		
+                     <p>You can generate a presigned URL that can be used for operations such as upload a
+                        new
+                        			object, retrieve an existing object, or object metadata. Presigned URLs support
+                        the
+                        			SSE-C as follows:
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>When creating a presigned URL, you must specify the algorithm using the
+                                 						<code class="code">x-amz-server-side&#x200B;-encryption&#x200B;-customer-algorithm</code> in the
+                                 					signature calculation.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>When using the presigned URL to upload a new object, retrieve an existing object,
+                                 or
+                                 					retrieve only object metadata, you must provide all the encryption headers
+                                 					in your client application. 
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <p>For more information, see the following topics:</p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p><a href="sse-c-using-java-sdk.html">Specifying Server-Side Encryption with Customer-Provided Encryption Keys Using the
+                                    AWS SDK for Java</a></p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><a href="sse-c-using-dot-net-sdk.html">Specifying Server-Side Encryption with Customer-Provided
+                                    			Encryption Keys Using the AWS SDK for .NET</a></p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><a href="ServerSideEncryptionCustomerKeysSSEUsingRESTAPI.html">Specifying Server-Side Encryption with Customer-Provided Encryption Keys Using the
+                                    REST API</a></p>
+                              			
+                           </li>
+                        </ul>
+                     </div>		
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="SSEUsingConsole.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="sse-c-using-java-sdk.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Using SSE-C"><a class="pagetoc" href="#sse-c-how-to-programmatically-intro">Using SSE-C</a></li>
+                        <li class="pagetoc" name="Presigned URL and SSE-C"><a class="pagetoc" href="#ssec-and-presignedurl">Presigned URL and SSE-C</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

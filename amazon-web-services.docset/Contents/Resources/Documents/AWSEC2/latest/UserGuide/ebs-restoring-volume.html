@@ -1,0 +1,289 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Restoring an Amazon EBS Volume from a Snapshot - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="EBSVolumes.html" title="Amazon EBS Volumes">
+      <link rel="prev" href="ebs-creating-volume.html" title="Creating an Amazon EBS Volume">
+      <link rel="next" href="ebs-attaching-volume.html" title="Attaching an Amazon EBS Volume to an Instance">
+      <meta name="description" content="Restore an Amazon EBS volume with data from a snapshot stored in Amazon S3.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-restoring-volume.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Storage.html">Storage</a> &#xBB; <a href="AmazonEBS.html">Amazon Elastic Block Store (Amazon EBS)</a> &#xBB; <a href="EBSVolumes.html">Amazon EBS Volumes</a> &#xBB; <span class="breadcrumb">Restoring an Amazon EBS Volume from a Snapshot</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ebs-restoring-volume">Restoring an Amazon EBS Volume from a Snapshot</h1>
+                     <p>You can restore an Amazon EBS volume with data from a snapshot stored in Amazon S3.
+                        You need to know
+                        the ID of the snapshot you want to restore your volume from and you need to have access
+                        permissions for the snapshot. For more information on snapshots, see <a href="EBSSnapshots.html">Amazon EBS Snapshots</a>.
+                     </p>
+                     <p>New volumes created from existing EBS snapshots load lazily in the background. This
+                        means
+                        that after a volume is created from a snapshot, there is no need to wait for all of
+                        the data
+                        to transfer from Amazon S3 to your EBS volume before your attached instance can start
+                        accessing the
+                        volume and all its data. If your instance accesses data that hasn&apos;t yet been loaded,
+                        the
+                        volume immediately downloads the requested data from Amazon S3, and continues loading
+                        the rest of
+                        the data in the background.
+                     </p>
+                     <p>EBS volumes that are restored from encrypted snapshots are automatically encrypted.
+                        Encrypted volumes can only be attached to selected instance types. For more information,
+                        see
+                        <a href="EBSEncryption.html#EBSEncryption_supported_instances">Supported Instance Types</a>.
+                     </p>
+                     <p>Because of security constraints, you cannot directly restore an EBS volume from a
+                        shared
+                        encrypted snapshot that you do not own. You must first create a copy of the snapshot,
+                        which
+                        you will own. You can then restore a volume from that copy. For more information,
+                        see <a href="./AWSEC2/latest/UserGuide/EBSEncryption.html" target="_blank">Amazon EBS Encryption</a>.
+                     </p>
+                     <p>New EBS volumes receive their maximum performance the moment that they are available
+                        and
+                        do not require initialization (formerly known as pre-warming). However, storage blocks
+                        on
+                        volumes that were restored from snapshots must be initialized (pulled down from Amazon
+                        S3 and
+                        written to the volume) before you can access the block. This preliminary action takes
+                        time and
+                        can cause a significant increase in the latency of an I/O operation the first time
+                        each block
+                        is accessed. Performance is restored after the data is accessed once.
+                     </p>
+                     <p>For most applications, amortizing the initialization cost over the lifetime of the
+                        volume
+                        is acceptable. To ensure that your restored volume always functions at peak capacity
+                        in
+                        production, you can force the immediate initialization of the entire volume using
+                        <b>dd</b> or <b>fio</b>. For more information, see <a href="ebs-initialize.html">Initializing Amazon EBS Volumes</a>.
+                     </p>
+                     <p class="title"><b>To restore an EBS volume from a snapshot using the console</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>From the navigation bar, select the region that your snapshot is located in.</p> 
+                           
+                           <p>To restore the snapshot to a volume in a different region, you can copy your snapshot
+                              to the new region and then restore it to a volume in that region. For more information,
+                              see <a href="ebs-copy-snapshot.html">Copying an Amazon EBS Snapshot</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the navigation pane, choose <b>ELASTIC BLOCK STORE</b>,
+                              <b>Volumes</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Create Volume</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Volume Type</b>, choose a volume type. For more information, see 
+                              <a href="EBSVolumeTypes.html">Amazon EBS Volume Types</a>.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>Some AWS accounts created before 2012 might have access to Availability Zones in
+                                 us-west-1 or ap-northeast-1 that do not support Provisioned IOPS SSD (<code class="code">io1</code>) volumes. If
+                                 you are unable to create an <code class="code">io1</code> volume (or launch an instance with an <code class="code">io1</code>
+                                 volume in its block device mapping) in one of these regions, try a different Availability
+                                 Zone in the region. You can verify that an Availability Zone supports <code class="code">io1</code> volumes
+                                 by creating a 4 GiB <code class="code">io1</code> volume in that zone.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Snapshot</b>, start typing the ID or description of the snapshot
+                              from which you are restoring the volume, and choose it from the list of suggested
+                              options.
+                           </p>
+                           
+                           <p>Volumes that are restored from encrypted snapshots can only be attached to
+                              instances that support Amazon EBS encryption. For more information, see <a href="EBSEncryption.html#EBSEncryption_supported_instances">Supported Instance Types</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Size (GiB)</b>, type the size of the volume, or verify that the
+                              default size of the snapshot is adequate.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>If you specify both a volume size and a snapshot, the size must be equal to or
+                                 greater than the snapshot size. When you select a volume type and a snapshot, the
+                                 minimum
+                                 and maximum sizes for the volume are shown next to <b>Size</b>.
+                                 Any AWS Marketplace product codes from the snapshot are propagated to the volume.
+                              </p>
+                           </div>
+                           
+                           
+                           
+                        </li>
+                        <li>
+                           
+                           <p>With a Provisioned IOPS SSD volume, for <b>IOPS</b>, type the maximum number of
+                              input/output operations per second (IOPS) that the volume should support.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Availability Zone</b>, choose the Availability Zone in which to
+                              create the volume. EBS volumes can only be attached to EC2 instances in the same
+                              Availability Zone.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Choose <b>Create additional tags</b> to add tags to the volume. 
+                              For each tag, provide a tag key and a tag value.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Create Volume</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>After you&apos;ve restored a volume from a snapshot, you can attach it to an instance to
+                              begin
+                              using it. For more information, see <a href="ebs-attaching-volume.html">Attaching an Amazon EBS Volume to an Instance</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>If you restored a snapshot to a larger volume than the default for that snapshot,
+                              you must extend the file system on the volume to take advantage of the extra space.
+                              For more information, see <a href="ebs-modify-volume.html">Modifying the Size, IOPS, or Type of an EBS Volume on <span>Linux</span></a>.
+                           </p>        
+                           
+                        </li>
+                     </ol>
+                     <div class="itemizedlist">
+                        
+                        <p class="title"><b>To restore an EBS volume using the command line</b></p>
+                        
+                        <p>You can use one of the following commands. For more information about these command
+                           line
+                           interfaces, see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./cli/latest/reference/ec2/create-volume.html" target="_blank">create-volume</a> (AWS CLI)
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="./powershell/latest/reference/items/New-EC2Volume.html" target="_blank">New-EC2Volume</a>
+                                 (AWS Tools for Windows PowerShell)
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ebs-creating-volume.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ebs-attaching-volume.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

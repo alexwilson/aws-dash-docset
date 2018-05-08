@@ -1,0 +1,1518 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Tutorial: Configure Apache Web Server on Amazon Linux 2 to Use
+         SSL/TLS - Amazon Elastic Compute Cloud
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ec2-tutorials.html" title="Tutorials for Amazon EC2 Instances Running Linux">
+      <link rel="prev" href="hosting-wordpress.html" title="Tutorial: Hosting a WordPress Blog with Amazon Linux">
+      <link rel="next" href="ec2-increase-availability.html" title="Tutorial: Increase the Availability of Your
+			Application on Amazon EC2">
+      <meta name="description" content="Install and configure SSL/TLS on a single EC2 instance running Amazon Linux 2 and Apache web server.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/SSL-on-an-instance.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="ec2-tutorials.html">Tutorials for Amazon EC2 Instances Running Linux</a> &#xBB; <span class="breadcrumb">Tutorial: Configure Apache Web Server on Amazon Linux 2 to Use
+                                    SSL/TLS</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="SSL-on-an-instance">Tutorial: Configure Apache Web Server on Amazon Linux 2 to Use
+                        SSL/TLS
+                     </h1>
+                     <p>Secure Sockets Layer/Transport Layer Security (SSL/TLS) creates an encrypted channel
+                        between a web server and web client that protects data in transit from being eavesdropped
+                        on. This tutorial explains how to add support manually for SSL/TLS on a single instance
+                        of
+                        Amazon Linux 2 running Apache web server. If you plan to offer commercial-grade services,
+                        the <a href="https://aws.amazon.com/certificate-manager/" target="_blank">AWS Certificate Manager</a>, not
+                        discussed here, is a good option.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>For historical reasons, web encryption is often referred to simply as SSL. While web
+                           browsers still support SSL, its successor protocol TLS is less vulnerable to attack.
+                           Amazon Linux 2 disables all versions of SSL by default and recommends disabling TLS
+                           version 1.0,
+                           as described below. Only TLS 1.1 and 1.2 may be safely enabled. For more information
+                           about the updated encryption standard, see <a href="https://tools.ietf.org/html/rfc7568" target="_blank">RFC 7568</a>. 
+                        </p>
+                     </div>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>These procedures are intended for use with Amazon Linux 2. If you are trying to set
+                           up a LAMP
+                           web server on an instance of a different distribution, some procedures in this tutorial
+                           will not work for you. For information about LAMP web servers on Ubuntu, see the Ubuntu
+                           community documentation <a href="https://help.ubuntu.com/community/ApacheMySQLPHP" target="_blank">ApacheMySQLPHP</a> topic. For information about Red Hat
+                           Enterprise Linux, see the Customer Portal topic <a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/System_Administrators_Guide/ch-Web_Servers.html" target="_blank">Web Servers</a>.
+                        </p>
+                     </div>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#ssl_prereq">Prerequisites</a></li>
+                           <li><a href="#ssl_enable">Step 1: Enable SSL/TLS on the Server</a></li>
+                           <li><a href="#ssl_certificate">Step 2: Obtain a CA-signed Certificate</a></li>
+                           <li><a href="#ssl_test">Step 3: Test and Harden the Security Configuration</a></li>
+                           <li><a href="#troubleshooting">Troubleshooting</a></li>
+                           <li><a href="#letsencrypt">Appendix: Let&apos;s Encrypt with Certbot on Amazon Linux
+                                 2</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="ssl_prereq">Prerequisites</h2>
+                     
+                     
+                     <p>Before you begin this tutorial, complete the following steps:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Launch an EBS-backed Amazon Linux 2 instance. For more information, see <a href="EC2_GetStarted.html#ec2-launch-instance">Step 1: Launch an Instance</a>. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Configure your security group to allow your instance to accept connections on
+                                 the following TCP ports: 
+                              </p>
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       
+                                       <p>SSH (port 22)</p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p>HTTP (port 80)</p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p>HTTPS (port 443)</p>
+                                       
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                              <p>For more information, see <a href="authorizing-access-to-an-instance.html">Authorizing Inbound Traffic for Your <span>Linux</span> Instances</a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Install an Apache web server. For step-by-step instructions, see <a href="ec2-lamp-amazon-linux-2.html">Tutorial: Install a LAMP Web Server on
+                                    Amazon Linux 2</a>. Only the httpd package and its dependencies are needed, so
+                                 you can ignore the instructions involving PHP and MariaDB.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>To identify and authenticate websites, the SSL/TLS public key infrastructure
+                                 (PKI) relies on the Domain Name System (DNS). If you plan to use your EC2
+                                 instance to host a public website, you need to register a domain name for your
+                                 web server or transfer an existing domain name to your Amazon EC2 host. Numerous
+                                 third-party domain registration and DNS hosting services are available for this,
+                                 or you may use <a href="./Route53/latest/DeveloperGuide/Welcome.html" target="_blank">Amazon Route 53</a>. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="ssl_enable">Step 1: Enable SSL/TLS on the Server</h2>
+                     
+                     
+                     <p>This procedure takes you through the process of setting up SSL/TLS on Amazon Linux
+                        2 with a
+                        self-signed digital certificate.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>A self-signed certificate is acceptable for testing but not production. If you
+                           expose your self-signed certificate to the internet, visitors to your site are
+                           greeted by security warnings.
+                        </p>
+                     </div>
+                     
+                     <p class="title"><b>To enable SSL/TLS on a server</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p><a href="EC2_GetStarted.html#ec2-connect-to-instance-linux">Connect to your instance</a>
+                              and confirm that Apache is running.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo systemctl is-enabled httpd</code></strong></code></pre>
+                           <p>If the returned value is not &quot;enabled,&quot; start Apache and set it to start each
+                              time the system boots:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo systemctl start httpd &amp;&amp; sudo systemctl enable httpd</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>To ensure that all of your software packages are up-to-date, perform a quick
+                              software update on your instance. This process may take a few minutes, but it is
+                              important to make sure that you have the latest security updates and bug
+                              fixes.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>The <code class="code">-y</code> option installs the updates without asking for
+                                 confirmation. If you would like to examine the updates before installing,
+                                 you can omit this option.
+                              </p>
+                           </div>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo yum update -y</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Now that your instance is current, add SSL/TLS support by installing the
+                              Apache module <code>mod_ssl</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo yum install -y mod_ssl</code></strong></code></pre>
+                           <p>Later in this tutorial, you work with three important files that have been
+                              installed:
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p>
+                                       <code>/etc/httpd/conf.d/ssl.conf</code>
+                                       
+                                    </p>
+                                    
+                                    <p>The configuration file for mod_ssl. It contains &quot;directives&quot; telling
+                                       Apache where to find encryption keys and certificates, the SSL/TLS
+                                       protocol versions to allow, and the encryption ciphers to accept.
+                                       
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><code>/etc/pki/tls/private/localhost.key</code></p>
+                                    
+                                    <p>An automatically generated, 2048-bit RSA private key for your Amazon EC2
+                                       host. During installation, OpenSSL used this key to generate a
+                                       self-signed host certificate, and you can also use this key to generate
+                                       a certificate signing request (CSR) to submit to a certificate authority
+                                       (CA). 
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><code>/etc/pki/tls/certs/localhost.crt</code>
+                                       
+                                    </p>
+                                    
+                                    <p>An automatically generated, self-signed X.509 certificate for your
+                                       server host. This certificate is useful for testing that Apache is
+                                       properly set up to use SSL/TLS.
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                           <p>The <code>.key</code> and <code>.crt</code> files are both in
+                              PEM format, which consists of Base64-encoded ASCII characters framed by &quot;BEGIN&quot;
+                              and &quot;END&quot; lines, as in this abbreviated example of a certificate:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">                        -----BEGIN CERTIFICATE-----
+                        MIIEazCCA1OgAwIBAgICWxQwDQYJKoZIhvcNAQELBQAwgbExCzAJBgNVBAYTAi0t
+                        MRIwEAYDVQQIDAlTb21lU3RhdGUxETAPBgNVBAcMCFNvbWVDaXR5MRkwFwYDVQQK
+                        DBBTb21lT3JnYW5pemF0aW9uMR8wHQYDVQQLDBZTb21lT3JnYW5pemF0aW9uYWxV
+                        bml0MRkwFwYDVQQDDBBpcC0xNzItMzEtMjAtMjM2MSQwIgYJKoZIhvcNAQkBFhVy
+                        ...
+                        z5rRUE/XzxRLBZOoWZpNWTXJkQ3uFYH6s/sBwtHpKKZMzOvDedREjNKAvk4ws6F0
+                        WanXWehT6FiSZvB4sTEXXJN2jdw8g+sHGnZ8zCOsclknYhHrCVD2vnBlZJKSZvak
+                        3ZazhBxtQSukFMOnWPP2a0DMMFGYUHOd0BQE8sBJxg==
+                        -----END CERTIFICATE-----                    </code></pre>
+                           <p>The file names and extensions are a convenience and have no effect on
+                              function. You can call a certificate <code>cert.crt</code>,
+                              <code>cert.pem</code>, or any other file name, so long as the
+                              related directive in the <code>ssl.conf</code> file uses the same
+                              name.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>When you replace the default SSL/TLS files with your own customized files,
+                                 be sure that they are in PEM format. 
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Restart Apache.</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo systemctl restart httpd</code></strong></code></pre>
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>Make sure the TCP port 443 is accessible on your EC2 instance, as
+                                 described above.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Your Apache web server should now support HTTPS (secure HTTP) over port 443.
+                              Test it by typing the IP address or fully qualified domain name of your EC2
+                              instance into a browser URL bar with the prefix <strong class="userinput"><code>https://</code></strong>.
+                              Because you are connecting to a site with a self-signed, untrusted host
+                              certificate, your browser may display a series of security warnings. 
+                           </p>
+                           
+                           <p>Override the warnings and proceed to the site. If the default Apache test page
+                              opens, it means that you have successfully configured SSL/TLS on your server.
+                              All data passing between the browser and server is now encrypted.
+                           </p>
+                           
+                           <p>To prevent site visitors from encountering warning screens, you need to obtain
+                              a trusted certificate that not only encrypts, but also publicly authenticates
+                              you as the owner of the site.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="ssl_certificate">Step 2: Obtain a CA-signed Certificate</h2>
+                     
+                     
+                     <p>This section describes the process of generating a certificate signing request (CSR)
+                        from a private key, submitting the CSR to a certificate authority (CA), obtaining
+                        a
+                        signed host certificate, and configuring Apache to use it.
+                     </p>
+                     
+                     <p>A self-signed SSL/TLS X.509 host certificate is cryptologically identical to a
+                        CA-signed certificate. The difference is social, not mathematical. A CA promises to
+                        validate, at a minimum, a domain&apos;s ownership before issuing a certificate to an
+                        applicant. Each web browser contains a list of CAs trusted by the browser vendor to
+                        do
+                        this. An X.509 certificate consists primarily of a public key that corresponds to
+                        your
+                        private server key, and a signature by the CA that is cryptographically tied to the
+                        public key. When a browser connects to a web server over HTTPS, the server presents
+                        a
+                        certificate for the browser to check against its list of trusted CAs. If the signer
+                        is
+                        on the list, or accessible through a <em>chain of trust
+                           </em>consisting of other trusted signers, the browser negotiates a fast encrypted
+                        data channel with the server and loads the page. 
+                     </p>
+                     
+                     <p>Certificates generally cost money because of the labor involved in validating the
+                        requests, so it pays to shop around. A list of well-known CAs can be found at <a href="http://dmoztools.net/Computers/Security/Public_Key_Infrastructure/PKIX/Tools_and_Services/Third_Party_Certificate_Authorities/" target="_blank">dmoztools.net</a>. A few CAs offer basic-level certificates free of charge. The
+                        most notable of these is the <a href="https://letsencrypt.org/" target="_blank">Let&apos;s Encrypt</a>
+                        project, which also supports the automation of the certificate creation and renewal
+                        process. For more information about using Let&apos;s Encrypt as your CA, see <a href="SSL-on-an-instance.html#letsencrypt">Appendix: Let&apos;s Encrypt with Certbot on Amazon Linux
+                           2</a> 2. 
+                     </p>
+                     
+                     <p>Underlying the host certificate is the key. As of 2017, <a href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r4.pdf" target="_blank">government</a> and <a href="https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-1.4.2.pdf" target="_blank">industry</a> groups recommend using a minimum key (modulus) size of 2048 bits
+                        for RSA keys intended to protect documents through 2030. The default modulus size
+                        generated by OpenSSL in Amazon Linux 2 is 2048 bits, which means that the existing
+                        autogenerated
+                        key is suitable for use in a CA-signed certificate. An alternative procedure is
+                        described below for those who desire a customized key, for instance one with a larger
+                        modulus or using a different encryption algorithm. 
+                     </p>
+                     
+                     <p class="title"><b>To obtain a CA-signed certificate</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>
+                              <a href="EC2_GetStarted.html#ec2-connect-to-instance-linux">Connect to your instance</a>
+                              and navigate to /etc/pki/tls/private/. This is the directory where the server&apos;s
+                              private key for SSL/TLS is stored. If you prefer to use your existing host key
+                              to generate the CSR, skip to Step 3.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Generate a new private key. Here are some sample key
+                              configurations. Any of the resulting keys work with your web server, but they
+                              vary in the degree and type of security that they implement.
+                           </p>
+                           
+                           <div class="orderedlist">
+                              
+                              
+                              
+                              
+                              
+                              <ol>
+                                 <li>
+                                    
+                                    <p>As a starting point, here is the command to create an RSA key
+                                       resembling the default host key on your instance:
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo openssl genrsa -out custom.key 2048</code></strong></code></pre>
+                                    <p>The resulting file, <strong class="userinput"><code>custom.key</code></strong>, is a 2048-bit
+                                       RSA private key. 
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>To create a stronger RSA key with a bigger modulus, use the following
+                                       command: 
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo openssl genrsa -out custom.key 4096</code></strong></code></pre>
+                                    <p>The resulting file, <strong class="userinput"><code>custom.key</code></strong>, is a 4096--bit
+                                       RSA private key. 
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>To create a 4096-bit encrypted RSA key with password protection, use
+                                       the following command: 
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo openssl genrsa -aes128 -passout pass:abcde12345 -out custom.key 4096</code></strong></code></pre>
+                                    <p>This results in a 4096-bit RSA private key that has been encrypted
+                                       with the AES-128 cipher.
+                                    </p>
+                                    
+                                    <div class="aws-note">
+                                       <p class="aws-note">Important</p>
+                                       <p>Encrypting the key provides greater security, but because an
+                                          encrypted key requires a password, services depending on it cannot
+                                          be auto-started. Each time you use this key, you need to supply the
+                                          password &quot;abcde12345&quot; over an SSH connection. 
+                                       </p>
+                                    </div>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>RSA cryptography can be relatively slow, because its security relies
+                                       on the difficulty of factoring the product of two large two prime
+                                       numbers. However, it is possible to create keys for SSL/TLS that use
+                                       non-RSA ciphers. Keys based on the mathematics of elliptic curves are
+                                       smaller and computationally faster when delivering an equivalent level
+                                       of security. Here is an example: 
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo openssl ecparam -name prime256v1 -out custom.key -genkey</code></strong></code></pre>
+                                    <p> The output in this case is a 256-bit elliptic curve private key using
+                                       prime256v1, a &quot;named curve&quot; that OpenSSL supports. Its cryptographic
+                                       strength is slightly greater than a 2048-bit RSA key, <a href="http://csrc.nist.gov/publications/nistpubs/800-57/sp800-57_part1_rev3_general.pdf" target="_blank">according to NIST</a>.
+                                    </p>
+                                    
+                                    <div class="aws-note">
+                                       <p class="aws-note">Note</p>
+                                       <p>Not all CAs provide the same level of support for
+                                          elliptic-curve-based keys as for RSA keys.
+                                       </p>
+                                    </div>
+                                    
+                                 </li>
+                              </ol>
+                           </div>
+                           
+                           <p>Make sure that the new private key has highly restrictive ownership and
+                              permissions (owner=root, group=root, read/write for owner only). The commands
+                              would be as follows:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo chown root.root custom.key</code></strong>
+<code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo chmod 600 custom.key</code></strong>
+<code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>ls -al custom.key</code></strong></code></pre>
+                           <p>The commands above should yield the following result:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">-rw------- root root custom.key</code></pre>
+                           <p> After you have created and configured a satisfactory key, you can create a
+                              CSR. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Create a CSR using your preferred key. The example below uses
+                              <strong class="userinput"><code>custom.key</code></strong>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo openssl req -new -key custom.key -out csr.pem</code></strong></code></pre>
+                           <p>OpenSSL opens a dialog and prompts you for information shown in the table
+                              below. All of the fields except <b>Common Name</b> are optional
+                              for a basic, domain-validated host certificate. 
+                           </p>
+                           
+                           <div class="table">
+                              <p class="title"><b></b></p>
+                              <div class="table-contents">
+                                 <table id="w185aac13c13c15c10b6b7">
+                                    
+                                    <tbody><tr>
+                                       
+                                       <th>Name</th>
+                                       
+                                       <th>Description</th>
+                                       
+                                       <th>Example</th>
+                                       
+                                    </tr>
+                                    
+                                    
+                                    <tr>
+                                       
+                                       <td>Country Name</td>
+                                       
+                                       <td>The two-letter ISO abbreviation for your country.</td>
+                                       
+                                       <td>US (=United States)</td>
+                                       
+                                    </tr>
+                                    
+                                    <tr>
+                                       
+                                       <td>State or Province Name</td>
+                                       
+                                       <td>The name of the state or province where your organization is
+                                          located. This name cannot be abbreviated.
+                                       </td>
+                                       
+                                       <td>Washington</td>
+                                       
+                                    </tr>
+                                    
+                                    <tr>
+                                       
+                                       <td>Locality Name</td>
+                                       
+                                       <td>The location of your organization, such as a city.</td>
+                                       
+                                       <td>Seattle</td>
+                                       
+                                    </tr>
+                                    
+                                    <tr>
+                                       
+                                       <td>Organization Name</td>
+                                       
+                                       <td>The full legal name of your organization. Do not abbreviate
+                                          your organization name.
+                                       </td>
+                                       
+                                       <td>Example Corporation</td>
+                                       
+                                    </tr>
+                                    
+                                    <tr>
+                                       
+                                       <td>Organizational Unit Name</td>
+                                       
+                                       <td>Additional organizational information, if any.</td>
+                                       
+                                       <td>Example Dept</td>
+                                       
+                                    </tr>
+                                    
+                                    <tr>
+                                       
+                                       <td>Common Name</td>
+                                       
+                                       <td>
+                                          
+                                          <p>This value must exactly match the web address that you
+                                             expect users to type into a browser. Usually, this means a
+                                             domain name with a prefixed host name or alias in the form
+                                             <strong class="userinput"><code>www.example.com</code></strong>. In testing with
+                                             a self-signed certificate and no DNS resolution, the common
+                                             name may consist of the host name alone. CAs also offer more
+                                             expensive certificates that accept wild-card names such as
+                                             <strong class="userinput"><code>*.example.com</code></strong>.
+                                          </p>
+                                          
+                                       </td>
+                                       
+                                       <td>www.example.com</td>
+                                       
+                                    </tr>
+                                    
+                                    <tr>
+                                       
+                                       <td>Email Address</td>
+                                       
+                                       <td>The server administrator&apos;s email address.</td>
+                                       
+                                       <td>someone@example.com</td>
+                                       
+                                    </tr>
+                                    
+                                 </tbody></table>
+                              </div>
+                           </div>
+                           
+                           <p>Finally, OpenSSL prompts you for an optional challenge password. This password
+                              applies only to the CSR and to transactions between you and your CA, so follow
+                              the CA&apos;s recommendations about this and the other optional field, optional
+                              company name. The CSR challenge password has no effect on server
+                              operation.
+                           </p>
+                           
+                           <p>The resulting file <strong class="userinput"><code>csr.pem</code></strong> contains your public key,
+                              your digital signature of your public key, and the metadata that you
+                              entered.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Submit the CSR to a CA. This usually consists of opening your CSR file in a
+                              text editor and copying the contents into a web form. At this time, you may be
+                              asked to supply one or more subject alternate names (SANs) to be placed on the
+                              certificate. If <strong class="userinput"><code>www.example.com</code></strong> is the common name, then
+                              <strong class="userinput"><code>example.com</code></strong> would be a good SAN, and vice versa. A
+                              visitor to your site typing in either of these names would see an error-free
+                              connection. If your CA web form allows it, include the common name in the list
+                              of SANs. Some CAs include it automatically.
+                           </p>
+                           
+                           <p>After your request has been approved, you will receive a new host certificate
+                              signed by the CA. You may also be instructed to download an <em>intermediate certificate</em> file that contains
+                              additional certificates needed to complete the CA&apos;s chain of trust. 
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>Your CA may send you files in multiple formats intended for various
+                                 purposes. For this tutorial, you should only use a certificate file in PEM
+                                 format, which is usually (but not always) marked with a
+                                 <code>.pem</code> or <code>.crt</code> extension. If you
+                                 are uncertain which file to use, open the files with a text editor and find
+                                 the one containing one or more blocks beginning with the following:
+                              </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">- - - - -BEGIN CERTIFICATE - - - - - </code></pre><p>The file should also end with the following:</p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">- - - -END CERTIFICATE - - - - -</code></pre><p>You can also test a file at the command line as follows:</p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user certs]$ </code><strong class="userinput"><code>openssl x509 -in <em class="replaceable"><code>certificate.crt</code></em> -text</code></strong></code></pre><p>Examine the output for the tell-tale lines described above. Do not use
+                                 files ending with <code>.p7b</code>, <code>.p7c</code>, or
+                                 similar extensions.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Remove or rename the old self-signed host certificate
+                              <strong class="userinput"><code>localhost.crt</code></strong> from the
+                              <code>/etc/pki/tls/certs</code> directory and place the new
+                              CA-signed certificate there (along with any intermediate certificates).
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>There are several ways to upload your new certificate to your EC2
+                                 instance, but the most straightforward and informative way is to open a text
+                                 editor (vi, nano, notepad, etc.) on both your local computer and your
+                                 instance, and then copy and paste the file contents between them. You need
+                                 root [sudo] privileges when performing these operations on the EC2 instance.
+                                 This way, you can see immediately if there are any permission or path
+                                 problems. Be careful, however, not to add any additional lines while copying
+                                 the contents, or to change them in any way. 
+                              </p>
+                           </div>
+                           
+                           <p>From inside the <code>/etc/pki/tls/certs</code> directory, check that
+                              the file ownership, group, and permission settings match the highly restrictive
+                              Amazon Linux 2 defaults (owner=root, group=root, read/write for owner only). The
+                              commands would be as follows: 
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user certs]$ </code><strong class="userinput"><code>sudo chown root.root custom.crt</code></strong>
+<code class="prompt" copy="false">[ec2-user certs]$ </code><strong class="userinput"><code>sudo chmod 600 custom.crt</code></strong>
+<code class="prompt" copy="false">[ec2-user certs]$ </code><strong class="userinput"><code>ls -al custom.crt</code></strong></code></pre>
+                           <p>The commands above should yield the following result: </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">-rw------- root root custom.crt</code></pre>
+                           <p>The permissions for the intermediate certificate file are less stringent
+                              (owner=root, group=root, owner can write, group can read, world can read). The
+                              commands would be: 
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user certs]$ </code><strong class="userinput"><code>sudo chown root.root intermediate.crt</code></strong>
+<code class="prompt" copy="false">[ec2-user certs]$ </code><strong class="userinput"><code>sudo chmod 644 intermediate.crt</code></strong>
+<code class="prompt" copy="false">[ec2-user certs]$ </code><strong class="userinput"><code>ls -al intermediate.crt</code></strong></code></pre>
+                           <p>The commands above should yield the following result:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">-rw-r--r-- root root intermediate.crt</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>If you used a custom key to create your CSR and the resulting host
+                              certificate, remove or rename the old key from the
+                              <code>/etc/pki/tls/private/</code> directory, and then install the
+                              new key there. 
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>There are several ways to upload your custom key to your EC2 instance, but
+                                 the most straightforward and informative way is to open a text editor (vi,
+                                 nano, notepad, etc.) on both your local computer and your instance, and then
+                                 copy and paste the file contents between them. You need root [sudo]
+                                 privileges when performing these operations on the EC2 instance. This way,
+                                 you can see immediately if there are any permission or path problems. Be
+                                 careful, however, not to add any additional lines while copying the
+                                 contents, or to change them in any way.
+                              </p>
+                           </div>
+                           
+                           <p>From inside the <code>/etc/pki/tls/private</code> directory, check
+                              that the file ownership, group, and permission settings match the highly
+                              restrictive Amazon Linux 2 defaults (owner=root, group=root, read/write for owner
+                              only).
+                              The commands would be as follows: 
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user private]$ </code><strong class="userinput"><code>sudo chown root.root custom.key</code></strong>
+<code class="prompt" copy="false">[ec2-user private]$ </code><strong class="userinput"><code>sudo chmod 600 custom.key</code></strong>
+<code class="prompt" copy="false">[ec2-user private]$ </code><strong class="userinput"><code>ls -al custom.key</code></strong></code></pre>
+                           <p>The commands above should yield the following result: </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">-rw------- root root custom.key</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Because the file name of the new CA-signed host certificate
+                              (<strong class="userinput"><code>custom.crt</code></strong> in this example) probably differs from
+                              the old certificate, edit <code>/etc/httpd/conf.d/ssl.conf</code> and
+                              provide the correct path and file name using Apache&apos;s
+                              <code class="code">SSLCertificateFile</code> directive: 
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">SSLCertificateFile /etc/pki/tls/certs/custom.crt</code></pre>
+                           <p>If you received an intermediate certificate file
+                              (<strong class="userinput"><code>intermediate.crt</code></strong> in this example), provide its path
+                              and file name using Apache&apos;s <code class="code">SSLCACertificateFile</code> directive:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">SSLCACertificateFile /etc/pki/tls/certs/intermediate.crt</code></pre>
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>Some CAs combine the host certificate and the intermediate certificates in
+                                 a single file, making this directive unnecessary. Consult the instructions
+                                 provided by your CA.
+                              </p>
+                           </div>
+                           
+                           <p>If you installed a custom private key (<strong class="userinput"><code>custom.key</code></strong> in
+                              this example), provide its path and file name using Apache&apos;s
+                              <code class="code">SSLCertificateKeyFile</code> directive:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">SSLCertificateKeyFile /etc/pki/tls/private/custom.key</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Save <code>/etc/httpd/conf.d/ssl.conf</code> and restart
+                              Apache.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo systemctl restart httpd</code></strong></code></pre>
+                           </li>
+                     </ol>
+                     
+                     <h2 id="ssl_test">Step 3: Test and Harden the Security Configuration</h2>
+                     
+                     
+                     <p>After your SSL/TLS is operational and exposed to the public, you should test how
+                        secure it really is. This is easy to do using online services such as <a href="https://www.ssllabs.com/ssltest/analyze.html" target="_blank">Qualys SSL Labs</a>, which
+                        performs a free and thorough analysis of your security setup. Based on the results,
+                        you
+                        may decide to harden the default security configuration by controlling which protocols
+                        you accept, which ciphers you prefer, and which you exclude. For more information,
+                        see
+                        <a href="https://github.com/ssllabs/research/wiki/SSL-Server-Rating-Guide" target="_blank">how
+                           Qualys formulates its scores</a>.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Real-world testing is crucial to the security of your server. Small configuration
+                           errors may lead to serious security breaches and loss of data. Because recommended
+                           security practices change constantly in response to research and emerging threats,
+                           periodic security audits are essential to good server administration. 
+                        </p>
+                     </div>
+                     
+                     <p>On the <a href="https://www.ssllabs.com/ssltest/analyze.html" target="_blank">Qualys SSL
+                           Labs</a> site, type the fully qualified domain name of your server, in the form
+                        <strong class="userinput"><code>www.example.com</code></strong>. After about two minutes, you receive a grade
+                        (from A to F) for your site and a detailed breakdown of the findings. The table below
+                        summarizes the report for a domain with settings identical to the default Apache
+                        configuration on Amazon Linux 2 and a default Certbot certificate: 
+                     </p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac13c13c17b8">
+                              
+                              <tbody><tr>
+                                 
+                                 <td>Overall rating</td>
+                                 
+                                 <td>B</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>Certificate</td>
+                                 
+                                 <td>100%</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>Protocol support</td>
+                                 
+                                 <td>95%</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>Key exchange</td>
+                                 
+                                 <td>90%</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>Cipher strength</td>
+                                 
+                                 <td>90%</td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <p>The report shows that the configuration is mostly sound, with acceptable ratings for
+                        certificate, protocol support, key exchange, and cipher strength issues. The
+                        configuration also supports <a href="https://en.wikipedia.org/wiki/Forward_secrecy" target="_blank">Forward secrecy</a>, a feature of protocols that encrypt using temporary
+                        (ephemeral) session keys derived from the private key. This means in practice that
+                        attackers cannot decrypt HTTPS data even if they possess a web server&apos;s long-term
+                        private key. However, the report also flags one serious vulnerability that is
+                        responsible for lowering the overall grade, and points to an additional potential
+                        problem:
+                     </p>
+                     
+                     <div class="orderedlist">
+                        
+                        
+                        
+                        <ol>
+                           <li>
+                              
+                              <p><b>RC4 cipher support</b>: A cipher is the
+                                 mathematical core of an encryption algorithm. RC4, a fast cipher used to encrypt
+                                 SSL/TLS data-streams, is known to have several <a href="http://www.imperva.com/docs/hii_attacking_ssl_when_using_rc4.pdf" target="_blank">serious weaknesses</a>. The fix is to completely disable RC4 support.
+                                 We also specify an explicit cipher order and an explicit list of forbidden
+                                 ciphers.
+                              </p>
+                              
+                              <p>In the configuration file <code>/etc/httpd/conf.d/ssl.conf</code>,
+                                 find the section with commented-out examples for configuring
+                                 <strong class="userinput"><code>SSLCipherSuite</code></strong> and
+                                 <strong class="userinput"><code>SSLProxyCipherSuite</code></strong>.
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">#SSLCipherSuite HIGH:MEDIUM:!aNULL:!MD5
+#SSLProxyCipherSuite HIGH:MEDIUM:!aNULL:!MD5</code></pre>
+                              <p>Leave these as they are, and below them add the following directives:</p>
+                              
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>Though shown here on several lines for readability, each of these two
+                                    directives must be on a single line without spaces between the cipher
+                                    names.
+                                 </p>
+                              </div>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">SSLCipherSuite ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:
+ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:
+ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:AES:!aNULL:!eNULL:!EXPORT:!DES:
+!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA
+
+SSLProxyCipherSuite ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:
+ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:
+ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:AES:!aNULL:!eNULL:!EXPORT:!DES:
+!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA</code></pre>
+                              <p>These ciphers are a subset of the much longer list of supported ciphers in
+                                 OpenSSL. They were selected and ordered according to the following
+                                 criteria:
+                              </p>
+                              
+                              <div class="orderedlist">
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 <ol>
+                                    <li>
+                                       
+                                       <p>Support for forward secrecy</p>
+                                       
+                                    </li>
+                                    <li>
+                                       
+                                       <p>Strength</p>
+                                       
+                                    </li>
+                                    <li>
+                                       
+                                       <p>Speed</p>
+                                       
+                                    </li>
+                                    <li>
+                                       
+                                       <p>Specific ciphers before cipher families</p>
+                                       
+                                    </li>
+                                    <li>
+                                       
+                                       <p>Allowed ciphers before denied ciphers</p>
+                                       
+                                    </li>
+                                 </ol>
+                              </div>
+                              
+                              <p>The high-ranking ciphers have <em>ECDHE</em> in
+                                 their names, for <em>Elliptic Curve Diffie-Hellman Ephemeral
+                                    </em>. The term <em>ephemeral</em> indicates
+                                 forward secrecy. Also, RC4 is now among the forbidden ciphers near the
+                                 end.
+                              </p>
+                              
+                              <p>We recommend that you use an explicit list of ciphers instead relying on
+                                 defaults or terse directives whose content isn&apos;t visible.
+                              </p>
+                              
+                              <div class="aws-note">
+                                 <p class="aws-note">Important</p>
+                                 <p>The cipher list shown here is just one of many possible lists. For
+                                    instance, you might want to optimize a list for speed rather than forward
+                                    secrecy. 
+                                 </p>
+                                 <p>If you anticipate a need to support older clients, you can allow the
+                                    DES-CBC3-SHA cipher suite.
+                                 </p>
+                                 <p>Finally, each update to OpenSSL introduces new ciphers and removes support
+                                    for old ones. Keep your EC2 Amazon Linux 2 instance up-to-date, watch for security
+                                    announcements from <a href="https://www.openssl.org/" target="_blank">OpenSSL</a>,
+                                    and be alert to reports of new security exploits in the technical press. For
+                                    more information, see <a href="./elasticloadbalancing/latest/userguide//elb-security-policy-table.html" target="_blank">Predefined SSL
+                                       Security Policies for Elastic Load Balancing</a> in the
+                                    <em>Elastic Load Balancing User Guide</em>.
+                                 </p>
+                              </div>
+                              
+                              <p>Finally, uncomment the following line by removing the &quot;#&quot;:</p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">#SSLHonorCipherOrder on</code></pre>
+                              <p>This command forces the server to prefer high-ranking ciphers, including (in
+                                 this case) those that support forward secrecy. With this directive turned on,
+                                 the server tries to establish a strong secure connection before falling back to
+                                 allowed ciphers with lesser security.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p><b>Future protocol support</b>: The configuration
+                                 supports TLS versions 1.0 and 1.1, which are on a path to deprecation, with TLS
+                                 version 1.2 recommended after June 2018. To future-proof the protocol support,
+                                 open the configuration file <code>/etc/httpd/conf.d/ssl.conf</code> in a
+                                 text editor and comment out the following lines by typing &quot;#&quot; at the beginning
+                                 of each:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">#SSLProtocol all -SSLv3
+#SSLProxyProtocol all -SSLv3</code></pre>
+                              <p>Then, add the following directives: </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">SSLProtocol -SSLv2 -SSLv3 -TLSv1 -TLSv1.1 +TLSv1.2
+SSLProxyProtocol -SSLv2 -SSLv3 -TLSv1 -TLSv1.1 +TLSv1.2</code></pre>
+                              <p>These directives explicitly disable SSL versions 2 and 3, as well as TLS
+                                 versions 1.0 and 1.1. The server now refuses to accept encrypted connections
+                                 with clients using anything except supported versions of TLS. The verbose
+                                 wording in the directive communicates more clearly, to a human reader, what the
+                                 server is configured to do.
+                              </p>
+                              
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>Disabling TLS versions 1.0 and 1.1 in this manner blocks a small
+                                    percentage of outdated web browsers from accessing your site.
+                                 </p>
+                              </div>
+                              
+                           </li>
+                        </ol>
+                     </div>
+                     
+                     <p>Restart Apache after saving these changes to the edited configuration file.</p>
+                     
+                     <p>If you test the domain again on <a href="https://www.ssllabs.com/ssltest/analyze.html" target="_blank">Qualys SSL Labs</a>, you
+                        should see that the RC4 vulnerability is gone and the summary looks something like
+                        the
+                        following:
+                     </p>
+                     
+                     <div class="table">
+                        <p class="title"><b></b></p>
+                        <div class="table-contents">
+                           <table id="w185aac13c13c17c18">
+                              
+                              <tbody><tr>
+                                 
+                                 <td>Overall rating</td>
+                                 
+                                 <td>A</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>Certificate</td>
+                                 
+                                 <td>100%</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>Protocol support</td>
+                                 
+                                 <td>100%</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>Key exchange</td>
+                                 
+                                 <td>90%</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>Cipher strength</td>
+                                 
+                                 <td>90%</td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <h2 id="troubleshooting">Troubleshooting</h2>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><b>My Apache webserver doesn&apos;t start unless I supply a
+                                    password.</b></p>
+                              
+                              <p>This is expected behavior if you installed an encrypted, password-protected,
+                                 private server key. 
+                              </p>
+                              
+                              <p>You can strip the key of its encryption and password. Assuming you have a
+                                 private encrypted RSA key called <code>custom.key</code> in the default
+                                 directory, and that the passphrase on it is <strong class="userinput"><code>abcde12345</code></strong>,
+                                 run the following commands on your EC2 instance to generate an unencrypted
+                                 version of this key:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>cd /etc/pki/tls/private/</code></strong>
+<code class="prompt" copy="false">[ec2-user private]$ </code><strong class="userinput"><code>sudo cp custom.key custom.key.bak</code></strong>
+<code class="prompt" copy="false">[ec2-user private]$ </code><strong class="userinput"><code>sudo openssl rsa -in custom.key -passin pass:abcde12345 -out custom.key.nocrypt </code></strong>
+<code class="prompt" copy="false">[ec2-user private]$ </code><strong class="userinput"><code>sudo mv custom.key.nocrypt custom.key</code></strong>
+<code class="prompt" copy="false">[ec2-user private]$ </code><strong class="userinput"><code>sudo chown root.root custom.key</code></strong>
+<code class="prompt" copy="false">[ec2-user private]$ </code><strong class="userinput"><code>sudo chmod 600 custom.key</code></strong>
+<code class="prompt" copy="false">[ec2-user private]$ </code><strong class="userinput"><code>sudo systemctl restart httpd</code></strong></code></pre>
+                              <p>Apache should now start without prompting you for a password.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <b>I get errors when I run <strong class="userinput"><code>sudo yum install -y
+                                          mod_ssl</code></strong>.</b></p>
+                              
+                              <p>When you are installing the required packages for SSL, you may see errors like
+                                 these:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">Error: httpd24-tools conflicts with httpd-tools-2.2.34-1.16.amzn1.x86_64
+Error: httpd24 conflicts with httpd-2.2.34-1.16.amzn1.x86_64</code></pre>
+                              <p>This typically means that your EC2 instance is not running Amazon Linux 2. This
+                                 tutorial only supports instances freshly created from an official Amazon Linux 2
+                                 AMI.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h2 id="letsencrypt">Appendix: Let&apos;s Encrypt with Certbot on Amazon Linux
+                        2
+                     </h2>
+                     
+                     <p>The <a href="https://letsencrypt.org/" target="_blank">Let&apos;s Encrypt</a> certificate authority
+                        is the centerpiece of an effort by the Electronic Frontier Foundation (EFF) to encrypt
+                        the entire internet. In line with that goal, Let&apos;s Encrypt host certificates are
+                        designed to be created, validated, installed, and maintained with minimal human
+                        intervention. The automated aspects of certificate management are carried out by a
+                        software agent running on your webserver. After you install and configure the agent,
+                        it
+                        communicates securely with Let&apos;s Encrypt and performs administrative tasks on Apache
+                        and
+                        the key management system. This tutorial uses the free <a href="https://certbot.eff.org" target="_blank">Certbot</a> agent because it allows you either to
+                        supply a customized encryption key as the basis for your certificates, or to allow
+                        the
+                        agent itself to create a key based on its defaults. You can also configure Certbot
+                        to
+                        renew your certificates on a regular basis without human interaction, as described
+                        below
+                        in <a href="SSL-on-an-instance.html#automate_certbot">To automate Certbot</a>. For more
+                        information, consult the Certbot <a href="https://certbot.eff.org/docs/using.html" target="_blank">User Guide</a> and <a href="http://manpages.ubuntu.com/manpages/bionic/en/man1/certbot.1.html" target="_blank">man
+                           page</a>. 
+                     </p>
+                             
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/certbot-logo-7.png" alt="
+                Certbot logo
+            ">
+                        
+                        
+                        
+                     </div>
+                     
+                     <p>
+                        <b>Certbot is a client utility for EFF&apos;s Let&apos;s Encrypt
+                           certificate service.</b>
+                        
+                     </p>
+                     
+                     
+                     
+                     <p>Certbot is not officially supported on Amazon Linux 2, but is available for download
+                        and
+                        functions correctly once installed. We recommend that you make the following backups
+                        to
+                        protect your data and avoid inconvenience:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Before you begin, take a snapshot of your EBS root volume. This allows you to
+                                 restore the original state of your EC2 instance. For information about creating
+                                 EBS snapshots, see <a href="ebs-creating-snapshot.html">Creating an Amazon EBS Snapshot</a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The procedure below requires you to edit your <code>httpd.conf</code>
+                                 file, which controls Apache&apos;s operation. Certbot makes its own automated changes
+                                 to this and other configuration files. Make a backup copy of your entire
+                                 <code>/etc/httpd</code> directory in case you need to restore
+                                 it.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="prepare">Prepare to Install</h3>
+                     
+                     
+                     <p>Complete the following procedures before you install Certbot.</p>
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>Download the Extra Packages for Enterprise Linux (EPEL) 7 repository packages.
+                              These are required to supply dependencies needed by Certbot. 
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>Download EPEL with the following command:</p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo wget -r --no-parent -A &apos;epel-release-*.rpm&apos; http://dl.fedoraproject.org/pub/epel/7/x86_64/Packages/e/</code></strong></code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>Install the repository packages as follows:</p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo rpm -Uvh dl.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-*.rpm</code></strong></code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>Enable EPEL:</p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo yum-config-manager --enable epel*</code></strong></code></pre>
+                                 <p>You can confirm that EPEL is enabled with the following
+                                    command:
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo yum repolist all</code></strong>
+
+...
+
+!epel/x86_64                          Extra Packages for Enterprise Linux 7 - x86_64                              enabled: 12,184+105
+!epel-debuginfo/x86_64                Extra Packages for Enterprise Linux 7 - x86_64 - Debug                      enabled:      2,717
+!epel-source/x86_64                   Extra Packages for Enterprise Linux 7 - x86_64 - Source                     enabled:          0
+!epel-testing/x86_64                  Extra Packages for Enterprise Linux 7 - Testing - x86_64                    enabled:     959+10
+!epel-testing-debuginfo/x86_64        Extra Packages for Enterprise Linux 7 - Testing - x86_64 - Debug            enabled:        142
+!epel-testing-source/x86_64           Extra Packages for Enterprise Linux 7 - Testing - x86_64 - Source           enabled:          0</code></pre>
+                                 </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Edit the main Apache configuration file,
+                              <code>/etc/httpd/conf/httpd.conf</code>. Locate the &quot;<code class="code">listen
+                                 80</code>&quot; directive and add the following lines after it, replacing the
+                              example domain names with the actual Common Name and Subject Alternative Name
+                              (SAN) to configure:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&lt;VirtualHost *:80&gt;
+    DocumentRoot &quot;/var/www/html&quot;
+    ServerName &quot;<em class="replaceable"><code>example.com</code></em>&quot;
+    ServerAlias &quot;<em class="replaceable"><code>www.example.com</code></em>&quot;
+&lt;/VirtualHost&gt;</code></pre>
+                           <p>Save the file and restart Apache:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo systemctl restart httpd</code></strong></code></pre>
+                           </li>
+                     </ol>
+                     
+                     
+                     <h3 id="install">Install and Run Certbot</h3>
+                     
+                     <p>This procedure is based on the EFF&apos;s documentation for installing Certbot on
+                        <a href="https://certbot.eff.org/docs/install.html#alternate-installation-methods" target="_blank"> Fedora</a> and on <a href="https://certbot.eff.org/#centosrhel7-apache" target="_blank">RHEL 7</a>. It
+                        describes the default use of Certbot, resulting in a certificate based on a
+                        2048-bit RSA key. If you want to experiment with customized keys, you might
+                        start with <a href="https://www.ericlight.com/using-ecdsa-certificates-with-lets-encrypt" target="_blank">Using ECDSA certificates with Let&apos;s Encrypt</a>.
+                     </p>
+                     <ol>
+                        <li>
+                           
+                           <p>Install Certbot packages and dependencies using the following
+                              command:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo yum install -y certbot python2-certbot-apache</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Run Certbot.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>At the prompt &quot;Enter email address (used for urgent renewal and security
+                              notices),&quot; type a contact address and press Enter.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Agree to the Let&apos;s Encrypt Terms of Service at the prompt. Type &quot;A&quot; and
+                              press Enter to proceed:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Starting new HTTPS connection (1): acme-v01.api.letsencrypt.org
+
+-------------------------------------------------------------------------------
+Please read the Terms of Service at
+https://letsencrypt.org/documents/LE-SA-v1.2-November-15-2017.pdf. You must
+agree in order to register with the ACME server at
+https://acme-v01.api.letsencrypt.org/directory
+-------------------------------------------------------------------------------
+(A)gree/(C)ancel: <strong class="userinput"><code><em class="replaceable"><code>A</code></em></code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>At the authorization for EFF to put you on their mailing list, type &quot;Y&quot; or
+                              &quot;N&quot; and press Enter.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Certbot displays the Common Name and Subject Alternative Name (SAN) that
+                              you provided in the VirtualHost block:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Which names would you like to activate HTTPS for?
+-------------------------------------------------------------------------------
+1: <em class="replaceable"><code>example.com</code></em>
+2: <em class="replaceable"><code>www.example.com</code></em>
+-------------------------------------------------------------------------------
+Select the appropriate numbers separated by commas and/or spaces, or leave input
+blank to select all options shown (Enter &apos;c&apos; to cancel):</code></pre>
+                           <p>Leave the input blank and press Enter. </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Certbot displays the following output as it creates certificates and
+                              configures Apache. It then prompts you about redirecting HTTP queries to
+                              HTTPS:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Obtaining a new certificate
+Performing the following challenges:
+http-01 challenge for <em class="replaceable"><code>example.com</code></em>
+http-01 challenge for <em class="replaceable"><code>www.example.com</code></em>
+Waiting for verification...
+Cleaning up challenges
+Created an SSL vhost at /etc/httpd/conf/httpd-le-ssl.conf
+Deploying Certificate for <em class="replaceable"><code>example.com</code></em> to VirtualHost /etc/httpd/conf/httpd-le-ssl.conf
+Enabling site /etc/httpd/conf/httpd-le-ssl.conf by adding Include to root configuration
+Deploying Certificate for <em class="replaceable"><code>www.example.com</code></em> to VirtualHost /etc/httpd/conf/httpd-le-ssl.conf
+
+Please choose whether or not to redirect HTTP traffic to HTTPS, removing HTTP access.
+-------------------------------------------------------------------------------
+1: No redirect - Make no further changes to the webserver configuration.
+2: Redirect - Make all requests redirect to secure HTTPS access. Choose this for
+new sites, or if you&apos;re confident your site works on HTTPS. You can undo this
+change by editing your web server&apos;s configuration.
+-------------------------------------------------------------------------------
+Select the appropriate number [1-2] then [enter] (press &apos;c&apos; to cancel):</code></pre>
+                           <p>To allow visitors to connect to your server via unencrypted HTTP, type
+                              &quot;1&quot;. If you want to accept only encrypted connections via HTTPS, type &quot;2&quot;.
+                              Press Enter to submit your choice.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Certbot completes the configuration of Apache and reports success and
+                              other information:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Congratulations! You have successfully enabled https://example.com and
+https://www.example.com
+
+You should test your configuration at:
+https://www.ssllabs.com/ssltest/analyze.html?d=example.com
+https://www.ssllabs.com/ssltest/analyze.html?d=www.example.com
+-------------------------------------------------------------------------------
+
+IMPORTANT NOTES:
+ - Congratulations! Your certificate and chain have been saved at:
+   /etc/letsencrypt/live/<em class="replaceable"><code>example.com</code></em>/fullchain.pem
+   Your key file has been saved at:
+   /etc/letsencrypt/live/<em class="replaceable"><code>example.com</code></em>/privkey.pem
+   Your cert will expire on <em class="replaceable"><code>2018-05-28</code></em>. To obtain a new or tweaked
+   version of this certificate in the future, simply run certbot again
+   with the &quot;certonly&quot; option. To non-interactively renew *all* of
+   your certificates, run &quot;certbot renew&quot;
+ - Your account credentials have been saved in your Certbot
+   configuration directory at /etc/letsencrypt. You should make a
+   secure backup of this folder now. This configuration directory will
+   also contain certificates and private keys obtained by Certbot so
+   making regular backups of this folder is ideal.</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>After you complete the installation, test and optimize the security of
+                              your server as described in <a href="SSL-on-an-instance.html#ssl_test">Step 3: Test and Harden the Security Configuration</a>. 
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     
+                     
+                     <h3 id="automate">Configure Automated Certificate Renewal</h3>    
+                     <a id="automate_certbot"></a><p class="title"><b>To automate Certbot</b></p>
+                     <p>Certbot is designed to become an invisible, error-resistant part of your server
+                        system. By default, it generates host certificates with a short, 90-day
+                        expiration time. If you have not configured your system to call the command
+                        automatically, you must re-run the <b>certbot</b> command manually
+                        before expiration. This procedure shows how to automate Certbot by setting up a
+                        cron job.
+                     </p>
+                     <ol>
+                        <li>
+                           
+                           <p>Open <code>/etc/crontab</code> in a text editor and add a line similar
+                              to the following:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">39      1,13    *       *       *       root    certbot renew --no-self-upgrade</code></pre>
+                           <p>Here is an explanation of each component:</p>
+                           
+                           <div class="variablelist">
+                              
+                              
+                              
+                              
+                              <dl>
+                                 
+                                 <dt><span class="term"><code class="code">39 1,13 * * *</code></span></dt>
+                                 
+                                 <dd>
+                                    
+                                    <p>Schedules a command to be run at 01:39 and 13:39 every day. The
+                                       selected values are arbitrary, but the Certbot developers
+                                       suggest running the command at least twice daily. This
+                                       guarantees that any certificate found to be compromised is
+                                       promptly revoked and replaced.
+                                    </p>
+                                    
+                                 </dd>
+                                 
+                                 
+                                 <dt><span class="term"><code class="code">root</code></span></dt>
+                                 
+                                 <dd>
+                                    
+                                    <p>The command runs with root privileges.</p>
+                                    
+                                 </dd>
+                                 
+                                 
+                                 <dt><span class="term"><code class="code">certbot renew --no-self-upgrade</code>
+                                       </span></dt>
+                                 
+                                 <dd>
+                                    
+                                    <p>The command to be run. The <b>renew</b> subcommand
+                                       causes Certbot to check any previously obtained certificates and
+                                       to renew those that are approaching expiration. The
+                                       <code class="code">--no-self-upgrade</code> flag prevents Certbot from
+                                       upgrading itself without your intervention.
+                                    </p>
+                                    
+                                 </dd>
+                                 
+                              </dl>
+                           </div>
+                           
+                           <p>Save the file when done.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Restart the cron daemon:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo systemctl restart crond</code></strong></code></pre>
+                           </li>
+                     </ol>
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="hosting-wordpress.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ec2-increase-availability.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Prerequisites"><a class="pagetoc" href="#ssl_prereq">Prerequisites</a></li>
+                        <li class="pagetoc" name="Step 1: Enable SSL/TLS on the Server"><a class="pagetoc" href="#ssl_enable">Step 1: Enable SSL/TLS on the Server</a></li>
+                        <li class="pagetoc" name="Step 2: Obtain a CA-signed Certificate"><a class="pagetoc" href="#ssl_certificate">Step 2: Obtain a CA-signed Certificate</a></li>
+                        <li class="pagetoc" name="Step 3: Test and Harden the Security Configuration"><a class="pagetoc" href="#ssl_test">Step 3: Test and Harden the Security Configuration</a></li>
+                        <li class="pagetoc" name="Troubleshooting"><a class="pagetoc" href="#troubleshooting">Troubleshooting</a></li>
+                        <li class="pagetoc" name="Appendix: Let&apos;s Encrypt with Certbot on Amazon Linux
+                2"><a class="pagetoc" href="#letsencrypt">Appendix: Let&apos;s Encrypt with Certbot on Amazon Linux
+                              2</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

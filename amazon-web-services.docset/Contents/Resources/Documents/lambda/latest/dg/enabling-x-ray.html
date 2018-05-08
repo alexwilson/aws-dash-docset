@@ -1,0 +1,256 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Setting Up AWS X-Ray with Lambda  - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="lambda-x-ray.html" title="Using AWS X-Ray">
+      <link rel="prev" href="using-x-ray.html" title="Tracing Lambda-Based Applications with
+                AWS X-Ray">
+      <link rel="next" href="downstream-tracing.html" title="Emitting Trace Segments from a Lambda
+                Function">
+      <meta name="description" content="Following, you can find detailed information on how to set up X-Ray with Lambda.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/enabling-x-ray.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="troubleshooting.html">Monitoring and Troubleshooting Lambda-based Applications</a> &#xBB; <a href="lambda-x-ray.html">Using AWS X-Ray</a> &#xBB; <span class="breadcrumb">Setting Up AWS X-Ray with Lambda </span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="enabling-x-ray">Setting Up AWS X-Ray with Lambda </h1>
+                     <p>Following, you can find detailed information on how to set up X-Ray with Lambda.</p>
+                     <h2 id="lambda-xray-getready">Before You Begin</h2>
+                     
+                     
+                     <p>To enable tracing on your Lambda function using the Lambda CLI, you must first
+                        add tracing permissions to your function&apos;s execution role. To do so, take the
+                        following steps: 
+                     </p>
+                     
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Sign in to the AWS Management Console and open the IAM console at <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Find the execution role for your Lambda function.</p>
+                           </li>
+                           <li class="listitem">
+                              <p>Attach the following managed policy: <code class="code">AWSXrayWriteOnlyAccess</code></p>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>To learn more about these policies, see <a href="./xray/latest/devguide/" target="_blank">AWS
+                           X-Ray</a>.
+                     </p>
+                     
+                     <p>If you are changing the tracing mode to active using the Lambda console, tracing permissions
+                        are added automatically, as explained in the next section.
+                     </p>
+                     
+                     <h2 id="lambda-xray-tracing">Tracing</h2>
+                     
+                     
+                     <p>The path of a request through your application is tracked with a trace ID. A
+                        <em>trace</em> collects all of the segments generated by a
+                        single request, typically an HTTP GET or POST request.
+                     </p>
+                     
+                     <p>There are two modes of tracing for a Lambda function:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Pass Through: This is the default setting for all Lambda functions if you have added
+                                 tracing
+                                 permissions to your function&apos;s execution role. This approach means the
+                                 Lambda function is only traced if X-Ray has been enabled on an upstream
+                                 service, such as AWS Elastic Beanstalk.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Active: When a Lambda function has this setting, Lambda automatically samples invocation
+                                 requests, based on the sampling algorithm specified by X-Ray. 
+                              </p>
+                              
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>X-Ray applies a sampling algorithm to ensure that tracing is efficient, while still
+                                    providing a representative sample of
+                                    the requests that your application serves. The default sampling algorithm is 1 request
+                                    per minute, with 5 percent of
+                                    requests sampled past that limit. However, if the traffic volume to your function
+                                    is low, you may see an increased rate of sampling.
+                                    
+                                 </p>
+                              </div>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>You can change the tracing mode for your Lambda function by using either the
+                        Lambda Management Console or the Lambda <a href="API_CreateFunction.html">CreateFunction</a> or <a href="API_UpdateFunctionConfiguration.html">UpdateFunctionConfiguration</a> API actions. 
+                     </p>
+                     
+                     <p>If you use the Lambda console, the following applies:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>When you change a function&apos;s tracing mode to active, tracing permissions are automatically
+                                 attached to the function&apos;s execution role. If you receive an error
+                                 stating Lambda couldn&apos;t add the
+                                 <b>AWSXrayWriteOnlyAccess</b> policy to your
+                                 function&apos;s execution role, sign in to the IAM console at  <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a> and
+                                 manually add the policy.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>To enable active tracing, go to the <b>Configuration</b>
+                                 tab your function and select the <b>Enable active
+                                    tracing</b> box. 
+                              </p>
+                              
+                              <div class="mediaobject">
+                                 
+                                 <img src="../../..//img/ActiveTracing.png">
+                                 
+                                 
+                              </div>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>If you use the Lambda <a href="API_CreateFunction.html">CreateFunction</a> or <a href="API_UpdateFunctionConfiguration.html">UpdateFunctionConfiguration</a> API actions:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>If you want the tracing mode to be active, set the <code class="code">TracingConfig</code> parameter&apos;s
+                                 <code class="code">Mode</code> property to <code class="code">Active.</code> Again, any new
+                                 function has its tracing mode set to <code class="code">PassThrough</code> by
+                                 default.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Any new or updated Lambda function has its <code class="code">$LATEST </code>version set to the value you
+                                 specify.
+                              </p>
+                              
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>You receive an error if you haven&apos;t added tracing permissions to your function&apos;s execution
+                                    role. For more information, see <a href="enabling-x-ray.html#lambda-xray-getready">Before You Begin</a>. 
+                                 </p>
+                              </div>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="using-x-ray.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="downstream-tracing.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Before You Begin"><a class="pagetoc" href="#lambda-xray-getready">Before You Begin</a></li>
+                        <li class="pagetoc" name="Tracing"><a class="pagetoc" href="#lambda-xray-tracing">Tracing</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

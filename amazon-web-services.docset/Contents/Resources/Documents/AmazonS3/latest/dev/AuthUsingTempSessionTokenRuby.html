@@ -1,0 +1,236 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Making Requests Using IAM User Temporary
+         Credentials - AWS SDK for Ruby - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="AuthUsingTempSessionToken.html" title="Making Requests Using IAM User Temporary Credentials ">
+      <link rel="prev" href="AuthUsingTempSessionTokenPHP.html" title="Making Requests Using AWS Account or
+				IAM User Temporary Credentials - AWS SDK for PHP">
+      <link rel="next" href="AuthUsingTempFederationToken.html" title="Making Requests Using Federated User Temporary
+		Credentials">
+      <meta name="description" content="In Amazon S3, access your AWS resources by making requests using your IAM user temporary security credentials through Ruby classes.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/AuthUsingTempSessionTokenRuby.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="MakingRequests.html">Making Requests</a> &#xBB; <a href="MakingAuthenticatedRequests.html">Making Requests Using the AWS SDKs</a> &#xBB; <a href="AuthUsingTempSessionToken.html">Making Requests Using IAM User Temporary Credentials </a> &#xBB; <span class="breadcrumb">Making Requests Using IAM User Temporary
+                                    Credentials - AWS SDK for Ruby</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="AuthUsingTempSessionTokenRuby">Making Requests Using IAM User Temporary
+                        Credentials - AWS SDK for Ruby
+                     </h1>
+                     <p>An IAM user or an AWS account can request temporary security credentials using AWS
+                        SDK for Ruby
+                        and use them to access Amazon S3. These credentials expire after the session duration.
+                        By default,
+                        the session duration is one hour. If you use IAM user credentials, you can specify
+                        the
+                        duration (from 1 to 36 hours) when requesting the temporary security credentials.
+                        For
+                        information about requesting temporary security credentials, see <a href="MakingRequests.html">Making Requests</a>.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>If you obtain temporary security credentials using your AWS account
+                           security credentials, the temporary security credentials are valid for only one hour.
+                           You can
+                           specify session duration only if you use IAM user credentials to request a session.
+                        </p>
+                     </div>
+                     <p>The following Ruby example creates a temporary user to list the items in a specified
+                        bucket
+                        for one hour. To use this example, you must have AWS credentials that have the necessary
+                        permissions to create new AWS Security Token Service (AWS STS) clients, and list Amazon
+                        S3 buckets.
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">require &apos;aws-sdk-core&apos;
+require &apos;aws-sdk-s3&apos;
+require &apos;aws-sdk-iam&apos;
+
+
+USAGE = &lt;&lt;DOC
+
+Usage: assumerole_create_bucket_policy.rb -b BUCKET -u USER [-r REGION] [-d] [-h]
+
+  Assumes a role for USER to list items in BUCKET for one hour.
+
+  BUCKET is required and must already exist.
+
+  USER is required and if not found, is created.
+
+  If REGION is not supplied, defaults to us-west-2.
+
+  -d gives you extra (debugging) information.
+
+  -h displays this message and quits.
+
+DOC
+
+$debug = false
+
+def print_debug(s)
+  if $debug
+    puts s
+  end
+end
+
+def get_user(region, user_name, create)
+  user = nil
+  iam = Aws::IAM::Client.new(region: &apos;us-west-2&apos;)
+  
+begin
+  user = iam.create_user(user_name: user_name)
+  iam.wait_until(:user_exists, user_name: user_name)
+  print_debug(&quot;Created new user #{user_name}&quot;)
+rescue Aws::IAM::Errors::EntityAlreadyExists
+  print_debug(&quot;Found user #{user_name} in region #{region}&quot;)
+end
+end
+
+# main
+region = &apos;us-west-2&apos;
+user_name = &apos;&apos;
+bucket_name = &apos;&apos;
+
+i = 0
+
+while i &lt; ARGV.length
+  case ARGV[i]
+
+    when &apos;-b&apos;
+      i += 1
+      bucket_name = ARGV[i]
+
+    when &apos;-u&apos;
+      i += 1
+      user_name = ARGV[i]
+
+    when &apos;-r&apos;
+      i += 1
+
+      region = ARGV[i]
+
+    when &apos;-d&apos;
+      puts &apos;Debugging enabled&apos;
+      $debug = true
+
+    when &apos;-h&apos;
+      puts USAGE
+      exit 0
+
+    else
+      puts &apos;Unrecognized option: &apos; + ARGV[i]
+      puts USAGE
+      exit 1
+
+  end
+
+  i += 1
+end
+
+if bucket_name == &apos;&apos;
+  puts &apos;You must supply a bucket name&apos;
+  puts USAGE
+  exit 1
+end
+
+if user_name == &apos;&apos;
+  puts &apos;You must supply a user name&apos;
+  puts USAGE
+  exit 1
+end
+
+#Identify the IAM user that is allowed to list Amazon S3 bucket items for an hour.
+user = get_user(region, user_name, true)
+
+# Create a new Amazon STS client and get temporary credentials. This uses a role that was already created.
+creds = Aws::AssumeRoleCredentials.new(
+  client: Aws::STS::Client.new(region: region),
+  role_arn: &quot;arn:aws:iam::111122223333:role/assumedrolelist&quot;,
+  role_session_name: &quot;assumerole-s3-list&quot;
+)
+
+# Create an Amazon S3 resource with temporary credentials.
+s3 = Aws::S3::Resource.new(region: region, credentials: creds)
+
+puts &quot;Contents of &apos;%s&apos;:&quot; % bucket_name
+puts &apos;  Name =&gt; GUID&apos;
+
+ s3.bucket(bucket_name).objects.limit(50).each do |obj|
+      puts &quot;  #{obj.key} =&gt; #{obj.etag}&quot;
+end
+
+</code></pre></div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="AuthUsingTempSessionTokenPHP.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="AuthUsingTempFederationToken.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

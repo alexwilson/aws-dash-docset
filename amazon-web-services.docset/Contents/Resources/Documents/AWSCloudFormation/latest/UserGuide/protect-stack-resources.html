@@ -1,0 +1,967 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Prevent Updates to Stack
+         Resources - AWS CloudFormation
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="using-cfn-updating-stacks.html" title="AWS CloudFormation Stacks Updates">
+      <link rel="prev" href="using-cfn--stack-update-cancel.html" title="Canceling a Stack Update">
+      <link rel="next" href="using-cfn-updating-stacks-continueupdaterollback.html" title="Continue Rolling Back an
+    Update">
+      <meta name="description" content="Prevent stack resources from being unintentionally updated or deleted during a stack update by using AWS CloudFormation stack policies.">
+      <meta name="keywords" content="CloudFormation,AWSCloudFormation,resource provisioning,resource configuration,infrastructure management,CloudFormer,CloudFormation Designer,CloudFormation stack,CloudFormation stackset,CloudFormation template,change set">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS CloudFormation">
+      <meta name="guide" content="User Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/protect-stack-resources.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudformation">AWS CloudFormation</a> &#xBB; <a href="index.html">User Guide</a> &#xBB; <a href="stacks.html">Working with Stacks</a> &#xBB; <a href="using-cfn-updating-stacks.html">AWS CloudFormation Stacks Updates</a> &#xBB; <span class="breadcrumb">Prevent Updates to Stack
+                                    Resources</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="protect-stack-resources">Prevent Updates to Stack
+                        Resources
+                     </h1>
+                     <p>When you create a stack, all update actions are allowed on all
+                        resources. By default, anyone with stack update permissions can update all
+                        of the resources in the stack. During an update, some resources might
+                        require an interruption or be completely replaced, resulting in new physical
+                        IDs or completely new storage. You can prevent <a href="aws-template-resource-type-ref.html">stack resources</a> from being
+                        unintentionally updated or deleted during a stack update by using a stack
+                        policy. A stack policy is a JSON document that defines the update actions
+                        that can be performed on designated resources. 
+                     </p>
+                     <p>After you set a stack policy, all of the resources in the stack are
+                        protected by default. To allow updates on specific resources, you specify an
+                        explicit <code class="code">Allow</code> statement for those resources in your stack
+                        policy. You can define only one stack policy per stack, but, you can protect
+                        multiple resources within a single policy. A stack policy applies to all
+                        AWS CloudFormation users who attempt to update the stack. You can&apos;t associate different
+                        stack policies with different users. 
+                     </p>
+                     <p>A stack policy applies only during stack updates. It doesn&apos;t provide
+                        access controls like an AWS Identity and Access Management (IAM) policy. Use a stack
+                        policy only as
+                        a fail-safe mechanism to prevent accidental updates to specific stack
+                        resources. To control access to AWS resources or actions, use IAM.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#stack-policy-intro-example">Example Stack Policy</a></li>
+                           <li><a href="#stack-policy-reference">Defining a Stack Policy</a></li>
+                           <li><a href="#protect-stack-resources-protecting">Setting a Stack
+                                 Policy</a></li>
+                           <li><a href="#protect-stack-resources-updating"> Updating Protected
+                                 Resources</a></li>
+                           <li><a href="#protect-stack-resources-modifying">Modifying a Stack Policy </a></li>
+                           <li><a href="#stack-policy-samples">More Example Stack Policies</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="stack-policy-intro-example">Example Stack Policy</h2>
+                     
+                     
+                     <p>The following example stack policy prevents updates to the
+                        <code class="code">ProductionDatabase</code>
+                        resource:
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;Statement&quot; : [
+    {
+      &quot;Effect&quot; : &quot;Allow&quot;,
+      &quot;Action&quot; : &quot;Update:*&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Resource&quot; : &quot;*&quot;
+    },
+    {
+      &quot;Effect&quot; : &quot;Deny&quot;,
+      &quot;Action&quot; : &quot;Update:*&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Resource&quot; : &quot;LogicalResourceId/ProductionDatabase&quot;
+    }
+  ]
+}</code></pre>
+                     <p>When you set a stack policy, all resources are protected by default.
+                        To allow updates on all resources, we add an <code class="code">Allow</code> statement
+                        that allows all actions on all resources. Although the <code class="code">Allow</code>
+                        statement specifies all resources, the explicit <code class="code">Deny</code>
+                        statement overrides it for the resource with the
+                        <code class="code">ProductionDatabase</code> logical ID. This <code class="code">Deny</code>
+                        statement prevents all update actions, such as replacement or deletion, on
+                        the <code class="code">ProductionDatabase</code> resource.
+                     </p>
+                     
+                     <p>The <code class="code">Principal</code> element is required, but supports only the
+                        wild card (<code class="code">*</code>), which means that the statement applies to all
+                        <a href="./general/latest/gr/glos-chap.html#principal" target="_blank">principals</a>.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>During a stack update, AWS CloudFormation automatically updates resources that
+                           depend on other updated resources. For example, AWS CloudFormation updates a resource
+                           that references an updated resource. AWS CloudFormation makes no physical changes,
+                           such as the resources&apos; ID, to automatically updated resources, but if a
+                           stack policy is associated with those resources, you must have
+                           permission to update them.
+                        </p>
+                     </div>
+                     
+                     <h2 id="stack-policy-reference">Defining a Stack Policy</h2>
+                     
+                     
+                     <p> When you create a stack, no stack policy is set, so all update
+                        actions are allowed on all resources. To protect stack resources from
+                        update actions, define a stack policy and then set it on your stack. A
+                        stack policy is a JSON document that defines the AWS CloudFormation stack update
+                        actions that AWS CloudFormation users can perform and the resources that the actions
+                        apply to. You set the stack policy when you create a stack, by specifying
+                        a text file that contains your stack policy or typing it out. When you set
+                        a stack policy on your stack, any update not explicitly allowed is denied
+                        by default.
+                     </p>
+                     
+                     <p>You define a stack policy with five elements: <code class="code">Effect</code>,
+                        <code class="code">Action</code>, <code class="code">Principal</code>, <code class="code">Resource</code>, and
+                        <code class="code">Condition</code>. The following pseudo code shows stack policy
+                        syntax.
+                        
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;Statement&quot; : [
+    {
+      &quot;Effect&quot; : &quot;<em class="replaceable"><code>Deny_or_Allow</code></em>&quot;,
+      &quot;Action&quot; : &quot;<em class="replaceable"><code>update_actions</code></em>&quot;,
+      &quot;Principal&quot; : &quot;*&quot;,
+      &quot;Resource&quot; : &quot;LogicalResourceId/<em class="replaceable"><code>resource_logical_ID</code></em>&quot;,
+      &quot;Condition&quot; : {
+        &quot;<em class="replaceable"><code>StringEquals_or_StringLike</code></em>&quot; : {
+          &quot;ResourceType&quot; : [<em class="replaceable"><code>resource_type, ...</code></em>]
+        }
+      }
+    }&#xA0;&#xA0;
+  ]
+}</code></pre>
+                     <div class="variablelist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        <dl>
+                           
+                           <dt><span class="term">Effect</span></dt>
+                           
+                           <dd>
+                              
+                              <p>Determines whether the actions that you specify are denied or
+                                 allowed on the resource(s) that you specify. You can specify only
+                                 <code class="code">Deny</code> or <code class="code">Allow</code>, such
+                                 as:
+                              </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">&quot;Effect&quot; : &quot;Deny&quot;</code></pre>
+                              <div class="aws-note">
+                                 <p class="aws-note">Important</p>
+                                 <p>If a stack policy includes overlapping statements (both
+                                    allowing and denying updates on a resource), a <code class="code">Deny</code>
+                                    statement always overrides an <code class="code">Allow</code> statement. To
+                                    ensure that a resource is protected, use a <code class="code">Deny</code>
+                                    statement for that resource.
+                                 </p>
+                              </div>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term">Action</span></dt>
+                           
+                           <dd>
+                              
+                              <p>Specifies the update actions that are denied or allowed:</p>
+                              <div class="variablelist">
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 <dl>
+                                    
+                                    <dt><span class="term">Update:Modify</span></dt>
+                                    
+                                    <dd>
+                                       
+                                       <p>Specifies update actions during which resources might
+                                          experience no interruptions or some interruptions while
+                                          changes are being applied. All resources maintain their
+                                          physical IDs.
+                                       </p>
+                                       
+                                    </dd>
+                                    
+                                    
+                                    <dt><span class="term">Update:Replace</span></dt>
+                                    
+                                    <dd>
+                                       
+                                       <p>Specifies update actions during which resources are
+                                          recreated. AWS CloudFormation creates a new resource with the specified
+                                          updates and then deletes the old resource. Because the
+                                          resource is recreated, the physical ID of the new resource
+                                          might be different.
+                                       </p>
+                                       
+                                    </dd>
+                                    
+                                    
+                                    <dt><span class="term">Update:Delete</span></dt>
+                                    
+                                    <dd>
+                                       
+                                       <p>Specifies update actions during which resources are
+                                          removed. Updates that completely remove resources from a
+                                          stack template require this action.
+                                       </p>
+                                       
+                                    </dd>
+                                    
+                                    
+                                    <dt><span class="term">Update:*</span></dt>
+                                    
+                                    <dd>
+                                       
+                                       <p>Specifies all update actions. The asterisk is a wild
+                                          card that represents all update actions.
+                                       </p>
+                                       
+                                    </dd>
+                                    
+                                 </dl>
+                              </div>
+                              
+                              <p>The following example shows how to specify just the replace and
+                                 delete actions:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">&quot;Action&quot;&#xA0;: [&quot;Update:Replace&quot;, &quot;Update:Delete&quot;]</code></pre>
+                              <p>To allow all update actions except for one, use
+                                 <code class="code">NotAction</code>. For example, to allow all update actions
+                                 except for <code class="code">Update:Delete</code>, use <code class="code">NotAction</code>,
+                                 as shown in this
+                                 example:
+                              </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;Statement&quot; : [
+    {
+      &quot;Effect&quot; : &quot;Allow&quot;,
+      &quot;NotAction&quot; : &quot;Update:Delete&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Resource&quot; : &quot;*&quot;
+    }
+  ]
+}</code></pre>
+                              <p>For more information about stack updates, see <a href="using-cfn-updating-stacks.html">AWS CloudFormation Stacks Updates</a>.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term">Principal</span></dt>
+                           
+                           <dd>
+                              
+                              <p>The <code class="code">Principal</code> element specifies the entity that the
+                                 policy applies to. This element is required but supports only the
+                                 wild card (<code class="code">*</code>), which means that the policy applies to
+                                 all <a href="./general/latest/gr/glos-chap.html#principal" target="_blank">principals</a>.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term">Resource</span></dt>
+                           
+                           <dd>
+                              
+                              <p>Specifies the logical IDs of the resources that the policy
+                                 applies to. To specify <a href="aws-template-resource-type-ref.html">types of
+                                    resources</a>, use the <code class="code">Condition</code> element.
+                              </p>
+                              
+                              <p>To specify a single resource, use its logical ID. For
+                                 example:
+                              </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">&quot;Resource&quot; : [&quot;LogicalResourceId/myEC2instance&quot;]</code></pre>
+                              <p>You can use a wild card with logical IDs. For example, if you
+                                 use a common logical ID prefix for all related resources, you can
+                                 specify all of them with a wild
+                                 card:
+                              </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">&quot;Resource&quot; : [&quot;LogicalResourceId/CriticalResource*&quot;]</code></pre>
+                              <p>You can also use a <code class="code">Not</code> element with resources. For
+                                 example, to allow updates to all resources except for one, use a
+                                 <code class="code">NotResource</code> element to protect that
+                                 resource:
+                              </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;Statement&quot; : [
+    {
+      &quot;Effect&quot; : &quot;Allow&quot;,
+      &quot;Action&quot; : &quot;Update:*&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;NotResource&quot; : &quot;LogicalResourceId/ProductionDatabase&quot;
+    }
+  ]
+}</code></pre>
+                              <p>When you set a stack policy, any update not explicitly allowed
+                                 is denied. By allowing updates to all resources except for the
+                                 <code class="code">ProductionDatabase</code> resource, you deny updates to the
+                                 <code class="code">ProductionDatabase</code> resource.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term">Conditions</span></dt>
+                           
+                           <dd>
+                              
+                              <p>Specifies the <a href="aws-template-resource-type-ref.html">resource type</a> that the policy applies to. To specify the
+                                 logical IDs of specific resources, use the <code class="code">Resource</code>
+                                 element.
+                              </p>
+                              
+                              <p>You can specify a resource type, such as all EC2 and RDS DB
+                                 instances, as shown in the following
+                                 example:
+                              </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;Statement&quot; : [
+  {
+    &quot;Effect&quot; : &quot;Deny&quot;,
+    &quot;Principal&quot; : &quot;*&quot;,
+    &quot;Action&quot; : &quot;Update:*&quot;,
+    &quot;Resource&quot; : &quot;*&quot;,
+    &quot;Condition&quot; : {
+      &quot;StringEquals&quot; : {
+        &quot;ResourceType&quot; : [&quot;AWS::EC2::Instance&quot;, &quot;AWS::RDS::DBInstance&quot;]
+      }
+    }
+  },
+  {
+    &quot;Effect&quot; : &quot;Allow&quot;,
+    &quot;Principal&quot; : &quot;*&quot;,
+    &quot;Action&quot; : &quot;Update:*&quot;,
+    &quot;Resource&quot; : &quot;*&quot;
+  }
+  ]
+}</code></pre>
+                              <p>The <code class="code">Allow</code> statement grants update permissions to
+                                 all resources and the <code class="code">Deny</code> statement denies updates to
+                                 EC2 and RDS DB instances. The <code class="code">Deny</code> statement always
+                                 overrides allow actions.
+                              </p>
+                              
+                              <p>You can use a wild card with resource types. For example, you
+                                 can deny update permissions to all Amazon EC2 resources&#x2014;such as
+                                 instances, security groups, and subnets&#x2014;by using a wild card,
+                                 as shown in the following
+                                 example:
+                              </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">&quot;Condition&quot; : {
+  &quot;StringLike&quot; : {
+    &quot;ResourceType&quot; : [&quot;AWS::EC2::*&quot;]
+  }
+}</code></pre>
+                              <p>You must use the <code class="code">StringLike</code> condition when you use
+                                 wild cards.
+                              </p>
+                              
+                           </dd>
+                           
+                        </dl>
+                     </div>
+                     
+                     <h2 id="protect-stack-resources-protecting">Setting a Stack
+                        Policy
+                     </h2>
+                     
+                     
+                     <p>You can use the console or AWS CLI to apply a stack policy when you
+                        create a stack. You can also use the AWS CLI to apply a stack policy to an
+                        existing stack. After you apply a stack policy, you can&apos;t remove it from
+                        the stack, but you can use the AWS CLI to modify it.
+                     </p>
+                     
+                     <p>Stack policies apply to all AWS CloudFormation users who attempt to update the
+                        stack. You can&apos;t associate different stack policies with different
+                        users.
+                     </p>
+                     
+                     <p>For information about writing stack policies, see <a href="protect-stack-resources.html#stack-policy-reference">Defining a Stack Policy</a>. 
+                     </p>
+                     
+                     <p class="title"><b>To set a stack policy when you create a stack (console)</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the AWS CloudFormation console at
+                              <a href="https://console.aws.amazon.com/cloudformation/" target="_blank">https://console.aws.amazon.com/cloudformation</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>On the <b>CloudFormation Stacks</b> page, choose
+                              <b>Create Stack</b>.
+                           </p>
+                           
+                           <div class="mediaobject">
+                              
+                              <img src="../../..//img/console-create-stack-button2.png">
+                              
+                              
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the Create Stack wizard, on the <b>Options</b>
+                              page, expand the <b>Advanced</b> section.
+                           </p>
+                           
+                           <div class="mediaobject">
+                              
+                              <img src="../../..//img/console-create-stack-advanced-options.png">
+                              
+                              
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <code class="code">Browse</code>, and then choose the file that contains
+                              the stack policy, or type the policy in the <code class="code">Stack policy</code>
+                              text box.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p class="title"><b>To set a stack policy when you create a stack (CLI)</b></p>
+                     <ul>
+                        <li>
+                           
+                           <p>Use the <code class="code"><a href="./cli/latest/reference/cloudformation/create-stack.html" target="_blank">aws cloudformation create-stack</a></code> command with the
+                              <code class="code">--stack-policy-body</code> option to type in a modified policy
+                              or the <code class="code">--stack-policy-url</code> option to specify a file
+                              containing the policy. 
+                           </p>
+                           
+                        </li>
+                     </ul>
+                     
+                     <p class="title"><b>To set a stack policy on an existing stack (CLI only)</b></p>
+                     <ul>
+                        <li>
+                           
+                           <p>Use the <code class="code"><a href="./cli/latest/reference/cloudformation/set-stack-policy.html" target="_blank">aws cloudformation set-stack-policy</a></code> command with the
+                              <code class="code">--stack-policy-body</code> option to type in a modified policy
+                              or the <code class="code">--stack-policy-url</code> option to specify a file
+                              containing the policy.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>To add a policy to an existing stack, you must have permission
+                                 to the AWS CloudFormation <code class="code">SetStackPolicy</code> action.
+                              </p>
+                           </div>
+                           
+                        </li>
+                     </ul>
+                     
+                     <h2 id="protect-stack-resources-updating"> Updating Protected
+                        Resources
+                     </h2>
+                     
+                     
+                     <p>To update protected resources, create a temporary policy that
+                        overrides the stack policy and allows updates on those resources. Specify
+                        the override policy when you update the stack. The override policy doesn&apos;t
+                        permanently change the stack policy.
+                     </p>
+                     
+                     <p> To update protected resources, you must have permission to use the
+                        AWS CloudFormation <code class="code">SetStackPolicy</code> action. For information about setting
+                        AWS CloudFormation permissions, see <a href="using-iam-template.html">Controlling Access with AWS Identity and Access Management</a>.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>During a stack update, AWS CloudFormation automatically updates resources that
+                           depend on other updated resources. For example, AWS CloudFormation updates a resource
+                           that references an updated resource. AWS CloudFormation makes no physical changes,
+                           such as the resources&apos; ID, to automatically updated resources, but if a
+                           stack policy is associated with those resources, you must have
+                           permission to update them.
+                        </p>
+                     </div>
+                     
+                     <p class="title"><b>To update a protected resource (console)</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the AWS CloudFormation console at
+                              <a href="https://console.aws.amazon.com/cloudformation/" target="_blank">https://console.aws.amazon.com/cloudformation</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>Select the stack that you want to update, choose
+                              <b>Actions</b>, and then choose <b>Update
+                                 Stack</b>.
+                           </p>
+                           
+                           <div class="mediaobject">
+                              
+                              <img src="../../..//img/cfn-update-stack-initiating.png">
+                              
+                              
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>If you modified the stack template, specify the location of the
+                              updated template. If not, choose <b>Use current
+                                 template</b>.
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p>For a template stored locally on your computer, choose
+                                       <b>Upload a template to Amazon S3</b>. Choose
+                                       <b>Choose File</b> to navigate to the file, select
+                                       it, and then choose <b>Next</b>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>For a template stored in an Amazon S3 bucket, choose
+                                       <b>Specify an Amazon S3 URL</b>. Type or paste the URL
+                                       for the template, and then choose
+                                       <b>Next</b>.
+                                    </p>
+                                    
+                                    <p>If you have a template in a versioning-enabled bucket, you can
+                                       specify a specific version of the template, such as
+                                       <code class="code">https://s3.amazonaws.com/templates/myTemplate.template?versionId=123ab1cdeKdOW5IH4GAcYbEngcpTJTDW</code>.
+                                       For more information, see <a href="./AmazonS3/latest/user-guide/managing-objects-versioned-bucket.html" target="_blank">Managing Objects in a Versioning-Enabled Bucket</a> in the
+                                       <em>Amazon Simple Storage Service Console User Guide</em>.
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>If your template contains parameters, on the <b>Specify
+                                 Parameters</b> page, enter or modify the parameter values,
+                              and then choose <b>Next</b>.
+                           </p>
+                           
+                           <p>AWS CloudFormation populates each parameter with the value that is currently
+                              set in the stack except for parameters declared with the
+                              <code class="code">NoEcho</code> attribute. You can use current values for those
+                              parameters by choosing <b>Use existing value</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>On the <b>Options</b> page, choose the file that
+                              contains the overriding stack policy or type a policy, and then choose
+                              <b>Next</b>. The override policy must specify an
+                              <code class="code">Allow</code> statement for the protected resources that you
+                              want to update.
+                           </p>
+                           
+                           <p>For example, to update all protected resources, specify a
+                              temporary override policy that allows all
+                              updates:
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;Statement&quot; : [
+    {
+      &quot;Effect&quot; : &quot;Allow&quot;,
+      &quot;Action&quot; : &quot;Update:*&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Resource&quot; : &quot;*&quot;
+    }&#xA0;&#xA0;
+  ]
+}</code></pre>
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>AWS CloudFormation applies the override policy only during this update. The
+                                 override policy doesn&apos;t permanently change the stack policy. To
+                                 modify a stack policy, see <a href="protect-stack-resources.html#protect-stack-resources-modifying">Modifying a Stack Policy </a>.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Review the stack information and the changes that you
+                              submitted.
+                           </p>
+                           
+                           <p>In the <b>Review</b> section, check that you
+                              submitted the correct information, such as the correct parameter
+                              values or template URL. If your template contains IAM resources,
+                              choose <b>I acknowledge that this template may create IAM
+                                 resources</b> to specify that you want to use IAM resources
+                              in the template. For more information about using IAM resources in
+                              templates, see <a href="using-iam-template.html">Controlling Access with AWS Identity and Access Management</a>.
+                           </p>
+                           
+                           <p>In the <b>Preview your changes</b> section, check
+                              that AWS CloudFormation will make all the changes that you expect. For example,
+                              check that AWS CloudFormation adds, removes, and modifies the resources that you
+                              intended to add, remove, or modify. AWS CloudFormation generates this preview by
+                              creating a change set for the stack. For more information, see <a href="using-cfn-updating-stacks-changesets.html">Updating Stacks Using
+                                 Change Sets</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Update</b>.
+                           </p>
+                           
+                           <p>Your stack enters the <b>UPDATE_IN_PROGRESS</b>
+                              state. After it has finished updating, the state is set to
+                              <b>UPDATE_COMPLETE</b>.
+                           </p>
+                           
+                           <p>If the stack update fails, AWS CloudFormation automatically rolls back changes,
+                              and sets the state to
+                              <b>UPDATE_ROLLBACK_COMPLETE</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p class="title"><b>To update a protected resource (CLI)</b></p>
+                     <ul>
+                        <li>
+                           
+                           <p>Use the <code class="code"><a href="./cli/latest/reference/cloudformation/update-stack.html" target="_blank">aws cloudformation update-stack</a></code> command with the
+                              <code class="code">--stack-policy-during-update-body</code> option to type in a
+                              modified policy or the <code class="code">--stack-policy-during-update-url</code>
+                              option to specify a file containing the policy.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>AWS CloudFormation applies the override policy only during this update. The
+                                 override policy doesn&apos;t permanently change the stack policy. To
+                                 modify a stack policy, see <a href="protect-stack-resources.html#protect-stack-resources-modifying">Modifying a Stack Policy </a>.
+                              </p>
+                           </div>
+                           
+                        </li>
+                     </ul>
+                     
+                     <h2 id="protect-stack-resources-modifying">Modifying a Stack Policy </h2>
+                     
+                     
+                     <p>To protect additional resources or to remove protection from
+                        resources, modify the stack policy. For example, when you add a database
+                        that you want to protect to your stack, add a <code class="code">Deny</code> statement
+                        for that database to the stack policy. To modify the policy, you must have
+                        permission to use the <code class="code">SetStackPolicy</code> action.
+                     </p>
+                     
+                     <p>Use the AWS CLI to modify stack policies.</p>
+                     
+                     <p class="title"><b>To modify a stack policy (CLI)</b></p>
+                     <ul>
+                        <li>
+                           
+                           <p>Use the <code class="code"><a href="./cli/latest/reference/cloudformation/set-stack-policy.html" target="_blank">aws cloudformation set-stack-policy</a></code> command with the
+                              <code class="code">--stack-policy-body</code> option to type in a modified policy
+                              or the <code class="code">--stack-policy-url</code> option to specify a file
+                              containing the policy.
+                           </p>
+                           
+                        </li>
+                     </ul>
+                     
+                     <p>You can&apos;t delete a stack policy. To remove all protection from all
+                        resources, you modify the policy to explicitly allow all actions on all
+                        resources. The following policy allows all updates on all
+                        resources:
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;Statement&quot; : [
+    {
+      &quot;Effect&quot; : &quot;Allow&quot;,
+      &quot;Action&quot; : &quot;Update:*&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Resource&quot; : &quot;*&quot;
+    }&#xA0;&#xA0;
+  ]
+}</code></pre>
+                     <h2 id="stack-policy-samples">More Example Stack Policies</h2>
+                     
+                     
+                     <p>The following example policies show how to prevent updates to all
+                        stack resources and to specific resources, and prevent specific types of
+                        updates.
+                     </p>
+                     
+                     <h3 id="w2ab2c15c17c29c21b4">Prevent Updates to All Stack Resources</h3>
+                     
+                     
+                     <p>To prevent updates to all stack resources, the following policy
+                        specifies a <code class="code">Deny</code> statement for all update actions on all
+                        resources.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;Statement&quot; : [
+    {
+      &quot;Effect&quot; : &quot;Deny&quot;,
+      &quot;Action&quot; : &quot;Update:*&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Resource&quot; : &quot;*&quot;
+    }&#xA0;&#xA0;
+  ]
+}</code></pre>
+                     
+                     <h3 id="w2ab2c15c17c29c21b6">Prevent Updates to a Single Resource</h3>
+                     
+                     
+                     <p>The following policy denies all update actions on the database with
+                        the <code class="code">MyDatabase</code> logical ID. It allows all update actions on
+                        all other stack resources with an <code class="code">Allow</code> statement. The
+                        <code class="code">Allow</code> statement doesn&apos;t apply to the
+                        <code class="code">MyDatabase</code> resource because the <code class="code">Deny</code>
+                        statement always overrides allow actions.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;Statement&quot; : [
+    {
+      &quot;Effect&quot; : &quot;Deny&quot;,
+      &quot;Action&quot; : &quot;Update:*&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Resource&quot; : &quot;LogicalResourceId/MyDatabase&quot;
+    },
+    {
+      &quot;Effect&quot; : &quot;Allow&quot;,
+      &quot;Action&quot; : &quot;Update:*&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Resource&quot; : &quot;*&quot;
+    }
+  ]
+}</code></pre>
+                     <p>You can achieve the same result as the previous example by using a
+                        default denial. When you set a stack policy, AWS CloudFormation denies any update
+                        that is not explicitly allowed. The following policy allows updates to
+                        all resources except for the <code class="code">ProductionDatabase</code> resource,
+                        which is denied by default.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;Statement&quot; : [
+    {
+      &quot;Effect&quot; : &quot;Allow&quot;,
+      &quot;Action&quot; : &quot;Update:*&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;NotResource&quot; : &quot;LogicalResourceId/ProductionDatabase&quot;
+    }
+  ]
+}</code></pre>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>There is risk in using a default denial. If you have an
+                           <code class="code">Allow</code> statement elsewhere in the policy (such as an
+                           <code class="code">Allow</code> statement that uses a wildcard), you might
+                           unknowingly grant update permission to resources that you don&apos;t intend
+                           to. Because an explicit denial overrides any allow actions, you can
+                           ensure that a resource is protected by using a <code class="code">Deny</code>
+                           statement.
+                        </p>
+                     </div>
+                     
+                     
+                     <h3 id="w2ab2c15c17c29c21b8">Prevent Updates to All Instances of a Resource Type</h3>
+                     
+                     
+                     <p>The following policy denies all update actions on the RDS DB
+                        instance resource type. It allows all update actions on all other stack
+                        resources with an <code class="code">Allow</code> statement. The <code class="code">Allow</code>
+                        statement doesn&apos;t apply to the RDS DB instance resources because a
+                        <code class="code">Deny</code> statement always overrides allow actions.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;Statement&quot; : [
+    {
+      &quot;Effect&quot; : &quot;Deny&quot;,
+      &quot;Action&quot; : &quot;Update:*&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Resource&quot; : &quot;*&quot;,
+      &quot;Condition&quot; : {
+        &quot;StringEquals&quot; : {
+          &quot;ResourceType&quot; : [&quot;AWS::RDS::DBInstance&quot;]
+        }
+      }
+    },
+    {
+      &quot;Effect&quot; : &quot;Allow&quot;,
+      &quot;Action&quot; : &quot;Update:*&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Resource&quot; : &quot;*&quot;
+    }
+  ]
+}</code></pre>
+                     
+                     <h3 id="w2ab2c15c17c29c21c10">Prevent Replacement Updates for an Instance</h3>
+                     
+                     
+                     <p>The following policy denies updates that would cause a replacement
+                        of the instance with the <code class="code">MyInstance</code> logical ID. It allows
+                        all update actions on all other stack resources with an
+                        <code class="code">Allow</code> statement. The <code class="code">Allow</code> statement doesn&apos;t
+                        apply to the <code class="code">MyInstance</code> resource because the
+                        <code class="code">Deny</code> statement always overrides allow actions.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;Statement&quot; : [
+    {
+      &quot;Effect&quot; : &quot;Deny&quot;,
+      &quot;Action&quot; : &quot;Update:Replace&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Resource&quot; : &quot;LogicalResourceId/MyInstance&quot;
+    },
+    {
+      &quot;Effect&quot; : &quot;Allow&quot;,
+      &quot;Action&quot; : &quot;Update:*&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Resource&quot; : &quot;*&quot;
+    }
+  ]
+}</code></pre>
+                     
+                     <h3 id="w2ab2c15c17c29c21c12"> Prevent Updates to Nested Stacks</h3>
+                     
+                     
+                     <p>The following policy denies all update actions on the AWS CloudFormation stack
+                        resource type (nested stacks). It allows all update actions on all other
+                        stack resources with an <code class="code">Allow</code> statement. The
+                        <code class="code">Allow</code> statement doesn&apos;t apply to the AWS CloudFormationstack resources
+                        because the <code class="code">Deny</code> statement always overrides allow
+                        actions.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;Statement&quot; : [
+    {
+      &quot;Effect&quot; : &quot;Deny&quot;,
+      &quot;Action&quot; : &quot;Update:*&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Resource&quot; : &quot;*&quot;,
+      &quot;Condition&quot; : {
+        &quot;StringEquals&quot; : {
+          &quot;ResourceType&quot; : [&quot;AWS::CloudFormation::Stack&quot;]
+        }
+      }
+    },
+    {
+      &quot;Effect&quot; : &quot;Allow&quot;,
+      &quot;Action&quot; : &quot;Update:*&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Resource&quot; : &quot;*&quot;
+    }
+  ]
+}</code></pre>
+                     
+                     </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="using-cfn--stack-update-cancel.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="using-cfn-updating-stacks-continueupdaterollback.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Example Stack Policy"><a class="pagetoc" href="#stack-policy-intro-example">Example Stack Policy</a></li>
+                        <li class="pagetoc" name="Defining a Stack Policy"><a class="pagetoc" href="#stack-policy-reference">Defining a Stack Policy</a></li>
+                        <li class="pagetoc" name="Setting a Stack
+      Policy"><a class="pagetoc" href="#protect-stack-resources-protecting">Setting a Stack
+                              Policy</a></li>
+                        <li class="pagetoc" name=" Updating Protected
+      Resources"><a class="pagetoc" href="#protect-stack-resources-updating"> Updating Protected
+                              Resources</a></li>
+                        <li class="pagetoc" name="Modifying a Stack Policy "><a class="pagetoc" href="#protect-stack-resources-modifying">Modifying a Stack Policy </a></li>
+                        <li class="pagetoc" name="More Example Stack Policies"><a class="pagetoc" href="#stack-policy-samples">More Example Stack Policies</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS CloudFormation';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

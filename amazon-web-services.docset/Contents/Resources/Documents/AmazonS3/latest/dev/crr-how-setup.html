@@ -1,0 +1,690 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Setting Up Cross-Region Replication - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="crr.html" title="Cross-Region Replication (CRR)">
+      <link rel="prev" href="crr-what-is-isnot-replicated.html" title="What Is and Is Not Replicated">
+      <link rel="next" href="crr-additional-configs.html" title="Additional Cross-Region Replication
+      Configurations">
+      <meta name="description" content="How to set up cross-region replication for Amazon S3.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/crr-how-setup.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="crr.html">Cross-Region Replication (CRR)</a> &#xBB; <span class="breadcrumb">Setting Up Cross-Region Replication</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="crr-how-setup">Setting Up Cross-Region Replication</h1>
+                     <p>To set up cross-region replication, you need two buckets&#x2014;source and destination.
+                        These buckets must be versioning-enabled and in different AWS Regions. For a list
+                        of AWS
+                        Regions where you can create a bucket, see <a href="./general/latest/gr/rande.html#s3_region" target="_blank">Regions
+                           and Endpoints</a> in the <em>AWS General Reference</em>. You can replicate objects
+                        from a source bucket to only one destination bucket. 
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>If you have an object expiration lifecycle policy in your non-versioned bucket 
+                           and you want to maintain the same permanent delete behavior when you enable versioning,
+                           you
+                           must add a noncurrent expiration policy. The noncurrent expiration lifecycle policy
+                           will 
+                           manage the deletes of the noncurrent object versions in the version-enabled bucket.
+                           
+                           (A version-enabled bucket maintains one current and zero or more noncurrent object
+                           versions.)
+                           For more information, see
+                           <a href="./AmazonS3/latest/user-guide/create-lifecycle.html" target="_blank">
+                              How Do I Create a Lifecycle Policy for an S3 Bucket?</a> in the
+                           <em>Amazon Simple Storage Service Console User Guide</em>. 
+                        </p>
+                     </div>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#setting-repl-config-same-acctowner">Setting Up Cross-Region Replication for Buckets
+                                 Owned by the Same AWS Account</a></li>
+                           <li><a href="#setting-repl-config-crossacct">Setting Up Cross-Region Replication for Buckets
+                                 Owned by Different AWS Accounts</a></li>
+                           <li><a href="#crr-setup-related-topics">Related Topics</a></li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="setting-repl-config-same-acctowner">Setting Up Cross-Region Replication for Buckets
+                        Owned by the Same AWS Account
+                     </h2>
+                     
+                     <p>If both buckets are owned by the same AWS account, do the following to set up
+                        cross-region replication from the source to the destination bucket:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Create an IAM role in the account. This role grants Amazon S3 permission to replicate
+                                 objects on your behalf. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Add a replication configuration on the source bucket. </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h3 id="replication-iam-role-intro">Create an IAM Role</h3>
+                     
+                     <p>Amazon S3 replicates objects from the source bucket to the destination bucket. You
+                        must grant
+                        Amazon S3 necessary permissions via an IAM role.
+                     </p>
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>By default, all Amazon S3 resources&#x2014;buckets, objects, and related
+                           subresources&#x2014;are private: only the resource owner can access the resource.&#xA0;So,
+                           Amazon S3 needs permissions to read objects from the source bucket and replicate them
+                           to
+                           the destination bucket. 
+                        </p>
+                     </div>
+                     
+                     
+                     <p>When you create an IAM role, you attach the following policies to the role:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>A trust policy in which you identify Amazon S3 as the service principal who can assume
+                                 the
+                                 role, as shown: 
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{
+
+   &quot;Version&quot;:&quot;2012-10-17&quot;,
+   &quot;Statement&quot;:[
+      {
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Principal&quot;:{
+            &quot;Service&quot;:&quot;s3.amazonaws.com&quot;
+         },
+         &quot;Action&quot;:&quot;sts:AssumeRole&quot;
+      }
+   ]
+}</code></pre>
+                              
+                              <p>For more information about IAM roles, see <a href="./IAM/latest/UserGuide/id_roles.html" target="_blank">IAM Roles</a> in the <em>IAM User Guide</em>.
+                              </p>
+                              
+                              
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              
+                              <p>An access policy in which you grant the role permissions to perform the replication
+                                 task on your behalf. When Amazon S3 assumes the role, it has the permissions you specify
+                                 in
+                                 this policy.
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{
+
+
+   &quot;Version&quot;:&quot;2012-10-17&quot;,
+   &quot;Statement&quot;:[
+      {
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Action&quot;:[
+            &quot;s3:GetReplicationConfiguration&quot;,
+            &quot;s3:ListBucket&quot;
+         ],
+         &quot;Resource&quot;:[
+            &quot;arn:aws:s3:::source-bucket&quot;
+         ]
+      },
+      {
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Action&quot;:[
+
+            &quot;s3:GetObjectVersion&quot;,
+            &quot;s3:GetObjectVersionAcl&quot;,
+            &quot;s3:GetObjectVersionTagging&quot;
+
+         ],
+         &quot;Resource&quot;:[
+            &quot;arn:aws:s3:::source-bucket/*&quot;
+         ]
+      },
+      {
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Action&quot;:[
+            &quot;s3:ReplicateObject&quot;,
+            &quot;s3:ReplicateDelete&quot;,
+            &quot;s3:ReplicateTags&quot;
+         ],
+         &quot;Resource&quot;:&quot;arn:aws:s3:::destination-bucket/*&quot;
+      }
+   ]
+}</code></pre>
+                              <p>The access policy grants permissions for these actions:</p>
+                              
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       
+                                       <p>
+                                          <code class="code">s3:GetReplicationConfiguration</code> and <code class="code">s3:ListBucket</code> -
+                                          Permissions for these actions on the <em>source</em> bucket enable
+                                          Amazon S3 to retrieve replication configuration and list bucket (the current permission
+                                          model requires the <code class="code">s3:ListBucket</code> permission to access the delete
+                                          markers).
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><code class="code">s3:GetObjectVersion</code> and <code class="code">s3:GetObjectVersionAcl</code> -
+                                          Permissions for these actions granted on all objects enable Amazon S3 to get a specific
+                                          object version and access control list (ACL) on it. 
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><code class="code">s3:ReplicateObject</code> and <code class="code">s3:ReplicateDelete</code> -
+                                          Permissions for these actions on objects in the <em>destination</em>
+                                          bucket enable Amazon S3 to replicate objects or delete markers to the destination
+                                          bucket. For information about delete markers, see <a href="crr-what-is-isnot-replicated.html#crr-delete-op">Delete Operation and Cross-Region Replication</a>. 
+                                       </p>
+                                       
+                                       <div class="aws-note">
+                                          <p class="aws-note">Note</p>
+                                          <p>Permission for the <code class="code">s3:ReplicateObject</code> action on the
+                                             <em>destination</em> bucket also allows replication of object
+                                             tags. Therefore, Amazon S3 also replicates object tags (you don&apos;t need to explicitly
+                                             grant permission for the <code class="code">s3:ReplicateTags</code> action).
+                                          </p>
+                                       </div>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><code class="code">s3:GetObjectVersionTagging</code> - Permission for this action on
+                                          objects in the <em>source</em> bucket allows Amazon S3 to read object tags
+                                          for replication (see <a href="object-tagging.html">Object Tagging</a>). If Amazon S3 does not get this permission, it replicates the objects but not the
+                                          object tags, if any.
+                                       </p>
+                                       
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                              
+                              <p>For a list of Amazon S3 actions, see <a href="using-with-s3-actions.html">Specifying Permissions in a Policy</a>.
+                              </p>
+                              
+                              <div class="aws-note">
+                                 <p class="aws-note">Important</p>
+                                 <p>You can grant permissions only on resources that you have permissions for. More
+                                    specifically, the AWS account that owns the IAM role must have permissions for
+                                    the actions that it grants to the IAM role. 
+                                 </p>
+                                 <p>For example, suppose that the source bucket contains objects owned by another
+                                    AWS account. The object owner must explicitly grant the AWS account that owns
+                                    the IAM role necessary permissions via the object ACL. Otherwise, cross-region
+                                    replication of these objects fails (because Amazon S3 cannot access these objects
+                                    as per
+                                    the permissions granted in the role policy). For information about ACL permissions,
+                                    see <a href="acl-overview.html">Access Control List (ACL) Overview</a>.
+                                 </p>
+                                 <p>As you learn more about additional CRR configurations, you might grant Amazon S3
+                                    permissions for additional resources. The general rule still applies, that the AWS
+                                    account that owns the IAM role must have permissions for the actions that it
+                                    grants to the IAM role.
+                                 </p>
+                              </div>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     <h3 id="crr-add-config">Add Replication Configuration </h3>
+                     
+                     <p>When you add a replication configuration to a bucket, Amazon S3 stores the configuration
+                        as
+                        XML. The following are sample  configurations. For more information about the XML
+                        structure, see <a href="./AmazonS3/latest/API/RESTBucketPUTreplication.html" target="_blank">PUT Bucket
+                           replication</a> in the <em>Amazon Simple Storage Service API Reference</em>.
+                     </p>
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>When you add a replication configuration to a bucket, you must have the
+                           <code class="code">iam:PassRole</code> permission to be able to pass the IAM role that grants
+                           Amazon S3 replication permissions. The IAM role is specified by the Amazon Resource
+                           Name
+                           (ARN) that is used in the <code class="code">&lt;Role&gt;</code> element in the replication
+                           configuration XML. For more information, see <a href="./IAM/latest/UserGuide/id_roles_use_passrole.html" target="_blank">Granting a User Permissions to Pass a
+                              Role to an AWS Service</a> in the <em>IAM User Guide</em>.
+                        </p>
+                     </div>
+                     
+                     
+                     <div class="example">
+                        <p class="title"><b>Example 1: Replication Configuration with One Rule</b></p>
+                        <div class="example-contents">
+                           <p>Consider the following replication configuration:</p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+
+
+&lt;ReplicationConfiguration xmlns=&quot;http://s3.amazonaws.com/doc/2006-03-01/&quot;&gt;
+  &lt;Role&gt;arn:aws:iam::<em class="replaceable"><code>AcctID</code></em>:role/<em class="replaceable"><code>role-name</code></em>&lt;/Role&gt;
+  &lt;Rule&gt;
+    &lt;Status&gt;Enabled&lt;/Status&gt;
+    &lt;Prefix&gt;&lt;/Prefix&gt;
+
+    &lt;Destination&gt;&lt;Bucket&gt;arn:aws:s3:::<em class="replaceable"><code>destinationbucket</code></em>&lt;/Bucket&gt;&lt;/Destination&gt;
+
+  &lt;/Rule&gt;
+&lt;/ReplicationConfiguration&gt;</code></pre><p>In addition to the IAM role for Amazon S3 to assume, the configuration specifies one
+                              rule as follows:
+                           </p>
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p>Rule status, indicating that the rule is in effect.</p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>Empty prefix, indicating that the rule applies to all objects in the
+                                       bucket.
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>Destination bucket, where objects are replicated.</p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           <p>You can optionally specify a storage class for the object replicas as shown:</p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+
+&lt;ReplicationConfiguration xmlns=&quot;http://s3.amazonaws.com/doc/2006-03-01/&quot;&gt;
+  &lt;Role&gt;arn:aws:iam::<em class="replaceable"><code>account-id</code></em>:role/<em class="replaceable"><code>role-name</code></em>&lt;/Role&gt;
+  &lt;Rule&gt;
+    &lt;Status&gt;Enabled&lt;/Status&gt;
+    &lt;Prefix&gt;&lt;/Prefix&gt;
+    &lt;Destination&gt;
+       &lt;Bucket&gt;arn:aws:s3:::<em class="replaceable"><code>destinationbucket</code></em>&lt;/Bucket&gt;
+       &lt;StorageClass&gt;<em class="replaceable"><code>storage-class</code></em>&lt;/StorageClass&gt;
+    &lt;/Destination&gt;
+  &lt;/Rule&gt;
+&lt;/ReplicationConfiguration&gt;</code></pre><p>If the <code class="code">&lt;Rule&gt;</code> does not specify a storage class, Amazon S3 uses the storage
+                              class of the source object to create an object replica. 
+                           </p>
+                           <p>You can specify any storage class that Amazon S3 supports, except the <code class="code">GLACIER</code>
+                              storage class. If you want to transition objects to the <code class="code">GLACIER</code> storage
+                              class, you use lifecycle configuration. For more information about lifecycle management,
+                              see <a href="object-lifecycle-mgmt.html">Object Lifecycle Management</a>. For
+                              more information about storage classes, see <a href="storage-class-intro.html">Storage Classes</a>.
+                           </p>
+                        </div>
+                     </div>
+                     
+                     
+                     <div class="example">
+                        <p class="title"><b>Example 2: Replication Configuration with Two Rules </b></p>
+                        <div class="example-contents">
+                           <p>Consider the following replication configuration: </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+
+&lt;ReplicationConfiguration xmlns=&quot;http://s3.amazonaws.com/doc/2006-03-01/&quot;&gt;
+  &lt;Role&gt;arn:aws:iam::<em class="replaceable"><code>account-id</code></em>:role/<em class="replaceable"><code>role-name</code></em>&lt;/Role&gt;
+  &lt;Rule&gt;
+    &lt;Prefix&gt;Tax&lt;/Prefix&gt;
+    &lt;Status&gt;Enabled&lt;/Status&gt;
+    &lt;Destination&gt;
+      &lt;Bucket&gt;arn:aws:s3:::<em class="replaceable"><code>destinationbucket</code></em>&lt;/Bucket&gt;
+    &lt;/Destination&gt;
+     ...
+  &lt;/Rule&gt;
+ &lt;Rule&gt;
+    &lt;Prefix&gt;Project&lt;/Prefix&gt;
+    &lt;Status&gt;Enabled&lt;/Status&gt;
+    &lt;Destination&gt;
+      &lt;Bucket&gt;arn:aws:s3:::<em class="replaceable"><code>destinationbucket</code></em>&lt;/Bucket&gt;
+    &lt;/Destination&gt;
+     ...
+  &lt;/Rule&gt;
+
+
+&lt;/ReplicationConfiguration&gt;</code></pre><p>In the replication configuration:</p>
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p>Each rule specifies a different key name prefix, identifying a separate set of
+                                       objects in the source bucket to which the rule applies. Amazon S3 then replicates
+                                       only
+                                       objects with specific key prefixes. For example, Amazon S3 replicates objects with
+                                       key
+                                       names <code class="code">Tax/doc1.pdf</code> and <code class="code">Project/project1.txt</code>, but it does
+                                       not replicate any object with the key name <code class="code">PersonalDoc/documentA</code>. 
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>Both rules specify the same destination bucket.</p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>Both rules are enabled.</p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           <p>You cannot specify overlapping prefixes as shown: </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&lt;ReplicationConfiguration&gt;
+
+  &lt;Role&gt;arn:aws:iam::<em class="replaceable"><code>AcctID</code></em>:role/<em class="replaceable"><code>role-name</code></em>&lt;/Role&gt;
+
+  &lt;Rule&gt;
+    &lt;Prefix&gt;TaxDocs&lt;/Prefix&gt;
+    &lt;Status&gt;Enabled&lt;/Status&gt;
+    &lt;Destination&gt;
+      &lt;Bucket&gt;arn:aws:s3:::<em class="replaceable"><code>destinationbucket</code></em>&lt;/Bucket&gt;
+    &lt;/Destination&gt;
+  &lt;/Rule&gt;
+  &lt;Rule&gt;
+    &lt;Prefix&gt;TaxDocs/2015&lt;/Prefix&gt;
+    &lt;Status&gt;Enabled&lt;/Status&gt;
+    &lt;Destination&gt;
+      &lt;Bucket&gt;arn:aws:s3:::<em class="replaceable"><code>destinationbucket</code></em>&lt;/Bucket&gt;
+    &lt;/Destination&gt;
+  &lt;/Rule&gt;
+&lt;/ReplicationConfiguration&gt;</code></pre><p>The two rules specify overlapping prefixes <code class="code">Tax/</code> and <code class="code">Tax/2015</code>,
+                              which is not allowed.
+                           </p>
+                        </div>
+                     </div>
+                     
+                     
+                     
+                     
+                     
+                     
+                     <div class="example">
+                        <p class="title"><b>Example 3: Example Walkthrough</b></p>
+                        <div class="example-contents">
+                           <p>When both the source and destination buckets are owned by the same AWS account,
+                              you can use the Amazon S3 console to set up cross-region replication. Assuming you
+                              have
+                              source and destination buckets that are both versioning-enabled, you can use the console
+                              to add replication configuration on the source bucket. For more information, see the
+                              following topics:
+                           </p>
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="crr-walkthrough1.html">Walkthrough 1: Configure Cross-Region Replication Where Source and
+                                          Destination Buckets Are Owned by the Same AWS Account</a></p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>
+                                       <a href="./AmazonS3/latest/user-guide/CreatingaBucket.html" target="_blank">Enabling Cross-Region
+                                          Replication</a> in the <em>Amazon Simple Storage Service Console User Guide</em></p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                        </div>
+                     </div>
+                     
+                       
+                     
+                     
+                     <h2 id="setting-repl-config-crossacct">Setting Up Cross-Region Replication for Buckets
+                        Owned by Different AWS Accounts
+                     </h2>
+                     
+                     <p>When setting up replication configuration in a cross-account scenario, in addition
+                        to doing
+                        the same configuration as outlined in the <a href="./AmazonS3/latest/dev/crr-how-setup.html#setting-repl-config-same-acctowner" target="_blank">preceding section</a>, the destination bucket owner must
+                        also add a bucket policy to grant the source bucket owner permissions to perform replication
+                        actions. 
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+   &quot;Version&quot;:&quot;2008-10-17&quot;,
+   &quot;Id&quot;:&quot;PolicyForDestinationBucket&quot;,
+   &quot;Statement&quot;:[
+      {
+         &quot;Sid&quot;:&quot;1&quot;,
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Principal&quot;:{
+            &quot;AWS&quot;:&quot;<em class="replaceable"><code>SourceBucket-AcctID</code></em>&quot;
+         },
+         &quot;Action&quot;:[
+            &quot;s3:ReplicateDelete&quot;,
+            &quot;s3:ReplicateObject&quot;
+         ],
+         &quot;Resource&quot;:&quot;arn:aws:s3:::<em class="replaceable"><code>destinationbucket</code></em>/*&quot;
+      },
+      {
+         &quot;Sid&quot;:&quot;2&quot;,
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Principal&quot;:{
+            &quot;AWS&quot;:&quot;<em class="replaceable"><code><em class="replaceable"><code>SourceBucket-AcctID</code></em></code></em>&quot;
+         },
+         &quot;Action&quot;:&quot;s3:List*&quot;,
+         &quot;Resource&quot;:&quot;arn:aws:s3:::<em class="replaceable"><code>destinationbucket</code></em>&quot;
+      }
+   ]
+}</code></pre>
+                     
+                     <p>For an example, see <a href="crr-walkthrough-2.html">Walkthrough 2: Configure Cross-Region Replication Where Source
+                           and Destination Buckets Are Owned by Different AWS Accounts</a>.
+                     </p>
+                     
+                     <p>If objects in the source bucket are tagged, note the following:</p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>If the source bucket owner grants Amazon S3 permission for the
+                                 <code class="code">s3:GetObjectVersionTagging</code> and <code class="code">s3:ReplicateTags</code> actions to
+                                 replicate object tags (via the IAM role), Amazon S3 replicates the tags along with
+                                 the
+                                 objects. For information about the IAM role, see <a href="crr-how-setup.html#replication-iam-role-intro">Create an IAM Role</a>. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>If the destination bucket owner does not want the tags replicated, the owner can
+                                 add the following statement to the destination bucket policy to explicitly deny
+                                 permission for the <code class="code">s3:ReplicateTags</code> action.
+                              </p>
+                              
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">...
+   &quot;Statement&quot;:[
+      {
+         &quot;Effect&quot;:&quot;Deny&quot;,
+         &quot;Principal&quot;:{
+            &quot;AWS&quot;:&quot;arn:aws:iam::<em class="replaceable"><code>SourceBucket-AcctID</code></em>:root&quot;
+         },
+         &quot;Action&quot;:[&quot;<code class="code" copy="true">s3:ReplicateTags</code>&quot;],
+         &quot;Resource&quot;:&quot;arn:aws:s3:::<em class="replaceable"><code>destinationbucket</code></em>/*&quot;
+      }
+   ]
+...</code></pre>
+                              
+                              
+                              </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     
+                     <h3 id="change-replica-ownership">Change Replica Ownership</h3>
+                     
+                     <p>You can also optionally direct Amazon S3 to change the replica ownership to the AWS
+                        account
+                        that owns the destination bucket. This is also referred to as the <em>owner
+                           override</em> option of the replication configuration. For more information, see,
+                        <a href="crr-change-owner.html">Cross-Region Replication Additional Configuration: Change
+                           Replica Owner</a>.
+                     </p>
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     <h2 id="crr-setup-related-topics">Related Topics</h2>
+                     
+                     <p><a href="crr.html">Cross-Region Replication (CRR)</a></p>
+                     
+                     <p><a href="crr-what-is-isnot-replicated.html">What Is and Is Not Replicated</a></p>
+                     
+                     <p><a href="crr-walkthrough1.html">Walkthrough 1: Configure Cross-Region Replication Where Source and
+                           Destination Buckets Are Owned by the Same AWS Account</a></p>
+                     
+                     <p><a href="crr-walkthrough-2.html">Walkthrough 2: Configure Cross-Region Replication Where Source
+                           and Destination Buckets Are Owned by Different AWS Accounts</a></p>
+                     
+                     <p><a href="crr-status.html">Finding the Cross-Region Replication Status </a></p>
+                     
+                     <p><a href="crr-troubleshoot.html">Troubleshooting Cross-Region Replication in Amazon S3</a></p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="crr-what-is-isnot-replicated.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="crr-additional-configs.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Setting Up Cross-Region Replication for Buckets
+        Owned by the Same AWS Account"><a class="pagetoc" href="#setting-repl-config-same-acctowner">Setting Up Cross-Region Replication for Buckets
+                              Owned by the Same AWS Account</a></li>
+                        <li class="pagetoc" name="Setting Up Cross-Region Replication for Buckets
+        Owned by Different AWS Accounts"><a class="pagetoc" href="#setting-repl-config-crossacct">Setting Up Cross-Region Replication for Buckets
+                              Owned by Different AWS Accounts</a></li>
+                        <li class="pagetoc" name="Related Topics"><a class="pagetoc" href="#crr-setup-related-topics">Related Topics</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

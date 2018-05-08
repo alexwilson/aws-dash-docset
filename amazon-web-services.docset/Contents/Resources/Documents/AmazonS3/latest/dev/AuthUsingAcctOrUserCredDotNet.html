@@ -1,0 +1,231 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Making Requests Using AWS Account or IAM
+         User Credentials - AWS SDK for .NET - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="AuthUsingAcctOrUserCredentials.html" title="Making Requests Using AWS
+      Account or IAM User Credentials">
+      <link rel="prev" href="AuthUsingAcctOrUserCredJava.html" title="Making Requests Using AWS Account or IAM User
+        Credentials - AWS SDK for Java">
+      <link rel="next" href="AuthUsingAcctOrUserCredPHP3.html" title="Making Requests Using AWS Account or IAM User
+          Credentials - AWS SDK for PHP">
+      <meta name="description" content="In Amazon S3, make requests using your AWS account or IAM user credentials to access your AWS resources with .NET classes.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/AuthUsingAcctOrUserCredDotNet.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="MakingRequests.html">Making Requests</a> &#xBB; <a href="MakingAuthenticatedRequests.html">Making Requests Using the AWS SDKs</a> &#xBB; <a href="AuthUsingAcctOrUserCredentials.html">Making Requests Using AWS
+                                    Account or IAM User Credentials</a> &#xBB; <span class="breadcrumb">Making Requests Using AWS Account or IAM
+                                    User Credentials - AWS SDK for .NET</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="AuthUsingAcctOrUserCredDotNet">Making Requests Using AWS Account or IAM
+                        User Credentials - AWS SDK for .NET
+                     </h1>
+                     <p>To send authenticated requests using your AWS account or IAM user credentials:</p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Create an instance of the <code class="code">AmazonS3Client</code> class. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Execute one of the <code class="code">AmazonS3Client</code> methods to send requests to Amazon S3. The
+                                 client generates the necessary signature from the credentialsthat  you provide and
+                                 includes it in the request it sends to Amazon S3. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <p>The following C# example shows how to perform the preceding tasks. For information
+                        about
+                        running the .NET examples in this guide and for instructions on how to store your
+                        credentials
+                        in a configuration file, see <a href="UsingTheMPDotNetAPI.html#TestingDotNetApiSamples">Running the Amazon S3 .NET Code Examples</a>.
+                     </p>
+                     <div class="example">
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">using Amazon.S3;
+using Amazon.S3.Model;
+using System;
+using System.Threading.Tasks;
+
+namespace Amazon.DocSamples.S3
+{
+    class MakeS3RequestTest
+    {
+        private const string bucketName = &quot;*** bucket name ***&quot;; 
+        // Specify your bucket region (an example region is shown).
+        private static readonly RegionEndpoint bucketRegion = RegionEndpoint.USWest2;
+        private static IAmazonS3 client;
+
+        public static void Main()
+        {
+            using (client = new AmazonS3Client(bucketRegion))
+            {
+                Console.WriteLine(&quot;Listing objects stored in a bucket&quot;);
+                ListingObjectsAsync().Wait();
+            }
+        }
+
+        static async Task ListingObjectsAsync()
+        {
+            try
+            {
+                ListObjectsRequest request = new ListObjectsRequest
+                {
+                    BucketName = bucketName,
+                    MaxKeys = 2
+                };
+                do
+                {
+                    ListObjectsResponse response = await client.ListObjectsAsync(request);
+                    // Process the response.
+                    foreach (S3Object entry in response.S3Objects)
+                    {
+                        Console.WriteLine(&quot;key = {0} size = {1}&quot;,
+                            entry.Key, entry.Size);
+                    }
+
+                    // If the response is truncated, set the marker to get the next 
+                    // set of keys.
+                    if (response.IsTruncated)
+                    {
+                        request.Marker = response.NextMarker;
+                    }
+                    else
+                    {
+                        request = null;
+                    }
+                } while (request != null);
+            }
+            catch (AmazonS3Exception e)
+            {
+                Console.WriteLine(&quot;Error encountered on server. Message:&apos;{0}&apos; when writing an object&quot;, e.Message);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(&quot;Unknown encountered on server. Message:&apos;{0}&apos; when writing an object&quot;, e.Message);
+            }
+        }
+    }
+}</code></pre></div>
+                     </div>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You can create the <code class="code">AmazonS3Client</code> client without providing your security
+                           credentials. Requests sent using this client are anonymous requests, without a signature.
+                           Amazon S3 returns an error if you send anonymous requests for a resource that is not
+                           publicly
+                           available.
+                        </p>
+                     </div>
+                     <p>For working examples, see <a href="UsingObjects.html">Working with Amazon S3 Objects</a> and
+                        <a href="UsingBucket.html">Working with Amazon S3 Buckets</a>. You can test these examples using
+                        your AWS Account or an IAM user credentials. 
+                     </p>
+                     <p>For example, to list all the object keys in your bucket, see <a href="ListingObjectKeysUsingNetSDK.html">Listing Keys Using the AWS SDK for .NET</a>. 
+                     </p>
+                     
+                     <h2 id="RelatedResources003">Related Resources</h2>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="UsingAWSSDK.html">Using the AWS SDKs, CLI, and Explorers</a></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="AuthUsingAcctOrUserCredJava.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="AuthUsingAcctOrUserCredPHP3.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Related Resources"><a class="pagetoc" href="#RelatedResources003">Related Resources</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

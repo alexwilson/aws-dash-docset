@@ -1,0 +1,436 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Walkthrough: Refer to Resource Outputs in Another
+         AWS CloudFormation Stack - AWS CloudFormation
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="CHAP_Using.html" title="Walkthroughs">
+      <link rel="prev" href="peer-with-vpc-in-another-account.html" title="Walkthrough: Peer with an Amazon VPC in Another AWS Account">
+      <link rel="next" href="example-templates-autoscaling.html" title="Walkthrough: Create a Scalable, Load-balancing
+    Web Server">
+      <meta name="description" content="Use the Export output field and the Fn::ImportValue intrinsic function to create cross-stack references across AWS CloudFormation stacks.">
+      <meta name="keywords" content="CloudFormation,AWSCloudFormation,resource provisioning,resource configuration,infrastructure management,CloudFormer,CloudFormation Designer,CloudFormation stack,CloudFormation stackset,CloudFormation template,change set">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS CloudFormation">
+      <meta name="guide" content="User Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/walkthrough-crossstackref.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudformation">AWS CloudFormation</a> &#xBB; <a href="index.html">User Guide</a> &#xBB; <a href="template-guide.html">Working with AWS CloudFormation Templates</a> &#xBB; <a href="CHAP_Using.html">Walkthroughs</a> &#xBB; <span class="breadcrumb">Walkthrough: Refer to Resource Outputs in Another
+                                    AWS CloudFormation Stack</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="walkthrough-crossstackref">Walkthrough: Refer to Resource Outputs in Another
+                        AWS CloudFormation Stack
+                     </h1>
+                     <p>To export resources from one AWS CloudFormation stack to another, create a cross-stack
+                        reference.
+                        Cross-stack references let you use a layered or service-oriented architecture. Instead
+                        of
+                        including all resources in a single stack, you create related AWS resources in separate
+                        stacks; then you can refer to required resource outputs from other stacks. By restricting
+                        cross-stack references to outputs, you control the parts of a stack that are referenced
+                        by other
+                        stacks.
+                     </p>
+                     <p>For example, you might have a network stack with a VPC, a security group, and a subnet
+                        for
+                        public web applications, and a separate public web application stack. To ensure that
+                        the web
+                        applications use the security group and subnet from the network stack, you create
+                        a cross-stack
+                        reference that allows the web application stack to reference resource outputs from
+                        the network
+                        stack. With a cross-stack reference, owners of the web application stacks don&apos;t need
+                        to create
+                        or maintain networking rules or assets.
+                     </p>
+                     <p>To create a cross-stack reference, use the <code class="code">Export</code> output field to flag the
+                        value of a resource output for export. Then, use the <code class="code">Fn::ImportValue</code> intrinsic
+                        function to import the value. For more information, see <a href="outputs-section-structure.html">Outputs</a> and
+                        <a href="intrinsic-function-reference-importvalue.html">Fn::ImportValue</a>.
+                     </p>
+                     <p>Prerequisites</p>
+                     <p>Before you begin this walkthrough, check that you have <a href="https://aws.amazon.com/iam/" target="_blank">AWS Identity and Access Management (IAM) permissions</a> to use all of the
+                        following services: Amazon VPC, Amazon EC2, and AWS CloudFormation.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>AWS CloudFormation is a free service. However, you are charged for the AWS resources
+                           that you
+                           include in your stacks at the current rate for each one. For more information about
+                           AWS
+                           pricing, see <a href="http://aws.amazon.com" target="_blank">the detail page for each
+                              product</a>.
+                        </p>
+                        <p>The following restrictions apply to cross-stack references:</p>
+                        <div class="itemizedlist">
+                           
+                           
+                           
+                           
+                           
+                           
+                           <ul class="itemizedlist" type="disc">
+                              <li class="listitem">
+                                 
+                                 <p>For each AWS account, <code class="code">Export</code> names must be unique within a region.
+                                 </p>
+                                 
+                              </li>
+                              <li class="listitem">
+                                 
+                                 <p>You can&apos;t create cross-stack references across regions. You can use the intrinsic
+                                    function 
+                                    <code class="code">Fn::ImportValue</code> to import only values that have been exported within the same region.
+                                 </p>
+                                 
+                              </li>
+                              <li class="listitem">
+                                 
+                                 <p>For outputs, the value of the <code class="code">Name</code> property of an <code class="code">Export</code> can&apos;t use <code class="code">Ref</code> or <code class="code">GetAtt</code> functions that depend on a resource.
+                                 </p>
+                                 
+                                 <p>Similarly, the <code class="code">ImportValue</code> function can&apos;t include <code class="code">Ref</code> or <code class="code">GetAtt</code> functions that depend on a resource.
+                                 </p>        
+                                 
+                              </li>
+                              <li class="listitem">
+                                 
+                                 <p>You can&apos;t delete a stack if another stack references one of its outputs.</p>
+                                 
+                              </li>
+                              <li class="listitem">
+                                 
+                                 <p>You can&apos;t modify or remove an output value that is referenced by another stack.</p>
+                                 
+                              </li>
+                           </ul>
+                        </div>
+                     </div>
+                     <h2 id="walkthrough-crossstackref-create-vpc-stack">Step 1: Use a Sample Template to
+                        Create a Network Stack
+                     </h2>
+                     
+                     
+                     <p>The network stack contains the VPC, security group, and subnet that you will use in
+                        the
+                        web application stack. In addition to these resources, the network stack creates an
+                        Internet
+                        gateway and routing tables to enable public access.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You must create this stack before you create the web application stack. If you create
+                           the web application stack first, it won&apos;t have a security group or subnet.
+                        </p>
+                     </div>
+                     
+                     <p class="title"><b>To create the network stack</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Open the <a href="https://console.aws.amazon.com/cloudformation/" target="_blank">AWS CloudFormation console</a> and
+                              choose <b>Create Stack</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Select Template</b> section, choose <b>Upload a
+                                 template to Amazon S3</b>, choose <b>Specify an Amazon S3 template
+                                 URL</b>, and then copy and paste the following URL into the text box:
+                              <code class="code"><a href="https://s3.amazonaws.com/cloudformation-examples/user-guide/cross-stack/SampleNetworkCrossStack.template" target="_blank">https://s3.amazonaws.com/cloudformation-examples/user-guide/cross-stack/SampleNetworkCrossStack.template</a>
+                                 </code>
+                              
+                           </p>
+                           
+                           <p>The link provides the location of the network stack template. To see the resources
+                              that the stack will create, choose the link, which opens the template. In the outputs
+                              section, you can see the networking resources that the sample template exports. The
+                              names
+                              of the exported resources are prefixed with the stack&apos;s name in case you export networking
+                              resources from other stacks. When users import networking resources, they can specify
+                              from
+                              which stack the resources are imported.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>After reviewing the template, choose <b>Next</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Stack name</b>, type
+                              <strong class="userinput"><code>SampleNetworkCrossStack</code></strong>, and then choose
+                              <b>Next</b>.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>Record the name of this stack. You&apos;ll need the stack name when you launch the web
+                                 application stack.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Next</b>. For this walkthrough, you don&apos;t need to add tags or
+                              specify advanced settings.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Ensure that the stack name and template URL are correct, and then choose
+                              <b>Create</b>.
+                           </p>
+                           
+                           <p>It might take several minutes for AWS CloudFormation to create your stack. Wait until
+                              all resources
+                              have been successfully created before proceeding to create the web application
+                              stack.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>To monitor progress, view the stack events. For more information, see <a href="cfn-console-view-stack-data-resources.html">Viewing Stack Data and Resources</a>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="walkthrough-crossstackref-create-ec2-stack">Step 2: Use a Sample Template to
+                        Create a Web Application Stack
+                     </h2>
+                     
+                     
+                     <p>The web application stack creates an EC2 instance that uses the security group and
+                        subnet
+                        from the network stack.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You must create this stack in the same region as the network stack.</p>
+                     </div>
+                     
+                     <p class="title"><b>To create the web application stack</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Open the <a href="https://console.aws.amazon.com/cloudformation/" target="_blank">AWS CloudFormation console</a>, and
+                              choose <b>Create Stack</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Select Template</b> section, choose <b>Specify an Amazon S3
+                                 template URL</b>, and then copy and paste the following URL into the text box:
+                              <a href="https://s3.amazonaws.com/cloudformation-examples/user-guide/cross-stack/SampleWebAppCrossStack.template" target="_blank">https://s3.amazonaws.com/cloudformation-examples/user-guide/cross-stack/SampleWebAppCrossStack.template</a>
+                              
+                           </p>
+                           
+                           <p>The link provides the location of the web application template. To see the resources
+                              that the stack will create, choose the link, which will open the template. In the
+                              resources section, view the EC2 instance&apos;s properties. You can see how the networking
+                              resources are imported from another stack by using the <code class="code">Fn::ImportValue</code>
+                              function.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>After reviewing the template, choose <b>Next</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Stack name</b>, type
+                              <strong class="userinput"><code>SampleWebAppCrossStack</code></strong>. In the <b>Parameters</b>
+                              section, use the default value for the <b>NetworkStackName</b> parameter,
+                              and then choose <b>Next</b>.
+                           </p>
+                           
+                           <p>The sample template uses the parameter value to specify from which stack to import
+                              values.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Next</b>. For this walkthrough, you don&apos;t need to add tags or
+                              specify advanced settings.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Ensure that the stack name and template URL are correct, and then choose
+                              <b>Create</b>.
+                           </p>
+                           
+                           <p>It might take several minutes for AWS CloudFormation to create your stack.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>After the stack has been created, view its resources and note the instance ID. For
+                              more information on viewing stack resources, see <a href="cfn-console-view-stack-data-resources.html">Viewing Stack Data and Resources</a>.
+                           </p>
+                           
+                           <p>To verify the instance&apos;s security group and subnet, view the instance&apos;s properties
+                              in
+                              the <a href="https://console.aws.amazon.com/ec2/" target="_blank">Amazon EC2 console</a>. If the instance uses the
+                              security group and subnet from the <code class="code">SampleNetworkCrossStack</code> stack, you have
+                              successfully created a cross-stack reference.
+                           </p>
+                           
+                           <p>Use the console to view the stack outputs and the example website URL to verify that
+                              the web application is running. For more information, see <a href="cfn-console-view-stack-data-resources.html">Viewing Stack Data and Resources</a>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="walkthrough-crossstackref-clean-up">Step 3: Clean Up Your Resources</h2>
+                     
+                     
+                     <p>To ensure that you are not charged for unwanted services, delete the stacks.</p>
+                     
+                     <p class="title"><b>To delete the stacks</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>In the AWS CloudFormation console, choose the SampleWebAppCrossStack stack.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Actions</b>, and then choose <b>Delete
+                                 Stack</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the confirmation message, choose <b>Yes, Delete</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>After the stack has been deleted, repeat the same steps for the
+                              SampleNetworkCrossStack stack.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>Wait until AWS CloudFormation completely deletes the SampleWebAppCrossStack stack.
+                                 If the EC2
+                                 instance is still running in the VPC, AWS CloudFormation won&apos;t delete the VPC in the
+                                 SampleNetworkCrossStack stack.
+                              </p>
+                           </div>
+                           
+                           <p>All of the resources that you have previously created are deleted.</p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p>Use the sample templates from this walkthrough to build your own cross-referenced
+                        stacks.
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="peer-with-vpc-in-another-account.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="example-templates-autoscaling.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Step 1: Use a Sample Template to
+      Create a Network Stack"><a class="pagetoc" href="#walkthrough-crossstackref-create-vpc-stack">Step 1: Use a Sample Template to
+                              Create a Network Stack</a></li>
+                        <li class="pagetoc" name="Step 2: Use a Sample Template to
+      Create a Web Application Stack"><a class="pagetoc" href="#walkthrough-crossstackref-create-ec2-stack">Step 2: Use a Sample Template to
+                              Create a Web Application Stack</a></li>
+                        <li class="pagetoc" name="Step 3: Clean Up Your Resources"><a class="pagetoc" href="#walkthrough-crossstackref-clean-up">Step 3: Clean Up Your Resources</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS CloudFormation';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

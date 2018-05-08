@@ -1,0 +1,708 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Build an API Gateway API with AWS Integration - Amazon API Gateway</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="getting-started.html" title="Getting Started with Amazon API Gateway">
+      <link rel="prev" href="getting-started-with-private-integration.html" title="Build an API with API Gateway Private Integration">
+      <link rel="next" href="how-to-create-api.html" title="Creating an API in Amazon API Gateway">
+      <meta name="description" content="Learn how to integrate API Gateway with an AWS service proxy.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon API Gateway">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/apigateway/latest/developerguide/getting-started-aws-proxy.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/apigateway">Amazon API Gateway</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="getting-started.html">Getting Started with Amazon API Gateway</a> &#xBB; <span class="breadcrumb">Build an API Gateway API with AWS Integration</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="getting-started-aws-proxy">Build an API Gateway API with AWS Integration</h1>
+                     <p> Both the <a href="api-gateway-create-api-as-simple-proxy-for-lambda.html">
+                           Build an API Gateway API with Lambda Proxy Integration 
+                           </a> and <a href="getting-started-with-lambda-integration.html">Build an API Gateway API with Lambda Integration</a> topics describe how to
+                        create an API Gateway API to expose the integrated Lambda function. In addition, you
+                        can create an
+                        API Gateway API to expose other AWS services, such as Amazon SNS, Amazon S3, Amazon
+                        Kinesis, and even AWS Lambda.
+                        This is made possible by the <code class="code">AWS</code> integration. The Lambda integration or the
+                        Lambda proxy integration is a special case, where the Lambda function invocation is
+                        exposed
+                        through the API Gateway API. 
+                     </p>
+                     <p> All AWS services support dedicated APIs to expose their features. However, the
+                        application protocols or programming interfaces are likely to differ from service
+                        to
+                        service. An API Gateway API with the <code class="code">AWS</code> integration has the advantage of providing a
+                        consistent application protocol for your client to access different AWS services.
+                        
+                     </p>
+                     <p> In this walkthrough, we create an API to expose Amazon SNS. For more examples of
+                        integrating
+                        an API with other AWS services, see <a href="api-gateway-tutorials.html">Samples and Tutorials</a>. 
+                     </p>
+                     <p> Unlike the Lambda proxy integration, there is no corresponding proxy integration
+                        for other
+                        AWS services. Hence, an API method is integrated with a single AWS action. For more
+                        flexibility, similar to the proxy integration, you can set up a Lambda proxy integration.
+                        The
+                        Lambda function then parses and processes requests for other AWS actions. 
+                     </p>
+                     <p> API Gateway does not retry when the endpoint times out. The API caller must implement
+                        retry
+                        logic to handle endpoint timeouts. 
+                     </p>
+                     <p> This walkthrough builds on the instructions and concepts in <a href="getting-started-with-lambda-integration.html">Build an API Gateway API with Lambda Integration</a>.If you have not yet
+                        completed that walkthrough, we suggest that you do it first. 
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#getting-started-aws-proxy-prerequisites">Prerequisites</a></li>
+                           <li><a href="#getting-started-aws-proxy-add-resources">Step 1: Create the
+                                 Resource</a></li>
+                           <li><a href="#getting-started-aws-proxy-add-methods">Step 2: Create the GET
+                                 Method</a></li>
+                           <li><a href="#getting-started-aws-proxy-add-roles">Step 3: Create the AWS Service Proxy
+                                 Execution Role</a></li>
+                           <li><a href="#getting-started-aws-proxy-set-methods">Step 4: Specify Method Settings and
+                                 Test the Method</a></li>
+                           <li><a href="#getting-started-aws-proxy-deploy">Step 5: Deploy the API</a></li>
+                           <li><a href="#getting-started-aws-proxy-test">Step 6: Test the API</a></li>
+                           <li><a href="#getting-started-aws-proxy-clean-up">Step 7: Clean Up</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="getting-started-aws-proxy-prerequisites">Prerequisites</h2>
+                     
+                     
+                     <p>Before you begin this walkthrough, do the following:</p>
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>Complete the steps in <a href="getting-started.html#setting-up">Get Ready to Build an API Gateway API</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Ensure that the IAM user has access to create policies and roles in IAM.
+                              You need to create an IAM policy and role in this walkthrough.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Create a new API named <code class="literal">MyDemoAPI</code>.
+                              For more information, see <a href="api-gateway-create-api-step-by-step.html">Build an API with HTTP Custom
+                                 Integration</a>.
+                              
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Deploy the API at least once to a stage named <code class="literal"><code class="code">test</code></code>. For more information, see <a href="getting-started-lambda-non-proxy-integration.html#getting-started-deploy-api">Deploy the API</a> in  <a href="getting-started-with-lambda-integration.html">Build an API Gateway API with Lambda Integration</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Complete the rest of the steps in <a href="getting-started-with-lambda-integration.html">Build an API Gateway API with Lambda Integration</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Create at least one topic in Amazon Simple Notification Service (Amazon SNS). You
+                              will use the deployed API
+                              to get a list of topics in Amazon SNS that are associated with your AWS account. To
+                              learn how to create a topic in Amazon SNS, see <a href="./sns/latest/dg/CreateTopic.html" target="_blank">Create a Topic</a>. (You do not need
+                              to copy the topic ARN mentioned in step 5.)
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="getting-started-aws-proxy-add-resources">Step 1: Create the
+                        Resource
+                     </h2>
+                     
+                     
+                     <p>In this step, you create a resource that enables the AWS service proxy to interact
+                        with the AWS service.
+                     </p>
+                     
+                     <p class="title"><b>To create the resource</b></p>
+                     <ol>
+                        <li>
+                           <p>Sign in to the API Gateway console at <a href="https://console.aws.amazon.com/apigateway" target="_blank">https://console.aws.amazon.com/apigateway</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>If <b>MyDemoAPI</b> is displayed, choose
+                              <b>Resources</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Resources</b> pane, choose the resource root,
+                              represented by a single forward slash (<code class="literal">/</code>), and then choose
+                              <b>Create Resource</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Resource Name</b>, type
+                              <strong class="userinput"><code>MyDemoAWSProxy</code></strong>, and then choose
+                              <b>Create Resource</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="getting-started-aws-proxy-add-methods">Step 2: Create the GET
+                        Method
+                     </h2>
+                     
+                     
+                     <p>In this step, you create a GET method that enables the AWS service proxy to interact
+                        with the AWS service.
+                     </p>
+                     
+                     <p class="title"><b>To create the GET method</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>In the <b>Resources</b> pane, choose
+                              <b>/mydemoawsproxy</b>, and then choose
+                              <b>Create Method</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For the HTTP method, choose <b>GET</b>, and then save your
+                              choice.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="getting-started-aws-proxy-add-roles">Step 3: Create the AWS Service Proxy
+                        Execution Role
+                     </h2>
+                     
+                     
+                     <p>In this step, you create an IAM role that your AWS service proxy uses to interact
+                        with the AWS service. We call this IAM role an AWS service proxy execution role.
+                        Without this role, API Gateway cannot interact with the AWS service. In later steps,
+                        you
+                        specify this role in the settings for the GET method you just created.
+                     </p>
+                     
+                     <p class="title"><b>To create the AWS service proxy execution role and its policy</b></p>
+                     <ol>
+                        <li>
+                           <p>Sign in to the AWS Management Console and open the IAM console at <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Policies</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Do one of the following:</p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p>If the <b>Welcome to Managed Policies</b> page appears,
+                                       choose <b>Get Started</b>, and then choose
+                                       <b>Create Policy</b>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>If a list of policies appears, choose <b>Create
+                                          Policy</b>.
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Next to <b>Create Your Own Policy</b>, choose
+                              <b>Select</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Policy Name</b>, type a name for the policy (for example,
+                              <strong class="userinput"><code>APIGatewayAWSProxyExecPolicy</code></strong>).
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Description</b>, type <strong class="userinput"><code>Enables API Gateway to call
+                                    AWS services</code></strong>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Policy Document</b>, type the following, and then choose
+                              <b>Create Policy</b>.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Resource&quot;: [
+        &quot;*&quot;
+      ],
+      &quot;Action&quot;: [
+        &quot;sns:ListTopics&quot;           
+      ]       
+    }    
+  ]
+}      </code></pre>
+                           <p>This policy document allows the caller to get a list of the Amazon SNS topics for
+                              the AWS account.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Roles</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Create Role</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Choose <b>AWS Service</b> under <b>Select role
+                                 type</b> and then choose <b>API Gateway</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Next: Permissions</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Choose <b>Next: Review</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Role Name</b>, type a name for the execution role (for
+                              example, <strong class="userinput"><code>APIGatewayAWSProxyExecRole</code></strong>), optionally, type
+                              a description for this role, and then choose <b>Create
+                                 role</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Roles</b> list, choose the role you just created. You
+                              may need to scroll down the list.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For the selected role, choose  <b>Attach policy</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Select the check box next to the policy you created earlier
+                              (APIGatewayAWSProxyExecPolicy) and choose <b>Attach
+                                 policy</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>The role you just created has the following trust relationship that enables
+                              API Gateway assume to role for any actions permitted by the attached
+                              policies:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Sid&quot;: &quot;&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Principal&quot;: {
+        &quot;Service&quot;: &quot;apigateway.amazonaws.com&quot;
+      },
+      &quot;Action&quot;: &quot;sts:AssumeRole&quot;
+    }
+  ]
+}</code></pre>
+                           <p>For <b>Role ARN</b>, note of the Amazon Resource Name (ARN) for
+                              the execution role. You need it later. The ARN should look similar to: <code class="literal">arn:aws:iam::123456789012:role/APIGatewayAWSProxyExecRole</code>, where
+                              <code class="literal">123456789012</code> is your AWS account
+                              ID.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="getting-started-aws-proxy-set-methods">Step 4: Specify Method Settings and
+                        Test the Method
+                     </h2>
+                     
+                     
+                     <p>In this step, you specify the settings for the GET method so that it can interact
+                        with
+                        an AWS service through an AWS service proxy. You then test the method.
+                     </p>
+                     
+                     <p class="title"><b>To specify settings for the GET method and then test it</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>In the API Gateway console, in the <b>Resources</b> pane for the API
+                              named <code class="literal">MyDemoAPI</code>, in
+                              <b>/mydemoawsproxy</b>, choose
+                              <b>GET</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Setup</b> pane, for <b>Integration
+                                 type</b>, choose <b>Show advanced</b>, and then choose
+                              <b>AWS Service Proxy</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>AWS Region</b>, choose the name of the AWS Region
+                              where you want to get the Amazon SNS topics.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>AWS Service</b>, choose
+                              <b>SNS</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>HTTP method</b>, choose <b>GET</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Action</b>, type
+                              <strong class="userinput"><code>ListTopics</code></strong>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Execution Role</b>, type the ARN for the execution
+                              role.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Leave <b>Path Override</b> blank.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Save</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Method Execution</b> pane, in the
+                              <b>Client</b> box, choose <b>TEST</b>, and then
+                              choose <b>Test</b>. If successful, <b>Response
+                                 Body</b> displays a response similar to the following:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;ListTopicsResponse&quot;: {
+    &quot;ListTopicsResult&quot;: {
+      &quot;NextToken&quot;: null,
+      &quot;Topics&quot;: [
+        {
+          &quot;TopicArn&quot;: &quot;arn:aws:sns:us-east-1:80398EXAMPLE:MySNSTopic-1&quot;
+        },
+        {
+          &quot;TopicArn&quot;: &quot;arn:aws:sns:us-east-1:80398EXAMPLE:MySNSTopic-2&quot;
+        },
+        ...
+        {
+          &quot;TopicArn&quot;: &quot;arn:aws:sns:us-east-1:80398EXAMPLE:MySNSTopic-N&quot;
+        }
+      ]
+    },
+    &quot;ResponseMetadata&quot;: {
+      &quot;RequestId&quot;: &quot;abc1de23-45fa-6789-b0c1-d2e345fa6b78&quot;
+    }
+  }
+}</code></pre>
+                           </li>
+                     </ol>
+                     
+                     <h2 id="getting-started-aws-proxy-deploy">Step 5: Deploy the API</h2>
+                     
+                     
+                     <p>In this step, you deploy the API so that you can call it from outside of the API Gateway
+                        console.
+                     </p>
+                     
+                     <p class="title"><b>To deploy the API</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>In the <b>Resources</b> pane, choose <b>Deploy
+                                 API</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Deployment stage</b>, choose
+                              <code class="code">test</code>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Deployment description</b>, type <strong class="userinput"><code>Calling AWS
+                                    service proxy walkthrough</code></strong>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Deploy</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="getting-started-aws-proxy-test">Step 6: Test the API</h2>
+                     
+                     
+                     <p>In this step, you go outside of the API Gateway console and use your AWS service proxy
+                        to
+                        interact with the Amazon SNS service.
+                     </p>
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>In the <b>Stage Editor</b> pane, next to <b>Invoke
+                                 URL</b>, copy the URL to the clipboard. It should look like
+                              this:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">https://<em class="replaceable"><code>my-api-id</code></em>.execute-api.<em class="replaceable"><code>region-id</code></em>.amazonaws.com/<code class="code" copy="true">test</code></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Paste the URL into the address box of a new browser tab.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Append <code class="literal">/mydemoawsproxy</code> so that it looks like
+                              this:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">https://<em class="replaceable"><code>my-api-id</code></em>.execute-api.<em class="replaceable"><code>region-id</code></em>.amazonaws.com/<code class="code" copy="true">test</code>/mydemoawsproxy</code></pre>
+                           <p>Browse to the URL. Information similar to the following should be
+                              displayed:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{&quot;ListTopicsResponse&quot;:{&quot;ListTopicsResult&quot;:{&quot;NextToken&quot;: null,&quot;Topics&quot;:[{&quot;TopicArn&quot;: &quot;arn:aws:sns:us-east-1:80398EXAMPLE:MySNSTopic-1&quot;},{&quot;TopicArn&quot;: &quot;arn:aws:sns:us-east-1:80398EXAMPLE:MySNSTopic-2&quot;},...{&quot;TopicArn&quot;: &quot;arn:aws:sns:us-east-1:80398EXAMPLE:MySNSTopic-N}]},&quot;ResponseMetadata&quot;:{&quot;RequestId&quot;:&quot;abc1de23-45fa-6789-b0c1-d2e345fa6b78}}}</code></pre>
+                           </li>
+                     </ol>
+                     
+                     <h2 id="getting-started-aws-proxy-clean-up">Step 7: Clean Up</h2>
+                     
+                     
+                     <p>You can delete the IAM resources the AWS service proxy needs to work.</p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Warning</p>
+                        <p>If you delete an IAM resource an AWS service proxy relies on, that AWS
+                           service proxy and any APIs that rely on it will no longer work. Deleting an IAM
+                           resource cannot be undone. If you want to use the IAM resource again, you must
+                           re-create it.
+                        </p>
+                     </div>
+                     
+                     <p class="title"><b>To delete the associated IAM resources</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the IAM console at
+                              <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Details</b> area, choose
+                              <b>Roles</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Select <b>APIGatewayAWSProxyExecRole</b>, and then choose
+                              <b>Role Actions</b>, <b>Delete Role</b>. When
+                              prompted, choose <b>Yes, Delete</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Details</b> area, choose
+                              <b>Policies</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Select <b>APIGatewayAWSProxyExecPolicy</b>, and then choose
+                              <b>Policy Actions</b>, <b>Delete</b>. When
+                              prompted, choose <b>Delete</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p> You have reached the end of this walkthrough. For more detailed discussions about
+                        creating API as an AWS service proxy, see <a href="integrating-api-with-aws-services-s3.html">Create an API as an Amazon S3 Proxy</a>, <a href="integrating-api-with-aws-services-lambda.html">Create an API Gateway API for AWS Lambda Functions</a>, or <a href="integrating-api-with-aws-services-kinesis.html">Create an API Gateway API as an Amazon Kinesis Proxy</a>. 
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="getting-started-with-private-integration.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="how-to-create-api.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Prerequisites"><a class="pagetoc" href="#getting-started-aws-proxy-prerequisites">Prerequisites</a></li>
+                        <li class="pagetoc" name="Step 1: Create the
+            Resource"><a class="pagetoc" href="#getting-started-aws-proxy-add-resources">Step 1: Create the
+                              Resource</a></li>
+                        <li class="pagetoc" name="Step 2: Create the GET
+            Method"><a class="pagetoc" href="#getting-started-aws-proxy-add-methods">Step 2: Create the GET
+                              Method</a></li>
+                        <li class="pagetoc" name="Step 3: Create the AWS Service Proxy
+            Execution Role"><a class="pagetoc" href="#getting-started-aws-proxy-add-roles">Step 3: Create the AWS Service Proxy
+                              Execution Role</a></li>
+                        <li class="pagetoc" name="Step 4: Specify Method Settings and
+            Test the Method"><a class="pagetoc" href="#getting-started-aws-proxy-set-methods">Step 4: Specify Method Settings and
+                              Test the Method</a></li>
+                        <li class="pagetoc" name="Step 5: Deploy the API"><a class="pagetoc" href="#getting-started-aws-proxy-deploy">Step 5: Deploy the API</a></li>
+                        <li class="pagetoc" name="Step 6: Test the API"><a class="pagetoc" href="#getting-started-aws-proxy-test">Step 6: Test the API</a></li>
+                        <li class="pagetoc" name="Step 7: Clean Up"><a class="pagetoc" href="#getting-started-aws-proxy-clean-up">Step 7: Clean Up</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon API Gateway';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

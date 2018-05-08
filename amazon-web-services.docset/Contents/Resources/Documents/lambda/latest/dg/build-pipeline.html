@@ -1,0 +1,760 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Building a Pipeline for Your Serverless Application - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="automating-deployment.html" title="Automating Deployment of Lambda-based Applications">
+      <link rel="prev" href="automating-deployment.html" title="Automating Deployment of Lambda-based Applications">
+      <link rel="next" href="automating-updates-to-serverless-apps.html" title="Gradual Code Deployment">
+      <meta name="description" content="In the following tutorial, you will create an AWS CodePipeline that automates the deployment of your serverless application. First, you will need to set up a source stage to trigger your pipeline. For the purposes of this tutorial:">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/build-pipeline.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="deploying-lambda-apps.html">Deploying Lambda-based Applications</a> &#xBB; <a href="automating-deployment.html">Automating Deployment of Lambda-based Applications</a> &#xBB; <span class="breadcrumb">Building a Pipeline for Your Serverless Application</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="build-pipeline">Building a Pipeline for Your Serverless Application</h1>
+                     <p> 
+                        In the following tutorial, you will create an AWS CodePipeline that automates the
+                        deployment of your serverless application. 
+                        First, you will need to set up a <b>source stage</b> to trigger your pipeline. For the purposes of this tutorial:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>We will use GitHub. For instructions on how to create a GitHub repository, 
+                                 see <a href="https://help.github.com/articles/create-a-repo/" target="_blank">Create a Repository in GitHub</a>.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>You will need to create an AWS CloudFormation role and add the
+                                 <b>AWSLambdaExecute</b> policy to that
+                                 role, as outlined below:
+                              </p>
+                              
+                              
+                              
+                              <ol>
+                                 <li>
+                                    
+                                    <p>Sign in to the AWS Management Console and open the IAM console at <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Follow the steps in  
+                                       <a href="./IAM/latest/UserGuide/id_roles_create_for-service.html" target="_blank">Creating a Role to Delegate Permissions to an AWS Service</a> in the 
+                                       <em>IAM User Guide</em> to create an IAM role (execution role) and go to the <b>To create a role for an AWS service</b> section. 
+                                       As you follow the steps to create a role, note the following:
+                                    </p>
+                                    
+                                    <div class="itemizedlist">
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             
+                                             <p>In <b>Select Role Type</b>, choose <b>AWS
+                                                   Service Roles</b>, and then choose 
+                                                <b>CloudFormation</b>. Choose <b>Next: Permissions</b>.
+                                             </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>In <b>Attach permissions policies</b>, use the search bar to find and then choose 
+                                                <b>AWSLambdaExecute</b>. Choose <b>Next: Review</b>. 
+                                             </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             <p>In <b>Role Name</b>, use a name that is unique within your AWS account (for example, <b>cloudformation-lambda-execution-role</b>) and then choose <b>Create role</b>. 
+                                             </p>
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Open the role you just created and under the <b>Permissions</b> tab, choose <b>Add inline policy</b>.
+                                                
+                                             </p>
+                                             
+                                          </li>
+                                          <li class="listitem">
+                                             
+                                             <p>In <b>Create Policy</b> choose the <b>JSON</b> tab and enter the following: 
+                                             </p>
+                                             
+                                             
+                                             <div class="aws-note">
+                                                <p class="aws-note">Note</p>
+                                                <p>Make sure to replace the <em class="replaceable"><code>region</code></em> and <em class="replaceable"><code>id</code></em> placeholders with your region and account id.
+                                                </p>
+                                             </div>
+                                             <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+	&quot;Statement&quot;: [
+	  {
+			&quot;Action&quot;: [
+				&quot;s3:GetObject&quot;,
+				&quot;s3:GetObjectVersion&quot;,
+				&quot;s3:GetBucketVersioning&quot;
+			],
+			&quot;Resource&quot;: &quot;*&quot;,
+			&quot;Effect&quot;: &quot;Allow&quot;
+		},
+		{
+			&quot;Action&quot;: [
+				&quot;s3:PutObject&quot;
+			],
+			&quot;Resource&quot;: [
+				&quot;arn:aws:s3:::codepipeline*&quot;
+			],
+			&quot;Effect&quot;: &quot;Allow&quot;
+		},
+		{
+			&quot;Action&quot;: [
+				&quot;lambda:*&quot;
+			],
+			&quot;Resource&quot;: [
+				&quot;arn:aws:lambda:region:<em class="replaceable"><code>id</code></em>:function:*&quot;
+			],
+			&quot;Effect&quot;: &quot;Allow&quot;
+		},
+		{
+			&quot;Action&quot;: [
+				&quot;apigateway:*&quot;
+			],
+			&quot;Resource&quot;: [
+				&quot;arn:aws:apigateway:<em class="replaceable"><code>region</code></em>::*&quot;
+			],
+			&quot;Effect&quot;: &quot;Allow&quot;
+		},
+		{
+			&quot;Action&quot;: [
+				&quot;iam:GetRole&quot;,
+				&quot;iam:CreateRole&quot;,
+				&quot;iam:DeleteRole&quot;,
+				&quot;iam:PutRolePolicy&quot;
+			],
+			&quot;Resource&quot;: [
+				&quot;arn:aws:iam::<em class="replaceable"><code>id</code></em>:role/*&quot;
+			],
+			&quot;Effect&quot;: &quot;Allow&quot;
+		},
+		{
+			&quot;Action&quot;: [
+				&quot;iam:AttachRolePolicy&quot;,
+				&quot;iam:DeleteRolePolicy&quot;,
+				&quot;iam:DetachRolePolicy&quot;
+			],
+			&quot;Resource&quot;: [
+				&quot;arn:aws:iam::<em class="replaceable"><code>id</code></em>:role/*&quot;
+			],
+			&quot;Effect&quot;: &quot;Allow&quot;
+		},
+		{
+			&quot;Action&quot;: [
+				&quot;iam:PassRole&quot;
+			],
+			&quot;Resource&quot;: [
+				&quot;*&quot;
+			],
+			&quot;Effect&quot;: &quot;Allow&quot;
+		},
+		{
+			&quot;Action&quot;: [
+				&quot;cloudformation:CreateChangeSet&quot;
+			],
+			&quot;Resource&quot;: [
+				&quot;arn:aws:cloudformation:<em class="replaceable"><code>region</code></em>:aws:transform/Serverless-2016-10-31&quot;
+			],
+			&quot;Effect&quot;: &quot;Allow&quot;
+		},
+		{
+			&quot;Action&quot;: [
+				&quot;codedeploy:CreateApplication&quot;,
+				&quot;codedeploy:DeleteApplication&quot;,
+				&quot;codedeploy:RegisterApplicationRevision&quot;
+			],
+			&quot;Resource&quot;: [
+				&quot;arn:aws:codedeploy:<em class="replaceable"><code>region</code></em>:<em class="replaceable"><code>id</code></em>:application:*&quot;
+			],
+			&quot;Effect&quot;: &quot;Allow&quot;
+		},
+		{
+			&quot;Action&quot;: [
+				&quot;codedeploy:CreateDeploymentGroup&quot;,
+				&quot;codedeploy:CreateDeployment&quot;,
+				&quot;codedeploy:GetDeployment&quot;
+			],
+			&quot;Resource&quot;: [
+				&quot;arn:aws:codedeploy:<em class="replaceable"><code>region</code></em>:<em class="replaceable"><code>id</code></em>:deploymentgroup:*&quot;
+			],
+			&quot;Effect&quot;: &quot;Allow&quot;
+		},
+		{
+			&quot;Action&quot;: [
+				&quot;codedeploy:GetDeploymentConfig&quot;
+			],
+			&quot;Resource&quot;: [
+				&quot;arn:aws:codedeploy:<em class="replaceable"><code>region</code></em>:<em class="replaceable"><code>id</code></em>:deploymentconfig:*&quot;
+			],
+			&quot;Effect&quot;: &quot;Allow&quot;
+		}
+	],
+	&quot;Version&quot;: &quot;2012-10-17&quot;
+}</code></pre>
+                                             </li>
+                                          <li class="listitem">
+                                             
+                                             <p>Choose <b>Validate Policy</b> and then choose <b>Apply Policy</b>. 
+                                             </p>
+                                             
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    
+                                 </li>
+                              </ol>
+                              
+                              
+                              
+                              
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <h2 id="setup-repository">Step 1: Set Up Your Repository</h2>
+                     
+                     <p>You can use any of the Lambda supported runtimes when setting up a repository. The
+                        following example uses Node.js.
+                     </p>                  
+                     
+                     <p>To set up your repository, do the following:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Add an <em>index.js file</em> containing the code following:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">
+var time = require(&apos;time&apos;);
+exports.handler = (event, context, callback) =&gt; {
+    var currentTime = new time.Date(); 
+    currentTime.setTimezone(&quot;America/Los_Angeles&quot;);
+    callback(null, {
+        statusCode: &apos;200&apos;,
+        body: &apos;The time in Los Angeles is: &apos; + currentTime.toString(),
+    });
+};
+</code></pre>                    
+                              </li>
+                           <li class="listitem">
+                              <p>Add a <em>samTemplate.yaml</em> file, containing the content following. This is
+                                 the SAM template that defines the resources in your application.
+                                 This SAM template defines a Lambda function that is triggered by
+                                 API Gateway. Note that the <code class="code">runtime</code> parameter uses
+                                 <code class="code">nodejs6.10</code> but you can also specify
+                                 <code class="code">nodejs8.10</code>. For more information about AWS SAM see
+                                 <a href="https://github.com/awslabs/serverless-application-model" target="_blank">AWS Serverless Application Model</a>.
+                              </p>                    
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">
+AWSTemplateFormatVersion: &apos;2010-09-09&apos;
+Transform: AWS::Serverless-2016-10-31
+Description: Outputs the time
+Resources:
+  TimeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs6.10
+      CodeUri: ./
+      Events:
+        MyTimeApi:
+          Type: Api
+          Properties:
+            Path: /TimeResource
+            Method: GET
+</code></pre>
+                              
+                              </li>
+                           <li class="listitem">
+                              <p>Add a <em>buildspec.yml</em> file. A build spec is a collection of build commands and related settings, 
+                                 in YAML format, that AWS CodeBuild uses to run a build. For more information, see
+                                 <a href="./codebuild/latest/userguide/build-spec-ref.html" target="_blank">Build Specification Reference for AWS CodeBuild</a>. In this example, 
+                                 the build action will be:
+                              </p> 
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p>Use <a href="https://www.npmjs.com/" target="_blank">npm</a> to install the time package.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Run the <code class="code">Package</code> command to prepare your deployment package for subsequent deployment steps
+                                          in your pipeline. For more information on the package command, see <a href="./AWSCloudFormation/latest/UserGuide/using-cfn-cli-package.html" target="_blank">Uploading Local Artifacts to an S3 Bucket</a></p>
+                                       <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">
+version: 0.1
+phases:
+  install:
+    commands:
+      - npm install time
+      - aws cloudformation package --template-file samTemplate.yaml --s3-bucket <em class="replaceable"><code>bucket-name</code></em> 
+                                   --output-template-file outputSamTemplate.yaml
+artifacts:
+  type: zip
+  files:
+    - samTemplate.yaml
+    - outputSamTemplate.yaml
+</code></pre>
+                                       <p>Note that you need to supply the <code class="code">--s3-bucket</code> parameter value with the name of the your Amazon S3 bucket, similar
+                                          to the step you would take if you were manually going to package the deployment package
+                                          with SAM, as discussed 
+                                          in the <a href="serverless-deploy-wt.html#serverless-pack">Packaging</a> step of the previous tutorial.
+                                       </p>
+                                       
+                                       
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="create-pipeline1">Step 2: Create Your Pipeline</h2>
+                     
+                     
+                     
+                     <p class="title"><b></b></p>
+                     <p>Follow the steps following to create your AWS CodePipeline.</p>
+                     <ol>
+                        <li>
+                           
+                           <p>Sign in to the AWS Management Console and open the AWS CodePipeline console.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Get Started Now</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Pipeline name:</b> enter a name for your pipeline and then choose <b>Next step</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Source provider:</b> choose <b>GitHub</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Connect to GitHub:</b> and then choose the <b>Repository </b>and <b>Branch</b> you want to connect to.
+                              Every git push to the branch you select will trigger your pipeline. Choose <b>Next step</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>AWS CodeBuild</b> as your <b>Build provider</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Create a new build project</b> and enter a project name.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Ubuntu</b> as the operating system.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Node.js</b> as the runtime.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Version</b> choose <code class="code">aws/codebuild/nodejs:<em class="replaceable"><code>version</code></em></code></p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Build specification</b> choose <code class="code">Use the buildspec.yml in the source code root directory</code></p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Save build project</b>. 
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>A service role for AWS CodeBuild will automatically be created on your behalf.</p>
+                           </div>
+                           
+                           <p>Choose <b>Next step</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Deployment provider* </b> choose <b>AWS CloudFormation</b>.
+                           </p>
+                           
+                           <p>By selecting this option, AWS CloudFormation commands will be used to deploy the SAM
+                              template. For more information
+                              see <a href="serverless_app.html#serverless_app_resources">Serverless Resources Within AWS SAM</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Action mode:</b> choose <b>Create or replace a change set</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Stack name:</b> enter <b>MyBetaStack</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Change set name:</b> enter <b>MyChangeSet</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Template file:</b> enter <b>outputSamTemplate.yaml</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Capabilities:</b> choose <b>CAPABILITY_IAM</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Role</b> select the AWS CloudFormation role you created at the beginning of this tutorial
+                              and then choose <b>Next step</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Create role</b>. Choose <b>Next</b> and then choose <b>Allow.</b>
+                              Choose <b>Next step</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Review your pipeline and then choose <b>Create pipeline</b>. 
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <h2 id="update-policy">Step 3: Update the Generated Service Policy</h2>
+                     
+                     
+                     
+                     <p class="title"><b></b></p>
+                     <p>Complete the following steps to allow CodeBuild to upload build
+                        artifacts to your Amazon S3 bucket.
+                     </p>
+                     <ol>
+                        <li>
+                           
+                           <p>Go to the IAM Management Console.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Roles</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Open the service role that was generated for your project, typically <b>code-build-<em class="replaceable"><code>project-name</code></em>-service-role</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Under the <b>Permissions</b> tab, choose <b>Add inline policy</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>service</b>, choose <b>Choose a service</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Select a service below</b>, choose <b>S3</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Actions</b>, choose <b>Select actions</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Expand <b>Write</b> under <b>Access level groups</b> and then choose <b>PutObject</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Resources</b> and then choose the <b>Any</b> checkbox.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Review policy</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Enter a <b>Name*</b> and then choose <b>Create policy</b>. Then return to the pipeline you created in the previous section.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="create-pipeline2">Step 4: Complete Your Beta Deployment Stage</h2>
+                     
+                     
+                     
+                     <p class="title"><b></b></p>
+                     <p>Use the following steps to complete your Beta stage.</p>
+                     <ol>
+                        <li>
+                           
+                           <p>Choose <b>Edit</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose the </p>
+                           <div class="mediaobject">
+                              
+                              <img src="../../..//img/edit-pencil.png">
+                              
+                              
+                           </div>
+                           <p> icon next to <b>MyBetaStack</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Action category:</b>, if not already selected, choose <b>Deploy</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Deployment provider*</b>, if not already selected, choose <b>AWS CloudFormation</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Action mode* </b> choose <b>Execute a change set</b>.
+                              This is similar to the step you would take if you were manually going to deploy the
+                              package, as discussed in the
+                              <a href="serverless-deploy-wt.html#serv-deploy">Deployment</a> step of the previous tutorial. <code class="code">CreateChangeSet</code> transforms the
+                              SAM template to the full AWS CloudFormation format and <code class="code">deployChangeSet</code> deploys the AWS CloudFormation template.
+                              
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Stack name* </b> enter or choose <b>MyBetaStack</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In <b>Change set name* </b> enter <b>MyChangeSet</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Add action</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Save pipeline changes</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Save and continue</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p> Your pipeline is ready. Any git push to the branch you connected to this pipeline
+                        is going to trigger a deployment. To test your pipeline and deploy your application
+                        for the first time, do one of the following: 
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Perform a git push to the branch connected to your pipeline.</p>
+                           </li>
+                           <li class="listitem">
+                              <p>Go the AWS CodePipeline console, choose the name of the pipeline you created and then
+                                 choose <b>Release change</b>. 
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="automating-deployment-next-step1">Next Step</h2>
+                     
+                     
+                     <p><a href="automating-updates-to-serverless-apps.html">Gradual Code Deployment</a></p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="automating-deployment.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="automating-updates-to-serverless-apps.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Step 1: Set Up Your Repository"><a class="pagetoc" href="#setup-repository">Step 1: Set Up Your Repository</a></li>
+                        <li class="pagetoc" name="Step 2: Create Your Pipeline"><a class="pagetoc" href="#create-pipeline1">Step 2: Create Your Pipeline</a></li>
+                        <li class="pagetoc" name="Step 3: Update the Generated Service Policy"><a class="pagetoc" href="#update-policy">Step 3: Update the Generated Service Policy</a></li>
+                        <li class="pagetoc" name="Step 4: Complete Your Beta Deployment Stage"><a class="pagetoc" href="#create-pipeline2">Step 4: Complete Your Beta Deployment Stage</a></li>
+                        <li class="pagetoc" name="Next Step"><a class="pagetoc" href="#automating-deployment-next-step1">Next Step</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

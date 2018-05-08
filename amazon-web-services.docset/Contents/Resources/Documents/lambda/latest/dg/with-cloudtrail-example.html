@@ -1,0 +1,294 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Tutorial: Using AWS Lambda with AWS CloudTrail - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="with-cloudtrail.html" title="Using AWS Lambda with AWS CloudTrail">
+      <link rel="prev" href="with-cloudtrail.html" title="Using AWS Lambda with AWS CloudTrail">
+      <link rel="next" href="with-cloudtrail-example-prepare.html" title="Step 1: Prepare">
+      <meta name="description" content="Suppose you have turned on AWS CloudTrail for your AWS account to maintain records (logs) of AWS API calls made on your account and you want to be notified anytime an API call is made to create an SNS topic. As API calls are made in your account, CloudTrail writes logs to an Amazon S3 bucket that you configured. In this scenario, you want Amazon S3 to publish the object-created events to AWS Lambda and invoke your Lambda function as CloudTrail creates log objects.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/with-cloudtrail-example.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="use-cases.html">Examples of How to Use AWS Lambda</a> &#xBB; <a href="with-cloudtrail.html">Using AWS Lambda with AWS CloudTrail</a> &#xBB; <span class="breadcrumb">Tutorial: Using AWS Lambda with AWS CloudTrail</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="with-cloudtrail-example">Tutorial: Using AWS Lambda with AWS CloudTrail</h1>
+                     <p>Suppose you have turned on AWS CloudTrail for your AWS account to maintain records
+                        (logs) of AWS
+                        				API calls made on your account and you want to be notified anytime an API call
+                        is made to
+                        				create an SNS topic. As API calls are made in your account,
+                        				CloudTrail writes logs to an Amazon S3 bucket that you configured. In this scenario,
+                        you want Amazon S3 to
+                        				publish the object-created events to AWS Lambda and invoke your Lambda function
+                        				as CloudTrail creates log objects. 
+                     </p>
+                     <p>When Amazon S3 invokes your Lambda function, it passes an S3 event identifying, among
+                        				other things, the bucket name and key name of the object that CloudTrail created.
+                        				Your Lambda function can read the log object, and it knows the API calls that
+                        				were reported in the log.
+                     </p>
+                     <p>Each object CloudTrail creates in your S3 bucket is a JSON object, with one or more
+                        				event records. Each record, among other things, provides <code class="code">eventSource</code>
+                        				and <code class="code">eventName</code>. 
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;Records&quot;:[
+ 
+        {
+            &quot;eventVersion&quot;:&quot;1.02&quot;,
+            &quot;userIdentity&quot;:{
+               ...
+            },
+            &quot;eventTime&quot;:&quot;2014-12-16T19:17:43Z&quot;,
+            <em class="replaceable"><code>&quot;eventSource&quot;:&quot;sns.amazonaws.com&quot;, 
+            &quot;eventName&quot;:&quot;CreateTopic&quot;,</code></em>
+            &quot;awsRegion&quot;:&quot;us-west-2&quot;,
+            &quot;sourceIPAddress&quot;:&quot;72.21.198.64&quot;,
+             ...
+         },
+         {
+            ...
+         },
+         ...
+}</code></pre><p>For illustration, the Lambda function notifies you by email if an API
+                        				call to create an Amazon SNS topic is reported in the log. That is, when your
+                        Lambda
+                        				function parses the log, it looks for records with the following:
+                     </p>
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p><code class="code">eventSource =  &quot;sns.amazonaws.com&quot;</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">eventName =  &quot;CreateTopic&quot;</code></p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     <p> If found, it publishes the event to your Amazon SNS topic (you configure
+                        				this topic to notify you by email).
+                     </p>
+                     <h2 id="with-cloudtrail-example-impl-summary">Implementation Summary</h2>
+                     			
+                     			
+                     			
+                     <p>Upon completing this tutorial, you will have Amazon S3, AWS Lambda, Amazon SNS, and
+                        				AWS Identity and Access Management (IAM) resources in your account:
+                     </p>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>This tutorial assumes that you create these resources in the
+                           						<code class="code">us-west-2</code> region.
+                        </p>
+                     </div>
+                     			
+                     <p>In Lambda:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>A Lambda function.</p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>  An access policy associated with your Lambda function  &#x2013;  You grant Amazon S3 permissions
+                                 						to invoke the Lambda function using this permissions policy. You will also restrict
+                                 the
+                                 						permissions so that Amazon S3 can invoke the Lambda function only for
+                                 						object-created events from a specific bucket that is owned by a specific AWS
+                                 						account.  
+                              </p>
+                              						
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p> It is possible for an AWS account to delete a bucket and some
+                                    								other AWS account to later create a bucket with same name. The
+                                    								additional conditions ensure that Amazon S3 can invoke the Lambda
+                                    								function only if Amazon S3 detects object-created events from a
+                                    								specific bucket owned by a specific AWS account. 
+                                 </p>
+                              </div>
+                              				
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>In IAM:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p> An IAM role (execution role) &#x2013;  You grant permissions that your Lambda function needs
+                                 						through the permissions policy associated with this role.  
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>In Amazon S3:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>A bucket &#x2013; In this tutorial, the bucket name is 
+                                 							<em class="replaceable"><code>examplebucket</code></em>. When you turn the trail on in
+                                 						the CloudTrail console, you specify this bucket for CloudTrail to save the logs.
+                                 
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Notification configuration on the <em class="replaceable"><code>examplebucket</code></em> &#x2013; In the
+                                 						configuration, you direct Amazon S3 to publish object-created events to Lambda,
+                                 by
+                                 						invoking your Lambda function. For more information about the Amazon S3 notification
+                                 						feature, see <a href="./AmazonS3/latest/dev/NotificationHowTo.html" target="_blank">Setting Up
+                                    							Notification of Bucket Events</a> in <em>Amazon Simple Storage Service Developer Guide</em>.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Sample CloudTrail log object (<code>ExampleCloudTrailLog.json</code>) in
+                                 						<em class="replaceable"><code>examplebucket</code></em> bucket &#x2013; In the first half of this exercise, 
+                                 						you create and test your Lambda function by manually
+                                 						invoking it using a sample S3 event. This sample event identifies 
+                                 							<em class="replaceable"><code>examplebucket</code></em> as the bucket name and this
+                                 						sample object key name. Your Lambda function then reads the object and
+                                 						sends you email notifications using an SNS topic. 
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>In Amazon SNS</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>An SNS topic &#x2013; You subscribe to this topic by specifying email as the
+                                 						protocol.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     			
+                     <p>Now you are ready to start the tutorial. </p>
+                     		
+                     <h2 id="with-cloudtrail-example-impl-summary-next-step">Next Step</h2>
+                     			
+                     			
+                     <p><a href="with-cloudtrail-example-prepare.html">Step 1: Prepare</a></p>
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="with-cloudtrail.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="with-cloudtrail-example-prepare.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Implementation Summary"><a class="pagetoc" href="#with-cloudtrail-example-impl-summary">Implementation Summary</a></li>
+                        <li class="pagetoc" name="Next Step"><a class="pagetoc" href="#with-cloudtrail-example-impl-summary-next-step">Next Step</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,1059 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Enabling Enhanced Networking with the Intel 82599 VF
+         Interface on Linux Instances in a VPC - Amazon Elastic Compute Cloud
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="enhanced-networking.html" title="Enhanced Networking on Linux">
+      <link rel="prev" href="enhanced-networking.html" title="Enhanced Networking on Linux">
+      <link rel="next" href="enhanced-networking-ena.html" title="Enabling Enhanced Networking with the Elastic
+            Network Adapter (ENA) on Linux Instances in a VPC">
+      <meta name="description" content="Enable enhanced networking with the Intel 82599 VF interface on Linux instances in a VPC.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/sriov-networking.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="EC2_Network_and_Security.html">Network and Security</a> &#xBB; <a href="enhanced-networking.html">Enhanced Networking on Linux</a> &#xBB; <span class="breadcrumb">Enabling Enhanced Networking with the Intel 82599 VF
+                                    Interface on Linux Instances in a VPC</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="sriov-networking">Enabling Enhanced Networking with the Intel 82599 VF
+                        Interface on <span>Linux</span> Instances in a VPC
+                     </h1>
+                     <p>Amazon EC2 provides enhanced networking capabilities to C3, C4, D2, I2, M4 (excluding
+                        <code class="code">m4.16xlarge</code>), and R3 instances through the Intel 82599 VF interface, 
+                        which uses the Intel <code>ixgbevf</code> driver.
+                     </p>
+                     <p>To prepare for enhanced networking using the Intel 82599 VF interface, set up your
+                        instance as follows:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Launch the instance from an HVM AMI using Linux kernel version of 2.6.32
+                                 or later. The latest Amazon Linux HVM AMIs have the modules required for enhanced
+                                 networking installed and have the required attributes set. Therefore, if you
+                                 launch an Amazon EBS&#x2013;backed, enhanced networking&#x2013;supported instance
+                                 using a current Amazon Linux HVM AMI, enhanced networking is already enabled for
+                                 your instance.
+                              </p>
+                              
+                              <div class="aws-note">
+                                 <p class="aws-note">Warning</p>
+                                 <p>Enhanced networking is supported only for HVM instances. Enabling
+                                    enhanced networking with a PV instance can make it unreachable. Setting
+                                    this attribute without the proper module or module version can also make
+                                    your instance unreachable.
+                                 </p>
+                              </div>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Launch the instance in a VPC. (You can&apos;t enable enhanced networking if the
+                                 instance is in EC2-Classic.)
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Install and configure the <a href="./cli/latest/userguide/cli-chap-getting-set-up.html" target="_blank">AWS CLI</a> or the
+                                 <a href="./powershell/latest/userguide/" target="_blank">AWS Tools for Windows PowerShell</a> on any computer you choose,
+                                 preferably your local desktop or laptop. For more information, see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>. Enhanced networking
+                                 cannot be managed from the Amazon EC2 console. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>If you have important data on the instance that you want to preserve, you
+                                 should back that data up now by creating an AMI from your instance. Updating
+                                 kernels and kernel modules, as well as enabling the
+                                 <code class="code">sriovNetSupport</code> attribute, may render incompatible
+                                 instances or operating systems unreachable; if you have a recent backup,
+                                 your data will still be retained if this happens.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#test-enhanced-networking">Testing Whether Enhanced Networking with the
+                                 Intel 82599 VF Interface is Enabled</a></li>
+                           <li><a href="#enable-enhanced-networking">Enabling Enhanced Networking with the Intel
+                                 82599 VF Interface on Amazon Linux</a></li>
+                           <li><a href="#enhanced-networking-ubuntu">Enabling Enhanced Networking with the Intel
+                                 82599 VF Interface on Ubuntu</a></li>
+                           <li><a href="#enhanced-networking-linux">Enabling Enhanced Networking with the Intel
+                                 82599 VF Interface on Other Linux Distributions</a></li>
+                           <li><a href="#enhanced-networking-troubleshooting">Troubleshooting Connectivity Issues</a></li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="test-enhanced-networking">Testing Whether Enhanced Networking with the
+                        Intel 82599 VF Interface is Enabled
+                     </h2>
+                     
+                     
+                     <p>Enhanced networking with the Intel 82599 VF interface is enabled if the <span><code>ixgbevf</code> module</span>
+                        is installed on your instance and the
+                        <code class="code">sriovNetSupport</code> attribute is set. 
+                     </p>
+                     
+                     
+                     
+                     <p class="title"><b>Instance Attribute (sriovNetSupport)</b></p>
+                     
+                     <p>To check whether an instance has the enhanced networking
+                        <code class="code">sriovNetSupport</code> attribute set, use one of the following
+                        commands:
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./cli/latest/reference/ec2/describe-instance-attribute.html" target="_blank">describe-instance-attribute</a> (AWS CLI)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-instance-attribute --instance-id <em class="replaceable"><code>instance_id</code></em> --attribute sriovNetSupport</code></strong></code></pre>
+                              </li>
+                           <li class="listitem">
+                              <p><a href="./powershell/latest/reference/items/Get-EC2InstanceAttribute.html" target="_blank">Get-EC2InstanceAttribute</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>Get-EC2InstanceAttribute -InstanceId <em class="replaceable"><code>instance-id</code></em> -Attribute sriovNetSupport</code></strong></code></pre>
+                              </li>
+                        </ul>
+                     </div>
+                     
+                     <p>If the attribute isn&apos;t set, <code class="code">SriovNetSupport</code> is empty;
+                        otherwise, it is set as follows:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">&quot;SriovNetSupport&quot;: {
+    &quot;Value&quot;: &quot;simple&quot;
+},</code></pre>
+                     
+                     <p class="title"><b>Image Attribute (sriovNetSupport)</b></p>
+                     
+                     <p>To check whether an AMI already has the enhanced networking
+                        <code class="code">sriovNetSupport</code> attribute set, use one of the following
+                        commands:
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./cli/latest/reference/ec2/describe-image-attribute.html" target="_blank">describe-image-attribute</a> (AWS CLI)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-image-attribute --image-id <em class="replaceable"><code>ami_id</code></em> --attribute sriovNetSupport</code></strong></code></pre>
+                              
+                              <p>Note that this command only works for images that you own. You receive an
+                                 <code class="code">AuthFailure</code> error for images that do not belong
+                                 to your account.
+                              </p>
+                              
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="./powershell/latest/reference/items/Get-EC2ImageAttribute.html" target="_blank">Get-EC2ImageAttribute</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>Get-EC2ImageAttribute -ImageId <em class="replaceable"><code>ami-id</code></em> -Attribute sriovNetSupport</code></strong></code></pre>
+                              </li>
+                        </ul>
+                     </div>
+                     
+                     <p>If the attribute isn&apos;t set, <code class="code">SriovNetSupport</code> is empty;
+                        otherwise, it is set as follows:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">&quot;SriovNetSupport&quot;: {
+    &quot;Value&quot;: &quot;simple&quot;
+},</code></pre>
+                     
+                     <p class="title"><b>Network Interface Driver</b></p>
+                     
+                     <p>Use the following command to verify that the module is being used on a
+                        particular interface, substituting the interface name that you wish to check. If
+                        you are using a single interface (default), it will be
+                        <code class="code">eth0</code>.
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>ethtool -i eth<em class="replaceable"><code>0</code></em></code></strong><code class="computeroutput" copy="false">
+driver: vif
+version:
+firmware-version:
+bus-info: vif-0
+supports-statistics: yes
+supports-test: no
+supports-eeprom-access: no
+supports-register-dump: no
+supports-priv-flags: no</code></code></pre>
+                     <p>In the above case, the <code>ixgbevf</code> module is not loaded,
+                        because the listed driver is <code>vif</code>.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>ethtool -i eth<em class="replaceable"><code>0</code></em></code></strong><code class="computeroutput" copy="false">
+driver: ixgbevf
+version: 4.0.3
+firmware-version: N/A
+bus-info: 0000:00:03.0
+supports-statistics: yes
+supports-test: yes
+supports-eeprom-access: no
+supports-register-dump: yes
+supports-priv-flags: no</code></code></pre>
+                     <p>In this case, the <code>ixgbevf</code> module is loaded. This
+                        instance has enhanced networking properly configured.
+                     </p>
+                     
+                     
+                     <h2 id="enable-enhanced-networking">Enabling Enhanced Networking with the Intel
+                        82599 VF Interface on <span>Amazon Linux</span></h2>
+                     
+                     
+                     <p>The latest Amazon Linux HVM AMIs have the <code>ixgbevf</code> module
+                        required for enhanced networking installed and have the required
+                        <code class="code">sriovNetSupport</code> attribute set. Therefore, if you launch a instance
+                        type using a current Amazon Linux HVM AMI, enhanced networking is already enabled
+                        for your
+                        instance. For more information, see <a href="sriov-networking.html#test-enhanced-networking">Testing Whether Enhanced Networking with the
+                           Intel 82599 VF Interface is Enabled</a>.
+                     </p>
+                     
+                     <p>If you launched your instance using an older Amazon Linux AMI and it does not
+                        have enhanced networking enabled already, use the following procedure to enable
+                        enhanced networking.
+                     </p>
+                     
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Warning</p>
+                        <p>There is no way to disable the enhanced networking attribute after
+                           you&apos;ve enabled it.
+                        </p>
+                     </div>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Warning</p>
+                        <p>Enhanced networking is supported only for HVM instances. Enabling
+                           enhanced networking with a PV instance can make it unreachable. Setting
+                           this attribute without the proper module or module version can also make
+                           your instance unreachable.
+                        </p>
+                     </div>
+                     
+                     
+                     <p class="title"><b>To enable enhanced networking<span> (EBS-backed
+                              instances)</span></b></p>
+                     <ol>
+                        <li><a id="amazon-linux-enhanced-networking-start-step"></a>
+                           
+                           <p>Connect to your instance.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From the instance, run the following command to update your instance with
+                              the newest kernel and kernel modules, including
+                              <code>ixgbevf</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code><b>sudo yum</b> update</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>From your local computer, reboot your instance using the Amazon EC2 console or
+                              one of the following commands: <a href="./cli/latest/reference/ec2/reboot-instances.html" target="_blank">reboot-instances</a>
+                              (AWS CLI), <a href="./powershell/latest/reference/items/Restart-EC2Instance.html" target="_blank">Restart-EC2Instance</a> (AWS Tools for Windows PowerShell).
+                           </p>
+                           
+                        </li>
+                        <li><a id="amazon-linux-enhanced-networking-stop-step"></a>
+                           
+                           <p>Connect to your instance again and verify that the
+                              <code>ixgbevf</code> module is installed and at the minimum
+                              recommended version using the <b>modinfo ixgbevf</b> command
+                              from <a href="sriov-networking.html#test-enhanced-networking">Testing Whether Enhanced Networking with the
+                                 Intel 82599 VF Interface is Enabled</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, stop the instance using the Amazon EC2 console or one
+                              of the following commands: <a href="./cli/latest/reference/ec2/stop-instances.html" target="_blank">stop-instances</a> (AWS CLI), <a href="./powershell/latest/reference/items/Stop-EC2Instance.html" target="_blank">Stop-EC2Instance</a> (AWS Tools for Windows PowerShell). If your instance is managed by AWS OpsWorks,
+                              you should stop the instance in the AWS OpsWorks console so that the instance state
+                              remains in sync.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If you are using an instance store-backed instance, you can&apos;t stop the
+                                 instance. Instead, proceed to <a href="sriov-networking.html#enhanced-networking-instance-store">To enable enhanced networking
+                                    (instance store-backed instances)</a>.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, enable the enhanced networking attribute using
+                              one of the following commands:
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/modify-instance-attribute.html" target="_blank">modify-instance-attribute</a> (AWS CLI)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 modify-instance-attribute --instance-id <em class="replaceable"><code>instance_id</code></em> --sriov-net-support simple</code></strong></code></pre>
+                                    </li>
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./powershell/latest/reference/items/Edit-EC2InstanceAttribute.html" target="_blank">Edit-EC2InstanceAttribute</a> (AWS Tools for Windows PowerShell)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>Edit-EC2InstanceAttribute -InstanceId <em class="replaceable"><code>instance_id</code></em> -SriovNetSupport &quot;simple&quot;</code></strong></code></pre>
+                                    </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Create an AMI from the instance, as described in <a href="creating-an-ami-ebs.html">Creating an Amazon EBS-Backed Linux AMI</a>
+                              . The AMI
+                              inherits the enhanced networking attribute from the instance. Therefore, you
+                              can use this AMI to launch another instance with enhanced networking enabled
+                              by default.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, start the instance using the Amazon EC2 console or
+                              one of the following commands: <a href="./cli/latest/reference/ec2/start-instances.html" target="_blank">start-instances</a>
+                              (AWS CLI), <a href="./powershell/latest/reference/items/Start-EC2Instance.html" target="_blank">Start-EC2Instance</a> (AWS Tools for Windows PowerShell). If your instance is managed by
+                              AWS OpsWorks, you should start the instance in the AWS OpsWorks console so that the
+                              instance state remains in sync.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Connect to your instance and verify that the <code>ixgbevf</code>
+                              module is installed and loaded on your network interface using the
+                              <b>ethtool -i eth<em class="replaceable"><code>n</code></em></b> command
+                              from <a href="sriov-networking.html#test-enhanced-networking">Testing Whether Enhanced Networking with the
+                                 Intel 82599 VF Interface is Enabled</a>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <a id="enhanced-networking-instance-store"></a><p class="title"><b>To enable enhanced networking
+                           (instance store-backed instances)</b></p>
+                     <ul>
+                        <li>
+                           
+                           <p>If your instance is an instance store&#x2013;backed instance, <span>follow <a href="sriov-networking.html#amazon-linux-enhanced-networking-start-step">Step&#xA0;1</a> through <a href="sriov-networking.html#amazon-linux-enhanced-networking-stop-step">Step&#xA0;4</a> in the previous
+                                 procedure, and then </span> create a new AMI as described in <a href="creating-an-ami-instance-store.html">Creating an Instance Store-Backed Linux AMI</a>. Be sure
+                              to enable the enhanced networking attribute when you register the AMI.
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/register-image.html" target="_blank">register-image</a>
+                                       (AWS CLI)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 register-image --sriov-net-support simple ...</code></strong></code></pre>
+                                    </li>
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./powershell/latest/reference/items/Register-EC2Image.html" target="_blank">Register-EC2Image</a> (AWS Tools for Windows PowerShell)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>Register-EC2Image -SriovNetSupport &quot;simple&quot;<code class="code" copy="false"> ...</code></code></strong></code></pre>
+                                    </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                     </ul>
+                     
+                     
+                     
+                     <h2 id="enhanced-networking-ubuntu">Enabling Enhanced Networking with the Intel
+                        82599 VF Interface on Ubuntu
+                     </h2>
+                     
+                     <p>Before you begin, <a href="sriov-networking.html#test-enhanced-networking">check if enhanced networking
+                           is already enabled</a> on your instance.
+                     </p>
+                     
+                     <p>The Quick Start Ubuntu HVM AMIs include the necessary drivers for enhanced networking.
+                        
+                        If you have version 2.16.4 or later of <code>ixgbevf</code>, you do not need to 
+                        compile a different version of the <code>ixgbevf</code> module unless you want 
+                        additional functionality provided in a newer version. Versions of <code>ixgbevf</code> 
+                        earlier than 2.16.4, including version 2.14.2, do not build properly on certain versions
+                        of Ubuntu.
+                     </p> 
+                     
+                     <p>If you&apos;ve launched an instance from a different Ubuntu AMI, contact the AMI
+                        provider to confirm if you need a newer version of the enhanced networking drivers.
+                     </p>
+                     
+                     <p>The following procedure provides the general steps for compiling the
+                        <code>ixgbevf</code> module on an Ubuntu instance.
+                     </p>
+                     <a id="ubuntu-enhanced-networking-procedure"></a><p class="title"><b>To enable enhanced networking
+                           on Ubuntu (EBS-backed instances)</b></p>
+                     <ol>
+                        <li><a id="ubuntu-enhanced-networking-start-step"></a>
+                           
+                           <p>Connect to your instance.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Update the package cache and packages.</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo apt-get update &amp;&amp; sudo apt-get upgrade -y</code></strong></code></pre>
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If during the update process, you are prompted to install
+                                 <code>grub</code>, use <code>/dev/xvda</code> to
+                                 install <code>grub</code> onto, and then choose to keep the
+                                 current version of <code>/boot/grub/menu.lst</code>.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li><a id="ixgbevf_start_step"></a>
+                           
+                           <p>Install the <b>dkms</b> package so that your
+                              <code>ixgbevf</code> module is rebuilt every time your kernel is
+                              updated.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo apt-get install -y dkms</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Download the source of the <code>ixgbevf</code> module appropriate
+                              for the kernel version of your instance from Sourceforge at <a href="https://sourceforge.net/projects/e1000/files/ixgbevf%20stable/" target="_blank">https://sourceforge.net/projects/e1000/files/ixgbevf%20stable/</a>;
+                              for example:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>wget &quot;https://sourceforge.net/projects/e1000/files/ixgbevf stable/<em class="replaceable"><code>4.3.3</code></em>/ixgbevf-<em class="replaceable"><code>4.3.3</code></em>.tar.gz&quot;</code></strong></code></pre>
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>Use the <code class="code">uname -r</code> command to get the kernel version for your
+                                 instance.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Decompress and unarchive the <code>ixgbevf</code> package.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>tar -xzf ixgbevf-<em class="replaceable"><code>4.3.3</code></em>.tar.gz</code></strong></code></pre>
+                           </li>
+                        <li><a id="enhanced-networking-dkms-start-step"></a>
+                           
+                           <p>Move the <code>ixgbevf</code> package to the
+                              <code>/usr/src/</code> directory so that <b>dkms</b> can
+                              find it and build it for each kernel
+                              update.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo mv ixgbevf-<em class="replaceable"><code>4.3.3</code></em> /usr/src/</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Create the <b>dkms</b> configuration file with the following
+                              values, substituting your version of <code>ixgbevf</code>.
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>Create the file.</p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo touch /usr/src/ixgbevf-<em class="replaceable"><code>4.3.3</code></em>/dkms.conf</code></strong></code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>Edit the file and add the following values.</p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo vim /usr/src/ixgbevf-<em class="replaceable"><code>4.3.3</code></em>/dkms.conf</code></strong><code class="computeroutput" copy="false">
+PACKAGE_NAME=&quot;ixgbevf&quot;
+PACKAGE_VERSION=&quot;<em class="replaceable"><code>4.3.3</code></em>&quot;
+CLEAN=&quot;cd src/; make clean&quot;
+MAKE=&quot;cd src/; make BUILD_KERNEL=${kernelver}&quot;
+BUILT_MODULE_LOCATION[0]=&quot;src/&quot;
+BUILT_MODULE_NAME[0]=&quot;ixgbevf&quot;
+DEST_MODULE_LOCATION[0]=&quot;/updates&quot;
+DEST_MODULE_NAME[0]=&quot;ixgbevf&quot;
+AUTOINSTALL=&quot;yes&quot;</code></code></pre>
+                                 </li>
+                           </ol>
+                           
+                        </li>
+                        <li><a id="enhanced-networking-dkms-stop-step"></a>
+                           
+                           <p>Add, build, and install the <code>ixgbevf</code> module on your
+                              instance using <b>dkms</b>.
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>Add the module to <b>dkms</b>.
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo dkms add -m ixgbevf -v <em class="replaceable"><code>4.3.3</code></em></code></strong></code></pre>
+                                 </li>
+                              <li><a id="ubuntu_ixgbevf_build_step"></a>
+                                 
+                                 <p>Build the module with <b>dkms</b>.
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo dkms build -m ixgbevf -v <em class="replaceable"><code>4.3.3</code></em></code></strong></code></pre>
+                                 <div class="aws-note">
+                                    <p class="aws-note">Note</p>
+                                    <p>If your build fails, verify that <b>perl</b> is
+                                       installed and that it is in your path. The
+                                       <b>dkms</b> package requires
+                                       <b>perl</b>, but it is not always installed by
+                                       default on all operating systems.
+                                    </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>which perl</code></strong></code></pre><p>If the output of the above command does not show
+                                       <b>perl</b> in your path, you need to install
+                                       it.
+                                    </p>
+                                    <p>For Ubuntu 16.04, you may need to open the
+                                       <code class="code">/usr/src/ixgbevf-<em class="replaceable"><code>x.x.x</code></em>/src/kcompat.h</code>
+                                       file and change the value for
+                                       <code class="code">UTS_UBUNTU_RELEASE_ABI</code> to a value larger than
+                                       1037 (for example, 99999).
+                                    </p>
+                                 </div>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>Install the module with <b>dkms</b>.
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo dkms install -m ixgbevf -v <em class="replaceable"><code>4.3.3</code></em></code></strong></code></pre>
+                                 </li>
+                           </ol>
+                           
+                        </li>
+                        <li><a id="ixgbevf_stop_step"></a>
+                           
+                           <p>Rebuild <code>initramfs</code> so the correct module is loaded at boot time.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>sudo update-initramfs -c -k all</code></strong></code></pre>
+                           </li>
+                        <li><a id="ubuntu-enhanced-networking-stop-step"></a>
+                           
+                           <p>Verify that the <code>ixgbevf</code> module is installed and at
+                              the minimum recommended version using the <b>modinfo ixgbevf</b>
+                              command.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">ubuntu:~$ </code><strong class="userinput"><code>modinfo ixgbevf</code></strong><code class="computeroutput" copy="false">
+filename:       /lib/modules/3.13.0-139-generic/updates/dkms/ixgbevf.ko
+version:        4.3.3
+license:        GPL
+description:    Intel(R) 10 Gigabit Virtual Function Network Driver
+author:         Intel Corporation, &lt;linux.nics@intel.com&gt;
+srcversion:     759A432E3151C8F9F6EA882
+alias:          pci:v00008086d00001515sv*sd*bc*sc*i*
+alias:          pci:v00008086d000010EDsv*sd*bc*sc*i*
+depends:
+vermagic:       3.13.0-139-generic SMP mod_unload modversions
+parm:           InterruptThrottleRate:Maximum interrupts per second, per vector, (956-488281, 0=off, 1=dynamic), default 1 (array of int)</code></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>From your local computer, stop the instance using the Amazon EC2 console or one
+                              of the following commands: <a href="./cli/latest/reference/ec2/stop-instances.html" target="_blank">stop-instances</a> (AWS CLI), <a href="./powershell/latest/reference/items/Stop-EC2Instance.html" target="_blank">Stop-EC2Instance</a>
+                              (AWS Tools for Windows PowerShell). If your instance is managed by AWS OpsWorks, you
+                              should stop the
+                              instance in the AWS OpsWorks console so that the instance state remains in
+                              sync.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If you are using an instance store-backed instance, you can&apos;t stop the
+                                 instance. Instead, proceed to <a href="sriov-networking.html#ubuntu-enhanced-networking-instance-store">To enable enhanced
+                                    networking on Ubuntu (instance store-backed instances)</a>.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, enable the enhanced networking
+                              <code class="code">sriovNetSupport</code> attribute using one of the following
+                              commands. Note that there is no way to disable this attribute after you&apos;ve
+                              enabled it.
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/modify-instance-attribute.html" target="_blank">modify-instance-attribute</a> (AWS CLI)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 modify-instance-attribute --instance-id <em class="replaceable"><code>instance_id</code></em> --sriov-net-support simple</code></strong></code></pre>
+                                    </li>
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./powershell/latest/reference/items/Edit-EC2InstanceAttribute.html" target="_blank">Edit-EC2InstanceAttribute</a> (AWS Tools for Windows PowerShell)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>Edit-EC2InstanceAttribute -InstanceId <em class="replaceable"><code>instance_id</code></em> -SriovNetSupport &quot;simple&quot;</code></strong></code></pre>
+                                    </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Create an AMI from the instance, as described in <a href="creating-an-ami-ebs.html">Creating an Amazon EBS-Backed Linux AMI</a>. The AMI
+                              inherits the enhanced networking <code class="code">sriovNetSupport</code> attribute from
+                              the instance. Therefore, you can use this AMI to launch another instance
+                              with enhanced networking enabled by default.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, start the instance using the Amazon EC2 console or
+                              one of the following commands: <a href="./cli/latest/reference/ec2/start-instances.html" target="_blank">start-instances</a>
+                              (AWS CLI), <a href="./powershell/latest/reference/items/Start-EC2Instance.html" target="_blank">Start-EC2Instance</a> (AWS Tools for Windows PowerShell). If your instance is managed by
+                              AWS OpsWorks, you should start the instance in the AWS OpsWorks console so that the
+                              instance state remains in sync.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Connect to your instance and verify that the module is
+                              installed.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <a id="ubuntu-enhanced-networking-instance-store"></a><p class="title"><b>To enable enhanced
+                           networking on Ubuntu (instance store-backed instances)</b></p>
+                     <ul>
+                        <li>
+                           
+                           <p>If your instance is an instance store-backed instance, follow <a href="sriov-networking.html#ubuntu-enhanced-networking-start-step">Step&#xA0;1</a> through <a href="sriov-networking.html#ubuntu-enhanced-networking-stop-step">Step&#xA0;10</a> in the previous procedure,
+                              and then create a new AMI as described in <a href="creating-an-ami-instance-store.html">Creating an Instance Store-Backed Linux AMI</a>. Be sure to enable the
+                              enhanced networking attribute when you register the AMI.
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/register-image.html" target="_blank">register-image</a>
+                                       (AWS CLI)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 register-image --sriov-net-support simple<code class="code" copy="false"> ...</code></code></strong></code></pre>
+                                    </li>
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./powershell/latest/reference/items/Register-EC2Image.html" target="_blank">Register-EC2Image</a> (AWS Tools for Windows PowerShell)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>Register-EC2Image -SriovNetSupport &quot;simple&quot;<code class="code" copy="false"> ...</code></code></strong></code></pre>
+                                    </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                     </ul>
+                     
+                     
+                     
+                     <h2 id="enhanced-networking-linux">Enabling Enhanced Networking with the Intel
+                        82599 VF Interface on Other Linux Distributions
+                     </h2>
+                     
+                     
+                     <p>Before you begin, <a href="sriov-networking.html#test-enhanced-networking">check if enhanced
+                           networking is already enabled</a> on your instance. The latest Quick Start
+                        HVM AMIs include the necessary drivers for enhanced networking, therefore you do not
+                        need to perform additional steps. 
+                     </p>
+                     
+                     <p>The following procedure provides the general steps if you need to enable enhanced
+                        networking with the Intel 82599 VF interface on a Linux distribution other than Amazon
+                        Linux
+                        or Ubuntu. For more information, such as detailed syntax for commands, file
+                        locations, or package and tool support, see the specific documentation for your
+                        Linux distribution.
+                     </p>
+                     
+                     <p class="title"><b>To enable enhanced networking on Linux (EBS-backed instances)</b></p>
+                     <ol>
+                        <li><a id="other-linux-enhanced-networking-start-step"></a>
+                           
+                           <p>Connect to your instance.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Download the source for the <code>ixgbevf</code> module on your
+                              instance from Sourceforge at <a href="https://sourceforge.net/projects/e1000/files/ixgbevf%20stable/" target="_blank">https://sourceforge.net/projects/e1000/files/ixgbevf%20stable/</a>.
+                           </p>
+                           
+                           <p>Versions of <code>ixgbevf</code> earlier than 2.16.4,
+                              including version 2.14.2, do not build properly on some Linux distributions,
+                              including certain versions of Ubuntu.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Compile and install the <code>ixgbevf</code> module on your
+                              instance. 
+                           </p>
+                           
+                           <p>If your distribution supports <b>dkms</b>, then you should
+                              consider configuring <b>dkms</b> to recompile the
+                              <code>ixgbevf</code> module whenever your system&apos;s kernel is
+                              updated. If your distribution does not support <b>dkms</b>
+                              natively, you can find it in the EPEL repository (<a href="https://fedoraproject.org/wiki/EPEL" target="_blank">https://fedoraproject.org/wiki/EPEL</a>) for Red Hat Enterprise
+                              Linux variants, or you can download the software at <a href="https://linux.dell.com/dkms/" target="_blank">https://linux.dell.com/dkms/</a>.
+                              Use <a href="sriov-networking.html#enhanced-networking-dkms-start-step">Step&#xA0;6</a> through <a href="sriov-networking.html#enhanced-networking-dkms-stop-step">Step&#xA0;8</a> in <a href="sriov-networking.html#ubuntu-enhanced-networking-procedure">To enable enhanced networking
+                                 on Ubuntu (EBS-backed instances)</a> for help
+                              configuring <b>dkms</b>.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Warning</p>
+                              <p>If you compile the <code>ixgbevf</code> module for your current
+                                 kernel and then upgrade your kernel without rebuilding the driver for
+                                 the new kernel, your system may revert to the distribution-specific
+                                 <code>ixgbevf</code> module at the next reboot, which could
+                                 make your system unreachable if the distribution-specific version is
+                                 incompatible with enhanced networking.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Run the <b>sudo depmod</b> command to update module
+                              dependencies.
+                           </p>
+                           
+                        </li>
+                        <li><a id="other-linux-enhanced-networking-stop-step"></a>
+                           
+                           <p>Update <code>initramfs</code> on your instance to ensure that
+                              the new module loads at boot time.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Determine if your system uses predictable network interface names by
+                              default. Systems that use <b>systemd</b> or
+                              <b>udev</b> versions 197 or greater can rename Ethernet
+                              devices and they do not guarantee that a single network interface will be
+                              named <code class="code">eth0</code>. This behavior can cause problems connecting
+                              to your instance. For more information and to see other configuration
+                              options, see <a href="https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/" target="_blank">Predictable Network Interface Names</a> on the freedesktop.org
+                              website.
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>You can check the <b>systemd</b> or
+                                    <b>udev</b> versions on RPM-based systems with the
+                                    following command:
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>rpm -qa | grep -e &apos;^systemd-[0-9]\+\|^udev-[0-9]\+&apos;</code></strong><code class="computeroutput" copy="false">
+systemd-208-11.el7_0.2.x86_64</code></code></pre>
+                                 <p>In the above Red Hat Enterprise Linux 7 example, the <b>systemd</b> version
+                                    is 208, so predictable network interface names must be disabled.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>Disable predictable network interface names by adding the
+                                    <code class="code">net.ifnames=0</code> option to the
+                                    <code class="code">GRUB_CMDLINE_LINUX</code> line in
+                                    <code>/etc/default/grub</code>.
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo sed -i &apos;/^GRUB\_CMDLINE\_LINUX/s/\&quot;$/\ net\.ifnames\=0\&quot;/&apos; /etc/default/grub</code></strong></code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>Rebuild the grub configuration file.</p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo grub2-mkconfig -o /boot/grub2/grub.cfg</code></strong></code></pre>
+                                 </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, stop the instance using the Amazon EC2 console or one
+                              of the following commands: <a href="./cli/latest/reference/ec2/stop-instances.html" target="_blank">stop-instances</a> (AWS CLI), <a href="./powershell/latest/reference/items/Stop-EC2Instance.html" target="_blank">Stop-EC2Instance</a>
+                              (AWS Tools for Windows PowerShell). If your instance is managed by AWS OpsWorks, you
+                              should stop the
+                              instance in the AWS OpsWorks console so that the instance state remains in
+                              sync.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If you are using an instance store-backed instance, you can&apos;t stop the
+                                 instance. Instead, proceed to <a href="sriov-networking.html#other-linux-enhanced-networking-instance-store">To enable enhanced
+                                    networking (instance store&#x2013;backed instances)</a></p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, enable the enhanced networking attribute using
+                              one of the following commands:
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/modify-instance-attribute.html" target="_blank">modify-instance-attribute</a> (AWS CLI)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 modify-instance-attribute --instance-id <em class="replaceable"><code>instance_id</code></em> --sriov-net-support simple</code></strong></code></pre>
+                                    </li>
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./powershell/latest/reference/items/Edit-EC2InstanceAttribute.html" target="_blank">Edit-EC2InstanceAttribute</a> (AWS Tools for Windows PowerShell)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>Edit-EC2InstanceAttribute -InstanceId <em class="replaceable"><code>instance_id</code></em> -SriovNetSupport &quot;simple&quot;</code></strong></code></pre>
+                                    </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Create an AMI from the instance, as described in <a href="creating-an-ami-ebs.html">Creating an Amazon EBS-Backed Linux AMI</a>
+                              . The AMI
+                              inherits the enhanced networking attribute from the instance. Therefore, you
+                              can use this AMI to launch another instance with enhanced networking enabled
+                              by default.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If your instance operating system contains an
+                                 <code>/etc/udev/rules.d/70-persistent-net.rules</code>
+                                 file, you must delete it before creating the AMI. This file
+                                 contains the MAC address for the Ethernet adapter of the original
+                                 instance. If another instance boots with this file, the operating
+                                 system will be unable to find the device and <code class="code">eth0</code>
+                                 may fail, causing boot issues. This file is regenerated at the next
+                                 boot cycle, and any instances launched from the AMI create their
+                                 own version of the file.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, start the instance using the Amazon EC2 console or
+                              one of the following commands: <a href="./cli/latest/reference/ec2/start-instances.html" target="_blank">start-instances</a>
+                              (AWS CLI), <a href="./powershell/latest/reference/items/Start-EC2Instance.html" target="_blank">Start-EC2Instance</a> (AWS Tools for Windows PowerShell). If your instance is managed by
+                              AWS OpsWorks, you should start the instance in the AWS OpsWorks console so that the
+                              instance state remains in sync.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Connect to your instance and verify that the module is
+                              installed.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <a id="other-linux-enhanced-networking-instance-store"></a><p class="title"><b>To enable enhanced
+                           networking (instance store&#x2013;backed instances)</b></p>
+                     <ul>
+                        <li>
+                           
+                           <p>If your instance is an instance store&#x2013;backed instance, follow <a href="sriov-networking.html#other-linux-enhanced-networking-start-step">Step&#xA0;1</a> through <a href="sriov-networking.html#other-linux-enhanced-networking-stop-step">Step&#xA0;5</a> in the previous
+                              procedure, and then create a new AMI as described in <a href="creating-an-ami-instance-store.html">Creating an Instance Store-Backed Linux AMI</a>. Be sure to enable the
+                              enhanced networking attribute when you register the AMI.
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/register-image.html" target="_blank">register-image</a>
+                                       (AWS CLI)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 register-image --sriov-net-support simple<code class="code" copy="false"> ...</code></code></strong></code></pre>
+                                    </li>
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./powershell/latest/reference/items/Register-EC2Image.html" target="_blank">Register-EC2Image</a> (AWS Tools for Windows PowerShell)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>Register-EC2Image -SriovNetSupport &quot;simple&quot;<code class="code" copy="false"> ...</code></code></strong></code></pre>
+                                    </li>
+                              </ul>
+                           </div> 
+                           
+                        </li>
+                     </ul>
+                     
+                     
+                     
+                     <h2 id="enhanced-networking-troubleshooting">Troubleshooting Connectivity Issues</h2>
+                     
+                     
+                     <p>If you lose connectivity while enabling enhanced networking, the
+                        <code>ixgbevf</code> module might be incompatible with the kernel. Try
+                        installing the version of the <code>ixgbevf</code> module included with the
+                        distribution of Linux for your instance.
+                     </p>
+                     
+                     <p>If you enable enhanced networking for a PV instance or AMI, this can
+                        make your instance unreachable.
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="enhanced-networking.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="enhanced-networking-ena.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Testing Whether Enhanced Networking with the
+                Intel 82599 VF Interface is Enabled"><a class="pagetoc" href="#test-enhanced-networking">Testing Whether Enhanced Networking with the
+                              Intel 82599 VF Interface is Enabled</a></li>
+                        <li class="pagetoc" name="Enabling Enhanced Networking with the Intel
+                82599 VF Interface on Amazon Linux"><a class="pagetoc" href="#enable-enhanced-networking">Enabling Enhanced Networking with the Intel
+                              82599 VF Interface on Amazon Linux</a></li>
+                        <li class="pagetoc" name="Enabling Enhanced Networking with the Intel
+                82599 VF Interface on Ubuntu"><a class="pagetoc" href="#enhanced-networking-ubuntu">Enabling Enhanced Networking with the Intel
+                              82599 VF Interface on Ubuntu</a></li>
+                        <li class="pagetoc" name="Enabling Enhanced Networking with the Intel
+                82599 VF Interface on Other Linux Distributions"><a class="pagetoc" href="#enhanced-networking-linux">Enabling Enhanced Networking with the Intel
+                              82599 VF Interface on Other Linux Distributions</a></li>
+                        <li class="pagetoc" name="Troubleshooting Connectivity Issues"><a class="pagetoc" href="#enhanced-networking-troubleshooting">Troubleshooting Connectivity Issues</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

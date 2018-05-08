@@ -1,0 +1,234 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Function Errors (Go)
+          - AWS Lambda
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="go-programming-model.html" title="Programming Model for Authoring Lambda Functions in
+    Go">
+      <link rel="prev" href="go-programming-model-logging.html" title="Logging (Go)
+    ">
+      <link rel="next" href="go-programming-model-env-variables.html" title="Using Environment Variables (Go)
+       ">
+      <meta name="description" content="You can create custom error handling to raise an exception directly from your Lambda function and handle it directly.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/go-programming-model-errors.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-introduction-function.html">Lambda Functions</a> &#xBB; <a href="lambda-app.html">Building Lambda Functions</a> &#xBB; <a href="programming-model-v2.html">Programming Model</a> &#xBB; <a href="go-programming-model.html">Programming Model for Authoring Lambda Functions in
+                                    Go</a> &#xBB; <span class="breadcrumb">Function Errors (Go)
+                                    </span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="go-programming-model-errors">Function Errors (Go)
+                        
+                     </h1>
+                     <p>You can create custom error handling to raise an exception directly from your Lambda
+                        function
+                        and handle it directly.
+                        
+                     </p>
+                     <p>The following code samples demonstrate how to do this. Note that custom errors in
+                        Go must import the <code class="code">errors</code> module.
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">package main
+ 
+import (
+        &quot;errors&quot;
+        &quot;github.com/aws/aws-lambda-go/lambda&quot;
+)
+ 
+func OnlyErrors() error {
+        return errors.New(&quot;something went wrong!&quot;)
+}
+ 
+func main() {
+        lambda.Start(OnlyErrors)
+}
+</code></pre><p>Which will return:</p><code class="code">{
+                        &quot;errorMessage&quot;: &quot;something went wrong!&quot;
+                        }</code><h2 id="python-custom-errors">Function Error Handling</h2>
+                     
+                     
+                     <p>You can create custom error handling to raise an exception directly from your Lambda
+                        function
+                        and handle it directly (Retry or Catch) within an AWS Step Functions State Machine.
+                        For more information, see <a href="./step-functions/latest/dg/tutorial-handling-error-conditions.html" target="_blank">Handling Error Conditions Using a State Machine</a>.
+                        
+                     </p>
+                     
+                     <p>Consider a <code class="code">CreateAccount</code> <a href="./step-functions/latest/dg/awl-ref-states.html" target="_blank">state</a> is a <a href="./step-functions/latest/dg/awl-ref-states-task.html" target="_blank">task</a>
+                        that writes a customer&apos;s details to a database using a Lambda function.
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>If the task succeeds, an account is created and a welcome email is sent.</p>
+                           </li>
+                           <li class="listitem"> 
+                              <p>If a user tries to create an account for a username that already exists, the Lambda
+                                 function raises an error, causing the state machine to
+                                 suggest a different username and to retry the account-creation process.
+                              </p>
+                           </li>
+                        </ul>
+                     </div> 
+                     
+                     
+                     <p>The following code samples demonstrate how to do this. </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">package main
+
+type CustomError struct {}
+
+func (e *CustomError) Error() string {
+	return &quot;bad stuff happened...&quot;
+}
+
+func MyHandler() (string, error) {
+	return &quot;&quot;, &amp;CustomError{}
+}
+
+
+</code></pre>
+                     
+                     
+                     
+                     <p>At runtime, AWS Step Functions catches the error, <a href="./step-functions/latest/dg/concepts-transitions.html" target="_blank">transitioning</a> to the <code class="code">SuggestAccountName</code> state as specified in the <code class="code">Next</code> transition.
+                     </p>
+                     
+                     
+                     
+                     
+                     <p>Custom error handling makes it easier to create <a href="https://aws.amazon.com/serverless" target="_blank">serverless</a> applications. This feature integrates with 
+                        all the languages supported by the Lambda <a href="programming-model-v2.html">Programming Model</a>, allowing you to design your application in the programming languages of your choice,
+                        mixing and matching as you go.
+                     </p>
+                     
+                     <p>To learn more about creating your own serverless applications using AWS Step Functions
+                        and AWS Lambda, see <a href="https://aws.amazon.com/step-functions/" target="_blank">AWS Step Functions</a>. 
+                     </p>
+                     
+                     
+                     <h2 id="go-errors-panic">Handling Unexpected Errors</h2>
+                     
+                     <p>Lambda functions can fail for reasons beyond your control, such as network outages.
+                        These are exceptional circumstances. In Go, <a href="https://gobyexample.com/panic" target="_blank">panic</a> addresses these issues. If your code panics, Lambda will attempt to capture the error
+                        and serialize it into the standard error json format.
+                        Lambda will also attempt to insert the value of the panic into the function&apos;s CloudWatch
+                        logs. After returning the response, Lambda will re-create the function automatically.
+                        If you find it necessary, you can include the <code class="code">panic</code> function in your code to customize
+                        the error response.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">package main
+
+import (
+	&quot;errors&quot;
+
+	&quot;github.com/aws/aws-lambda-go/lambda&quot;
+)
+
+func handler(string) (string, error) {
+	panic(errors.New(&quot;Something went wrong&quot;))
+}
+
+func main() {
+	lambda.Start(handler)
+}
+</code></pre>
+                     <p>Which would return the following stack in json:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+    &quot;errorMessage&quot;: &quot;Something went wrong&quot;,
+       &quot;errorType&quot;: &quot;errorString&quot;,
+    &quot;stackTrace&quot;: [ 
+            {
+            &quot;path&quot;: &quot;github.com/aws/aws-lambda-go/lambda/function.go&quot;,
+            &quot;line&quot;: 27,
+            &quot;label&quot;: &quot;(*Function).Invoke.function&quot;
+        },
+ ...
+    
+    ]
+}</code></pre>
+                     </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="go-programming-model-logging.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="go-programming-model-env-variables.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Function Error Handling"><a class="pagetoc" href="#python-custom-errors">Function Error Handling</a></li>
+                        <li class="pagetoc" name="Handling Unexpected Errors"><a class="pagetoc" href="#go-errors-panic">Handling Unexpected Errors</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

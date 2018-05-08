@@ -1,0 +1,577 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Amazon Simple Notification Service-backed Custom Resources - AWS CloudFormation</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="template-custom-resources.html" title="Custom Resources">
+      <link rel="prev" href="template-custom-resources.html" title="Custom Resources">
+      <link rel="next" href="template-custom-resources-lambda.html" title="AWS Lambda-backed Custom Resources">
+      <meta name="description" content="Learn about Amazon SNS-backed custom resources in AWS CloudFormation.">
+      <meta name="keywords" content="CloudFormation,AWSCloudFormation,resource provisioning,resource configuration,infrastructure management,CloudFormer,CloudFormation Designer,CloudFormation stack,CloudFormation stackset,CloudFormation template,change set">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS CloudFormation">
+      <meta name="guide" content="User Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources-sns.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudformation">AWS CloudFormation</a> &#xBB; <a href="index.html">User Guide</a> &#xBB; <a href="template-guide.html">Working with AWS CloudFormation Templates</a> &#xBB; <a href="template-custom-resources.html">Custom Resources</a> &#xBB; <span class="breadcrumb">Amazon Simple Notification Service-backed Custom Resources</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="template-custom-resources-sns">Amazon Simple Notification Service-backed Custom Resources</h1>
+                     <p>When you associate an Amazon SNS topic with a custom resource, you use Amazon SNS
+                        notifications to
+                        trigger custom provisioning logic. With custom resources and Amazon SNS, you can enable
+                        scenarios
+                        such as adding new resources to a stack and injecting dynamic data into a stack. For
+                        example,
+                        when you create a stack, AWS CloudFormation can send a <code class="code">create</code> request to a topic that&apos;s
+                        monitored by an application that&apos;s running on an Amazon Elastic Compute Cloud instance.
+                        The Amazon SNS notification
+                        triggers the application to carry out additional provisioning tasks, such as retrieve
+                        a pool
+                        of white-listed Elastic IPs. After it&apos;s done, the application sends a response (and
+                        any output
+                        data) that notifies AWS CloudFormation to proceed with the stack operation.
+                     </p>
+                     <h2 id="walkthrough-custom-resources-sns-adding-nonaws-resource">Walkthrough: Using
+                        Amazon Simple Notification Service to Create Custom Resources
+                     </h2>
+                     
+                     
+                     
+                     <p>This walkthrough will step through the custom resource process, explaining the sequence
+                        of events and messages sent and received as a result of custom resource stack creation,
+                        updates, and deletion.
+                     </p>
+                     
+                     <h3 id="crpg-walkthrough-stack-creation">Step 1: Stack Creation</h3>
+                     
+                     
+                     <div class="orderedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ol style="list-style-type:arabic ! important;">
+                           <li>
+                              
+                              <p>The template developer creates an AWS CloudFormation stack that contains a custom
+                                 resource; in
+                                 the template example below, we use the custom resource type name
+                                 <code class="code">Custom::SeleniumTester</code> for the custom resource
+                                 <code class="code">MySeleniumTest</code>. 
+                              </p>
+                              
+                              <p>The custom resource type is declared with a <em>service token</em>,
+                                 optional <em>provider-specific properties</em>, and optional <a href="intrinsic-function-reference-getatt.html"><code class="code">Fn::GetAtt</code></a>
+                                 attributes that are defined by the custom resource provider. These properties and
+                                 attributes can
+                                 be used to pass information from the template developer to the custom resource provider
+                                 and
+                                 vice-versa. Custom resource type names must be alphanumeric and can have a maximum
+                                 length of 60 characters.
+                              </p>
+                              
+                              <p>The following example shows a template that has both custom properties and
+                                 return attributes:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+   &quot;AWSTemplateFormatVersion&quot; : &quot;2010-09-09&quot;,
+   &quot;Resources&quot; : {
+      &quot;MySeleniumTest&quot; : {
+         &quot;Type&quot;: &quot;Custom::SeleniumTester&quot;,
+         &quot;Version&quot; : &quot;1.0&quot;,
+         &quot;Properties&quot; : {
+            &quot;ServiceToken&quot;: &quot;arn:aws:sns:us-west-2:123456789012:CRTest&quot;,
+            &quot;seleniumTester&quot; : &quot;SeleniumTest()&quot;,
+            &quot;endpoints&quot; : [ &quot;http://mysite.com&quot;, &quot;http://myecommercesite.com/&quot;, &quot;http://search.mysite.com&quot; ],
+            &quot;frequencyOfTestsPerHour&quot; : [ &quot;3&quot;, &quot;2&quot;, &quot;4&quot; ]
+         }
+      }
+   },
+   &quot;Outputs&quot; : {
+      &quot;topItem&quot; : {
+         &quot;Value&quot; : { &quot;Fn::GetAtt&quot; : [&quot;MySeleniumTest&quot;, &quot;resultsPage&quot;] }
+      },
+      &quot;numRespondents&quot; : {
+         &quot;Value&quot; : { &quot;Fn::GetAtt&quot; : [&quot;MySeleniumTest&quot;, &quot;lastUpdate&quot;] }
+      }
+   }
+}</code></pre>
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>The names and values of the data accessed with
+                                    <code class="code"><code class="code">Fn::GetAtt</code></code> are returned by the
+                                    custom resource provider during the provider&apos;s response to AWS CloudFormation. If
+                                    the custom resource provider is a
+                                    third-party, then the template developer must obtain the names of these return
+                                    values from the custom resource provider.
+                                 </p>
+                              </div>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>AWS CloudFormation sends an Amazon SNS notification to the resource provider with
+                                 a
+                                 <code class="code">&quot;RequestType&quot; : &quot;Create&quot;</code> that contains information about the
+                                 stack, the custom resource properties from the stack template, and an S3 URL for
+                                 the response. 
+                              </p>
+                              
+                              <p>The SNS topic that is used to send the notification is embedded in the template
+                                 in the <code class="code">ServiceToken</code> property. To avoid using a hard-coded
+                                 value, a template developer can use a template parameter so that the value is entered
+                                 at the time the stack is launched.
+                              </p>
+                              
+                              <p>The following example shows a custom resource <code class="code">Create</code> request which
+                                 includes a custom resource type name, <code class="code">Custom::SeleniumTester</code>, created
+                                 with a <code class="code">LogicalResourceId</code> of <code class="code">MySeleniumTester</code>: 
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+   &quot;RequestType&quot; : &quot;Create&quot;,
+   &quot;ResponseURL&quot; : &quot;http://pre-signed-S3-url-for-response&quot;,
+   &quot;StackId&quot; : &quot;arn:aws:cloudformation:us-west-2:123456789012:stack/stack-name/guid&quot;,
+   &quot;RequestId&quot; : &quot;unique id for this create request&quot;,
+   &quot;ResourceType&quot; : &quot;Custom::SeleniumTester&quot;,
+   &quot;LogicalResourceId&quot; : &quot;MySeleniumTester&quot;,
+   &quot;ResourceProperties&quot; : {
+      &quot;seleniumTester&quot; : &quot;SeleniumTest()&quot;,
+      &quot;endpoints&quot; : [ &quot;http://mysite.com&quot;, &quot;http://myecommercesite.com/&quot;, &quot;http://search.mysite.com&quot; ],
+      &quot;frequencyOfTestsPerHour&quot; : [ &quot;3&quot;, &quot;2&quot;, &quot;4&quot; ]
+   }
+}</code></pre>
+                              </li>
+                           <li>
+                              
+                              <p>The custom resource provider processes the data sent by the template developer and
+                                 determines
+                                 whether the <code class="code">Create</code> request was successful. The resource provider then
+                                 uses the S3 URL sent by AWS CloudFormation to send a response of either <code class="code">SUCCESS</code> or
+                                 <code class="code">FAILED</code>. 
+                              </p>
+                              
+                              <p>Depending on the response type, different response fields will be expected by
+                                 AWS CloudFormation. Refer to the Responses section in the reference topic for the
+                                 RequestType
+                                 that is being processed. 
+                              </p>
+                              
+                              <p>In response to a create or update request, the custom resource provider can return
+                                 data
+                                 elements in the <a href="crpg-ref-responses.html#crpg-ref-responses-data">Data</a> field of the response. These are
+                                 name/value pairs, and the <em>names</em> correspond to the
+                                 <code class="code"><code class="code">Fn::GetAtt</code></code> attributes used with the custom
+                                 resource in the stack template. The <em>values</em> are the data that
+                                 is returned when the template developer calls
+                                 <code class="code"><code class="code">Fn::GetAtt</code></code> on the resource with the attribute
+                                 name.
+                              </p>
+                              
+                              <p>The following is an example of a custom resource response:</p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">
+{
+   &quot;Status&quot; : &quot;SUCCESS&quot;,
+   &quot;PhysicalResourceId&quot; : &quot;Tester1&quot;,
+   &quot;StackId&quot; : &quot;arn:aws:cloudformation:us-west-2:123456789012:stack/stack-name/guid&quot;,
+   &quot;RequestId&quot; : &quot;unique id for this create request&quot;,
+   &quot;LogicalResourceId&quot; : &quot;MySeleniumTester&quot;,
+   &quot;Data&quot; : {
+      &quot;resultsPage&quot; : &quot;http://www.myexampledomain/test-results/guid&quot;,
+      &quot;lastUpdate&quot; : &quot;2012-11-14T03:30Z&quot;,
+   }
+}           </code></pre>
+                              <p>The <code class="code">StackId</code>, <code class="code">RequestId</code>, and
+                                 <code class="code">LogicalResourceId</code> fields must be copied verbatim from the request.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p> AWS CloudFormation declares the stack status as <code class="code">CREATE_COMPLETE</code> or
+                                 <code class="code">CREATE_FAILED</code>. If the stack was successfully created, the
+                                 template developer can use the output values of the created custom resource by
+                                 accessing them with <a href="intrinsic-function-reference-getatt.html"><code class="code">Fn::GetAtt</code></a>.
+                              </p>
+                              
+                              <p>For example, the custom resource template used for illustration used
+                                 <code class="code"><code class="code">Fn::GetAtt</code></code> to copy resource outputs into
+                                 the stack outputs:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">
+&quot;Outputs&quot; : {
+   &quot;topItem&quot; : {
+      &quot;Value&quot; : { &quot;Fn::GetAtt&quot; : [&quot;MySeleniumTest&quot;, &quot;resultsPage&quot;] }
+   },
+   &quot;numRespondents&quot; : {
+      &quot;Value&quot; : { &quot;Fn::GetAtt&quot; : [&quot;MySeleniumTest&quot;, &quot;lastUpdate&quot;] }
+   }
+}           </code></pre>
+                              </li>
+                        </ol>
+                     </div>
+                     
+                     <p>For detailed information about the request and response objects involved in
+                        <code class="code">Create</code> requests, see <a href="crpg-ref-requesttypes-create.html">Create</a> in the <a href="crpg-ref.html">Custom Resource
+                           Reference</a>.
+                     </p>
+                     
+                     
+                     <h3 id="crpg-walkthrough-stack-updates">Step 2: Stack Updates</h3>
+                     
+                     
+                     <p>To update an existing stack, you must submit a template that specifies updates for
+                        the properties of resources in the stack, as shown in the example below. AWS CloudFormation
+                        updates
+                        only the resources that have changes specified in the template. For more information
+                        about updating stacks, see <a href="using-cfn-updating-stacks.html">AWS CloudFormation Stacks Updates</a>.
+                     </p>
+                     
+                     <p>You can update custom resources that require a replacement of the underlying physical
+                        resource. When you update a custom resource in an AWS CloudFormation template, AWS
+                        CloudFormation sends an update request to that custom resource. If a custom resource
+                        requires a replacement, the new custom resource must send a response with the new
+                        physical ID. When AWS CloudFormation receives the response, it compares the <code class="code">PhysicalResourceId</code> between the old and new custom resources. If they are different, AWS CloudFormation
+                        recognizes the update as a replacement and sends a delete request to the old resource,
+                        as shown in <a href="template-custom-resources-sns.html#crpg-walkthrough-stack-deletion">Step 3: Stack Deletion</a>. 
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>If you didn&apos;t make changes to the custom resource, AWS CloudFormation won&apos;t send requests
+                           to it during a stack update.
+                        </p>
+                     </div>
+                     
+                     <div class="orderedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ol style="list-style-type:arabic ! important;">
+                           <li>
+                              
+                              <p>The template developer initiates an update to the stack that contains a custom
+                                 resource. During an update, the template developer can specify new Properties in the
+                                 stack template.
+                              </p>
+                              
+                              <p>The following is an example of an <code class="code">Update</code> to the stack template
+                                 using a custom resource type:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">
+{
+   &quot;AWSTemplateFormatVersion&quot; : &quot;2010-09-09&quot;,
+   &quot;Resources&quot; : {
+      &quot;MySeleniumTest&quot; : {
+         &quot;Type&quot;: &quot;Custom::SeleniumTester&quot;,
+         &quot;Version&quot; : &quot;1.0&quot;,
+         &quot;Properties&quot; : {
+            &quot;ServiceToken&quot;: &quot;arn:aws:sns:us-west-2:123456789012:CRTest&quot;,
+            &quot;seleniumTester&quot; : &quot;SeleniumTest()&quot;,
+            &quot;endpoints&quot; : [ &quot;http://mysite.com&quot;, &quot;http://myecommercesite.com/&quot;, &quot;http://search.mysite.com&quot;,
+               &quot;http://mynewsite.com&quot; ],
+            &quot;frequencyOfTestsPerHour&quot; : [ &quot;3&quot;, &quot;2&quot;, &quot;4&quot;, &quot;3&quot; ]
+         }
+      }
+   },
+   &quot;Outputs&quot; : {
+      &quot;topItem&quot; : {
+         &quot;Value&quot; : { &quot;Fn::GetAtt&quot; : [&quot;MySeleniumTest&quot;, &quot;resultsPage&quot;] }
+      },
+      &quot;numRespondents&quot; : {
+         &quot;Value&quot; : { &quot;Fn::GetAtt&quot; : [&quot;MySeleniumTest&quot;, &quot;lastUpdate&quot;] }
+      }
+   }
+}           </code></pre>
+                              </li>
+                           <li>
+                              
+                              <p>AWS CloudFormation sends an Amazon SNS notification to the resource provider with
+                                 a
+                                 <code class="code">&quot;RequestType&quot; : &quot;Update&quot;</code> that contains similar information to the
+                                 <code class="code">Create</code> call, except that the
+                                 <code class="code">OldResourceProperties</code> field contains the old resource
+                                 properties, and ResourceProperties contains the updated (if any) resource
+                                 properties.
+                              </p>
+                              
+                              <p>The following is an example of an <code class="code">Update</code> request:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">
+{
+   &quot;RequestType&quot; : &quot;Update&quot;,
+   &quot;ResponseURL&quot; : &quot;http://pre-signed-S3-url-for-response&quot;,
+   &quot;StackId&quot; : &quot;arn:aws:cloudformation:us-west-2:123456789012:stack/stack-name/guid&quot;,
+   &quot;RequestId&quot; : &quot;uniqueid for this update request&quot;,
+   &quot;LogicalResourceId&quot; : &quot;MySeleniumTester&quot;,
+   &quot;ResourceType&quot; : &quot;Custom::SeleniumTester&quot;  
+   &quot;PhysicalResourceId&quot; : &quot;Tester1&quot;,
+   &quot;ResourceProperties&quot; : {
+      &quot;seleniumTester&quot; : &quot;SeleniumTest()&quot;,
+      &quot;endpoints&quot; : [ &quot;http://mysite.com&quot;, &quot;http://myecommercesite.com/&quot;, &quot;http://search.mysite.com&quot;,
+         &quot;http://mynewsite.com&quot; ],
+      &quot;frequencyOfTestsPerHour&quot; : [ &quot;3&quot;, &quot;2&quot;, &quot;4&quot;, &quot;3&quot; ]
+   }
+   &quot;OldResourceProperties&quot; : {
+      &quot;seleniumTester&quot; : &quot;SeleniumTest()&quot;,
+      &quot;endpoints&quot; : [ &quot;http://mysite.com&quot;, &quot;http://myecommercesite.com/&quot;, &quot;http://search.mysite.com&quot; ],
+      &quot;frequencyOfTestsPerHour&quot; : [ &quot;3&quot;, &quot;2&quot;, &quot;4&quot; ]
+   }
+}          </code></pre>
+                              </li>
+                           <li>
+                              
+                              <p>The custom resource provider processes the data sent by AWS CloudFormation. The custom
+                                 resource performs
+                                 the update and sends a response of either <code class="code">SUCCESS</code> or
+                                 <code class="code">FAILED</code> to the S3 URL. AWS CloudFormation then compares the
+                                 <code class="code">PhysicalResourceIDs</code> of old and new custom resources. If they are
+                                 different, AWS CloudFormation recognizes that the update requires a replacement and
+                                 sends a
+                                 delete request to the old resource. The following example demonstrates the
+                                 custom resource provider response to an <code class="code">Update</code> request. 
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">
+{
+   &quot;Status&quot; : &quot;SUCCESS&quot;,
+   &quot;StackId&quot; : &quot;arn:aws:cloudformation:us-west-2:123456789012:stack/stack-name/guid&quot;,
+   &quot;RequestId&quot; : &quot;uniqueid for this update request&quot;,
+   &quot;LogicalResourceId&quot; : &quot;MySeleniumTester&quot;,
+   &quot;PhysicalResourceId&quot; : &quot;Tester2&quot;
+}           </code></pre>
+                              <p>The <code class="code">StackId</code>, <code class="code">RequestId</code>, and
+                                 <code class="code">LogicalResourceId</code> fields must be copied verbatim from the request.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>AWS CloudFormation declares the stack status as <code class="code">UPDATE_COMPLETE</code> or
+                                 <code class="code">UPDATE_FAILED</code>. If the update fails, the stack rolls back. If the
+                                 stack was successfully updated, the template developer can access any new output values
+                                 of the created custom resource with
+                                 <code class="code"><code class="code">Fn::GetAtt</code></code>.
+                              </p>
+                              
+                           </li>
+                        </ol>
+                     </div>
+                     
+                     <p>For detailed information about the request and response objects involved in
+                        <code class="code">Update</code> requests, see <a href="crpg-ref-requesttypes-update.html">Update</a> in the <a href="crpg-ref.html">Custom Resource
+                           Reference</a>.
+                     </p>
+                     
+                     
+                     <h3 id="crpg-walkthrough-stack-deletion">Step 3: Stack Deletion</h3>
+                     
+                     
+                     <div class="orderedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ol style="list-style-type:arabic ! important;">
+                           <li>
+                              
+                              <p>The template developer deletes a stack that contains a custom resource. AWS CloudFormation
+                                 gets
+                                 the current properties specified in the stack template along with the SNS topic,
+                                 and prepares to make a request to the custom resource provider.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>AWS CloudFormation sends an Amazon SNS notification to the resource provider with
+                                 a
+                                 <code class="code">&quot;RequestType&quot; : &quot;Delete&quot;</code> that contains current information about
+                                 the stack, the custom resource properties from the stack template, and an S3 URL
+                                 for the response. 
+                              </p>
+                              
+                              <p>Whenever you delete a stack or make an update that removes or replaces the
+                                 custom resource, AWS CloudFormation compares the <code class="code">PhysicalResourceId</code> between the
+                                 old and new custom resources. If they are different, AWS CloudFormation recognizes
+                                 the update
+                                 as a replacement and sends a delete request for the old resource
+                                 (<code class="code">OldPhysicalResource</code>), as shown in the following example of a
+                                 <code class="code">Delete</code> request. 
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">
+{
+   &quot;RequestType&quot; : &quot;Delete&quot;,
+   &quot;ResponseURL&quot; : &quot;http://pre-signed-S3-url-for-response&quot;,
+   &quot;StackId&quot; : &quot;arn:aws:cloudformation:us-west-2:123456789012:stack/stack-name/guid&quot;,
+   &quot;RequestId&quot; : &quot;unique id for this delete request&quot;,
+   &quot;ResourceType&quot; : &quot;Custom::SeleniumTester&quot;,
+   &quot;LogicalResourceId&quot; : &quot;MySeleniumTester&quot;,
+   &quot;PhysicalResourceId&quot; : &quot;Tester1&quot;,
+   &quot;ResourceProperties&quot; : {
+      &quot;seleniumTester&quot; : &quot;SeleniumTest()&quot;,
+      &quot;endpoints&quot; : [ &quot;http://mysite.com&quot;, &quot;http://myecommercesite.com/&quot;, &quot;http://search.mysite.com&quot;,
+         &quot;http://mynewsite.com&quot; ],
+      &quot;frequencyOfTestsPerHour&quot; : [ &quot;3&quot;, &quot;2&quot;, &quot;4&quot;, &quot;3&quot; ]
+   }
+}    
+            </code></pre>
+                              <p><code class="code">DescribeStackResource</code>, <code class="code">DescribeStackResources</code>, and
+                                 <code class="code">ListStackResources</code> display the user-defined name if it has been
+                                 specified.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>The custom resource provider processes the data sent by AWS CloudFormation and determines
+                                 whether the
+                                 <code class="code">Delete</code> request was successful. The resource provider then uses the
+                                 S3 URL sent by AWS CloudFormation to send a response of either <code class="code">SUCCESS</code> or
+                                 <code class="code">FAILED</code>. To successfully delete a stack with a custom resource, the
+                                 custom resource provider must respond successfully to a delete request.
+                              </p>
+                              
+                              <p>The following is an example of a custom resource provider response to a <code class="code">Delete</code>
+                                 request:
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">
+{
+   &quot;Status&quot; : &quot;SUCCESS&quot;,
+   &quot;StackId&quot; : &quot;arn:aws:cloudformation:us-west-2:123456789012:stack/stack-name/guid&quot;,
+   &quot;RequestId&quot; : &quot;unique id for this delete request&quot;,
+   &quot;LogicalResourceId&quot; : &quot;MySeleniumTester&quot;,
+   &quot;PhysicalResourceId&quot; : &quot;Tester1&quot;
+}           
+            </code></pre>
+                              <p>The <code class="code">StackId</code>, <code class="code">RequestId</code>, and
+                                 <code class="code">LogicalResourceId</code> fields must be copied verbatim from the request.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>AWS CloudFormation declares the stack status as <code class="code">DELETE_COMPLETE</code> or
+                                 <code class="code">DELETE_FAILED</code>.
+                              </p>
+                              
+                           </li>
+                        </ol>
+                     </div>
+                     
+                     <p>For detailed information about the request and response objects involved in
+                        <code class="code">Delete</code> requests, see <a href="crpg-ref-requesttypes-delete.html">Delete</a> in the <a href="crpg-ref.html">Custom Resource Reference</a>.
+                     </p>
+                     
+                     
+                     <h3 id="w2ab2c17c26c12b5c12">See Also</h3>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="crpg-ref.html">AWS CloudFormation Custom Resource Reference</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="aws-resource-cfn-customresource.html">AWS::CloudFormation::CustomResource</a></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="intrinsic-function-reference-getatt.html">Fn::GetAtt</a></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="template-custom-resources.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="template-custom-resources-lambda.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Walkthrough: Using
+         Amazon Simple Notification Service to Create Custom Resources"><a class="pagetoc" href="#walkthrough-custom-resources-sns-adding-nonaws-resource">Walkthrough: Using
+                              Amazon Simple Notification Service to Create Custom Resources</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS CloudFormation';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Access Binary
+         Files in Lambda Using an API Gateway API - Amazon API Gateway
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="api-gateway-content-encodings-examples.html" title="Examples of Binary Support">
+      <link rel="prev" href="api-gateway-content-encodings-examples-image-s3.html" title="Access Binary Files in
+                Amazon S3 through an API Gateway API">
+      <link rel="next" href="api-gateway-gzip-compression-decompression.html" title=" Enable Payload Compression for an API ">
+      <meta name="description" content="Example showing how to access binary files in Lambda using an API Gateway API.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon API Gateway">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-content-encodings-examples-image-lambda.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/apigateway">Amazon API Gateway</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="how-to-create-api.html">Creating an API in Amazon API Gateway</a> &#xBB; <a href="api-gateway-payload-encodings.html">Support Binary Payloads in
+                                    API Gateway</a> &#xBB; <a href="api-gateway-content-encodings-examples.html">Examples of Binary Support</a> &#xBB; <span class="breadcrumb">Access Binary
+                                    Files in Lambda Using an API Gateway API</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="api-gateway-content-encodings-examples-image-lambda">Access Binary
+                        Files in Lambda Using an API Gateway API
+                     </h1>
+                     <p>The following example demonstrates how to access a binary file in AWS Lambda
+                        through an API Gateway API. The sample API is presented in a Swagger file. The code
+                        example uses the API Gateway REST API calls.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#api-gateway-content-encodings-example-image-lambda-swagger-file">Swagger File of a Sample API to Access Images in Lambda</a></li>
+                           <li><a href="#api-gateway-content-encodings-example-download-image-from-lambda">Download an Image from Lambda </a></li>
+                           <li><a href="#api-gateway-content-encodings-example-upload-image-to-lambda">Upload an Image to Lambda</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="api-gateway-content-encodings-example-image-lambda-swagger-file">Swagger File of a Sample API to Access Images in Lambda</h2>
+                     
+                     
+                     <p>The following Swagger file shows an example API that illustrates downloading
+                        an image file from Lambda and uploading an image file to Lambda.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;swagger&quot;: &quot;2.0&quot;,
+  &quot;info&quot;: {
+    &quot;version&quot;: &quot;2016-10-21T17:26:28Z&quot;,
+    &quot;title&quot;: &quot;ApiName&quot;
+  },
+  &quot;host&quot;: &quot;abcdefghi.execute-api.us-east-1.amazonaws.com&quot;,
+  &quot;basePath&quot;: &quot;/v1&quot;,
+  &quot;schemes&quot;: [
+    &quot;https&quot;
+  ],
+  &quot;paths&quot;: {
+    &quot;/lambda&quot;: {
+      &quot;get&quot;: {
+        &quot;produces&quot;: [
+          &quot;application/json&quot;
+        ],
+        &quot;parameters&quot;: [
+          {
+            &quot;name&quot;: &quot;key&quot;,
+            &quot;in&quot;: &quot;query&quot;,
+            &quot;required&quot;: false,
+            &quot;type&quot;: &quot;string&quot;
+          }
+        ],
+        &quot;responses&quot;: {
+          &quot;200&quot;: {
+            &quot;description&quot;: &quot;200 response&quot;,
+            &quot;schema&quot;: {
+              &quot;$ref&quot;: &quot;#/definitions/Empty&quot;
+            }
+          },
+          &quot;500&quot;: {
+            &quot;description&quot;: &quot;500 response&quot;
+          }
+        },
+        &quot;x-amazon-apigateway-integration&quot;: {
+          &quot;uri&quot;: &quot;arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:image/invocations&quot;,
+          &quot;type&quot;: &quot;AWS&quot;,
+          &quot;credentials&quot;: &quot;arn:aws:iam::123456789012:role/Lambda&quot;,
+          &quot;httpMethod&quot;: &quot;POST&quot;,
+          &quot;requestTemplates&quot;: {
+            &quot;application/json&quot;: &quot;{\n   \&quot;imageKey\&quot;: \&quot;$input.params(&apos;key&apos;)\&quot;\n}&quot;
+          },
+          &quot;responses&quot;: {
+            &quot;default&quot;: {
+              &quot;statusCode&quot;: &quot;500&quot;
+            },
+            &quot;2\\d{2}&quot;: {
+              &quot;statusCode&quot;: &quot;200&quot;,
+              &quot;responseTemplates&quot;: {
+                &quot;application/json&quot;: &quot;{\n   \&quot;image\&quot;: \&quot;$input.body\&quot;\n}&quot;
+              }
+            }
+          }
+        }
+      },
+      &quot;put&quot;: {
+        &quot;produces&quot;: [
+          &quot;application/json&quot;, &quot;application/octet-stream&quot;
+        ],
+        &quot;parameters&quot;: [
+          {
+            &quot;name&quot;: &quot;key&quot;,
+            &quot;in&quot;: &quot;query&quot;,
+            &quot;required&quot;: false,
+            &quot;type&quot;: &quot;string&quot;
+          }
+        ],
+        &quot;responses&quot;: {
+          &quot;200&quot;: {
+            &quot;description&quot;: &quot;200 response&quot;,
+            &quot;schema&quot;: {
+              &quot;$ref&quot;: &quot;#/definitions/Empty&quot;
+            }
+          },
+          &quot;500&quot;: {
+            &quot;description&quot;: &quot;500 response&quot;
+          }
+        },
+        &quot;x-amazon-apigateway-integration&quot;: {
+          &quot;uri&quot;: &quot;arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:image/invocations&quot;,
+          &quot;type&quot;: &quot;AWS&quot;,
+          &quot;credentials&quot;: &quot;arn:aws:iam::123456789012:role/Lambda&quot;,
+          &quot;httpMethod&quot;: &quot;POST&quot;,
+          &quot;contentHandling&quot; : &quot;CONVERT_TO_TEXT&quot;,
+          &quot;requestTemplates&quot;: {
+            &quot;application/json&quot;: &quot;{\n   \&quot;imageKey\&quot;: \&quot;$input.params(&apos;key&apos;)\&quot;, \&quot;image\&quot;: \&quot;$input.body\&quot;\n}&quot;
+          },
+          &quot;responses&quot;: {
+            &quot;default&quot;: {
+              &quot;statusCode&quot;: &quot;500&quot;
+            },
+            &quot;2\\d{2}&quot;: {
+              &quot;statusCode&quot;: &quot;200&quot;
+            }
+          }
+        }
+      }
+    }
+  },
+  &quot;x-amazon-apigateway-binary-media-types&quot; : [&quot;application/octet-stream&quot;, &quot;image/jpeg&quot;],
+  &quot;definitions&quot;: {
+    &quot;Empty&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;title&quot;: &quot;Empty Schema&quot;
+    }
+  }
+}</code></pre>
+                     <h2 id="api-gateway-content-encodings-example-download-image-from-lambda">Download an Image from Lambda </h2>
+                     
+                     
+                     <p>To download an image file (<code class="literal">image.jpg</code>) as a binary blob from
+                        Lambda:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">GET /v1/lambda?key=image.jpg HTTP/1.1
+Host: abcdefghi.execute-api.us-east-1.amazonaws.com
+Content-Type: application/json
+Accept: application/octet-stream
+</code></pre>
+                     <p>The successful response looks like this:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">200 OK HTTP/1.1
+
+[raw bytes]</code></pre>
+                     <p>To download an image file (<code class="literal">image.jpg</code>) as a Base64-encoded
+                        string, formatted as a JSON property, from Lambda:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">GET /v1/lambda?key=image.jpg HTTP/1.1
+Host: abcdefghi.execute-api.us-east-1.amazonaws.com
+Content-Type: application/json
+Accept: application/json
+</code></pre>
+                     <p>The successful response looks like this:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">200 OK HTTP/1.1
+
+{
+  &quot;image&quot;: &quot;W3JhdyBieXRlc10=&quot;
+}</code></pre>
+                     <h2 id="api-gateway-content-encodings-example-upload-image-to-lambda">Upload an Image to Lambda</h2>
+                     
+                     
+                     <p>To upload an image file (<code class="literal">image.jpg</code>) as a binary blob to
+                        Lambda:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">PUT /v1/lambda?key=image.jpg HTTP/1.1
+Host: abcdefghi.execute-api.us-east-1.amazonaws.com
+Content-Type: application/octet-stream
+Accept: application/json
+
+[raw bytes]</code></pre>
+                     <p>The successful response looks like this:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">200 OK            </code></pre>
+                     <p>To upload an image file (<code class="literal">image.jpg</code>) as a Base64-encoded
+                        string to Lambda:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">PUT /v1/lambda?key=image.jpg HTTP/1.1
+Host: abcdefghi.execute-api.us-east-1.amazonaws.com
+Content-Type: application/json
+Accept: application/json
+
+W3JhdyBieXRlc10=</code></pre>
+                     <p>The successful response looks like this:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">200 OK           </code></pre>
+                     </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="api-gateway-content-encodings-examples-image-s3.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="api-gateway-gzip-compression-decompression.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Swagger File of a Sample API to Access Images in Lambda"><a class="pagetoc" href="#api-gateway-content-encodings-example-image-lambda-swagger-file">Swagger File of a Sample API to Access Images in Lambda</a></li>
+                        <li class="pagetoc" name="Download an Image from Lambda "><a class="pagetoc" href="#api-gateway-content-encodings-example-download-image-from-lambda">Download an Image from Lambda </a></li>
+                        <li class="pagetoc" name="Upload an Image to Lambda"><a class="pagetoc" href="#api-gateway-content-encodings-example-upload-image-to-lambda">Upload an Image to Lambda</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon API Gateway';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

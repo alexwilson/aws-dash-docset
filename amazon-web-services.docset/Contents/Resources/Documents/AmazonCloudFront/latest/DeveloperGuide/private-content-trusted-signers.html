@@ -1,0 +1,1112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Specifying the AWS Accounts That Can Create Signed URLs and Signed Cookies (Trusted
+         Signers) - Amazon CloudFront
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="PrivateContent.html" title="Serving Private Content through CloudFront">
+      <link rel="prev" href="private-content-restricting-access-to-s3.html" title="Using an Origin Access Identity to Restrict Access to Your Amazon S3 Content">
+      <link rel="next" href="private-content-choosing-signed-urls-cookies.html" title="Choosing Between Signed URLs and Signed Cookies">
+      <meta name="description" content="Specify the AWS accounts that can create signed URLs.">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="PrivateContent.html">Serving Private Content through CloudFront</a> &#xBB; <span class="breadcrumb">Specifying the AWS Accounts That Can Create Signed URLs and Signed Cookies (Trusted
+                                    Signers)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="private-content-trusted-signers">Specifying the AWS Accounts That Can Create Signed URLs and Signed Cookies (Trusted
+                        Signers)
+                     </h1>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#private-content-creating-cloudfront-key-pairs">Creating CloudFront Key Pairs for
+                                 				Your Trusted Signers</a></li>
+                           <li><a href="#private-content-reformatting-private-key">Reformatting the CloudFront Private Key
+                                 				(.NET and Java Only)</a></li>
+                           <li><a href="#private-content-adding-trusted-signers">Adding Trusted Signers to Your
+                                 				Distribution</a></li>
+                           <li><a href="#private-content-verifying-trusted-signers-active">Verifying that Trusted
+                                 				Signers Are Active (Optional)</a></li>
+                           <li><a href="#private-content-rotating-key-pairs">Rotating CloudFront Key Pairs</a></li>
+                        </ul>
+                     </div>
+                     <p>To create signed URLs or signed cookies, you need at least one AWS account that has
+                        an active CloudFront key pair. This account is known 
+                        			as a trusted signer. The trusted signer has two purposes:
+                     </p>
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>As soon as you add the AWS account ID for your trusted signer to your distribution,
+                                 CloudFront starts to require that users use 
+                                 						signed URLs or signed cookies to access your objects.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>When you create signed URLs or signed cookies, you use the private key from the trusted
+                                 signer&apos;s key pair to sign a portion 
+                                 						of the URL or the cookie. When someone requests a restricted object, CloudFront
+                                 compares the signed portion of the URL or cookie with 
+                                 						the unsigned portion to verify that the URL or cookie hasn&apos;t been tampered with.
+                                 CloudFront also verifies that the URL or cookie is valid, 
+                                 						meaning, for example, that the expiration date and time hasn&apos;t passed.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     <p>When you specify trusted signers, you also indirectly specify the objects that require
+                        signed URLs or signed cookies:
+                     </p>
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><b>Web distributions</b> &#x2013; You add trusted signers to cache behaviors. If your distribution 
+                                 						has only one cache behavior, users must use signed URLs or signed cookies to
+                                 access any object associated with the distribution. If you 
+                                 						create multiple cache behaviors and add trusted signers to some cache behaviors
+                                 and not to others, you can require that users 
+                                 						use signed URLs or signed cookies to access some objects and not others.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><b>RTMP distributions (signed URLs only)</b> &#x2013; You add trusted signers to a distribution. 
+                                 						After you add trusted signers to an RTMP distribution, users must use signed
+                                 URLs to access any object associated with the 
+                                 						distribution.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>To specify trusted signers for a distribution, you must use the CloudFront console
+                           or CloudFront API
+                           				version 2009-09-09 or later.
+                        </p>
+                     </div>
+                     <p>To specify the accounts that are allowed to create signed URLs or signed cookies and
+                        to add the accounts to your CloudFront distribution, 
+                        			perform the following tasks:
+                     </p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Decide which AWS accounts you want to use as trusted signers. Most CloudFront customers
+                              use
+                              					the account that they used to create the distribution.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>For each of the accounts that you selected in Step 1, create a CloudFront key pair.
+                              For more
+                              					information, see <a href="private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs">Creating CloudFront Key Pairs for
+                                 				Your Trusted Signers</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>If you&apos;re using .NET or Java to create signed URLs or signed cookies, reformat the
+                              					CloudFront private key. For more information, see <a href="private-content-trusted-signers.html#private-content-reformatting-private-key">Reformatting the CloudFront Private Key
+                                 				(.NET and Java Only)</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the distribution for which you&apos;re creating signed URLs or signed cookies, specify
+                              					the AWS account IDs of your trusted signers. For more information, see <a href="private-content-trusted-signers.html#private-content-adding-trusted-signers">Adding Trusted Signers to Your
+                                 				Distribution</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>(Optional) Verify that CloudFront recognizes that your trusted signers have active
+                              CloudFront key
+                              					pairs. For more information, see <a href="private-content-trusted-signers.html#private-content-verifying-trusted-signers-active">Verifying that Trusted
+                                 				Signers Are Active (Optional)</a>.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     <h2 id="private-content-creating-cloudfront-key-pairs">Creating CloudFront Key Pairs for
+                        				Your Trusted Signers
+                     </h2>
+                     			
+                     			
+                     <p>Each of the AWS accounts that you use to create CloudFront signed URLs or signed
+                        				cookies&#x2014;your trusted signers&#x2014;must have its own CloudFront key pair, and the key
+                        pair
+                        				must be active. Note that you can&apos;t substitute an Amazon EC2 key pair for a CloudFront
+                        key pair. When
+                        				you create a CloudFront signed URL or signed cookie, you include the key pair
+                        ID for the trusted
+                        				signer&apos;s key pair in the URL. Amazon EC2 does not make key pair IDs available.
+                     </p>
+                     			
+                     <p>To help secure your applications, we recommend that you change CloudFront key pairs
+                        every 90
+                        				days or more often. For more information, see <a href="private-content-trusted-signers.html#private-content-rotating-key-pairs">Rotating CloudFront Key Pairs</a>.
+                     </p>
+                     
+                     			
+                     <p>You can create a key pair in the following ways:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>Create a key pair in the AWS Management Console and download the private key. See
+                                 the procedure
+                                 							<a href="private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs-procedure">To create CloudFront key
+                                    					pairs in the AWS Management Console</a>.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Create an RSA key pair by using an application such as OpenSSL, and upload the
+                                 						public key to the AWS Management Console. See the procedure <a href="private-content-trusted-signers.html#private-content-uploading-cloudfront-public-key-procedure">To create an RSA
+                                    					key pair and upload the public key in the AWS Management Console</a>.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     			<a id="private-content-creating-cloudfront-key-pairs-procedure"></a><p class="title"><b>To create CloudFront key
+                           					pairs in the AWS Management Console</b></p>
+                     <ol>
+                        <li>
+                           					
+                           <p>Sign in to the AWS Management Console using the root credentials for an AWS account.</p>
+                           					
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>IAM users can&apos;t create CloudFront key pairs. You must log in using root credentials
+                                 to
+                                 							create key pairs.
+                              </p>
+                           </div>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>On the <em>account-name</em> menu, click <b>Security Credentials</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Expand <b>CloudFront Key Pairs</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Confirm that you have no more than one active key pair. You can&apos;t create a key pair
+                              						if you already have two active key pairs.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Click <b>Create New Key Pair</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the <b>Create Key Pair</b> dialog box, click <b>Download
+                                 							Private Key File</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the <b>Opening &lt;filename&gt;</b> dialog box, accept the default
+                              						value of <b>Save File</b>, and click <b>OK</b> to download
+                              						and save the private key for your CloudFront key pair.
+                           </p>
+                           					
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>Save the private key for your CloudFront key pair in a secure location, and set
+                                 							permissions on the file so that only the desired administrator users can read
+                                 it. If
+                                 							someone gets your private key, they can generate valid signed URLs and signed
+                                 cookies
+                                 							and download your content. You cannot get the private key again, so if you
+                                 lose or
+                                 							delete it, you must create a new CloudFront key pair. 
+                              </p>
+                           </div>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Record the key pair ID for your key pair. (In the AWS Management Console, this is
+                              called the
+                              						access key ID.) You&apos;ll use it when you create signed URLs or signed cookies.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     
+                     			<a id="private-content-uploading-cloudfront-public-key-procedure"></a><p class="title"><b>To create an RSA
+                           					key pair and upload the public key in the AWS Management Console</b></p>
+                     <ol>
+                        <li>
+                           					
+                           <p>Use OpenSSL or another tool to create a key pair. </p>
+                           					
+                           <p>For example, if you&apos;re using OpenSSL, you can use the following command to generate
+                              						a key pair with a length of 4096 bits and save it in the file
+                              							<code class="code">private_key.pem</code>:
+                           </p>
+                           					
+                           <p><code class="code">$ openssl genrsa -out private_key.pem 4096</code></p>
+                           					
+                           <p>The resulting file contains both the public and the private key. To extract the
+                              						public key from that file, run the following command:
+                           </p>
+                           					
+                           <p><code class="code">$ openssl rsa -pubout -in private_key.pem -out public_key.pem</code></p>
+                           					
+                           <p>The public key is the file that you upload later in this procedure</p>
+                           					
+                           <p>Note the following requirements for the key:</p>
+                           					
+                           <div class="itemizedlist">
+                              						
+                              						
+                              						
+                              					
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    							
+                                    <p>The key pair must be an SSH-2 RSA key pair.</p>
+                                    						
+                                 </li>
+                                 <li class="listitem">
+                                    							
+                                    <p>The key pair must be in base64 encoded PEM format.</p>
+                                    						
+                                 </li>
+                                 <li class="listitem">
+                                    							
+                                    <p>The supported key lengths are 1024, 2048, and 4096 bits.</p>
+                                    						
+                                 </li>
+                              </ul>
+                           </div>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Sign in to the AWS Management Console using the root credentials for an AWS account.</p>
+                           					
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>IAM users can&apos;t create CloudFront key pairs. You must log in using root credentials
+                                 to
+                                 							create key pairs.
+                              </p>
+                           </div>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>On the <em>account-name</em> menu, click <b>Security Credentials</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Expand <b>CloudFront Key Pairs</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Confirm that you have no more than one active key pair. You can&apos;t upload your own
+                              						key pair if you already have two active key pairs.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Click <b>Upload Your Own Key Pair</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the <b>Upload Your Own Key Pair</b> dialog box, click
+                              							<b>Choose File</b> and choose the public key file that you created in
+                              						step 1.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Click <b>Upload</b>.
+                           </p>
+                           					
+                           <p>The <b>Upload Key Pair</b> dialog box clears, and the new key pair
+                              						appears at the top of the list of CloudFront key pairs.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Record the key pair ID for your key pair. (In the AWS Management Console, this is
+                              called the
+                              						access key ID.) You&apos;ll use it when you create signed URLs or signed cookies.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     
+                     		
+                     <h2 id="private-content-reformatting-private-key">Reformatting the CloudFront Private Key
+                        				(.NET and Java Only)
+                     </h2>
+                     			
+                     			
+                     <p>If you&apos;re using .NET or Java to create signed URLs or signed cookies, you cannot use
+                        the
+                        				private key from your key pair in the default .pem format to create the signature:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><b>.NET framework</b> &#x2013; Convert the private key to
+                                 						the XML format that the .NET framework uses. Several tools are available. 
+                                 						
+                                 					
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><b>Java</b> &#x2013; Convert the private key to DER
+                                 						format. To do this, you can use OpenSSL:
+                              </p>
+                              					
+                              <p><code class="code">$ openssl pkcs8 -topk8 -nocrypt -in origin.pem -inform PEM -out new.der
+                                    							-outform DER</code></p>
+                              					
+                              <p>To ensure that the encoder works correctly, add the jar for the Bouncy Castle Java
+                                 						cryptography APIs to your project and then add the Bouncy Castle provider.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <h2 id="private-content-adding-trusted-signers">Adding Trusted Signers to Your
+                        				Distribution
+                     </h2>
+                     			
+                     			
+                     <p>Trusted signers are the AWS accounts that can create signed URLs and signed cookies
+                        for
+                        				a distribution. By default, no account, not even the account that created the
+                        distribution,
+                        				is allowed to create signed URLs or signed cookies. To specify the AWS accounts
+                        that you
+                        				want to use as trusted signers, add the accounts to your distribution:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><b>Web distributions</b> &#x2013; Trusted signers are
+                                 						associated with cache behaviors. This allows you to require signed URLs or signed
+                                 						cookies for some objects and not for others in the same distribution. Trusted
+                                 signers
+                                 						can only create signed URLs or cookies for objects that are associated with
+                                 the
+                                 						corresponding cache behaviors. For example, if you have one trusted signer for
+                                 one cache
+                                 						behavior and a different trusted signer for a different cache behavior, neither
+                                 trusted
+                                 						signer can create signed URLs or cookies for objects that are associated with
+                                 the other
+                                 						cache behavior.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><b>RTMP distributions (signed URLs only)</b> &#x2013;
+                                 						Trusted signers are associated with the distribution. After you add trusted
+                                 signers to
+                                 						an RTMP distribution, users must use signed URLs or signed cookies to access
+                                 any of the
+                                 						objects associated with the distribution.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Define path patterns and their sequence carefully so you don&apos;t either give users
+                           					unintended access to your content or prevent them from accessing content that
+                           you want to
+                           					be available to everyone. For example, suppose a request matches the path pattern
+                           for two
+                           					cache behaviors. The first cache behavior does not require signed URLs or signed
+                           cookies
+                           					and the second cache behavior does. Users will be able to access the objects
+                           without using
+                           					signed URLs or signed cookies because CloudFront processes the cache behavior
+                           that is associated
+                           					with the first match.
+                        </p>
+                     </div>
+                     			
+                     <p>For more information about path patterns, see <a href="distribution-web-values-specify.html#DownloadDistValuesPathPattern">Path Pattern</a>.
+                     </p>
+                     
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>If you&apos;re updating a distribution that you&apos;re already using to distribute content,
+                           add
+                           					trusted signers only when you&apos;re ready to start generating signed URLs or signed
+                           cookies
+                           					for your objects, or CloudFront will reject the requests:
+                        </p>
+                        <div class="itemizedlist">
+                           					
+                           					
+                           				
+                           <ul class="itemizedlist" type="disc">
+                              <li class="listitem">
+                                 						
+                                 <p><b>Web distributions</b> &#x2013; After you add trusted
+                                    							signers to a cache behavior for a web distribution, users must use signed URLs
+                                    or
+                                    							signed cookies to access the objects that are associated with the cache
+                                    							behavior.
+                                 </p>
+                                 					
+                              </li>
+                              <li class="listitem">
+                                 						
+                                 <p><b>RTMP distributions (signed URLs only)</b> &#x2013;
+                                    							After you add trusted signers to an RTMP distribution, users must use signed
+                                    URLs to
+                                    							access any of the objects associated with the distribution. 
+                                 </p>
+                                 					
+                              </li>
+                           </ul>
+                        </div>
+                     </div>
+                     
+                     			
+                     <p>The maximum number of trusted signers depends on the type of distribution:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><b>Web distributions</b> &#x2013; A maximum of five for
+                                 						each cache behavior
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><b>RTMP distributions</b> &#x2013; A maximum of five for
+                                 						the distribution
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>You can add trusted signers to your distribution using either the CloudFront console
+                        or the
+                        				CloudFront API. See the applicable topic:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><a href="private-content-trusted-signers.html#private-content-adding-trusted-signers-console">Adding Trusted Signers to
+                                    					Your Distribution Using the CloudFront Console</a></p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><a href="private-content-trusted-signers.html#private-content-adding-trusted-signers-api">Adding Trusted Signers to Your
+                                    					Distribution Using the CloudFront API</a></p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     			
+                     <h3 id="private-content-adding-trusted-signers-console">Adding Trusted Signers to
+                        					Your Distribution Using the CloudFront Console
+                     </h3>
+                     				
+                     				<a id="private-content-adding-trusted-signers-console-procedure"></a><p class="title"><b>To add trusted
+                           						signers to your distribution using the CloudFront console</b></p>
+                     <ol>
+                        <li>
+                           						
+                           <p>If you want to use only the AWS account that created the distribution as a trusted
+                              							signer, skip to Step 2.
+                           </p>
+                           						
+                           <p>If you want to use other AWS accounts, get the AWS account ID for each
+                              							account:
+                           </p>
+                           						
+                           <ol>
+                              <li>
+                                 								
+                                 <p>Sign in to the AWS Management Console at <a href="https://console.aws.amazon.com/console/home" target="_blank">https://console.aws.amazon.com/console/home</a> using an account that you
+                                    									want to use as a trusted signer.
+                                 </p>
+                                 							
+                              </li>
+                              <li>
+                                 								
+                                 <p>In the upper-right corner of the console, click the name associated with the
+                                    									account, and click <b>My Account</b>.
+                                 </p>
+                                 							
+                              </li>
+                              <li>
+                                 								
+                                 <p>Under <b>Account Settings</b>, make note of the account
+                                    									ID.
+                                 </p>
+                                 							
+                              </li>
+                              <li>
+                                 								
+                                 <p>Sign out of the AWS Management Console.</p>
+                                 							
+                              </li>
+                              <li>
+                                 								
+                                 <p>Repeat steps a through d for the other accounts that you want to use as
+                                    									trusted signers.
+                                 </p>
+                                 							
+                              </li>
+                           </ol>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>Open the Amazon CloudFront console at <a href="https://console.aws.amazon.com/cloudfront/" target="_blank">https://console.aws.amazon.com/cloudfront/</a>, and sign in using the account
+                              							that you used to create the distribution that you want to add trusted signers
+                              							to.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>Click the distribution ID.</p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>Change to edit mode:</p>
+                           						
+                           <div class="itemizedlist">
+                              							
+                              							
+                              						
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    								
+                                    <p><b>Web distributions</b> &#x2013; Click the
+                                       										<b>Behaviors</b> tab, click the behavior that you want to edit,
+                                       									and click <b>Edit</b>.
+                                    </p>
+                                    							
+                                 </li>
+                                 <li class="listitem">
+                                    								
+                                    <p><b>RTMP distributions</b> &#x2013; Click
+                                       										<b>Edit</b>.
+                                    </p>
+                                    							
+                                 </li>
+                              </ul>
+                           </div>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>For <b>Restrict Viewer Access (Use Signed URLs or Signed
+                                 								Cookies)</b>, click <b>Yes</b>.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>For <b>Trusted Signers</b>, check the applicable check boxes:
+                           </p>
+                           						
+                           <div class="itemizedlist">
+                              							
+                              							
+                              						
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    								
+                                    <p><b>Self</b> &#x2013; Check this check box if you want to use the
+                                       									current account (the account that you used to create the distribution).
+                                    </p>
+                                    							
+                                 </li>
+                                 <li class="listitem">
+                                    								
+                                    <p><b>Specify Accounts</b> &#x2013; Check this check box if you
+                                       									want to use other AWS accounts.
+                                    </p>
+                                    							
+                                 </li>
+                              </ul>
+                           </div>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>If you checked the <b>Specify Accounts</b> check box, enter AWS
+                              							account IDs in the <b>AWS Account Number</b> field. These are the
+                              							account IDs that you got in the first step of this procedure. Enter one account
+                              ID per
+                              							line.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>Click <b>Yes, Edit</b>.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>If you&apos;re adding trusted signers to a web distribution and you have more than one
+                              							cache behavior, repeat steps 4 through 8 as applicable.
+                           </p>
+                           					
+                        </li>
+                     </ol>
+                     			
+                     
+                     			
+                     <h3 id="private-content-adding-trusted-signers-api">Adding Trusted Signers to Your
+                        					Distribution Using the CloudFront API
+                     </h3>
+                     				
+                     				
+                     <p>You can use the CloudFront API to add the AWS account IDs for trusted signers to an
+                        existing
+                        					distribution or to create a new distribution that includes trusted signers. In
+                        either
+                        					case, specify the applicable values in the <code class="code">TrustedSigners</code> element. For web
+                        					distributions, add the <code class="code">TrustedSigners</code> element to one or more cache behaviors.
+                        					For RTMP distributions, add the <code class="code">TrustedSigners</code> element to the
+                        					distribution.
+                     </p>
+                     				
+                     <p>See the applicable topic in the <em>Amazon CloudFront API Reference</em>:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p><b>Create a new web distribution</b> &#x2013; <a href="./cloudfront/latest/APIReference/CreateDistribution.html" target="_blank">POST Distribution</a></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><b>Update an existing web distribution</b> &#x2013;
+                                 								<a href="./cloudfront/latest/APIReference/PutConfig.html" target="_blank">PUT Distribution Config</a></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><b>Create a new RTMP distribution</b> &#x2013; <a href="./cloudfront/latest/APIReference/CreateStreamingDistribution.html" target="_blank">POST Streaming
+                                    								Distribution</a></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><b>Update an existing RTMP distribution</b> &#x2013;
+                                 								<a href="./cloudfront/latest/APIReference/PutStreamingDistConfig.html" target="_blank">PUT Streaming Distribution
+                                    								Config</a></p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     		
+                     <h2 id="private-content-verifying-trusted-signers-active">Verifying that Trusted
+                        				Signers Are Active (Optional)
+                     </h2>
+                     			
+                     			
+                     <p>After you add trusted signers to your distribution, you might want to verify that
+                        the
+                        				signers are active. For a trusted signer to be active, the following must be true:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>The AWS account must have at least one active key pair. If you&apos;re rotating key
+                                 						pairs, the account will temporarily have two active key pairs, the old key pair
+                                 and the
+                                 						new one.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>CloudFront must be aware of the active key pair. After you create a key pair, there
+                                 can be
+                                 						a short period of time before CloudFront is aware that the key pair exists.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>To display a list of active trusted signers for a distribution, you currently must
+                           use
+                           					the CloudFront API. A list of active trusted signers is not available in the
+                           CloudFront
+                           					console.
+                        </p>
+                     </div>
+                     
+                     			
+                     
+                     			
+                     
+                     			
+                     <h3 id="private-content-verifying-trusted-signers-active-api">Verifying that
+                        					Trusted Signers Are Active Using the CloudFront API
+                     </h3>
+                     				
+                     				
+                     <p>To determine which trusted signers have active key pairs (are active trusted signers),
+                        					you get the distribution and review the values in the <code class="code">ActiveTrustedSigners</code>
+                        					element. This element lists the AWS account ID of each account that the distribution
+                        					identifies as a trusted signer. If the trusted signer has one or more active
+                        CloudFront key
+                        					pairs, the <code class="code">ActiveTrustedSigners</code> element also lists the key pair IDs. For more
+                        					information, see the applicable topic in the <em>Amazon CloudFront API Reference</em>:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p><b>Web distributions</b> &#x2013; <a href="./cloudfront/latest/APIReference/GetDistribution.html" target="_blank">GET Distribution</a></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><b>RTMP distributions</b> &#x2013; <a href="./cloudfront/latest/APIReference/GetStreamingDistribution.html" target="_blank">GET Streaming
+                                    							Distribution</a></p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     		
+                     <h2 id="private-content-rotating-key-pairs">Rotating CloudFront Key Pairs</h2>
+                     			
+                     			
+                     <p>AWS recommends that you rotate (change) your active CloudFront key pairs every 90
+                        days. To
+                        				rotate CloudFront key pairs that you&apos;re using to create signed URLs or signed
+                        cookies without
+                        				invalidating URLs or cookies that haven&apos;t expired yet, perform the following tasks:
+                     </p>
+                     			
+                     <ol>
+                        <li>
+                           					
+                           <p>Create a new key pair for each of the accounts that you&apos;re using to create signed
+                              						URLs. For more information, see <a href="private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs">Creating CloudFront Key Pairs for
+                                 				Your Trusted Signers</a>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Verify that CloudFront is aware of the new key pairs. For more information, see <a href="private-content-trusted-signers.html#private-content-verifying-trusted-signers-active">Verifying that Trusted
+                                 				Signers Are Active (Optional)</a>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Update your application to create signatures using the private keys from the new key
+                              						pairs.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Confirm that URLs or cookies that you&apos;re signing using the new private keys are
+                              						working.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Wait until the expiration date has passed in URLs or cookies that were signed using
+                              						the old CloudFront key pairs.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Change the old CloudFront key pairs to <b>Inactive</b>:
+                           </p>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>Sign in to the AWS Management Console using the root credentials for an AWS account
+                                    for which
+                                    								you want to make key pairs inactive.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>On the <em>account-name</em> menu, click <b>Security Credentials</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>Expand <b>CloudFront Key Pairs</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>For the applicable key pairs, click <b>Make Inactive</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>Repeat steps a through d for each of the AWS accounts for which you want to make
+                                    								key pairs inactive.
+                                 </p>
+                                 						
+                              </li>
+                           </ol>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Reconfirm that URLs or cookies that you&apos;re signing using the new private keys are
+                              						working.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Delete the old CloudFront key pairs:</p>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>Go to the <a href="https://console.aws.amazon.com/iam/home?#security_credential" target="_blank">Your Security Credentials</a> page.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>Expand <b>CloudFront Key Pairs</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>For the applicable key pairs, click <b>Delete</b>.
+                                 </p>
+                                 						
+                              </li>
+                           </ol>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Delete the old private keys from the location where you stored them.</p>
+                           				
+                        </li>
+                     </ol>
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="private-content-restricting-access-to-s3.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="private-content-choosing-signed-urls-cookies.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Creating CloudFront Key Pairs for
+				Your Trusted Signers"><a class="pagetoc" href="#private-content-creating-cloudfront-key-pairs">Creating CloudFront Key Pairs for
+                              				Your Trusted Signers</a></li>
+                        <li class="pagetoc" name="Reformatting the CloudFront Private Key
+				(.NET and Java Only)"><a class="pagetoc" href="#private-content-reformatting-private-key">Reformatting the CloudFront Private Key
+                              				(.NET and Java Only)</a></li>
+                        <li class="pagetoc" name="Adding Trusted Signers to Your
+				Distribution"><a class="pagetoc" href="#private-content-adding-trusted-signers">Adding Trusted Signers to Your
+                              				Distribution</a></li>
+                        <li class="pagetoc" name="Verifying that Trusted
+				Signers Are Active (Optional)"><a class="pagetoc" href="#private-content-verifying-trusted-signers-active">Verifying that Trusted
+                              				Signers Are Active (Optional)</a></li>
+                        <li class="pagetoc" name="Rotating CloudFront Key Pairs"><a class="pagetoc" href="#private-content-rotating-key-pairs">Rotating CloudFront Key Pairs</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,782 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Specifying How Long Objects Stay in a CloudFront Edge Cache (Expiration) - Amazon CloudFront</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="AddRemoveReplaceObjects.html" title="Adding, Removing, or Replacing Objects in a Distribution">
+      <link rel="prev" href="ReplacingObjectsSameName.html" title="Updating Existing Objects Using the Same Object Names">
+      <link rel="next" href="Invalidation.html" title="Invalidating Objects (Web Distributions Only)">
+      <meta name="description" content="Control how long objects stay in the CloudFront cache and in browser caches.">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Expiration.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="WorkingWithObjects.html">Working with Objects</a> &#xBB; <a href="AddRemoveReplaceObjects.html">Adding, Removing, or Replacing Objects in a Distribution</a> &#xBB; <span class="breadcrumb">Specifying How Long Objects Stay in a CloudFront Edge Cache (Expiration)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="Expiration">Specifying How Long Objects Stay in a CloudFront Edge Cache (Expiration)</h1>
+                     <p>You can control how long your objects stay in a CloudFront cache before CloudFront
+                        forwards another
+                        				request to your origin. Reducing the duration allows you to serve dynamic content.
+                        				Increasing the duration means your users get better performance because your objects
+                        are
+                        				more likely to be served directly from the edge cache. A longer duration also
+                        reduces the
+                        				load on your origin.
+                     </p>
+                     <p>Typically, CloudFront serves an object from an edge location until the cache duration
+                        that you
+                        				specified passes&#x2014;that is, until the object expires. After it expires, the next
+                        time
+                        				the edge location gets a user request for the object, CloudFront forwards the
+                        request to the
+                        				origin server to verify that the cache contains the latest version of the object.
+                        The
+                        				response from the origin depends on whether the object has changed:
+                     </p>
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>If the CloudFront cache already has the latest version, the origin returns a 304 status
+                                 						code (Not Modified).
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>If the CloudFront cache does not have the latest version, the origin returns a 200
+                                 status
+                                 						code (OK) and the latest version of the object.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     <p>If an object in an edge location isn&apos;t frequently requested, CloudFront might evict
+                        the
+                        				object&#x2014;remove the object before its expiration date&#x2014;to make room for objects
+                        				that have been requested more recently.
+                     </p>
+                     <p>By default, each object automatically expires after 24 hours. For web distributions,
+                        you
+                        				can change the default behavior in two ways:
+                     </p>
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>To change the cache duration for all objects that match the same path pattern, you
+                                 						can change the CloudFront settings for <b>Minimum TTL</b>, <b>Maximum
+                                    							TTL</b>, and <b>Default TTL</b> for a cache behavior. For
+                                 						information about the individual settings, see <a href="./AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html#DownloadDistValuesMinTTL" target="_blank">Minimum TTL</a>, <a href="./AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html#DownloadDistValuesMaxTTL" target="_blank">Maximum TTL</a>, and <a href="./AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html#DownloadDistValuesDefaultTTL" target="_blank">Default TTL</a>. To use these settings, you must choose the
+                                 							<b>Customize</b> option for the <a href="./AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html#DownloadDistValuesObjectCaching" target="_blank">Object Caching</a> setting. 
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>To change the cache duration for an individual object, you can configure your origin
+                                 						to add a <code class="code">Cache-Control max-age</code> or <code class="code">Cache-Control s-maxage</code>
+                                 						directive, or an <code class="code">Expires</code> header field to the object. For more information,
+                                 						see <a href="Expiration.html#expiration-individual-objects">Using Headers to Control Cache Duration for
+                                    					Individual Objects</a>.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     <p>For more information about how <b>Minimum TTL</b>, <b>Default
+                           					TTL</b>, and <b>Maximum TTL</b> interact with <code class="code">Cache-Control
+                           					max-age</code> and <code class="code">Cache-Control s-maxage</code> directives and the
+                        					<code class="code">Expires</code> header field, see <a href="Expiration.html#ExpirationDownloadDist">Specifying the Amount of Time that CloudFront Caches
+                           					Objects for Web Distributions</a>.
+                     </p>
+                     <p>You can also control how long errors (for example, 404, Not Found) stay in a CloudFront
+                        cache
+                        				before CloudFront tries again to get the requested object by forwarding another
+                        request to your
+                        				origin. For more information, see <a href="HTTPStatusCodes.html">How CloudFront Processes and Caches HTTP 4xx and 5xx Status Codes from Your Origin</a>.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#expiration-individual-objects">Using Headers to Control Cache Duration for
+                                 					Individual Objects</a></li>
+                           <li><a href="#ExpirationDownloadDist">Specifying the Amount of Time that CloudFront Caches
+                                 					Objects for Web Distributions</a></li>
+                           <li><a href="#expiration-rtmp-distribution">Specifying the Minimum Time that CloudFront Caches
+                                 					Objects for RTMP Distributions</a></li>
+                           <li><a href="#ExpirationAddingHeadersInS3">Adding Headers to Your Objects Using the Amazon S3
+                                 					Console</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="expiration-individual-objects">Using Headers to Control Cache Duration for
+                        					Individual Objects
+                     </h2>
+                     				
+                     
+                     				
+                     <p>You can use the <code class="code">Cache-Control</code> and <code class="code">Expires</code> headers to control
+                        					how long objects stay in the cache. Settings for <b>Minimum TTL</b>,
+                        						<b>Default TTL</b>, and <b>Maximum TTL </b> also affect
+                        					cache duration, but here&apos;s an overview of how headers can affect cache duration:
+                        
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>The <code class="code">Cache-Control max-age</code> directive lets you specify how long (in
+                                 							seconds) that you want an object to remain in the cache before CloudFront gets
+                                 the object
+                                 							again from the origin server. The minimum expiration time CloudFront supports
+                                 is 0 seconds
+                                 							for web distributions and 3600 seconds for RTMP distributions. The maximum
+                                 value is
+                                 							100 years. Specify the value in the following format:
+                              </p>
+                              						
+                              <p><code class="code">Cache-Control: max-age=</code><em class="replaceable"><code>seconds</code></em></p>
+                              						
+                              <p>For example, the following directive tells CloudFront to keep the associated object
+                                 in
+                                 							the cache for 3600 seconds (one hour):
+                              </p>
+                              						
+                              <p><code class="code">Cache-Control: max-age=3600</code></p>
+                              						
+                              <p>If you want objects to stay in CloudFront edge caches for a different duration than
+                                 they
+                                 							stay in browser caches, you can use the <code class="code">Cache-Control max-age</code> and
+                                 								<code class="code">Cache-Control s-maxage</code> directives together. For more information, see
+                                 								<a href="Expiration.html#ExpirationDownloadDist">Specifying the Amount of Time that CloudFront Caches
+                                    					Objects for Web Distributions</a>.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The <code class="code">Expires</code> header field lets you specify an expiration date and time
+                                 							using the format specified in <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.3.1" target="_blank">RFC 2616,
+                                    								Hypertext Transfer Protocol -- HTTP/1.1 Section 3.3.1, Full Date</a>, for
+                                 							example:
+                              </p>
+                              
+                              						
+                              <p><code class="code">Sat, 27 Jun 2015 23:59:59 GMT</code></p>
+                              
+                              						
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     				
+                     <p>We recommend that you use the <code class="code">Cache-Control max-age</code> directive instead of
+                        					the <code class="code">Expires</code> header field to control object caching. If you specify values
+                        					both for <code class="code">Cache-Control max-age</code> and for <code class="code">Expires</code>, CloudFront uses only
+                        					the value of <code class="code">Cache-Control max-age</code>.
+                     </p>
+                     
+                     				
+                     <p>For more information, see <a href="Expiration.html#ExpirationDownloadDist">Specifying the Amount of Time that CloudFront Caches
+                           					Objects for Web Distributions</a>.
+                     </p>
+                     
+                     				
+                     <p>You cannot use the HTTP <code class="code">Cache-Control</code> or <code class="code">Pragma</code> header
+                        					fields in a <code class="code">GET</code> request from a viewer to force CloudFront to go back to the origin
+                        					server for the object. CloudFront ignores those header fields in viewer requests.
+                     </p>
+                     
+                     				
+                     <p>For more information about the <code class="code">Cache-Control</code> and <code class="code">Expires</code>
+                        					header fields, see the following sections in <em>RFC 2616, Hypertext Transfer
+                           						Protocol -- HTTP/1.1</em>: 
+                     </p>
+                     					
+                     <div class="itemizedlist">
+                        						
+                        						
+                        					
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              							
+                              <p><a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9" target="_blank">Section 14.9 Cache Control</a></p>
+                              						
+                           </li>
+                           <li class="listitem">
+                              							
+                              <p><a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.21" target="_blank">Section 14.21 Expires</a></p>
+                              						
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     				
+                     <p>For an example of how to add <code class="code">Cache-Control</code> and <code class="code">Expires</code>
+                        					header fields using the AWS SDK for PHP, see <a href="./AmazonS3/latest/dev/UploadObjSingleOpPHP.html" target="_blank">Upload an Object Using the AWS SDK for
+                           						PHP</a> in the <em>Amazon Simple Storage Service Developer Guide</em>. Some third-party tools are also
+                        					able to add these fields.
+                     </p>
+                     			
+                     <h2 id="ExpirationDownloadDist">Specifying the Amount of Time that CloudFront Caches
+                        					Objects for Web Distributions
+                     </h2>
+                     				
+                     				
+                     
+                     				
+                     <p>For web distributions, you can use <code class="code">Cache-Control</code> or <code class="code">Expires</code>
+                        					headers, and CloudFront minimum, maximum, and default TTL values to control the
+                        amount of time
+                        					in seconds that CloudFront keeps an object in the cache before forwarding another
+                        request to the
+                        					origin. Headers values also determine how long a browser keeps an object in the
+                        cache
+                        					before forwarding another request to CloudFront. 
+                     </p>
+                     
+                     				
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>If you configure CloudFront to forward all headers to your origin for a cache behavior,
+                           						CloudFront never caches the associated objects. Instead, CloudFront forwards
+                           all requests for those
+                           						objects to the origin. In that configuration, the value of minimum TTL must
+                           be 0. For
+                           						more information, see <a href="header-caching.html">Configuring CloudFront to Cache Objects Based on Request Headers</a>.
+                        </p>
+                     </div>
+                     
+                     				
+                     <p>To specify values for <a href="./AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html#DownloadDistValuesMinTTL" target="_blank">Minimum
+                           						TTL</a>, <a href="./AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html#DownloadDistValuesMaxTTL" target="_blank">Maximum
+                           						TTL</a>, and <a href="./AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html#DownloadDistValuesDefaultTTL" target="_blank">Default TTL</a>, you must choose the <b>Customize</b> option for the
+                        						<a href="./AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html#DownloadDistValuesObjectCaching" target="_blank">Object Caching</a> setting.
+                     </p>
+                     
+                     				
+                     <div class="table">
+                        <p class="title"><b></b></p>
+                        <div class="table-contents">
+                           <table id="w313aac23c35c15c23b8">
+                              							
+                              <tbody><tr>
+                                 								
+                                 <th>Origin Configuration</th>
+                                 								
+                                 <th>Minimum TTL = 0 Seconds</th>
+                                 								
+                                 <th>Minimum TTL &gt; 0 Seconds</th>
+                                 							
+                              </tr>
+                              						
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><b>The origin adds a <code class="code">Cache-Control
+                                             												max-age</code> directive to objects</b></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p><b>CloudFront caching</b></p>
+                                    									
+                                    <p>CloudFront caches objects for the lesser of the value of the <code class="code">Cache-Control
+                                          											max-age</code> directive or the value of the CloudFront maximum TTL.
+                                    </p>
+                                    									
+                                    <p><b>Browser caching</b></p>
+                                    									
+                                    <p>Browsers cache objects for the value of the <code class="code">Cache-Control
+                                          											max-age</code> directive.
+                                    </p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p><b>CloudFront caching</b></p>
+                                    									
+                                    <p>CloudFront caching depends on the values of the CloudFront minimum TTL and maximum
+                                       TTL
+                                       										and the <code class="code">Cache-Control max-age</code> directive:
+                                    </p>
+                                    									
+                                    <div class="itemizedlist">
+                                       										
+                                       										
+                                       										
+                                       									
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             											
+                                             <p>Minimum TTL &lt; <code class="code">max-age</code> &lt; maximum TTL
+                                             </p>
+                                             											
+                                             <p>CloudFront caches objects for the value of the <code class="code">Cache-Control
+                                                   													max-age</code> directive.
+                                             </p>
+                                             										
+                                          </li>
+                                          <li class="listitem">
+                                             											
+                                             <p><code class="code">max-age</code> &lt; minimum TTL
+                                             </p>
+                                             											
+                                             <p>CloudFront caches objects for the value of the CloudFront minimum TTL.</p>
+                                             										
+                                          </li>
+                                          <li class="listitem">
+                                             											
+                                             <p><code class="code">max-age</code> &gt; maximum TTL
+                                             </p>
+                                             											
+                                             <p>CloudFront caches objects for the value of the CloudFront maximum TTL. </p>
+                                             										
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    									
+                                    <p><b>Browser caching</b></p>
+                                    									
+                                    <p>Browsers cache objects for the value of the <code class="code">Cache-Control
+                                          											max-age</code> directive.
+                                    </p>
+                                    								
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><b>The origin does not add a <code class="code">Cache-Control
+                                             												max-age</code> directive to objects</b></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p><b>CloudFront caching</b></p>
+                                    									
+                                    <p>CloudFront caches objects for the value of the CloudFront default TTL.</p>
+                                    									
+                                    <p><b>Browser caching</b></p>
+                                    									
+                                    <p>Depends on the browser.</p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p><b>CloudFront caching</b></p>
+                                    									
+                                    <p>CloudFront caches objects for the greater of the value of the CloudFront minimum TTL
+                                       or
+                                       										default TTL.
+                                    </p>
+                                    									
+                                    <p><b>Browser caching</b></p>
+                                    									
+                                    <p>Depends on the browser.</p>
+                                    								
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><b>The origin adds <code class="code">Cache-Control
+                                             												max-age</code> and <code class="code">Cache-Control s-maxage</code> directives to
+                                          											objects</b></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p><b>CloudFront caching</b></p>
+                                    									
+                                    <p>CloudFront caches objects for the lesser of the value of the <code class="code">Cache-Control
+                                          											s-maxage</code> directive or the value of the CloudFront maximum TTL.
+                                    </p>
+                                    									
+                                    <p><b>Browser caching</b></p>
+                                    									
+                                    <p>Browsers cache objects for the value of the <code class="code">Cache-Control
+                                          											max-age</code> directive.
+                                    </p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p><b>CloudFront caching</b></p>
+                                    									
+                                    <p>CloudFront caching depends on the values of the CloudFront minimum TTL and maximum
+                                       TTL
+                                       										and the <code class="code">Cache-Control s-maxage</code> directive:
+                                    </p>
+                                    									
+                                    <div class="itemizedlist">
+                                       										
+                                       										
+                                       										
+                                       									
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             											
+                                             <p>Minimum TTL &lt; <code class="code">s-maxage</code> &lt; maximum TTL
+                                             </p>
+                                             											
+                                             <p>CloudFront caches objects for the value of the <code class="code">Cache-Control
+                                                   													s-maxage</code> directive.
+                                             </p>
+                                             										
+                                          </li>
+                                          <li class="listitem">
+                                             											
+                                             <p><code class="code">s-maxage</code> &lt; minimum TTL
+                                             </p>
+                                             											
+                                             <p>CloudFront caches objects for the value of the CloudFront minimum TTL.</p>
+                                             										
+                                          </li>
+                                          <li class="listitem">
+                                             											
+                                             <p><code class="code">s-maxage</code> &gt; maximum TTL
+                                             </p>
+                                             											
+                                             <p>CloudFront caches objects for the value of the CloudFront maximum TTL. </p>
+                                             										
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    									
+                                    <p><b>Browser caching</b></p>
+                                    									
+                                    <p>Browsers cache objects for the value of the <code class="code">Cache-Control
+                                          											max-age</code> directive.
+                                    </p>
+                                    								
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><b>The origin adds an <code class="code">Expires</code> header to
+                                          											objects</b></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p><b>CloudFront caching</b></p>
+                                    									
+                                    <p>CloudFront caches objects until the date in the <code class="code">Expires</code> header or for
+                                       										the value of the CloudFront maximum TTL, whichever is sooner.
+                                    </p>
+                                    									
+                                    <p><b>Browser caching</b></p>
+                                    									
+                                    <p>Browsers cache objects until the date in the <code class="code">Expires</code>
+                                       										header.
+                                    </p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p><b>CloudFront caching</b></p>
+                                    									
+                                    <p>CloudFront caching depends on the values of the CloudFront minimum TTL and maximum
+                                       TTL
+                                       										and the <code class="code">Expires</code> header:
+                                    </p>
+                                    									
+                                    <div class="itemizedlist">
+                                       										
+                                       										
+                                       										
+                                       									
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             											
+                                             <p>Minimum TTL &lt; <code class="code">Expires</code> &lt; maximum TTL
+                                             </p>
+                                             											
+                                             <p>CloudFront caches objects until the date and time in the <code class="code">Expires</code>
+                                                												header.
+                                             </p>
+                                             										
+                                          </li>
+                                          <li class="listitem">
+                                             											
+                                             <p><code class="code">Expires</code> &lt; minimum TTL
+                                             </p>
+                                             											
+                                             <p>CloudFront caches objects for the value of the CloudFront minimum TTL.</p>
+                                             										
+                                          </li>
+                                          <li class="listitem">
+                                             											
+                                             <p><code class="code">Expires</code> &gt; maximum TTL
+                                             </p>
+                                             											
+                                             <p>CloudFront caches objects for the value of the CloudFront maximum TTL. </p>
+                                             										
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    									
+                                    <p><b>Browser caching</b></p>
+                                    									
+                                    <p>Browsers cache objects until the date and time in the <code class="code">Expires</code>
+                                       										header.
+                                    </p>
+                                    								
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><b>Origin adds <code class="code">Cache-Control: no-cache</code>,
+                                          												<code class="code">no-store</code>, and/or <code class="code">private</code> directives to
+                                          											objects</b></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront and browsers respect the headers.</p>
+                                    									
+                                    <p>For an exception to how CloudFront handles the <code class="code">Cache-Control:
+                                          											no-cache</code> header, see <a href="RequestAndResponseBehaviorCustomOrigin.html#request-custom-traffic-spikes">Simultaneous Requests for the Same Object (Traffic Spikes)</a>.
+                                    </p>
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <p><b>CloudFront caching</b></p>
+                                    									
+                                    <p>CloudFront caches objects for the value of the CloudFront minimum TTL.</p>
+                                    									
+                                    <p><b>Browser caching</b></p>
+                                    									
+                                    <p>Browsers respect the headers.</p>
+                                    								
+                                 </td>
+                                 							
+                              </tr>
+                              						
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     				
+                     <p>For information about how to change settings for web distributions using the CloudFront
+                        					console, see <a href="HowToUpdateDistribution.html">Viewing and Updating CloudFront Distributions</a>. For information about how to change settings
+                        					for web distributions using the CloudFront API, see <a href="./cloudfront/latest/APIReference/PutConfig.html" target="_blank">PUT
+                           						Config</a>. 
+                     </p>
+                     
+                     			
+                     <h2 id="expiration-rtmp-distribution">Specifying the Minimum Time that CloudFront Caches
+                        					Objects for RTMP Distributions
+                     </h2>
+                     				
+                     				
+                     <p>For RTMP distributions, CloudFront keeps objects in edge caches for 24 hours by default.
+                        You
+                        					can add <code class="code">Cache-Control</code> or <code class="code">Expires</code> headers to your objects to
+                        					change the amount of time that CloudFront keeps objects in edge caches before
+                        it forwards
+                        					another request to the origin. The minimum duration is 3600 seconds (one hour).
+                        If you
+                        					specify a lower value, CloudFront uses 3600 seconds.
+                     </p>
+                     			
+                     <h2 id="ExpirationAddingHeadersInS3">Adding Headers to Your Objects Using the Amazon S3
+                        					Console
+                     </h2>
+                     				
+                     				
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Using the Amazon S3 console, you can only add headers to one object at a time, but
+                           with
+                           						some third-party tools, you can add headers to multiple Amazon S3 objects at
+                           a time. For more
+                           						information about third-party tools that support Amazon S3, perform a web search
+                           on
+                           							<strong class="userinput"><code>AWS S3 third party tools</code></strong>.
+                        </p>
+                     </div>
+                     
+                     				
+                     <p class="title"><b>To add a <code class="code">Cache-Control</code> or <code class="code">Expires</code> header field to Amazon S3 objects using the Amazon S3 console</b></p>
+                     <ol>
+                        <li>
+                           						
+                           <p>Sign in to the AWS Management Console and open the Amazon S3 console at <a href="https://console.aws.amazon.com/s3" target="_blank">https://console.aws.amazon.com/s3</a>.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           <p>In the Amazon S3 console, in the buckets list, choose the name of the bucket that
+                              contains the files.
+                           </p>
+                        </li>
+                        <li>
+                           <p>In the list of objects, select the check box for one or more objects that you want
+                              to add a header to.
+                           </p>
+                        </li>
+                        <li>
+                           <p>Choose <b>More</b> and choose <b>Change metadata</b>.
+                           </p>
+                        </li>
+                        <li>
+                           						
+                           <p>In the <b>Key</b> list, choose <b>Cache-Control</b> or <b>Expires</b>, as applicable. 
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>In the <b>Value</b> field, type the applicable value:
+                           </p>
+                           						
+                           <div class="itemizedlist">
+                              							
+                              							
+                              						
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    								
+                                    <p>For a <code class="code">Cache-Control</code> field, type:
+                                    </p>
+                                    								
+                                    <p><code class="code">max-age=<em class="replaceable"><code>number of seconds that you want objects to stay in a CloudFront edge cache</code></em></code></p>
+                                    							
+                                 </li>
+                                 <li class="listitem">
+                                    								
+                                    <p>For an <b>Expires</b> field, type a date and time in HTML format.
+                                    </p>
+                                    							
+                                 </li>
+                              </ul>
+                           </div>
+                           					
+                        </li>
+                        <li>
+                           <p>Choose <b>Save</b>.
+                           </p>
+                        </li>
+                     </ol>
+                     			
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ReplacingObjectsSameName.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="Invalidation.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Using Headers to Control Cache Duration for
+					Individual Objects"><a class="pagetoc" href="#expiration-individual-objects">Using Headers to Control Cache Duration for
+                              					Individual Objects</a></li>
+                        <li class="pagetoc" name="Specifying the Amount of Time that CloudFront Caches
+					Objects for Web Distributions"><a class="pagetoc" href="#ExpirationDownloadDist">Specifying the Amount of Time that CloudFront Caches
+                              					Objects for Web Distributions</a></li>
+                        <li class="pagetoc" name="Specifying the Minimum Time that CloudFront Caches
+					Objects for RTMP Distributions"><a class="pagetoc" href="#expiration-rtmp-distribution">Specifying the Minimum Time that CloudFront Caches
+                              					Objects for RTMP Distributions</a></li>
+                        <li class="pagetoc" name="Adding Headers to Your Objects Using the Amazon S3
+					Console"><a class="pagetoc" href="#ExpirationAddingHeadersInS3">Adding Headers to Your Objects Using the Amazon S3
+                              					Console</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

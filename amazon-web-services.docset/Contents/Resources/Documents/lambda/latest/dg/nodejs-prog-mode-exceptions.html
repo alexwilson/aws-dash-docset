@@ -1,0 +1,312 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Function Errors (Node.js) - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="programming-model.html" title="Programming Model(Node.js)">
+      <link rel="prev" href="nodejs-prog-model-logging.html" title="Logging (Node.js)">
+      <link rel="next" href="java-programming-model.html" title="Programming Model for Authoring Lambda Functions in Java">
+      <meta name="description" content="If your Lambda function notifies AWS Lambda that it failed to execute properly, Lambda will attempt to convert the error object to a String. Consider the following example:">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-mode-exceptions.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-introduction-function.html">Lambda Functions</a> &#xBB; <a href="lambda-app.html">Building Lambda Functions</a> &#xBB; <a href="programming-model-v2.html">Programming Model</a> &#xBB; <a href="programming-model.html">Programming Model(Node.js)</a> &#xBB; <span class="breadcrumb">Function Errors (Node.js)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="nodejs-prog-mode-exceptions">Function Errors (Node.js)</h1>
+                     <p> If your Lambda function notifies AWS Lambda that it failed to execute properly, Lambda
+                        will attempt to
+                        convert the error object to a String. Consider the following example:
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">console.log(&apos;Loading function&apos;);
+
+exports.handler = function(event, context, callback) {
+    // This example code only throws error. 
+    var error = new Error(&quot;something is wrong&quot;);
+    callback(error);
+   
+};</code></pre><p>
+                        When you invoke this Lambda function, it will notify AWS Lambda that function
+                        execution completed with an error and passes the error information to AWS Lambda.
+                        AWS Lambda returns the error information back to the client: 
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;errorMessage&quot;: &quot;something is wrong&quot;,
+  &quot;errorType&quot;: &quot;Error&quot;,
+  &quot;stackTrace&quot;: [
+    &quot;exports.handler (/var/task/index.js:10:17)&quot;
+  ]
+}</code></pre><p>You would get the same result if you write the function using the async feature of
+                        Node.js runtime version 8.10. For example:
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">exports.handler = async function(event, context) {                
+    function AccountAlreadyExistsError(message) {
+        this.name = &quot;AccountAlreadyExistsError&quot;;
+        this.message = message;
+    }
+    AccountAlreadyExistsError.prototype = new Error();
+ 
+    const error = new AccountAlreadyExistsError(&quot;Account is in use!&quot;);
+    throw error
+};
+</code></pre><p>Again, when this Lambda function is invoked, it will notify AWS Lambda that function
+                        execution completed with an error and passes the error information to AWS Lambda.
+                        AWS Lambda returns the error information back to the client:
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;errorMessage&quot;: &quot;Acccount is in use!&quot;,
+  &quot;errorType&quot;: &quot;Error&quot;,
+  &quot;stackTrace&quot;: [
+    &quot;exports.handler (/var/task/index.js:10:17)&quot;
+  ]
+}</code></pre><p>
+                        Note that the error information is returned as the&#xA0;<code class="code">stackTrace</code> JSON array of
+                        stack trace elements. 
+                     </p>
+                     <p>How you get the error information back depends on the invocation type that the
+                        client specifies at the time of function invocation: 
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>If a client specifies the&#xA0;<code class="code">RequestResponse</code>&#xA0;invocation type
+                                 (that is, synchronous execution), it returns the result to the client
+                                 that made the invoke call.
+                              </p>
+                              
+                              <p>For example, the console always use
+                                 the&#xA0;<code class="code">RequestResponse</code>&#xA0;invocation type, so the console will
+                                 display the error in the&#xA0;<b>Execution result</b>&#xA0;section
+                                 as shown:
+                              </p>
+                              
+                              <div class="mediaobject">
+                                 
+                                 <img src="../../..//img/exception-shown-in-console-nodejs.png">
+                                 
+                                 
+                              </div>
+                              
+                              <p> The same information is also sent to CloudWatch and the&#xA0;
+                                 <b>Log output</b> &#xA0;section shows the same logs. 
+                              </p>
+                              
+                              <div class="mediaobject">
+                                 
+                                 <img src="../../..//img/exception-shown-in-console20-nodejs.png">
+                                 
+                                 
+                              </div>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>If a client specifies the&#xA0; <code class="code">Event</code> invocation type (that
+                                 is, asynchronous execution), AWS Lambda will not return anything.
+                                 Instead, it logs the error information to <a href="./AmazonCloudWatch/latest/monitoring//logs/WhatIsCloudWatchLogs.html" target="_blank">CloudWatch Logs</a>. You can also
+                                 see the error metrics in <a href="./AmazonCloudWatch/latest/monitoring//viewing_metrics_with_cloudwatch.html" target="_blank">CloudWatch Metrics</a>. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <p> Depending on the event source, AWS Lambda may retry the failed Lambda function. For
+                        example, if Kinesis is the event source, AWS Lambda will retry the failed invocation
+                        until the Lambda function succeeds or the records in the stream expire. For more information
+                        on retries, see 
+                        <a href="retries-on-errors.html">Understanding Retry Behavior</a>.
+                     </p>
+                     <p class="title"><b>To test the preceding Node.js code (console)</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>In the console, create a Lambda function using the hello-world blueprint.
+                              In <b>runtime</b>, choose <b>Node.js</b>&#xA0; and,
+                              in <b>Role</b>, choose <b>Basic execution
+                                 role</b>. For instructions on how to do this, see <a href="get-started-create-function.html">Create a Simple Lambda
+                                 			Function</a>. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Replace the template code with the code provided in this section.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Test the Lambda function using the <b>Sample event
+                                 template</b> called <b>Hello World</b>&#xA0;provided in
+                              the Lambda console.  
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     <h2 id="nodejs-prog-model-custom-exceptions">Function Error Handling</h2>
+                     
+                     
+                     
+                     <p>You can create custom error handling to raise an exception directly from your Lambda
+                        function
+                        and handle it directly (Retry or Catch) within an AWS Step Functions State Machine.
+                        For more information, see <a href="./step-functions/latest/dg/tutorial-handling-error-conditions.html" target="_blank">Handling Error Conditions Using a State Machine</a>.
+                        
+                     </p>
+                     
+                     <p>Consider a <code class="code">CreateAccount</code> <a href="./step-functions/latest/dg/awl-ref-states.html" target="_blank">state</a> is a <a href="./step-functions/latest/dg/awl-ref-states-task.html" target="_blank">task</a>
+                        that writes a customer&apos;s details to a database using a Lambda function.
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>If the task succeeds, an account is created and a welcome email is sent.</p>
+                           </li>
+                           <li class="listitem"> 
+                              <p>If a user tries to create an account for a username that already exists, the Lambda
+                                 function raises an error, causing the state machine to
+                                 suggest a different username and to retry the account-creation process.
+                              </p>
+                           </li>
+                        </ul>
+                     </div> 
+                     
+                     
+                     <p>The following code samples demonstrate how to do this. Note that custom errors in
+                        Node.js must extend the error prototype.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="node.js ">exports.handler = function(event, context, callback) {                
+    function AccountAlreadyExistsError(message) {
+        this.name = &quot;AccountAlreadyExistsError&quot;;
+        this.message = message;
+    }
+    AccountAlreadyExistsError.prototype = new Error();
+ 
+    const error = new AccountAlreadyExistsError(&quot;Account is in use!&quot;);
+    callback(error);
+};
+</code></pre>
+                     
+                     <p>You can configure Step Functions to catch the error using a <code class="code">Catch</code> rule:
+                     </p>   
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+   &quot;StartAt&quot;: &quot;CreateAccount&quot;,
+   &quot;States&quot;: {
+      &quot;CreateAccount&quot;: {
+         &quot;Type&quot;: &quot;Task&quot;,
+         &quot;Resource&quot;: &quot;arn:aws:lambda:us-east-1:123456789012:function:CreateAccount&quot;,
+         &quot;Next&quot;: &quot;SendWelcomeEmail&quot;,
+         &quot;Catch&quot;: [
+            {
+               &quot;ErrorEquals&quot;: [&quot;AccountAlreadyExistsError&quot;],
+               &quot;Next&quot;: &quot;SuggestAccountName&quot;
+            }
+         ]
+      },
+      &#x2026;
+   }
+}
+</code></pre>
+                     
+                     <p>At runtime, AWS Step Functions catches the error, <a href="./step-functions/latest/dg/concepts-transitions.html" target="_blank">transitioning</a> to the <code class="code">SuggestAccountName</code> state as specified in the <code class="code">Next</code> transition.
+                     </p>
+                     
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>The name property of the <code class="code">Error</code> object must match the <code class="code">ErrorEquals</code> value.
+                        </p>
+                     </div>
+                     
+                     <p>Custom error handling makes it easier to create <a href="https://aws.amazon.com/serverless" target="_blank">serverless</a> applications. This feature integrates with 
+                        all the languages supported by the Lambda <a href="programming-model-v2.html">Programming Model</a>, allowing you to design your application in the programming languages of your choice,
+                        mixing and matching as you go.
+                     </p>
+                     
+                     <p>To learn more about creating your own serverless applications using AWS Step Functions
+                        and AWS Lambda, see <a href="https://aws.amazon.com/step-functions/" target="_blank">AWS Step Functions</a>. 
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="nodejs-prog-model-logging.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="java-programming-model.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Function Error Handling"><a class="pagetoc" href="#nodejs-prog-model-custom-exceptions">Function Error Handling</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,362 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Build an API with API Gateway Private Integration - Amazon API Gateway</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="getting-started.html" title="Getting Started with Amazon API Gateway">
+      <link rel="prev" href="api-gateway-create-api-step-by-step.html" title="Build an API with HTTP Custom
+            Integration">
+      <link rel="next" href="getting-started-aws-proxy.html" title="Build an API Gateway API with AWS Integration">
+      <meta name="description" content="You can create an API Gateway API with private integration to provide your customers access to HTTP/HTTPS resources within your Amazon Virtual Private Cloud (Amazon VPC). Such VPC resources are HTTP/HTTPS endpoints on an EC2 instance behind a network load balancer">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon API Gateway">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/apigateway/latest/developerguide/getting-started-with-private-integration.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/apigateway">Amazon API Gateway</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="getting-started.html">Getting Started with Amazon API Gateway</a> &#xBB; <span class="breadcrumb">Build an API with API Gateway Private Integration</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="getting-started-with-private-integration">Build an API with API Gateway Private Integration</h1>
+                     <p> You can create an API Gateway API with private integration to provide your customers
+                        access to
+                        HTTP/HTTPS resources within your Amazon Virtual Private Cloud (Amazon VPC). Such VPC
+                        resources are HTTP/HTTPS
+                        endpoints on an EC2 instance behind a network load balancer
+                        in
+                        the VPC. The network load balancer encapsulates the VPC resource and routes incoming
+                        requests to the targeted resource. 
+                     </p>
+                     <p>When a client calls the API, API Gateway connects to the network load balancer through
+                        the
+                        pre-configured VPC link. A VPC link is encapsulated by an API Gateway resource of
+                        <a href="./apigateway/api-reference/resource/vpc-link/" target="_blank">VpcLink</a>. It is responsible for forwarding
+                        API method requests to the VPC resources and returns backend responses to the caller.
+                        For an
+                        API developer, a <code class="code">VpcLink</code> is functionally equivalent to an integration endpoint. 
+                     </p>
+                     <p> To create an API with private integration, you must create a new or choose an existing
+                        <code class="code">VpcLink</code> connected to a network load balancer that targets the desired VPC
+                        resources. You must have <a href="grant-permissions-to-create-vpclink.html">appropriate
+                           permissions</a> to create and manage a <code class="code">VpcLink</code>. You then set up an API
+                        <a href="./apigateway/api-reference/resource/method/" target="_blank">method</a> and integrate it with the
+                        <code class="code">VpcLink</code> by setting either <code class="code">HTTP</code> or <code class="code">HTTP_PROXY</code> as
+                        the <a href="./apigateway/api-reference/resource/integration/#type" target="_blank">integration type</a>, setting
+                        <code class="code">VPC_LINK</code> as the integration <a href="./apigateway/api-reference/resource/integration/#connectionType" target="_blank">connection type</a>, and
+                        setting the <code class="code">VpcLink</code> identifier on the integration <a href="./apigateway/api-reference/resource/integration/#connectionId" target="_blank"><code class="code">connectionId</code></a>. 
+                     </p>
+                     <p>To quickly get started creating an API to access VPC resources, we walk through the
+                        essential steps for building an API with the private integration, using the API Gateway
+                        console.
+                        Before creating the API, do the following: 
+                     </p>
+                     <div class="orderedlist">
+                        
+                        
+                        
+                        <ol>
+                           <li>
+                              
+                              <p> Create a VPC resource, create or choose a network load balancer under your
+                                 account in the same region, and add the EC2 instance hosting the resource as a
+                                 target of the network load balancer. For more information, see <a href="set-up-nlb-for-vpclink-using-console.html">Set up a Network Load Balancer
+                                    for API Gateway Private Integrations</a>.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p> Grant permissions to create the VPC links for private integrations. For more
+                                 information, see <a href="grant-permissions-to-create-vpclink.html">Grant Permissions to Create a VPC
+                                    Link</a>.
+                              </p>
+                              
+                           </li>
+                        </ol>
+                     </div>
+                     <p>After creating your VPC resource and your network load balancer with your VPC resource
+                        configured in its target groups, use the following instructions below to create an
+                        API and
+                        integrate it with the VPC resource via a <code class="code">VpcLink</code> in a private integration. 
+                     </p>
+                     <p class="title"><b>To create an API with private integration using the API Gateway console</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p> Sign in to the API Gateway console and choose a region; for example,
+                              <code class="code">us-west-2</code>, on the navigation bar. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Create a VPC link, if you have not already done so:</p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p> From the primary navigation pane, choose <b>VPC Links</b>
+                                    and then choose <b>+ Create</b>.  
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p> Under <b>VPC Link</b>, type a name (for example,
+                                    <code class="code">my-test-vpc-link</code>) in the <b>Name</b>
+                                    field.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p> Optionally, give a description of the VPC link in the
+                                    <b>Description</b> text area.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p> Choose a network load balancer from the <b>Target NLB</b>
+                                    drop-down list.
+                                 </p>
+                                 
+                                 <p>You must have the network load balancer already created in the region you
+                                    chose for the network load balancer to be present in the list.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p> Choose <b>Create</b> to start creating the VPC link.
+                                 </p>
+                                 
+                              </li>
+                           </ol>
+                           
+                           <p> The initial response returns a <code class="code">VpcLink</code> resource representation with
+                              the VPC link ID and a <code class="code">PENDING</code> status. This is because the operation is
+                              asynchronous and takes about 2-4 minutes to complete. Upon successful completion,
+                              the status is <code class="code">AVAILABLE</code>. In the meantime, you can proceed to create the
+                              API. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Choose <b>APIs</b> from the primary navigation pane and
+                              then choose <b>+ Create API</b> to create a new API of either
+                              an edge-optimized or regional endpoint type. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> For the root resource (/), choose <b>Create Method</b> from the
+                              <b>Actions</b> drop-down menu, and then choose
+                              <code class="code">GET</code>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>/ GET - Setup</b> pane, initialize the API method
+                              integration as follows: 
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>Choose <code class="code">VPC Link</code> for <b>Integration
+                                       type</b>.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p> Choose
+                                    <b>Use
+                                       Proxy Integration</b>. 
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p> From the <b>Method</b> drop-down list, choose
+                                    <code class="code">GET</code> as the integration method.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p> From the <b>VPC Link</b> drop-down list, choose
+                                    <code class="code">[Use Stage Variables]</code> and type
+                                    <code class="code">${stageVariables.vpcLinkId}</code> in the text box
+                                    below.
+                                 </p>
+                                 
+                                 <p>We will define the <code class="code">vpcLinkId</code> stage variable after
+                                    deploying the API to a stage and set its value to the ID of the
+                                    <code class="code">VpcLink</code> created in <b>Step
+                                       1</b>.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p> Type a URL, for example, <code>http://myApi.example.com</code>,
+                                    for <b>Endpoint URL</b>. 
+                                 </p>
+                                 
+                                 <p>Here, the host name (for example, <code class="code">myApi.example.com</code>) is used
+                                    to set the <code class="code">Host</code> header of the integration request. 
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p> Leave the <b>Use Default Timeout</b> selection as-is,
+                                    unless you want to customize the integration timeouts.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>  Choose <b>Save</b> to finish setting up the
+                                    integration.
+                                 </p>
+                                 
+                                 <p>With the proxy integration, the API is ready for deployment.
+                                    Otherwise, you need to proceed to set up appropriate method
+                                    responses and integration responses.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p> From the <b>Actions</b> drop-down menu, choose
+                                    <b>Deploy API</b> and then choose a new or existing stage
+                                    to deploy the API. 
+                                 </p>
+                                 
+                                 <p>Note the resulting <b>Invoke URL</b>. You need it to invoke
+                                    the API. Before doing that, you must set up the <code class="code">vpcLinkId</code> stage
+                                    variable.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p> In the <b>Stage Editor</b>, choose the
+                                    <b>Stage Variables</b> tab and choose
+                                    <b>Add Stage Variable</b>. 
+                                 </p>
+                                 
+                                 <ol>
+                                    <li>
+                                       
+                                       <p> Under the <b>Name</b> column, type
+                                          <code class="code">vpcLinkId</code>.
+                                       </p>
+                                       
+                                    </li>
+                                    <li>
+                                       
+                                       <p> Under the <b>Value</b> column, type the ID
+                                          of <code class="code">VPC_LINK</code>, for example,
+                                          <code class="code">gix6s7</code>.
+                                       </p>
+                                       
+                                    </li>
+                                    <li>
+                                       
+                                       <p> Choose the check-mark icon to save this stage variable.
+                                          
+                                       </p>
+                                       
+                                       <p>Using the stage variable, you can easily switch to different VPC
+                                          links for the API by changing the stage variable value.
+                                       </p>
+                                       
+                                    </li>
+                                 </ol>
+                                 
+                                 <p>This completes creating the API. You can test invoking the API as with
+                                    other integrations.
+                                 </p>
+                                 
+                              </li>
+                           </ol>
+                           
+                        </li>
+                     </ol>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="api-gateway-create-api-step-by-step.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="getting-started-aws-proxy.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon API Gateway';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

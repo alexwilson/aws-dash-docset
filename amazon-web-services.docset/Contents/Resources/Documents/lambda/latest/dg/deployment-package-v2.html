@@ -1,0 +1,216 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Creating a Deployment Package - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="lambda-app.html" title="Building Lambda Functions">
+      <link rel="prev" href="dotnet-exceptions.html" title="Function Errors (C#)">
+      <link rel="next" href="nodejs-create-deployment-pkg.html" title="Creating a Deployment Package (Node.js)">
+      <meta name="description" content="To create a Lambda function you first create a Lambda function deployment package, a .zip or .jar file consisting of your code and any dependencies. When creating the zip, include only the code and its dependencies, not the containing folder. You will then need to set the appropriate security permissions for the zip package.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/deployment-package-v2.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-introduction-function.html">Lambda Functions</a> &#xBB; <a href="lambda-app.html">Building Lambda Functions</a> &#xBB; <span class="breadcrumb">Creating a Deployment Package</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="deployment-package-v2">Creating a Deployment Package</h1>
+                     <p>To create a Lambda function you first create a Lambda function deployment package,
+                        a .zip or .jar 
+                        		file consisting of your code and any dependencies. When creating the zip, include
+                        only the code and its dependencies, not the containing folder. You will then need
+                        to
+                        		set the appropriate security permissions for the zip package.
+                     </p>
+                     <h2 id="lambda-zip-package-permission-policies">Permissions Polices on Lambda Deployment Packages</h2>
+                     	
+                     	
+                     <p>Zip packages uploaded with incorrect permissions may cause execution failure. AWS
+                        Lambda requires global read permissions on code files and any dependent libraries
+                        that comprise your deployment package. To ensure permissions are not restricted to
+                        your user account, you can check using the following samples:
+                     </p>
+                     		
+                     		
+                     		
+                     <div class="itemizedlist">
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><b>Linux/Unix/OSX environments</b>: Use <code class="code">zipinfo</code> as shown in the sample below:
+                              </p>
+                              			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">$ zipinfo test.zip
+Archive:  test.zip
+Zip file size: 473 bytes, number of entries: 2
+-r--------  3.0 unx        0 bx stor 17-Aug-10 09:37 exlib.py
+-r--------  3.0 unx      234 tx defN 17-Aug-10 09:37 index.py
+2 files, 234 bytes uncompressed, 163 bytes compressed:  30.3%</code></pre>
+                              			
+                              			<p>The <code class="code">-r--------</code> indicates that only the file owner has read permissions, which can cause Lambda function
+                                 execution failures. The following indicates what you would see if there are requisite
+                                 global read permissions:
+                              </p>
+                              			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">$ zipinfo test.zip
+Archive:  test.zip
+Zip file size: 473 bytes, number of entries: 2
+-r--r--r--  3.0 unx        0 bx stor 17-Aug-10 09:37 exlib.py
+-r--r--r--  3.0 unx      234 tx defN 17-Aug-10 09:37 index.py
+2 files, 234 bytes uncompressed, 163 bytes compressed:  30.3%</code></pre>
+                              			
+                              			
+                              			<p>To fix this recursively, run the following command:</p>
+                              			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">$ chmod 644 $(find /tmp/package_contents -type f)
+$ chmod 755 $(find /tmp/package_contents -type d)</code></pre>
+                              			<div class="itemizedlist">
+                                 				
+                                 				
+                                 				
+                                 				
+                                 				
+                                 			
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p>The first command changes all files in <code class="code">/tmp/package_contents</code> to have read/write permissions to owners, read to group and global.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>The second command cascades the same permissions for directories.</p>
+                                    </li>
+                                 </ul>
+                              </div>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     	
+                     	
+                     	
+                     	
+                     	
+                     	
+                     	
+                     			
+                     		
+                     
+                     <p>Once you have done that, set the requisite IAM permissions on the package. For more
+                        information, see <a href="lambda-auth-and-access-control.html">Authentication and Access Control for
+                           AWS Lambda</a> policies. 
+                     </p>
+                     	
+                     	
+                     		
+                     <div class="itemizedlist">
+                        		
+                        		
+                        		
+                        		
+                        		
+                        		
+                        	
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              			
+                              <p><a href="nodejs-create-deployment-pkg.html">Creating a Deployment Package (Node.js)</a></p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p><a href="lambda-dotnet-how-to-create-deployment-package.html">Creating a Deployment Package (C#)</a></p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p><a href="lambda-go-how-to-create-deployment-package.html">Creating a Deployment Package (Go)</a></p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p><a href="lambda-java-how-to-create-deployment-package.html">Creating a Deployment Package (Java)</a></p>
+                              		
+                           </li>
+                           <li class="listitem">
+                              			
+                              <p><a href="lambda-python-how-to-create-deployment-package.html">Creating a Deployment Package
+                                    			(Python)</a></p>
+                              		
+                           </li>
+                        </ul>
+                     </div>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="dotnet-exceptions.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="nodejs-create-deployment-pkg.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Permissions Polices on Lambda Deployment Packages"><a class="pagetoc" href="#lambda-zip-package-permission-policies">Permissions Polices on Lambda Deployment Packages</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Handle Lambda Errors in API Gateway - Amazon API Gateway</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="set-up-lambda-integrations.html" title="
+            Set up Lambda Integrations in API Gateway
+        ">
+      <link rel="prev" href="set-up-lambda-custom-integrations.html" title="
+                Set up Lambda Custom Integrations in API Gateway
+            ">
+      <link rel="next" href="setup-http-integrations.html" title="Set up HTTP Integrations in API Gateway ">
+      <meta name="description" content="How to handle Lambda errors in API Gateway.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon API Gateway">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/apigateway/latest/developerguide/handle-errors-in-lambda-integration.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/apigateway">Amazon API Gateway</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="how-to-create-api.html">Creating an API in Amazon API Gateway</a> &#xBB; <a href="how-to-integration-settings.html">Set up API Integrations in API Gateway</a> &#xBB; <a href="set-up-lambda-integrations.html">
+                                    Set up Lambda Integrations in API Gateway
+                                    </a> &#xBB; <span class="breadcrumb">Handle Lambda Errors in API Gateway</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="handle-errors-in-lambda-integration">Handle Lambda Errors in API Gateway</h1>
+                     <p> For Lambda custom integrations, you must map errors returned by Lambda in the integration
+                        response to standard HTTP error responses for your clients. Otherwise, Lambda errors
+                        are
+                        returned as <code class="code">200 OK</code> responses by default and the result is not intuitive for
+                        your API users. 
+                     </p>
+                     <p> There are two types of errors that Lambda can return: standard errors and custom
+                        errors.
+                        In your API, you must handle these differently.  
+                     </p>
+                     <p> With the Lambda proxy integration, Lambda is required to return an output of the
+                        following
+                        format: 
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;isBase64Encoded&quot; : &quot;boolean&quot;,
+  &quot;statusCode&quot;: &quot;number&quot;,
+  &quot;headers&quot;: { ... },
+  &quot;body&quot;: &quot;JSON string&quot;
+}</code></pre><p>In this output, <code class="code">statusCode</code> is typically <code class="code">4XX</code> for a client error
+                        and <code class="code">5XX</code> for a server error. API Gateway handles these errors by mapping the Lambda
+                        error to an HTTP error response, according to the specified <code class="code">statusCode</code>. For
+                        API Gateway to pass the error type (for example, <code class="code">InvalidParameterException</code>), as part
+                        of the response to the client, the Lambda function must include a header (for example,
+                        <code class="code">&quot;X-Amzn-ErrorType&quot;:&quot;InvalidParameterException&quot;</code>) in the <code class="code">headers</code>
+                        property. 
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#handle-standard-errors-in-lambda-integration">Handle Standard Lambda Errors in API Gateway</a></li>
+                           <li><a href="#handle-custom-errors-in-lambda-integration">Handle Custom Lambda Errors in
+                                 API Gateway</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="handle-standard-errors-in-lambda-integration">Handle Standard Lambda Errors in API Gateway</h2>
+                     
+                     
+                     
+                     <p>A standard AWS Lambda error has the following format:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;errorMessage&quot;: &quot;&lt;replaceable&gt;string&lt;/replaceable&gt;&quot;,
+  &quot;errorType&quot;: &quot;&lt;replaceable&gt;string&lt;/replaceable&gt;&quot;,
+  &quot;stackTrace&quot;: [
+    &quot;&lt;replaceable&gt;string&lt;/replaceable&gt;&quot;,
+    ...
+  ]
+}</code></pre>
+                     <p> Here, <code class="code">errorMessage</code> is a string expression of the error. The
+                        <code class="code">errorType</code> is a language-dependent error or exception type. The
+                        <code class="code">stackTrace</code> is a list of string expressions showing the stack trace
+                        leading to the occurrence of the error. 
+                     </p>
+                     
+                     <p> For example, consider the following JavaScript Lambda function (Node.js 4.3 and
+                        later). 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">exports.handler = function(event, context, callback) {
+    callback(new Error(&quot;Malformed input ...&quot;);
+};</code></pre>
+                     <p>This function returns the following standard Lambda error, containing <code class="code">Malformed
+                           input ...</code> as the error message:
+                     </p> 
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;errorMessage&quot;: &quot;Malformed input ...&quot;,
+  &quot;errorType&quot;: &quot;Error&quot;,
+  &quot;stackTrace&quot;: [
+    &quot;exports.handler (/var/task/index.js:3:14)&quot;
+  ]
+}</code></pre>
+                     
+                     <p> Similarly, consider the following Python Lambda function, which raises an
+                        <code class="code">Exception</code> with the same <code class="code">Malformed input ...</code> error message. 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">def lambda_handler(event, context):
+    raise Exception(&apos;Malformed input ...&apos;)</code></pre>
+                     <p> This function returns the following standard Lambda error: </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+  &quot;stackTrace&quot;: [
+    [
+      &quot;/var/task/lambda_function.py&quot;,
+      3,
+      &quot;lambda_handler&quot;,
+      &quot;raise Exception(&apos;Malformed input ...&apos;)&quot;
+    ]
+  ],
+  &quot;errorType&quot;: &quot;Exception&quot;,
+  &quot;errorMessage&quot;: &quot;Malformed input ...&quot;
+}</code></pre>
+                     
+                     <p>
+                        Note that the <code class="code">errorType</code> and <code class="code">stackTrace</code> property values are language-dependent. The standard error also applies to any error
+                        object that is an extension of the <code class="code">Error</code> object or a subclass of the <code class="code">Exception</code> class.
+                        
+                     </p>
+                     
+                     
+                     <p> To map the standard Lambda error to a method response, you must first decide on an
+                        HTTP status code for a given Lambda error. You then set a regular expression pattern
+                        on
+                        the <code class="code"><a href="./apigateway/api-reference/resource/integration-response/#selectionPattern" target="_blank">selectionPattern</a></code> property of the <a href="./apigateway/api-reference/resource/integration-response/" target="_blank">IntegrationResponse</a>
+                        associated with the given HTTP status code. In the API Gateway console, this <code class="code">selectionPattern</code> is denoted as <b>Lambda Error Regex</b> in the <b>Integration Response</b> configuration editor.
+                     </p>
+                     
+                     <p>
+                        For example, to set up a new <code class="code">selectionPattern</code> expression, using AWS CLI, call the following <a href="./cli/latest/reference/apigateway/put-integration-response.html" target="_blank">put-integration-response</a> command: 
+                        
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway put-integration-response --rest-api-id z0vprf0mdh --resource-id x3o5ih --http-method GET --status-code 400 --selection-pattern &quot;Invalid*&quot; --region us-west-2</code></pre>
+                     <p> Make sure that you also set up the corresponding error code (<code class="code">400</code>) on the
+                        method request. Otherwise, API Gateway throws an invalid configuration error response
+                        at
+                        runtime. 
+                     </p>
+                     
+                     <p> At runtime, API Gateway matches the error message against the pattern of the regular
+                        expression on the <code class="code">selectionPattern</code> property. When there is a match, API Gateway
+                        returns the Lambda error as an HTTP response of the corresponding HTTP status code.
+                        If
+                        there is no match, API Gateway returns the error as a default response or throws an
+                        invalid
+                        configuration exception if no default response is configured. 
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>
+                           Setting the <code class="code">selectionPattern</code> value to <code class="code">.*</code> for a given response amounts to resetting this response as the default response.
+                           This is because such a selection pattern will match all error messages, including
+                           null, i.e., any unspecified error message. The resulting mapping overrides the default
+                           mapping. 
+                           
+                        </p>
+                     </div>
+                     
+                     <p> To update an existing <code class="code">selectionPattern</code> value using the API Gateway REST API,
+                        call the <a href="./apigateway/api-reference/link-relation/integrationresponse-update/" target="_blank">integrationresponse:update</a> operation to replace the
+                        <code class="code">/selectionPattern</code> path value with the specified regex expression of the
+                        <code class="code">Malformed*</code> pattern. 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">PATCH /restapis/z0vprf0mdh/resources/x3o5ih/methods/GET/integration/responses/400 HTTP/1.1
+Host: apigateway.us-west-2.amazonaws.com
+Content-Type: application/x-amz-json-1.0
+X-Amz-Date: 20170513T044831Z
+Authorization: AWS4-HMAC-SHA256 Credential={ACCESS-KEY-ID}/20170513/us-west-2/apigateway/aws4_request, SignedHeaders=content-length;content-type;host;x-amz-date, Signature=4b4e4881a727bc999799be5110facfcf7ec81d025afc1a4386cf440b4efc80de
+Cache-Control: no-cache
+Postman-Token: 04794263-29f2-f336-fa16-5653a7f3281d
+
+{
+  &quot;patchOperations&quot; : [ {
+    &quot;op&quot; : &quot;replace&quot;,
+    &quot;path&quot; : &quot;/selectionPattern&quot;,
+    &quot;value&quot; : &quot;Malformed*&quot;
+   } ]
+}</code></pre>
+                     <p>To set the <code class="code">selectionPattern</code> expression using the API Gateway console, type
+                        the expression in the <b>Lambda Error Regex</b> text box when setting up
+                        or updating an  integration response of a specified HTTP status code. 
+                     </p>
+                     
+                     <h2 id="handle-custom-errors-in-lambda-integration">Handle Custom Lambda Errors in
+                        API Gateway
+                     </h2>
+                     
+                     
+                     <p> Instead of the standard error described in the preceding section, AWS Lambda allows
+                        you to return a custom error object as JSON string. The error can be any valid JSON
+                        object. For example, the following JavaScript Lambda function (Node.js 4.3 or later)
+                        returns a custom error: 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">exports.handler = (event, context, callback) =&gt; {        
+    ...
+    // Error caught here:
+    var myErrorObj = {
+        errorType : &quot;InternalServerError&quot;,
+        httpStatus : 500,
+        requestId : context.awsRequestId,
+        trace : {
+            &quot;function&quot;: &quot;abc()&quot;,
+            &quot;line&quot;: 123,
+            &quot;file&quot;: &quot;abc.js&quot;
+        }
+    }
+    callback(JSON.stringify(myErrorObj));
+};</code></pre>
+                     <p> You must turn the <code class="code">myErrorObj</code> object into a JSON string before calling
+                        <code class="code">callback</code> to exit the function. Otherwise, the <code class="code">myErrorObj</code>
+                        is returned as a string of <code class="code">&quot;[object Object]&quot;</code>. When a method of your API is
+                        integrated with the preceding Lambda function, API Gateway receives an integration
+                        response
+                        with the following payload: 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;errorMessage&quot;: &quot;{\&quot;errorType\&quot;:\&quot;InternalServerError\&quot;,\&quot;httpStatus\&quot;:500,\&quot;requestId\&quot;:\&quot;e5849002-39a0-11e7-a419-5bb5807c9fb2\&quot;,\&quot;trace\&quot;:{\&quot;function\&quot;:\&quot;abc()\&quot;,\&quot;line\&quot;:123,\&quot;file\&quot;:\&quot;abc.js\&quot;}}&quot;
+}</code></pre>
+                     
+                     <p> As with any integration response, you can pass through this error response as-is
+                        to
+                        the method response. Or you can have a body-mapping template to transform the payload
+                        into a different format. For example, consider the following body-mapping template
+                        for a
+                        method response of <code class="code">500</code> status code: 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    errorMessage: $input.path(&apos;$.errorMessage&apos;);
+}</code></pre>
+                     <p>This template translates the integration response body that contains the custom error
+                        JSON string to the following method response body. This method response body contains
+                        the custom error JSON object: 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;errorMessage&quot; : {
+        errorType : &quot;InternalServerError&quot;,
+        httpStatus : 500,
+        requestId : context.awsRequestId,
+        trace : {
+            &quot;function&quot;: &quot;abc()&quot;,
+            &quot;line&quot;: 123,
+            &quot;file&quot;: &quot;abc.js&quot;
+        }
+    }
+};</code></pre>
+                     <p> Depending on your API requirements, you may need to pass some or all of the custom
+                        error properties as method response header parameters. You can achieve this by applying
+                        the custom error mappings from the integration response body to the method response
+                        headers. 
+                     </p>
+                     
+                     <p>For example, the following Swagger extension defines a mapping from the
+                        <code class="code">errorMessage.errorType</code>, <code class="code">errorMessage.httpStatus</code>,
+                        <code class="code">errorMessage.trace.function</code>, and <code class="code">errorMessage.trace</code>
+                        properties to the <code class="code">error_type</code>, <code class="code">error_status</code>,
+                        <code class="code">error_trace_function</code>, and <code class="code">error_trace</code> headers,
+                        respectively. 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&quot;x-amazon-apigateway-integration&quot;: {
+    &quot;responses&quot;: {
+        &quot;default&quot;: {
+          &quot;statusCode&quot;: &quot;200&quot;,
+          &quot;responseParameters&quot;: {
+          &quot;method.response.header.error_trace_function&quot;: &quot;integration.response.body.errorMessage.trace.function&quot;,
+            &quot;method.response.header.error_status&quot;: &quot;integration.response.body.errorMessage.httpStatus&quot;,
+            &quot;method.response.header.error_type&quot;: &quot;integration.response.body.errorMessage.errorType&quot;,
+            &quot;method.response.header.error_trace&quot;: &quot;integration.response.body.errorMessage.trace&quot;
+          },
+          ...
+        }
+    }
+}</code></pre>
+                     <p> At runtime, API Gateway deserializes  the <code class="code">integration.response.body</code> parameter
+                        when performing header mappings. However, this deserialization applies only to
+                        body-to-header mappings for Lambda custom error responses and does not apply to
+                        body-to-body mappings using <code class="code">$input.body</code>. With these
+                        custom-error-body-to-header mappings, the client receives the following headers as
+                        part
+                        of the method response, provided that the <code class="code">error_status</code>, <code class="code">error_trace</code>, <code class="code">error_trace_function</code>, and <code class="code">error_type</code> headers are declared in the method request. 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">&quot;error_status&quot;:&quot;500&quot;,
+&quot;error_trace&quot;:&quot;{\&quot;function\&quot;:\&quot;abc()\&quot;,\&quot;line\&quot;:123,\&quot;file\&quot;:\&quot;abc.js\&quot;}&quot;,
+&quot;error_trace_function&quot;:&quot;abc()&quot;,
+&quot;error_type&quot;:&quot;InternalServerError&quot;</code></pre>
+                     <p>The <code class="code">errorMessage.trace</code> property of the integration response body is a
+                        complex property. It is mapped to the <code class="code">error_trace</code> header as a JSON string.
+                        
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="set-up-lambda-custom-integrations.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="setup-http-integrations.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Handle Standard Lambda Errors in API Gateway"><a class="pagetoc" href="#handle-standard-errors-in-lambda-integration">Handle Standard Lambda Errors in API Gateway</a></li>
+                        <li class="pagetoc" name="Handle Custom Lambda Errors in
+            API Gateway"><a class="pagetoc" href="#handle-custom-errors-in-lambda-integration">Handle Custom Lambda Errors in
+                              API Gateway</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon API Gateway';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

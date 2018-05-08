@@ -1,0 +1,416 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Scale Spot Fleet Using Step Scaling Policies - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="spot-fleet-automatic-scaling.html" title="Automatic Scaling for Spot Fleet">
+      <link rel="prev" href="spot-fleet-target-tracking.html" title="Scale Spot Fleet Using a Target Tracking Policy">
+      <link rel="next" href="spot-bid-status.html" title="Spot Request Status">
+      <meta name="description" content="With step scaling policies, you specify CloudWatch alarms to trigger the scaling process. For example, if you want to scale out when CPU utilization reaches a certain level, create an alarm using the CPUUtilization metric provided by Amazon EC2.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-fleet-step-scaling.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="instance-purchasing-options.html">Instance Purchasing Options</a> &#xBB; <a href="using-spot-instances.html">Spot Instances</a> &#xBB; <a href="spot-fleet-automatic-scaling.html">Automatic Scaling for Spot Fleet</a> &#xBB; <span class="breadcrumb">Scale Spot Fleet Using Step Scaling Policies</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="spot-fleet-step-scaling">Scale Spot Fleet Using Step Scaling Policies</h1>
+                     <p>With step scaling policies, you specify CloudWatch alarms to trigger the scaling process.
+                        
+                        			For example, if you want to scale out when CPU utilization reaches a certain level,
+                        
+                        			create an alarm using the <code class="code">CPUUtilization</code> metric provided by Amazon EC2.
+                     </p>
+                     <p>When you create a step scaling policy, you must specify one of the following scaling
+                        adjustment types:
+                     </p>
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p><b>Add</b> &#x2014; Increase the target capacity of the fleet by a specified number of capacity units
+                                 					or a specified percentage of the current capacity.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><b>Remove</b> &#x2014; Decrease the target capacity of the fleet by a specified number of capacity units
+                                 					or a specified percentage of the current capacity.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><b>Set to</b> &#x2014; Set the target capacity of the fleet to the specified number of capacity units.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     <p>When an alarm is triggered, the auto scaling process calculates the new target
+                        			capacity using the fulfilled capacity and the scaling policy, and then updates
+                        the
+                        			target capacity accordingly. For example, suppose that the target capacity and
+                        fulfilled
+                        			capacity are 10 and the scaling policy adds 1. When the alarm is triggered, the
+                        auto
+                        			scaling process adds 1 to 10 to get 11, so Spot Fleet launches 1 instance.
+                     </p>
+                     <p>Note that when a Spot Fleet terminates an instance because the target capacity was
+                        			decreased, the instance receives a Spot Instance interruption notice.
+                     </p>
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>Limits</b></p>
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>The Spot Fleet request must have a request type of <code class="code">maintain</code>. Automatic
+                                 					scaling is not supported for one-time requests or Spot blocks.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>Prerequisites</b></p>
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>Consider which CloudWatch metrics are important to your application. 
+                                 					You can create CloudWatch alarms based on metrics provided by AWS or your own
+                                 custom metrics.
+                              </p>        		
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>For the AWS metrics that you will use in your scaling policies, enable CloudWatch
+                                 metrics collection 
+                                 					if the service that provides the metrics does not enable it by default.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>If you use the AWS Management Console to enable automatic scaling for your Spot Fleet,
+                                 it creates a
+                                 					role named <code class="code">aws-ec2-spot-fleet-autoscale-role</code> that grants Amazon EC2 Auto Scaling
+                                 					permission to describe the alarms for your policies, monitor the current
+                                 					capacity of the fleet, and modify the capacity of the fleet. If you configure
+                                 					automatic scaling using the AWS CLI or an API, you can use this role if it exists,
+                                 					or manually create your own role for this purpose.
+                              </p>
+                              				
+                              <p class="title"><b>To create a role manually</b></p>
+                              <ol>
+                                 <li>
+                                    						
+                                    <p>Open the IAM console at
+                                       <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li>
+                                    						
+                                    <p>In the navigation pane, choose <b>Roles</b>.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li>
+                                    						
+                                    <p>Choose <b>Create role</b>.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li>
+                                    						
+                                    <p>On the <b>Select type of trusted entity</b> page,
+                                       							choose <b>AWS service</b>, <b>EC2</b>, 
+                                       							<b>EC2 - Spot Fleet Auto Scaling</b>, and then choose 
+                                       							<b>Next: Permissions</b>.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li>
+                                    						
+                                    <p>On the <b>Attached permissions policy</b> page, 
+                                       							choose <b>Next:Review</b>.
+                                    </p>
+                                    					
+                                 </li>
+                                 <li>
+                                    						
+                                    <p>On the <b>Review</b> page, type a name for the role 
+                                       							and then choose <b>Create role</b>.
+                                    </p>
+                                    					
+                                 </li>
+                              </ol>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     <p class="title"><b>To create a CloudWatch alarm</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Open the CloudWatch console at
+                              <a href="https://console.aws.amazon.com/cloudwatch/" target="_blank">https://console.aws.amazon.com/cloudwatch/</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the navigation pane, choose <b>Alarms</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Choose <b>Create Alarm</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>For <b>CloudWatch Metrics by Category</b>, choose a category. For
+                              					example, choose <b>EC2 Spot Metrics</b>, <b>Fleet Request
+                                 						Metrics</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Select a metric, and then choose <b>Next</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>For <b>Alarm Threshold</b>, type a name and description for the alarm, 
+                              					and set the threshold value and number of time periods for the alarm.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>(Optional) To receive notification of a scaling event, for
+                              					<b>Actions</b>, choose <b>New list</b> and type your
+                              					email address. Otherwise, you can delete the notification now and add one later
+                              					as needed.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Choose <b>Create Alarm</b>.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     <p class="title"><b>To configure step scaling policies for your Spot Fleet using the console</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the navigation pane, choose <b>Spot Requests</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Select your Spot Fleet request, and then choose the <b>Auto Scaling</b>
+                              					tab.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>If automatic scaling is not configured, choose <b>Configure</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Use <b>Scale capacity between</b> to set the minimum and maximum capacity
+                              					for your fleet. Automatic scaling does not scale your fleet below the minimum
+                              					capacity or above the maximum capacity.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Initially, <b>Scaling policies</b> contains policies named ScaleUp and ScaleDown. 
+                              					You can complete these policies, or choose <b>Remove policy</b> to delete them. 
+                              					You can also choose <b>Add policy</b> to add a policy.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>To define a policy, do the following:</p>
+                           				
+                           <ol>
+                              <li>
+                                 						
+                                 <p>For <b>Policy name</b>, type a name for the policy.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>For <b>Policy trigger</b>, select an existing alarm or choose
+                                    							<b>Create new alarm</b> to open the Amazon CloudWatch console
+                                    							and create an alarm.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>For <b>Modify capacity</b>, select a scaling adjustment type, select a number, 
+                                    							and select a unit.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>(Optional) To perform step scaling, choose <b>Define steps</b>.
+                                    							By default, an add policy has a lower bound of -infinity and an upper bound
+                                    of the alarm threshold. 
+                                    							By default, a remove policy has a lower bound of the alarm threshold and an
+                                    upper bound of +infinity.
+                                    							To add another step, choose <b>Add step</b>.
+                                 </p>
+                                 					
+                              </li>
+                              <li>
+                                 						
+                                 <p>(Optional) To modify the default value for the cooldown period, select a number from
+                                    							<b>Cooldown period</b>.
+                                 </p>
+                                 					
+                              </li>
+                           </ol>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Choose <b>Save</b>.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     <p class="title"><b>To configure step scaling policies for your Spot Fleet using the AWS CLI</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>Register the Spot Fleet request as a scalable target using the <a href="./cli/latest/reference/application-autoscaling/register-scalable-target.html" target="_blank">register-scalable-target</a> command.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Create a scaling policy using the <a href="./cli/latest/reference/application-autoscaling/put-scaling-policy.html" target="_blank">put-scaling-policy</a> command.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Create an alarm that triggers the scaling policy using the <a href="./cli/latest/reference/cloudwatch/put-metric-alarm.html" target="_blank">put-metric-alarm</a>
+                              					command.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="spot-fleet-target-tracking.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="spot-bid-status.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

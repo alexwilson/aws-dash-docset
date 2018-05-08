@@ -1,0 +1,291 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>I/O Characteristics and Monitoring - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="EBSPerformance.html" title="Amazon EBS Volume Performance on Linux Instances">
+      <link rel="prev" href="ebs-ec2-config.html" title="Amazon EC2 Instance Configuration">
+      <link rel="next" href="ebs-initialize.html" title="Initializing Amazon EBS Volumes">
+      <meta name="description" content="Set up your I/O characteristics on your volume configurations to enhance performance on the back end.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-io-characteristics.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Storage.html">Storage</a> &#xBB; <a href="AmazonEBS.html">Amazon Elastic Block Store (Amazon EBS)</a> &#xBB; <a href="EBSPerformance.html">Amazon EBS Volume Performance on Linux Instances</a> &#xBB; <span class="breadcrumb">I/O Characteristics and Monitoring</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ebs-io-characteristics">I/O Characteristics and Monitoring</h1>
+                     <p>On a given volume configuration, certain I/O characteristics drive the performance
+                        behavior for your EBS volumes. SSD-backed volumes&#x2014;General Purpose SSD (<code class="code">gp2</code>) and Provisioned IOPS SSD (<code class="code">io1</code>)&#x2014;deliver
+                        consistent performance whether an I/O operation is random or sequential. HDD-backed
+                        volumes&#x2014;Throughput Optimized HDD (<code class="code">st1</code>) and Cold HDD (<code class="code">sc1</code>)&#x2014;deliver optimal performance only when I/O
+                        operations are large and sequential. To understand how SSD and HDD volumes will perform
+                        in
+                        your application, it is important to know the connection between demand on the volume,
+                        the
+                        quantity of IOPS available to it, the time it takes for an I/O operation to complete,
+                        and the
+                        volume&apos;s throughput limits. 
+                     </p>
+                     
+                     <p class="title"><b>IOPS</b></p>
+                     
+                     <p>IOPS are a unit of measure representing input/output operations per second. The
+                        operations are measured in KiB, and the underlying drive technology determines the
+                        maximum
+                        amount of data that a volume type counts as a single I/O. I/O size is capped at 256
+                        KiB for
+                        SSD volumes and 1,024 KiB for HDD volumes because SSD volumes handle small or random
+                        I/O
+                        much more efficiently than HDD volumes. 
+                     </p>
+                     
+                     <p>When small I/O operations are physically contiguous, Amazon EBS attempts to merge
+                        them
+                        into a single I/O up to the maximum size. For example, for SSD volumes, a single 1,024
+                        KiB I/O
+                        operation counts as 4 operations (1,024&#xF7;256=4), while 8 contiguous I/O operations
+                        at 32 KiB
+                        each count as 1operation (8&#xD7;32=256). However, 8 random I/O operations at 32 KiB each
+                        count as
+                        8 operations. Each I/O operation under 32 KiB counts as 1 operation.
+                     </p>
+                     <p>Similarly, for HDD-backed volumes, both a single 1,024 KiB I/O operation and 8 sequential
+                        128 KiB operations would count as one operation. However, 8 random 128 KiB I/O operations
+                        would count as 8 operations.
+                     </p>
+                     <p>Consequently, when you create an SSD-backed volume supporting 3,000 IOPS (either by
+                        provisioning an <code class="code">io1</code> volume at 3,000 IOPS or by sizing a <code class="code">gp2</code> volume at 1000 GiB), and you
+                        attach it to an EBS-optimized instance that can provide sufficient bandwidth, you
+                        can transfer
+                        up to 3,000 I/Os of data per second, with throughput determined by I/O size. 
+                     </p>
+                     
+                     <p class="title"><b>Volume Queue Length and Latency</b></p>
+                     
+                     <p>The volume queue length is the number of pending I/O requests for a device. Latency
+                        is the
+                        true end-to-end client time of an I/O operation, in other words, the time elapsed
+                        between
+                        sending an I/O to EBS and receiving an acknowledgement from EBS that the I/O read
+                        or write
+                        is complete. Queue length must be correctly calibrated with I/O size and latency to
+                        avoid
+                        creating bottlenecks either on the guest operating system or on the network link to
+                        EBS.
+                     </p>  
+                     
+                     <p>Optimal queue length varies for each workload, depending on your particular application&apos;s
+                        sensitivity to IOPS and latency. If your workload is not delivering enough I/O requests
+                        to
+                        fully use the performance available to your EBS volume, then your volume might not
+                        deliver the
+                        IOPS or throughput that you have provisioned. 
+                     </p>
+                     <p>Transaction-intensive applications are sensitive to increased I/O latency and are
+                        well-suited for SSD-backed <code class="code">io1</code> and <code class="code">gp2</code> volumes. You can maintain high IOPS while keeping
+                        latency down by maintaining a low queue length and a high number of IOPS available
+                        to the
+                        volume. Consistently driving more IOPS to a volume than it has available can cause
+                        increased
+                        I/O latency. 
+                     </p>
+                     <p>Throughput-intensive applications are less sensitive to increased I/O latency, and
+                        are
+                        well-suited for HDD-backed <code class="code">st1</code> and <code class="code">sc1</code> volumes. You can maintain high throughput to
+                        HDD-backed volumes by maintaining a high queue length when performing large, sequential
+                        I/O.
+                     </p>
+                     
+                     <p class="title"><b>I/O size and volume throughput limits</b></p>
+                     
+                     <p>For SSD-backed volumes, if your I/O size is very large, you may experience a smaller
+                        number of IOPS than you provisioned because you are hitting the throughput limit of
+                        the
+                        volume. For example, a <code class="code">gp2</code> volume under 1000 GiB with burst credits available has an IOPS
+                        limit of 3,000 and a volume throughput limit of 160 MiB/s. If you are using a 256
+                        KiB I/O
+                        size, your volume reaches its throughput limit at 640 IOPS (640 x 256 KiB = 160 MiB).
+                        For
+                        smaller I/O sizes (such as 16 KiB), this same volume can sustain 3,000 IOPS because
+                        the
+                        throughput is well below 160 MiB/s. (These examples assume that your volume&apos;s I/O
+                        is not
+                        hitting the throughput limits of the instance.) For more information about the throughput
+                        limits for each EBS volume type, see <a href="EBSVolumeTypes.html">Amazon EBS Volume Types</a>. 
+                     </p>
+                     
+                     <p>For smaller I/O operations, you may see a higher-than-provisioned IOPS value as measured
+                        from inside your instance. This happens when the instance operating system merges
+                        small I/O
+                        operations into a larger operation before passing them to Amazon EBS.
+                     </p>
+                     <p>If your workload uses sequential I/Os on HDD-backed <code class="code">st1</code> and <code class="code">sc1</code> volumes, you may
+                        experience a higher than expected number of IOPS as measured from inside your instance.
+                        This
+                        happens when the instance operating system merges sequential I/Os and counts them
+                        in 1,024
+                        KiB-sized units. If your workload uses small or random I/Os, you may experience a
+                        lower
+                        throughput than you expect. This is because we count each random, non-sequential I/O
+                        toward
+                        the total IOPS count, which can cause you to hit the volume&apos;s IOPS limit sooner than
+                        expected.
+                     </p>
+                     <p>Whatever your EBS volume type, if you are not experiencing the IOPS or throughput
+                        you
+                        expect in your configuration, ensure that your EC2 instance bandwidth is not the limiting
+                        factor. You should always use a current-generation, EBS-optimized instance (or one
+                        that
+                        includes 10 Gb/s network connectivity) for optimal performance. For more information,
+                        see
+                        <a href="ebs-ec2-config.html">Amazon EC2 Instance Configuration</a>. Another possible cause for
+                        not experiencing the expected IOPS is that you are not driving enough I/O to the EBS
+                        volumes.
+                     </p>
+                     
+                     <p class="title"><b>Monitor I/O Characteristics with CloudWatch</b></p>
+                     
+                     <p>You can monitor these I/O characteristics with each volume&apos;s <a href="monitoring-volume-status.html">CloudWatch metrics</a>. Important 
+                        metrics to consider include:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><code class="code">BurstBalance</code></p>
+                           </li>
+                           <li class="listitem">
+                              <p><code class="code">VolumeReadBytes</code></p>
+                           </li>
+                           <li class="listitem">
+                              <p><code class="code">VolumeWriteBytes</code></p>
+                           </li>
+                           <li class="listitem">
+                              <p><code class="code">VolumeReadOps</code></p>
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">VolumeWriteOps</code></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">VolumeQueueLength</code></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <p><code class="code">BurstBalance</code> displays the burst bucket balance for <code class="code">gp2</code>, <code class="code">st1</code>, and <code class="code">sc1</code>
+                        volumes as a percentage of the remaining balance. When your burst bucket is depleted,
+                        volume
+                        I/O credits (for <code class="code">gp2</code> volumes) or volume throughput credits (for <code class="code">st1</code> and <code class="code">sc1</code> volumes) is
+                        throttled to the baseline. Check the <code class="code">BurstBalance</code> value to determine whether your
+                        volume is being throttled for this reason. 
+                     </p>
+                     <p>HDD-backed <code class="code">st1</code> and <code class="code">sc1</code> volumes are designed to perform best with workloads that
+                        take advantage of the 1,024 KiB maximum I/O size. To determine your volume&apos;s average
+                        I/O size,
+                        divide <code class="code">VolumeWriteBytes </code>by <code class="code">VolumeWriteOps</code>. The same calculation
+                        applies to read operations. If average I/O size is below 64 KiB, increasing the size
+                        of the
+                        I/O operations sent to an <code class="code">st1</code> or <code class="code">sc1</code> volume should improve performance. 
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>If average I/O size is at or near 44 KiB, you may be using an instance or kernel without
+                           support for indirect descriptors. Any Linux kernel 3.8 and above has this support,
+                           as well
+                           as any current-generation instance. 
+                        </p>
+                     </div>
+                     <p>If your I/O latency is higher than you require, check <code class="code">VolumeQueueLength</code> to
+                        make sure your application is not trying to drive more IOPS than you have provisioned.
+                        If your
+                        application requires a greater number of IOPS than your volume can provide, you should
+                        consider using a larger <code class="code">gp2</code> volume with a higher base performance level or an <code class="code">io1</code> volume
+                        with more provisioned IOPS to achieve faster latencies.
+                     </p>
+                     <p>For more information about Amazon EBS I/O characteristics, see the <a href="https://www.youtube.com/watch?v=2wKgha8CZ_w" target="_blank">Amazon EBS: Designing for
+                           Performance</a> re:Invent presentation on this topic.
+                     </p>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ebs-ec2-config.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ebs-initialize.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

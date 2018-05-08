@@ -1,0 +1,905 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Expanding a Linux Partition - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ebs-modify-volume.html" title="Modifying the Size, IOPS, or Type of an EBS Volume on Linux">
+      <link rel="prev" href="monitoring_mods.html" title="Monitoring the Progress of Volume Modifications">
+      <link rel="next" href="recognize-expanded-volume-linux.html" title="Extending a Linux File System after Resizing
+        the Volume">
+      <meta name="description" content="Extend a Linux partition on an existing volume without losing the data on the volume.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/expand-linux-partition.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Storage.html">Storage</a> &#xBB; <a href="AmazonEBS.html">Amazon Elastic Block Store (Amazon EBS)</a> &#xBB; <a href="EBSVolumes.html">Amazon EBS Volumes</a> &#xBB; <a href="ebs-modify-volume.html">Modifying the Size, IOPS, or Type of an EBS Volume on Linux</a> &#xBB; <span class="breadcrumb">Expanding a Linux Partition</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="expand-linux-partition">Expanding a Linux Partition</h1>
+                     <p>Some Amazon EC2 root volumes and volumes that are restored from snapshots contain
+                        a partition
+                        that actually holds the file system and the data. If you think of a volume as a container,
+                        a
+                        partition is another container inside the volume, and the data resides on the partition.
+                        Growing the volume size does not grow the partition; to take advantage of a larger
+                        volume,
+                        the partition must be expanded to the new size.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>Not all volumes restored from snapshots are partitioned, and this procedure may not
+                           apply to your volume. You may just need to resize the file system on your volume to
+                           make
+                           all of the space available. If you are not sure if your volume has a partition that
+                           needs resizing, see <a href="recognize-expanded-volume-linux.html#procedure_partition_check">To check if your volume partition needs
+                              resizing</a> for more information.
+                        </p>
+                     </div>
+                     <p>If the partition you want to expand is not the root partition, then you can simply
+                        unmount
+                        it and resize the partition from the instance itself. If the partition to resize is
+                        the root
+                        partition for an instance, the process becomes more complicated because you cannot
+                        unmount
+                        the root partition of a running instance. You have to perform the following procedures
+                        on
+                        another instance, which is referred to as a <em>secondary instance</em>.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>The following procedures were written for and tested on Amazon Linux. Other distributions
+                           with
+                           different tool sets and tool versions may behave differently.
+                        </p>
+                     </div>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#prepare-linux-root-part">Preparing a Linux Root Partition for
+                                 Expansion</a></li>
+                           <li><a href="#expanding-partition-parted">Expanding a Linux Partition Using
+                                 parted</a></li>
+                           <li><a href="#expanding-partition-gdisk">Expanding a Linux Partition Using gdisk</a></li>
+                           <li><a href="#return-expanded-root-partition">Returning an Expanded Partition to Its Original
+                                 Instance</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="prepare-linux-root-part">Preparing a Linux Root Partition for
+                        Expansion
+                     </h2>
+                     
+                     
+                     <p>There are several steps to take to expand the root partition of an instance. If the
+                        partition to expand is not the root partition, then this procedure is not necessary.
+                        
+                     </p>
+                     <a id="root_partition_prepare"></a><p class="title"><b>To prepare a Linux root partition for
+                           expansion</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>If your primary instance is running, stop it. You cannot perform the rest of
+                              this procedure on a running instance. For more information, see <a href="Stop_Start.html">Stop and Start Your Instance</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Check the integrity of your volume. File-system corruption that is picked up
+                              by the snapshot may render a restored root volume unbootable.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Take a snapshot of your volume. It can be easy to corrupt or lose your data in
+                              the following procedures. If you have a fresh snapshot, you can always start
+                              over in case of a mistake and your data is still safe. For more information, see
+                              <a href="ebs-creating-snapshot.html">Creating an Amazon EBS Snapshot</a>.
+                           </p>
+                           
+                        </li>
+                        <li><a id="identify_root_device_step"></a>
+                           
+                           <p>Record the device name that the volume is attached to. You can find this
+                              information on the <b>Root device</b> field of the instance&apos;s
+                              details pane. The value is likely <code>/dev/sda1</code> or
+                              <code>/dev/xvda</code>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Detach the volume from the primary instance. For more information, see <a href="ebs-detaching-volume.html">Detaching an Amazon EBS Volume from an Instance</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Attach the volume to another (secondary) instance in the same Availability
+                              Zone. For more information, see <a href="ebs-attaching-volume.html">Attaching an Amazon EBS Volume to an Instance</a>. If your EBS volume is encrypted, you
+                              must use a secondary instance that supports Amazon EBS encryption; otherwise, you
+                              can use
+                              a <code class="literal">t2.micro</code> instance for this procedure. For more
+                              information, see <a href="EBSEncryption.html#EBSEncryption_supported_instances">Supported Instance Types</a>. If you do not already
+                              have a secondary instance, you must launch one. For more information, see <a href="launching-instance.html">Launching an Instance Using the Launch Instance Wizard</a>.
+                           </p>
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>The secondary instance must be running when you attach the volume, and
+                                 you should not reboot the secondary instance while multiple root volumes
+                                 are attached; booting an instance with multiple root volumes attached
+                                 could cause the instance to boot to the wrong volume.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Log in to the secondary instance with SSH. For more information, see <a href="AccessingInstances.html">Connect to Your Linux Instance</a>. Continue
+                              with the next procedure.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="expanding-partition-parted">Expanding a Linux Partition Using
+                        <b>parted</b></h2>
+                     
+                     
+                     <p>The <b>parted</b> utility is a partition editing tool that is available on
+                        most Linux distributions. It can create and edit both MBR partition tables and GPT
+                        partition tables. Some versions of <b>parted</b> (newer than version 2.1)
+                        have limited support for GPT partition tables and they may cause boot issues if their
+                        version of <b>parted</b> is used to modify boot volumes. You can check your
+                        version of <b>parted</b> with the <code class="literal">parted --version</code>
+                        command.
+                     </p>
+                     
+                     <p>If you are expanding a partition that resides on a GPT partitioned device, you should
+                        choose to use the <b>gdisk</b> utility instead. If you&apos;re not sure which
+                        disk label type your volume uses, you can check it with the <b>sudo fdisk
+                           -l</b> command. For more information, see <a href="expand-linux-partition.html#part-resize-gdisk">To expand a Linux partition using
+                           <b>gdisk</b></a>.
+                     </p>
+                     
+                     <p class="title"><b>To expand a Linux partition using <b>parted</b></b></p>
+                     <p>If the partition to expand is the root partition, be sure to follow the steps in
+                        <a href="expand-linux-partition.html#root_partition_prepare">To prepare a Linux root partition for
+                           expansion</a>
+                        first.
+                     </p>
+                     <ol>
+                        <li>
+                           
+                           <p>Identify the device that contains the partition that you want to expand. Use
+                              the <b>lsblk</b> command to list all devices and partitions attached
+                              to the
+                              instance.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>lsblk</code></strong><code class="computeroutput" copy="false">
+NAME    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+xvdf    202:80   0  100G  0 disk
+&#x2514;&#x2500;xvdf1 202:81   0    8G  0 part /mnt
+xvda1   202:1    0   30G  0 disk /</code></code></pre><p>In this example, the <code>xvdf</code> device has 100 GiB of available storage and it
+                              contains an 8-GiB partition.
+                           </p>
+                           
+                        </li>
+                        <li><a id="partition_unmount_step_parted"></a>
+                           
+                           <p>Unmount the partition if it is mounted. Run the <b>umount</b>
+                              command with the value of <code class="literal">MOUNTPOINT</code> from the
+                              <b>lsblk</b> command. In this example, the
+                              <code class="literal">MOUNTPOINT</code> value for the partition is
+                              <code>/mnt</code>.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo umount <em class="replaceable"><code>/mnt</code></em></code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Take a snapshot of your volume (unless you just took one in the previous
+                              procedure). It can be easy to corrupt or lose your data in the following
+                              procedures. If you have a fresh snapshot, you can always start over in case of a
+                              mistake and your data is still safe. For more information, see <a href="ebs-creating-snapshot.html">Creating an Amazon EBS Snapshot</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Run the <b>parted</b> command on the device (and not the partition
+                              on the device). Remember to add the <code>/dev/</code> prefix to the
+                              name that <b>lsblk</b>
+                              outputs.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo parted <em class="replaceable"><code>/dev/xvdf</code></em></code></strong><code class="computeroutput" copy="false">
+GNU Parted 2.1
+Using /dev/xvdf
+Welcome to GNU Parted! Type &apos;help&apos; to view a list of commands.</code></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Change the <b>parted</b> units of measure to
+                              sectors.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">(parted) </code><strong class="userinput"><code>unit s</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Run the <b>print</b> command to list the partitions on the device.
+                              For certain partition table types, you might be prompted to repair the partition
+                              table for the larger volume size. Answer &apos;Ignore&apos; to any questions about fixing
+                              the existing partition table; you create a new table later.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">(parted) </code><strong class="userinput"><code>print</code></strong></code></pre>
+                           <ol>
+                              <li>
+                                 
+                                 <p>If you receive the following message, enter &apos;Ignore&apos; to prevent the
+                                    backup GPT location from changing.
+                                    
+                                 </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Error: The backup GPT table is not at the end of the disk, as it should be.  This might mean that another operating
+system believes the disk is smaller.  Fix, by moving the backup to the end (and removing the old backup)?
+Fix/Ignore/Cancel? <strong class="userinput"><code>Ignore</code></strong></code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>If you receive the following message, enter &apos;Ignore&apos; again to keep the
+                                    space on the drive the
+                                    same.
+                                 </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Warning: Not all of the space available to /dev/xvdf appears to be used, you can fix the GPT to use all of the
+space (an extra 46137344 blocks) or continue with the current setting?
+Fix/Ignore? <strong class="userinput"><code>Ignore</code></strong></code></pre>
+                                 </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Examine the output for the total size of the disk, the partition table type,
+                              the number of the partition, the start point of the partition, and any flags,
+                              such as <code class="literal">boot</code>. For <code class="literal">gpt</code> partition tables,
+                              note the name of the partition; for <code class="literal">msdos</code> partition tables,
+                              note the <code class="literal">Type</code> field (<code class="literal">primary</code> or
+                              <code class="literal">extended</code>). These values are used in the upcoming
+                              steps.
+                           </p>
+                           
+                           <p>The following is a <code class="literal">gpt</code> partition table
+                              example.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Model: Xen Virtual Block Device (xvd)
+Disk /dev/xvdf: <em class="replaceable"><code>209715200s</code></em>
+Sector size (logical/physical): 512B/512B
+Partition Table: <em class="replaceable"><code>gpt</code></em>
+
+Number  Start  End        Size       File system  Name                 Flags
+128     2048s  4095s      2048s                   BIOS Boot Partition  bios_grub
+ <em class="replaceable"><code>1</code></em>      <em class="replaceable"><code>4096s</code></em>  16777182s  16773087s  ext4         <em class="replaceable"><code>Linux</code></em></code></pre>
+                           <p>The following is an <code class="literal">msdos</code> partition table
+                              example.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Model: Xen Virtual Block Device (xvd)
+Disk /dev/xvdg: <em class="replaceable"><code>104857600s</code></em>
+Sector size (logical/physical): 512B/512B
+Partition Table: <em class="replaceable"><code>msdos</code></em>
+
+Number  Start  End        Size       Type     File system  Flags
+ <em class="replaceable"><code>1</code></em>      <em class="replaceable"><code>2048s</code></em>  35649535s  35647488s  <em class="replaceable"><code>primary</code></em>  ext3</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Delete the partition entry for the partition using the number (1) from the
+                              previous
+                              step.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">(parted) </code><strong class="userinput"><code>rm 1</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Create a new partition that extends to the end of the volume.</p>
+                           
+                           <p>(For the <code class="literal">gpt</code> partition table example) Note the start point
+                              and name of partition 1 above. For the <code class="literal">gpt</code> example, there is
+                              a start point of 4096s, and the name <code class="literal">Linux</code>. Run the
+                              <b>mkpart</b> command with the start point of partition 1, the
+                              name, and 100% to use all of the available
+                              space.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">(parted) </code><strong class="userinput"><code>mkpart <em class="replaceable"><code>Linux 4096s 100%</code></em></code></strong></code></pre>
+                           <p>(For the <code class="literal">msdos</code> partition table example) Note the start
+                              point and the partition type of partition 1 above. For the
+                              <code class="literal">msdos</code> example, there is a start point of 2048s and a
+                              partition type of <code class="literal">primary</code>. Run the <b>mkpart</b>
+                              command with a primary partition type, the start point of partition 1, and 100%
+                              to use all of the available
+                              space.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">(parted) </code><strong class="userinput"><code>mkpart <em class="replaceable"><code>primary 2048s 100%</code></em></code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Run the <b>print</b> command again to verify your
+                              partition.
+                           </p>
+                           
+                           <p>(For the <code class="literal">gpt</code> partition table
+                              example)
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">(parted) </code><strong class="userinput"><code>print</code></strong>
+Model: Xen Virtual Block Device (xvd)
+Disk /dev/xvdf: 209715200s
+Sector size (logical/physical): 512B/512B
+Partition Table: gpt
+
+Number  Start  End         Size        File system  Name                 Flags
+128     2048s  4095s       2048s                    BIOS Boot Partition  bios_grub
+ 1      4096s  209713151s  209709056s  ext4         Linux</code></pre><p>(For
+                              the <code class="literal">msdos</code> partition table
+                              example)
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">(parted) </code><strong class="userinput"><code>print</code></strong><code class="computeroutput" copy="false">
+Model: Xen Virtual Block Device (xvd)
+Disk /dev/xvdg: 104857600s
+Sector size (logical/physical): 512B/512B
+Partition Table: msdos
+
+Number  Start  End         Size        Type     File system  Flags
+ 1      2048s  104857599s  104855552s  primary  ext3</code></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Check to see that any flags that were present earlier are still present for
+                              the partition that you expanded. In some cases, the <code class="literal">boot</code> flag may be lost. If a flag was dropped from the partition when
+                              it was expanded, add the flag with the following command, substituting your
+                              partition number and the flag name. For example, the following command adds the
+                              <code class="literal">boot</code> flag to partition 1.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">(parted) </code>set <em class="replaceable"><code>1</code></em> <em class="replaceable"><code>boot</code></em> on</code></pre><p>You
+                              can run the <b>print</b> command again to verify your change.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Run the <b>quit</b> command to exit <b>parted</b>.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">(parted) </code><strong class="userinput"><code>quit</code></strong></code></pre><div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>Because you removed a partition and added a partition,
+                                 <b>parted</b> may warn that you may need to update
+                                 <code>/etc/fstab</code>. This is only required if the
+                                 partition number changes.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Check the file system to make sure that there are no errors (this is required
+                              before you may extend the file system). Note the file system type from the
+                              previous <b>print</b> commands. Choose one of the commands below
+                              based on your file system type; if you are using a different file system,
+                              consult the documentation for that file system to determine the correct check
+                              command.
+                           </p>
+                           
+                           <p>(For <code class="literal">ext3</code> or <code class="literal">ext4</code> file
+                              systems)
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo e2fsck -f <em class="replaceable"><code>/dev/xvdf1</code></em></code></strong><code class="computeroutput" copy="false">
+e2fsck 1.42.3 (14-May-2012)
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+/: 31568/524288 files (0.4% non-contiguous), 266685/2096635 blocks</code></code></pre>
+                           <p>(For <code class="literal">xfs</code> file
+                              systems)
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo xfs_repair <em class="replaceable"><code>/dev/xvdf1</code></em></code></strong><code class="computeroutput" copy="false">
+Phase 1 - find and verify superblock...
+Phase 2 - using internal log
+        - zero log...
+        - scan filesystem freespace and inode maps...
+        - found root inode chunk
+Phase 3 - for each AG...
+        - scan and clear agi unlinked lists...
+        - process known inodes and perform inode discovery...
+        - agno = 0
+        - agno = 1
+        - agno = 2
+        - agno = 3
+        - process newly discovered inodes...
+Phase 4 - check for duplicate blocks...
+        - setting up duplicate extent list...
+        - check for inodes claiming duplicate blocks...
+        - agno = 0
+        - agno = 1
+        - agno = 2
+        - agno = 3
+Phase 5 - rebuild AG headers and trees...
+        - reset superblock...
+Phase 6 - check inode connectivity...
+        - resetting contents of realtime bitmap and summary inodes
+        - traversing filesystem ...
+        - traversal finished ...
+        - moving disconnected inodes to lost+found ...
+Phase 7 - verify and correct link counts...
+done</code></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>The next steps differ depending on whether the expanded partition belongs on
+                              the current instance or if it is the root partition for another instance. 
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p>If this partition belongs on the current instance, remount the
+                                       partition at the <code class="literal">MOUNTPOINT</code> identified in <a href="expand-linux-partition.html#partition_unmount_step_parted">Step&#xA0;2</a>.
+                                    </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo mount <em class="replaceable"><code>/dev/xvdf1</code></em> <em class="replaceable"><code>/mnt</code></em></code></strong></code></pre><p>After
+                                       you have mounted the partition, extend the file system to use the newly
+                                       available space by following the procedures in <a href="recognize-expanded-volume-linux.html">Extending a Linux File System after Resizing
+                                          the Volume</a>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>If this volume is the root partition for another instance, proceed to
+                                       the procedures in <a href="expand-linux-partition.html#return-expanded-root-partition">Returning an Expanded Partition to Its Original
+                                          Instance</a>.
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="expanding-partition-gdisk">Expanding a Linux Partition Using gdisk</h2>
+                     
+                     
+                     <p>The <b>gdisk</b> utility (sometimes called GPT fdisk) is a text-based,
+                        menu-driven tool for creating and editing partition tables, and it has better support
+                        for GPT partition tables than <b>parted</b> in some distributions. Many
+                        common Linux distributions (such as Amazon Linux and Ubuntu) provide <b>gdisk</b> by
+                        default. If your distribution does not provide the <b>gdisk</b> command, you
+                        can find out how to get it by visiting <a href="http://www.rodsbooks.com/gdisk/download.html" target="_blank">Obtaining GPT fdisk</a>; in
+                        many cases, it is much easier to launch an Amazon Linux instance to use as a secondary
+                        instance
+                        because the <b>gdisk</b> command is already available.
+                     </p>
+                     <a id="part-resize-gdisk"></a><p class="title"><b>To expand a Linux partition using
+                           <b>gdisk</b></b></p>
+                     <p>If the partition to expand is the root partition, be sure to follow the steps in
+                        <a href="expand-linux-partition.html#root_partition_prepare">To prepare a Linux root partition for
+                           expansion</a>
+                        first.
+                     </p>
+                     <ol>
+                        <li>
+                           
+                           <p>Identify the device that contains the partition that you want to expand. Use
+                              the <b>lsblk</b> command to list all devices and partitions attached
+                              to the
+                              instance.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>lsblk</code></strong><code class="computeroutput" copy="false">
+NAME    MAJ:MIN RM  SIZE RO MOUNTPOINT
+xvdf    202:80   0  100G  0
+xvdf1   202:81   0  9.9G  0 /mnt
+xvda1   202:1    0   30G  0 /</code></code></pre><p>In this example, the <code>xvdf</code> device has 100 GiB of available storage and it
+                              contains a 9.9-GiB partition.
+                           </p>
+                           
+                        </li>
+                        <li><a id="partition_unmount_step_gdisk"></a>
+                           
+                           <p>Unmount the partition if it is mounted. Run the <b>umount</b>
+                              command with the value of <code class="literal">MOUNTPOINT</code> from the
+                              <b>lsblk</b> command. In this example, the
+                              <code class="literal">MOUNTPOINT</code> value for the partition is
+                              <code>/mnt</code>.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo umount <em class="replaceable"><code>/mnt</code></em></code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Take a snapshot of your volume (unless you just took one in the previous
+                              procedure). It can be easy to corrupt or lose your data in the following
+                              procedures. If you have a fresh snapshot, you can always start over in case of a
+                              mistake and your data is still safe. For more information, see <a href="ebs-creating-snapshot.html">Creating an Amazon EBS Snapshot</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Run the <b>gdisk</b> command on the device (and not the partition
+                              on the device). Remember to add the <code>/dev/</code> prefix to the
+                              name that <b>lsblk</b>
+                              outputs.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo gdisk <em class="replaceable"><code>/dev/xvdf</code></em></code></strong><code class="computeroutput" copy="false">
+gdisk /dev/xvdf
+GPT fdisk (gdisk) version 0.8.10
+
+Partition table scan:
+  MBR: protective
+  BSD: not present
+  APM: not present
+  GPT: present
+
+Found valid GPT with protective MBR; using GPT.</code></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Run the <b>p</b> command to print the partition table for the
+                              device.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Examine the output for the disk identifier, partition number, starting sector,
+                              code for the partition, and name of the partition. If your volume has multiple
+                              partitions, take note of each
+                              one.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">Command (? for help): </code><strong class="userinput"><code>p</code></strong><code class="computeroutput" copy="false">
+Disk /dev/xvdf: 209715200 sectors, 100.0 GiB
+Logical sector size: 512 bytes
+Disk identifier (GUID): 947F4655-F3BF-4A1F-8203-000000000000
+Partition table holds up to 128 entries
+First usable sector is 34, last usable sector is 20705246
+Partitions will be aligned on 2048-sector boundaries
+Total free space is 2108 sectors (1.0 MiB)
+
+Number  Start (sector)    End (sector)  Size       Code  Name
+   1            2048        20705152   9.9 GiB     EF00  lxroot</code></code></pre><p>In the preceding example, the disk identifier is <code class="literal">947F4655-F3BF-4A1F-8203-000000000000</code>, the partition number is <code class="literal">1</code>, the starting sector is <code class="literal">2048</code>, the code is <code class="literal">EF00</code>, and the name
+                              is <code class="literal">lxroot</code>. Your values will vary.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Because the existing partition table was originally created for a smaller
+                              volume, create a new partition table for the larger volume. Run the
+                              <b>o</b> command to create a new, empty partition table.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">Command (? for help): </code><strong class="userinput"><code>o</code></strong><code class="computeroutput" copy="false">
+This option deletes all partitions and creates a new protective MBR.
+Proceed? (Y/N): <strong class="userinput"><code>Y</code></strong></code></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Use the <b>n</b> command to create a new partition entry for each
+                              partition on the device. 
+                           </p>
+                           
+                           <ul>
+                              
+                              <li>
+                                 
+                                 <p>If your volume has only one partition, at each prompt, enter the
+                                    values that you recorded earlier. For the last sector value, use the
+                                    default value to expand to the entire volume
+                                    size.
+                                 </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">Command (? for help): </code><strong class="userinput"><code>n</code></strong><code class="computeroutput" copy="false">
+Partition number (1-128, default 1): <strong class="userinput"><code>1</code></strong>
+First sector (34-209715166, default = 2048) or {+-}size{KMGTP}: <strong class="userinput"><code>2048</code></strong>
+Last sector (2048-209715166, default = 209715166) or {+-}size{KMGTP}: <strong class="userinput"><code>209715166</code></strong>
+Current type is &apos;Linux filesystem&apos;
+Hex code or GUID (L to show codes, Enter = 8300): <strong class="userinput"><code>EF00</code></strong>
+Changed type of partition to &apos;EFI System&apos;</code></code></pre>
+                                 </li>
+                              
+                              <li>
+                                 
+                                 <p>If your volume has more than one partition, there is likely a BIOS
+                                    boot partition, and a main data partition. Create a new partition entry
+                                    for the BIOS boot partition using the values that you recorded earlier.
+                                    Create another new partition entry for the main data partition using the
+                                    values that you recorded earlier. For the last sector value, use the
+                                    default value to expand to the entire volume size.
+                                 </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Command (? for help): <strong class="userinput"><code>n</code></strong>
+Partition number (1-128, default 1): <strong class="userinput"><code>1</code></strong>
+First sector (34-209715166, default = 2048) or {+-}size{KMGTP}:  <strong class="userinput"><code>2048</code></strong>
+Last sector (2048-209715166, default = 209715166) or {+-}size{KMGTP}: <strong class="userinput"><code>4095</code></strong>
+Current type is &apos;Linux filesystem&apos;
+Hex code or GUID (L to show codes, Enter = 8300): <strong class="userinput"><code>EF02</code></strong>
+Changed type of partition to &apos;BIOS boot partition&apos;
+
+Command (? for help): <strong class="userinput"><code>n</code></strong>
+Partition number (2-128, default 2): <strong class="userinput"><code>2</code></strong>
+First sector (34-209715166, default = 4096) or {+-}size{KMGTP}: <strong class="userinput"><code>4096</code></strong>
+Last sector (4096-209715166, default = 209715166) or {+-}size{KMGTP}: <strong class="userinput"><code>209715166</code></strong>
+Current type is &apos;Linux filesystem&apos;
+Hex code or GUID (L to show codes, Enter = 8300): <strong class="userinput"><code>0700</code></strong>
+Changed type of partition to &apos;Microsoft basic data&apos;</code></pre>
+                                 </li>
+                              
+                           </ul>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Use the <b>c</b> command to change the name of each partition to
+                              the name of the previous partition. If your partition did not have a name,
+                              simply type
+                              <code class="code">Enter</code>.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Command (? for help): <strong class="userinput"><code>c</code></strong>
+Using 1
+Enter name: <strong class="userinput"><code>lxroot</code></strong></code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Use the <b>x</b> command to enter the expert command menu.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Use the <b>g</b> command to change the disk identifier to the
+                              original
+                              value.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Expert command (? for help): <strong class="userinput"><code>g</code></strong>
+Enter the disk&apos;s unique GUID (&apos;R&apos; to randomize): <strong class="userinput"><code>947F4655-F3BF-4A1F-8203-A7B30C2A4425</code></strong>
+The new disk GUID is 947F4655-F3BF-4A1F-8203-A7B30C2A4425</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Use the <b>w</b> command to write the changes to the device and
+                              exit.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Expert command (? for help): <strong class="userinput"><code>w</code></strong>
+
+Final checks complete. About to write GPT data. THIS WILL OVERWRITE EXISTING
+PARTITIONS!!
+
+Do you want to proceed? (Y/N): <strong class="userinput"><code>Y</code></strong>
+OK; writing new GUID partition table (GPT) to /dev/xvdf.
+The operation has completed successfully.</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Check the file system to make sure that there are no errors (this is required
+                              before you may extend the file system).
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>Find the file system type with the following command, substituting the
+                                    partition you just expanded (this may be
+                                    <code><em class="replaceable"><code>/dev/xvdf2</code></em></code> if
+                                    your volume had multiple
+                                    partitions).
+                                 </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo file -sL <em class="replaceable"><code>/dev/xvdf1</code></em></code></strong></code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>Choose one of the commands below based on your file system type. If
+                                    you are using a different file system, consult the documentation for
+                                    that file system to determine the correct check command.
+                                 </p>
+                                 
+                                 <p>(For <code class="literal">ext3</code> or <code class="literal">ext4</code> file
+                                    systems)
+                                 </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo e2fsck -f <em class="replaceable"><code>/dev/xvdf1</code></em></code></strong>
+e2fsck 1.42.3 (14-May-2012)
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+/: 31568/524288 files (0.4% non-contiguous), 266685/2096635 blocks</code></pre>
+                                 <p>(For <code class="literal">xfs</code> file systems)
+                                 </p>
+                                 <div class="aws-note">
+                                    <p class="aws-note">Note</p>
+                                    <p>You may need to install the <code class="literal">xfsprogs</code>
+                                       package to work with XFS file systems. Use the following command
+                                       to add XFS support to your Amazon Linux
+                                       instance.
+                                    </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo yum install -y xfsprogs</code></strong></code></pre></div><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo xfs_repair <em class="replaceable"><code>/dev/xvdf1</code></em></code></strong><code class="computeroutput" copy="false">
+Phase 1 - find and verify superblock...
+Phase 2 - using internal log
+        - zero log...
+        - scan filesystem freespace and inode maps...
+        - found root inode chunk
+Phase 3 - for each AG...
+        - scan and clear agi unlinked lists...
+        - process known inodes and perform inode discovery...
+        - agno = 0
+        - agno = 1
+        - agno = 2
+        - agno = 3
+        - process newly discovered inodes...
+Phase 4 - check for duplicate blocks...
+        - setting up duplicate extent list...
+        - check for inodes claiming duplicate blocks...
+        - agno = 0
+        - agno = 1
+        - agno = 2
+        - agno = 3
+Phase 5 - rebuild AG headers and trees...
+        - reset superblock...
+Phase 6 - check inode connectivity...
+        - resetting contents of realtime bitmap and summary inodes
+        - traversing filesystem ...
+        - traversal finished ...
+        - moving disconnected inodes to lost+found ...
+Phase 7 - verify and correct link counts...
+done</code></code></pre>
+                                 </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>The next steps differ depending on whether the expanded partition belongs on
+                              the current instance or if it is the root partition for another instance. 
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p>If this partition belongs on the current instance, remount the
+                                       partition at the <code class="literal">MOUNTPOINT</code> identified in <a href="expand-linux-partition.html#partition_unmount_step_gdisk">Step&#xA0;2</a>.
+                                    </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo mount <em class="replaceable"><code>/dev/xvdf1</code></em> <em class="replaceable"><code>/mnt</code></em></code></strong></code></pre><p>After
+                                       you have mounted the partition, extend the file system to use the newly
+                                       available space by following the procedures in <a href="recognize-expanded-volume-linux.html">Extending a Linux File System after Resizing
+                                          the Volume</a>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p>If this volume is the root partition for another instance, proceed to
+                                       the procedures in <a href="expand-linux-partition.html#return-expanded-root-partition">Returning an Expanded Partition to Its Original
+                                          Instance</a>.
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="return-expanded-root-partition">Returning an Expanded Partition to Its Original
+                        Instance
+                     </h2>
+                     
+                     
+                     <p>If you expanded a root partition from another instance, follow this procedure to
+                        return the volume to its original instance.
+                     </p>
+                     
+                     <p class="title"><b>To return an expanded root partition to its original instance</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Detach the expanded partition from its secondary instance. For more
+                              information, see <a href="ebs-detaching-volume.html">Detaching an Amazon EBS Volume from an Instance</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Reattach the volume to the primary instance using the device name that you
+                              identified in <a href="expand-linux-partition.html#identify_root_device_step">Step&#xA0;4</a> of the <a href="expand-linux-partition.html#root_partition_prepare">preparation procedure</a>. For more
+                              information, see <a href="ebs-attaching-volume.html">Attaching an Amazon EBS Volume to an Instance</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Start the primary instance. For more information, see <a href="Stop_Start.html">Stop and Start Your Instance</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) If you launched a secondary instance for the sole purpose of
+                              expanding the partition, you can terminate the instance to stop incurring
+                              charges. For more information, see <a href="terminating-instances.html">Terminate Your Instance</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Connect to your primary instance and extend the file system to use the newly
+                              available space by following the procedures in <a href="recognize-expanded-volume-linux.html">Extending a Linux File System after Resizing
+                                 the Volume</a>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <p>After you are finished with this expanding the file system, you can create an AMI
+                        from
+                        the instance that you can use to launch new instances with the desired partition size.
+                        For more information, see <a href="AMIs.html">Amazon Machine Images (AMI)</a>.
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="monitoring_mods.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="recognize-expanded-volume-linux.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Preparing a Linux Root Partition for
+            Expansion"><a class="pagetoc" href="#prepare-linux-root-part">Preparing a Linux Root Partition for
+                              Expansion</a></li>
+                        <li class="pagetoc" name="Expanding a Linux Partition Using
+                parted"><a class="pagetoc" href="#expanding-partition-parted">Expanding a Linux Partition Using
+                              parted</a></li>
+                        <li class="pagetoc" name="Expanding a Linux Partition Using gdisk"><a class="pagetoc" href="#expanding-partition-gdisk">Expanding a Linux Partition Using gdisk</a></li>
+                        <li class="pagetoc" name="Returning an Expanded Partition to Its Original
+                Instance"><a class="pagetoc" href="#return-expanded-root-partition">Returning an Expanded Partition to Its Original
+                              Instance</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

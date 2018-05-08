@@ -1,0 +1,1462 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Amazon EC2 Instance Store - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="Storage.html" title="Storage">
+      <link rel="prev" href="ebs-cloud-watch-events.html" title="Amazon CloudWatch Events for Amazon EBS">
+      <link rel="next" href="add-instance-store-volumes.html" title="Add Instance Store Volumes to Your EC2
+      Instance">
+      <meta name="description" content="Use the disk storage that is physically attached to the host computer for your instance.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/InstanceStorage.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Storage.html">Storage</a> &#xBB; <span class="breadcrumb">Amazon EC2 Instance Store</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="InstanceStorage">Amazon EC2 Instance Store</h1>
+                     <p>An <em>instance store</em> provides temporary block-level storage for your
+                        instance. This storage is located on disks that are physically attached to the host
+                        computer.
+                        Instance store is ideal for temporary storage of information that changes frequently,
+                        such as
+                        buffers, caches, scratch data, and other temporary content, or for data that is replicated
+                        across a fleet of instances, such as a load-balanced pool of web servers.
+                     </p>
+                     <p>An instance store consists of one or more instance store volumes exposed as block
+                        devices.
+                        The size of an instance store as well as the number of devices available varies by
+                        instance
+                        type. While an instance store is dedicated to a particular instance, the disk subsystem
+                        is
+                        shared among instances on a host computer.
+                     </p>
+                     <p>The virtual devices for instance store volumes are <code>ephemeral[0-23]</code>.
+                        Instance types that support one instance store volume have <code>ephemeral0</code>.
+                        Instance types that support two instance store volumes have <code>ephemeral0</code> and
+                        <code>ephemeral1</code>, and so on.
+                     </p>
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/instance_storage.png" alt="
+      Amazon EC2 instance storage
+    ">
+                        
+                        
+                        
+                     </div>
+                     <div class="highlights">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#instance-store-lifetime">Instance Store Lifetime</a></li>
+                           <li><a href="#instance-store-volumes">Instance Store Volumes</a></li>
+                           <li><a href="add-instance-store-volumes.html">Add Instance Store Volumes to Your EC2
+                                 Instance</a></li>
+                           <li><a href="ssd-instance-store.html">SSD Instance Store Volumes</a></li>
+                           <li><a href="instance-store-swap-volumes.html">Instance Store Swap Volumes</a></li>
+                           <li><a href="disk-performance.html">Optimizing Disk Performance for Instance Store
+                                 Volumes</a></li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="instance-store-lifetime">Instance Store Lifetime</h2>
+                     
+                     
+                     <p>You can specify instance store volumes for an instance only when you launch it. You
+                        can&apos;t
+                        detach an instance store volume from one instance and attach it to a different
+                        instance.
+                     </p>
+                     
+                     
+                     <p>The data in an instance store persists only during the lifetime of its associated
+                        instance. If an instance reboots (intentionally or unintentionally), data in the instance
+                        store persists. However, data in the instance store is lost under the following
+                        circumstances:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>The underlying disk drive fails</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The instance stops</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The instance terminates</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>Therefore, do not rely on instance store for valuable, long-term data. Instead, use
+                        more
+                        durable data storage, such as Amazon S3, Amazon EBS, or Amazon EFS.
+                     </p>
+                     
+                     
+                     <p>When you stop or terminate an instance, every block of storage in the instance store
+                        is
+                        reset. Therefore, your data cannot be accessed through the instance store of another
+                        instance.
+                     </p>
+                     
+                     
+                     <p>If you create an AMI from an instance, the data on its instance store volumes isn&apos;t
+                        preserved and isn&apos;t present on the instance store volumes of the instances that you
+                        launch
+                        from the AMI.
+                     </p>
+                     
+                     
+                     <h2 id="instance-store-volumes">Instance Store Volumes</h2>
+                     
+                     
+                     
+                     <p>The instance type determines the size of the instance store available and the type
+                        of
+                        hardware used for the instance store volumes. Instance store volumes are included
+                        as part of
+                        the instance&apos;s usage cost. You must specify the instance store volumes that you&apos;d
+                        like to use
+                        when you launch the instance (except for NVMe instance store volumes, which are available
+                        by
+                        default). Then format and mount the instance store volumes before using them. You
+                        can&apos;t make
+                        an instance store volume available after you launch the instance. For more information,
+                        see
+                        <a href="add-instance-store-volumes.html">Add Instance Store Volumes to Your EC2
+                           Instance</a>.
+                     </p>
+                     
+                     
+                     <p>Some instance types use NVMe or SATA-based solid state drives (SSD) to deliver high
+                        random
+                        I/O performance. This is a good option when you need storage with very low latency,
+                        but you
+                        don&apos;t need the data to persist when the instance terminates or you can take advantage
+                        of
+                        fault-tolerant architectures. For more information, see <a href="ssd-instance-store.html">SSD Instance Store Volumes</a>.
+                     </p>
+                     
+                     
+                     <p>The following table provides the quantity, size, type, and performance optimizations
+                        of
+                        instance store volumes available on each supported instance type. For a complete list
+                        of
+                        instance types, including EBS-only types, see <a href="https://aws.amazon.com/ec2/instance-types/" target="_blank">Amazon EC2 Instance Types</a>.
+                     </p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac23c31c15b8">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Instance Type</th>
+                                 
+                                 <th>Instance Store Volumes</th>
+                                 
+                                 <th>Type</th>
+                                 
+                                 <th>Needs Initialization*</th>
+                                 
+                                 <th>TRIM Support**</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">c1.medium</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 350 GB<span>&#x2020;</span></p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">c1.xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>4 x 420 GB (1,680 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">c3.large</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 16 GB (32 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">c3.xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 40 GB (80 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">c3.2xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 80 GB (160 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">c3.4xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 160 GB (320 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">c3.8xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 320 GB (640 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">cc2.8xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>4 x 840 GB (3,360 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">cr1.8xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 120 GB (240 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">d2.xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>3 x 2,000 GB (6 TB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">d2.2xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>6 x 2,000 GB (12 TB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">d2.4xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>12 x 2,000 GB (24 TB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">d2.8xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>24 x 2,000 GB (48 TB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">f1.2xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 470 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>NVMe SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">f1.16xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>4 x 940 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>NVMe SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td><code class="code">g2.2xlarge</code></td>
+                                 
+                                 <td>1 x 60 GB</td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td><code class="code">g2.8xlarge</code></td>
+                                 
+                                 <td>2 x 120 GB (240 GB)</td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td><code class="code">h1.2xlarge</code></td>
+                                 
+                                 <td>1 x 2000 GB (2 TB)</td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td><code class="code">h1.4xlarge</code></td>
+                                 
+                                 <td>2 x 2000 GB (4 TB)</td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td><code class="code">h1.8xlarge</code></td>
+                                 
+                                 <td>4 x 2000 GB (8 TB)</td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td><code class="code">h1.16xlarge</code></td>
+                                 
+                                 <td>8 x 2000 GB (16 TB)</td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">hs1.8xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>24 x 2,000 GB (48 TB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">i2.xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 800 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">i2.2xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 800 GB (1,600 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">i2.4xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>4 x 800 GB (3,200 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">i2.8xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>8 x 800 GB (6,400 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">i3.large</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 475 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>NVMe SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">i3.xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 950 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>NVMe SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">i3.2xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 1,900 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>NVMe SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">i3.4xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 1,900 GB (3.8 TB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>NVMe SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">i3.8xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>4 x 1,900 GB (7.6 TB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>NVMe SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">i3.16xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>8 x 1,900 GB (15.2 TB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>NVMe SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">m1.small</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 160 GB<span>&#x2020;</span></p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">m1.medium</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 410 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">m1.large</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 420 GB (840 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">m1.xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>4 x 420 GB (1,680 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">m2.xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 420 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">m2.2xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 850 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">m2.4xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 840 GB (1,680 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>HDD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">m3.medium</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 4 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">m3.large</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 32 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">m3.xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 40 GB (80 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">m3.2xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 80 GB (160 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">r3.large</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 32 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">r3.xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 80 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">r3.2xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 160 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">r3.4xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 320 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">r3.8xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 320 GB (640 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td>&#x2714;</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">x1.16xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 1,920 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">x1.32xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 1,920 GB (3,840 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">x1e.xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 120 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">x1e.2xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 240 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">x1e.4xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 480 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">x1e.8xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 960 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">x1e.16xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>1 x 1,920 GB</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p><code class="code">x1e.32xlarge</code></p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>2 x 1,920 GB (3,840 GB)</p>
+                                    
+                                 </td>
+                                 
+                                 <td>SSD</td>
+                                 
+                                 <td></td>
+                                 
+                                 <td></td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <p>* Volumes attached to certain instances suffer a first-write penalty unless
+                        initialized.<span> For more information, see <a href="disk-performance.html">Optimizing Disk Performance for Instance Store
+                              Volumes</a>.</span></p>
+                     
+                     <p>** For more information, see <a href="ssd-instance-store.html#InstanceStoreTrimSupport">Instance Store Volume TRIM Support</a>.
+                     </p>
+                     
+                     <p>&#x2020; The <code class="code">c1.medium</code> and <code class="code">m1.small</code> instance types
+                        also include a 900 MB instance store swap volume, which may not be automatically enabled
+                        at
+                        boot time. For more information, see <a href="instance-store-swap-volumes.html">Instance Store Swap Volumes</a>.
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ebs-cloud-watch-events.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="add-instance-store-volumes.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Instance Store Lifetime"><a class="pagetoc" href="#instance-store-lifetime">Instance Store Lifetime</a></li>
+                        <li class="pagetoc" name="Instance Store Volumes"><a class="pagetoc" href="#instance-store-volumes">Instance Store Volumes</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,1215 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Spot Fleet Requests - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="using-spot-instances.html" title="Spot Instances">
+      <link rel="prev" href="spot-request-examples.html" title="Spot Request Example Launch Specifications">
+      <link rel="next" href="spot-fleet-examples.html" title="Spot Fleet Example Configurations">
+      <meta name="description" content="Create a Spot Fleet request that specifies the launch configuration for your Spot Instances, including the price that you are willing to pay per unit hour.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-fleet-requests.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="instance-purchasing-options.html">Instance Purchasing Options</a> &#xBB; <a href="using-spot-instances.html">Spot Instances</a> &#xBB; <span class="breadcrumb">Spot Fleet Requests</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="spot-fleet-requests">Spot Fleet Requests</h1>
+                     <p>To use a Spot Fleet, you create a Spot Fleet request that includes the target capacity,
+                        an optional
+                        			On-Demand portion, one or more launch specifications for the instances, and the
+                        maximum
+                        			price that you are willing to pay. Amazon EC2 attempts to maintain your Spot Fleet&apos;s
+                        target
+                        			capacity as Spot prices change. For more information, see <a href="spot-fleet.html">How Spot Fleet Works</a>.
+                     </p>
+                     <p>There are two types of Spot Fleet requests: <code class="code">request</code> and <code class="code">maintain</code>.
+                        			You can create a Spot Fleet to submit a one-time request for your desired capacity,
+                        or
+                        			require it to maintain a target capacity over time. Both types of requests benefit
+                        from
+                        			Spot Fleet&apos;s allocation strategy.
+                     </p>
+                     <p>When you make a one-time request, Spot Fleet places the required requests but does
+                        not attempt to
+                        			replenish Spot Instances if capacity is diminished. If capacity is not available,
+                        Spot Fleet does not
+                        			submit requests in alternative Spot pools.
+                     </p>
+                     <p>To maintain a target capacity, Spot Fleet places requests to meet the target
+                        			capacity and automatically replenish any interrupted instances.
+                     </p>
+                     <p>It is not possible to modify the target capacity of a one-time request after it&apos;s
+                        been submitted. 
+                        		    To change the target capacity, cancel the request and submit a new one.
+                     </p>
+                     <p>A Spot Fleet request remains active until it expires or you cancel it. When you cancel
+                        a
+                        			Spot Fleet request, you may specify whether canceling your Spot Fleet request terminates
+                        			the Spot Instances in your Spot Fleet.
+                     </p>
+                     <p>Each launch specification includes the information that Amazon EC2 needs to launch
+                        an instance,
+                        			such as an AMI, instance type, subnet or Availability Zone, and one or more security
+                        			groups.
+                     </p>
+                     <div class="highlights">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#spot-fleet-states">Spot Fleet Request States</a></li>
+                           <li><a href="#spot-fleet-prerequisites">Spot Fleet Prerequisites</a></li>
+                           <li><a href="#spot-fleet-iam-users">Spot Fleet and IAM Users</a></li>
+                           <li><a href="#spot-fleet-health-checks">Spot Fleet Health Checks</a></li>
+                           <li><a href="#plan-spot-fleet">Planning a Spot Fleet Request</a></li>
+                           <li><a href="#service-linked-roles-spot-fleet-requests">Service-Linked Role for Spot Fleet Requests</a></li>
+                           <li><a href="#create-spot-fleet">Creating a Spot Fleet Request</a></li>
+                           <li><a href="#manage-spot-fleet">Monitoring Your Spot Fleet</a></li>
+                           <li><a href="#modify-spot-fleet">Modifying a Spot Fleet Request</a></li>
+                           <li><a href="#cancel-spot-fleet">Canceling a Spot Fleet Request</a></li>
+                           <li><a href="spot-fleet-examples.html">Spot Fleet Example Configurations</a></li>
+                        </ul>
+                     </div>
+                     			
+                     <h2 id="spot-fleet-states">Spot Fleet Request States</h2>
+                     			
+                     <p>A Spot Fleet request can be in one of the following states:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><code class="code">submitted</code> &#x2013; The Spot Fleet request is being evaluated and Amazon EC2 is preparing
+                                 						to launch the target number of Spot Instances.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">active</code> &#x2013; The Spot Fleet has been validated and Amazon EC2 is attempting to
+                                 						maintain the target number of running Spot Instances. The request remains in
+                                 this
+                                 						state until it is modified or cancelled.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">modifying</code> &#x2013; The Spot Fleet request is being modified. The request remains in
+                                 						this state until the modification is fully processed or the Spot Fleet is
+                                 						cancelled. A one-time <code class="code">request</code> cannot be modified, and this
+                                 						state does not apply to such Spot requests.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">cancelled_running</code> &#x2013; The Spot Fleet is cancelled and will not launch
+                                 						additional Spot Instances. Its existing Spot Instances continue to run until
+                                 they are
+                                 						interrupted or terminated. The request remains in this state until all
+                                 						instances are interrupted or terminated.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">cancelled_terminating</code> &#x2013; The Spot Fleet is cancelled and its Spot Instances
+                                 						are terminating. The request remains in this state until all instances are
+                                 						terminated.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">cancelled</code> &#x2013; The Spot Fleet is cancelled and has no running Spot Instances.
+                                 						The Spot Fleet request is deleted two days after its instances were
+                                 						terminated.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>The following illustration represents the transitions between the request states.
+                        If you
+                        				exceed your Spot Fleet limits, the request is cancelled immediately.
+                     </p>
+                     
+                     			
+                     <div class="mediaobject">
+                        				
+                        					<img src="../../..//img/Spot_fleet_states.png" alt="
+					Spot Fleet request states
+				">
+                        				
+                        				
+                        			
+                     </div>
+                     
+                     		
+                     			
+                     <h2 id="spot-fleet-prerequisites">Spot Fleet Prerequisites</h2>
+                     
+                     			
+                     <p>If you use the Amazon EC2 console to create a Spot Fleet, it creates a role named
+                        				aws-ec2-spot-fleet-tagging-role that grants the Spot Fleet permission to request,
+                        				launch, terminate, and tag instances on your behalf. This role is selected when
+                        you
+                        				create your Spot Fleet request. If you use the AWS CLI or an API instead, you
+                        must
+                        				ensure that this role exists. You can either use the Request Spot Instances wizard
+                        				(the role is created when you advance to the second page of the wizard) or use
+                        the
+                        				IAM console as follows.
+                     </p>					
+                     			
+                     <p class="title"><b>To create the IAM role for Spot Fleet</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the IAM console at
+                              <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           					
+                           <p>In the navigation pane, choose <b>Roles</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>On the <b>Select type of trusted entity</b> page,
+                              						choose <b>AWS service</b>, <b>EC2</b>, 
+                              						<b>EC2 - Spot Fleet Tagging</b>, and then choose 
+                              						<b>Next: Permissions</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>On the <b>Attached permissions policy</b> page, 
+                              						choose <b>Next:Review</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>On the <b>Review</b> page, type a name for the role 
+                              						(for example, <strong class="userinput"><code>aws-ec2-spot-fleet-tagging-role</code></strong>) 
+                              						and then choose <b>Create role</b>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     
+                     		
+                     	
+                     <h2 id="spot-fleet-iam-users">Spot Fleet and IAM Users</h2>
+                     
+                     	
+                     <p>If your IAM users will create or manage a Spot Fleet, be sure to grant them the
+                        				required permissions as follows.
+                     </p>					
+                     	
+                     <p class="title"><b>To grant an IAM user permissions for Spot Fleet</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the IAM console at
+                              <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           			
+                           <p>In the navigation pane, choose <b>Policies</b>, <b>Create
+                                 							policy</b>.
+                           </p>
+                           		
+                        </li>
+                        <li>
+                           			
+                           <p>On the <b>Create policy</b> page, choose the
+                              				<b>JSON</b> tab, replace the text with the
+                              				following, and choose <b>Review policy</b>.
+                           </p>
+                           			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [
+        {
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: [
+                &quot;ec2:*&quot;
+            ],
+            &quot;Resource&quot;: &quot;*&quot;
+        },
+        {
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: [
+              &quot;iam:ListRoles&quot;,
+              &quot;iam:PassRole&quot;,
+              &quot;iam:ListInstanceProfiles&quot;
+            ],
+            &quot;Resource&quot;: &quot;*&quot;
+        }
+    ]
+}</code></pre>
+                           			<p>The <code class="code">ec2:*</code> grants an IAM user permission to call all Amazon EC2 API
+                              						actions. To limit the user to specific Amazon EC2 API actions, specify those
+                              						actions instead.
+                           </p>
+                           			
+                           <p>An IAM user must have permission to call the <code class="code">iam:ListRoles</code> action to
+                              				enumerate existing IAM roles, the <code class="code">iam:PassRole</code> action to
+                              				specify the Spot Fleet role, and the <code class="code">iam:ListInstanceProfiles</code>
+                              				action to enumerate existing instance profiles.
+                           </p> 
+                           			
+                           <p>(Optional) To enable an IAM user to create roles or instance profiles using the IAM
+                              console, 
+                              				you must also add the following actions to the policy:
+                           </p>
+                           			
+                           <div class="itemizedlist">
+                              				
+                              				
+                              				
+                              				
+                              				
+                              				
+                              			
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    <p><code class="code">iam:AddRoleToInstanceProfile</code></p>
+                                 </li>
+                                 <li class="listitem">
+                                    <p><code class="code">iam:AttachRolePolicy</code></p>
+                                 </li>
+                                 <li class="listitem">
+                                    <p><code class="code">iam:CreateInstanceProfile</code></p>
+                                 </li>
+                                 <li class="listitem">
+                                    <p><code class="code">iam:CreateRole</code></p>
+                                 </li>
+                                 <li class="listitem">
+                                    <p><code class="code">iam:GetRole</code></p>
+                                 </li>
+                                 <li class="listitem">
+                                    <p><code class="code">iam:ListPolicies</code></p>
+                                 </li>
+                              </ul>
+                           </div>
+                           		
+                        </li>
+                        <li>
+                           			
+                           <p>On the <b>Review policy</b> page, type a policy name
+                              				and description, and then choose <b>Create policy</b>.
+                           </p>
+                           		
+                        </li>
+                        <li>
+                           			
+                           <p>In the navigation pane, choose <b>Users</b>, and then 
+                              				choose the user.
+                           </p>
+                           		
+                        </li>
+                        <li>
+                           			
+                           <p>On the <b>Permissions</b> tab, choose <b>Add
+                                 							permissions</b>.
+                           </p>
+                           		
+                        </li>
+                        <li>
+                           			
+                           <p>Choose <b>Attach existing policies directly</b>. Select the policy
+                              						you created above and choose <b>Next: Review</b>.
+                           </p>
+                           		
+                        </li>
+                        <li>
+                           			
+                           <p>Choose <b>Add permissions</b>.
+                           </p>
+                           		
+                        </li>
+                     </ol>
+                     
+                     			
+                     <h2 id="spot-fleet-health-checks">Spot Fleet Health Checks</h2>
+                     
+                     			
+                     <p>Spot Fleet checks the health status of the Spot Instances in the fleet every two minutes.
+                        				The health status of an instance is either <code class="code">healthy</code> or
+                        					<code class="code">unhealthy</code>. Spot Fleet determines the health status of an instance
+                        				using the status checks provided by Amazon EC2. If the status of either the instance
+                        				status check or the system status check is <code class="code">impaired</code> for three
+                        				consecutive health checks, the health status of the instance is
+                        					<code class="code">unhealthy</code>. Otherwise, the health status is <code class="code">healthy</code>.
+                        				For more information, see <a href="monitoring-system-instance-status-check.html">Status Checks for Your Instances</a>.
+                     </p>  
+                     			
+                     <p>You can configure your Spot Fleet to replace unhealthy instances. After enabling health
+                        				check replacement, an instance is replaced after its health status is reported
+                        as
+                        					<code class="code">unhealthy</code>. The Spot Fleet could go below its target capacity for up
+                        				to a few minutes while an unhealthy instance is being replaced.
+                     </p>
+                     
+                     			
+                     <div class="itemizedlist">
+                        				
+                        <p class="title"><b>Requirements</b></p>
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>Health check replacement is supported only with Spot Fleets that maintain a target
+                                 						capacity, not with one-time Spot Fleets.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>You can configure your Spot Fleet to replace unhealthy instances only when you create
+                                 						it.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>IAM users can use health check replacement only if they have permission to call the
+                                 						<code class="code">ec2:DescribeInstanceStatus</code> action.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     			
+                     <h2 id="plan-spot-fleet">Planning a Spot Fleet Request</h2>
+                     			
+                     <p>Before you create a Spot Fleet request, review <a href="https://aws.amazon.com/ec2/spot/getting-started/#bestpractices" target="_blank">Spot Best
+                           					Practices</a>. Use these best practices when you plan your Spot Fleet
+                        				request so that you can provision the type of instances you want at the lowest
+                        				possible price. We also recommend that you do the following:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>Determine whether you want to create a Spot Fleet that submits a one-time request
+                                 for the
+                                 						desired target capacity, or one that maintains a target capacity over
+                                 						time.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Determine the instance types that meet your application
+                                 						requirements.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Determine the target capacity for your Spot Fleet request. You can set target capacity
+                                 in
+                                 						instances or in custom units. For more information, see <a href="spot-fleet.html#spot-instance-weighting">Spot Fleet Instance Weighting</a>.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Determine what portion of the Spot Fleet target capacity must be On-Demand capacity.
+                                 You can
+                                 						specify 0 On-Demand capacity.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Determine your price per unit, if you are using instance weighting. To
+                                 						calculate the price per unit, divide the price per instance hour by
+                                 						the number of units (or weight) that this instance represents. (If you are
+                                 						not using instance weighting, the default price per unit is the price per 
+                                 						instance hour.)
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Review the possible options for your Spot Fleet request. For more information, see
+                                 the
+                                 							<a href="./cli/latest/reference/ec2/request-spot-fleet.html" target="_blank">request-spot-fleet</a> command in the
+                                 							<em>AWS CLI Command Reference</em>. For additional examples, see <a href="spot-fleet-examples.html">Spot Fleet Example Configurations</a>.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     			
+                     <h2 id="service-linked-roles-spot-fleet-requests">Service-Linked Role for Spot Fleet Requests</h2>
+                     			
+                     <p>Amazon EC2 creates a service-linked role when you request a Spot Fleet. A service-linked
+                        role
+                        				includes all the permissions that Amazon EC2 requires to call other AWS services
+                        on your behalf. For more
+                        				information, see <a href="./IAM/latest/UserGuide/using-service-linked-roles.html" target="_blank">Using Service-Linked Roles</a> 
+                        				in the <em>IAM User Guide</em>.
+                     </p>
+                     			
+                     <p>Amazon EC2 uses the service-linked role named <b>AWSServiceRoleForEC2SpotFleet</b>
+                        				to complete the following actions:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:RequestSpotInstances</code> - Request Spot Instances
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:TerminateInstances</code> - Terminate Spot Instances
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:DescribeImages</code> - Describe Amazon Machine Images (AMI) for the Spot Instances
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:DescribeInstanceStatus</code> - Describe the status of the Spot Instances
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:DescribeSubnets</code> - Describe the subnets for Spot Instances
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><code class="code">ec2:CreateTags</code> - Add system tags to Spot Instances
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>Amazon EC2 also creates the <b>AWSServiceRoleForEC2Spot</b> role when you request a Spot Fleet. For more information, 
+                        				see <a href="spot-requests.html#service-linked-roles-spot-instance-requests">Service-Linked Role for Spot Instance Requests</a>.
+                     </p>
+                     			
+                     <p>If you had an active Spot Fleet request before November 2017, when Amazon EC2 began
+                        supporting this service-linked 
+                        				role, Amazon EC2 created the <b>AWSServiceRoleForEC2SpotFleet</b> role in your AWS account. For more
+                        				information, see <a href="./IAM/latest/UserGuide/troubleshoot_roles.html#troubleshoot_roles_new-role-appeared" target="_blank">A New Role Appeared in My Account</a> in the <em>IAM User Guide</em>.
+                     </p>
+                     			
+                     <p>If you no longer need to use Spot Fleet, we recommend that you delete the 
+                        				<b>AWSServiceRoleForEC2SpotFleet</b> role. After this role is deleted from your account,
+                        				Amazon EC2 will create the role again if you request a Spot Fleet.
+                     </p>
+                     		
+                     			
+                     <h2 id="create-spot-fleet">Creating a Spot Fleet Request</h2>
+                     			
+                     <p>When you create a Spot Fleet request, you must specify information about the Spot
+                        Instances
+                        				to launch, such as the instance type and the maximum price you are willing to
+                        pay.
+                     </p>
+                     			
+                     <p class="title"><b>To create a Spot Fleet request using the console</b></p>
+                     <ol>
+                        <li>
+                           					
+                           <p>Open the Spot console at <a href="https://console.aws.amazon.com/ec2spot" target="_blank">https://console.aws.amazon.com/ec2spot</a>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>If you are new to Spot, you see a welcome page;
+                              						choose <b>Get started</b>. Otherwise,
+                              					    choose <b>Request Spot Instances</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>For <b>Request type</b>, select <b>Request</b> or
+                              						<b>Request and Maintain</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>For
+                              							<b>Total
+                                 							required capacity</b>, type the number of units to request for
+                              						target capacity. You can choose instances or performance characteristics
+                              						that are important to your application workload, such as vCPUs, memory, and
+                              						storage. If the request type is <b>Request and Maintain</b>,
+                              						you can specify a target capacity of 0 and add capacity later.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           	
+                           <p>(Optional)
+                              						For <b>Optional On-Demand portion</b>, type the number of
+                              						On-Demand units to request. The number must be less than the <b>Total
+                                 							required capacity</b>. Amazon EC2 calculates the difference, and
+                              						allocates the difference to Spot units to request.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           					
+                           <p>For <b>Requirements</b>, do the following:
+                           </p>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>(Optional) For <b>Launch template</b>, choose a launch template.
+                                    								The launch template must specify an Amazon Machine Image (AMI), as you cannot
+                                    
+                                    								override the AMI using Spot Fleet if you specify a launch template.
+                                 </p>
+                                 							
+                                 <div class="aws-note">
+                                    <p class="aws-note">Important</p>
+                                    <p> If you specify <b>Optional
+                                          										On-Demand portion</b>, you must choose a launch
+                                       									template.
+                                    </p>
+                                 </div>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>For <b>AMI</b>, choose one of the basic Amazon Machine Images (AMI)
+                                    								provided by AWS, or choose <b>Use custom AMI</b> to
+                                    								use an AMI from our user community, the AWS Marketplace, or one of your
+                                    								own.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>For <b>Instance type(s)</b>, choose
+                                    								<b>Select</b>. Select the instance
+                                    								types that have the minimum hardware specifications that you need
+                                    								(vCPUs, memory, and storage).
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>For <b>Network</b>, your account supports either the EC2-Classic and EC2-VPC platforms, 
+                                    								or the EC2-VPC platform only. To find out which platforms your account supports,
+                                    see 
+                                    								<a href="ec2-supported-platforms.html">Supported Platforms</a>.
+                                 </p>
+                                 							
+                                 <p>[Existing VPC] Select the VPC.</p>
+                                 							
+                                 <p>[New VPC] Select <b>Create new VPC</b> to go the Amazon VPC
+                                    								console. When you are done, return to the wizard and refresh
+                                    								the list.
+                                 </p>
+                                 							
+                                 <p>[EC2-Classic] Select <b>EC2-Classic</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) For <b>Availability Zones</b>, the default is to let AWS
+                                    								choose the Availability Zones for your Spot Instances. If you
+                                    								prefer, you can specify specific Availability Zones.
+                                 </p>
+                                 							
+                                 <p>[EC2-VPC] Select one or more Availability Zones. If you have
+                                    								more than one subnet in an Availability Zone, select the 
+                                    								appropriate subnet from <b>Subnet</b>. To add 
+                                    								subnets, select <b>Create new subnet</b> to go to the
+                                    								Amazon VPC console. When you are done, return to the wizard and 
+                                    								refresh the list.
+                                 </p>
+                                 							
+                                 <p>[EC2-Classic] Select <b>Select specific zone/subnet</b>, 
+                                    								and then select one or more Availability Zones.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) To add storage, specify additional instance store volumes 
+                                    								or EBS volumes, depending on the instance type. You can also enable 
+                                    								EBS optimization.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) By default, basic monitoring is enabled for your instances. 
+                                    								To enable detailed monitoring, select <b>Enable CloudWatch detailed
+                                       								monitoring</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) To replace unhealthy instances in a <b>Request and
+                                       								Maintain</b> Spot Fleet, select <b>Replace
+                                       								unhealthy instances</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) To run a Dedicated Spot Instance, choose <b>Dedicated - run a
+                                       								dedicated instance</b> for
+                                    								<b>Tenancy</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) By default, the Spot service terminates Spot Instances when they are interrupted.
+                                    
+                                    								If the fleet type is <code class="code">maintain</code>, you can specify that the Spot service
+                                    								hibernates or stops Spot Instances when they are interrupted. To do so, choose
+                                    								the corresponding option from <b>Interruption behavior</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>For <b>Security groups</b>, select one or more
+                                    								security groups.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>[EC2-VPC] If you need to connect to your instances in a VPC,
+                                    								you can enable <b>Auto-assign IPv4 Public IP</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) If you need to connect to your instances, specify 
+                                    								your key pair using <b>Key pair name</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) To launch your Spot Instances with an IAM role, choose the role for
+                                    								<b>IAM instance profile</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) To run a start-up script, copy it to <b>User data</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) To add a tag, choose <b>Add new tag</b> and
+                                    								type the key and value for the tag. Repeat for each tag.
+                                 </p>
+                                 						
+                              </li>
+                           </ol>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>For <b>Spot request fulfillment</b>, do the following:
+                           </p>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>For <b>Allocation strategy</b>, choose the strategy
+                                    								that meets your needs. For more information, see <a href="spot-fleet.html#spot-fleet-allocation-strategy">Spot Fleet Allocation Strategy</a>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>For <b>Maximum price</b>, you can use the default maximum price 
+                                    								(the On-Demand price) or specify the maximum price you are willing to pay.
+                                    Your 
+                                    								Spot Instances are not launched if your maximum price is lower than the Spot
+                                    price 
+                                    								for the instance types that you selected.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) To create a request that is valid only during a specific time period, edit
+                                    
+                                    								<b>Request valid from</b> and <b>Request valid until</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) By default, we terminate your Spot Instances when the request expires.
+                                    To
+                                    								keep them running after your request expires, clear
+                                    								<b>Terminate instances at expiration</b>.
+                                 </p>
+                                 						
+                              </li>
+                           </ol>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>(Optional) To register your Spot Instances with a load balancer, select
+                              						<b>Receive traffic from one or more load balancers</b> and 
+                              						select one or more Classic Load Balancers or target groups.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>(Optional) To download a copy of the launch configuration for use with the AWS CLI,
+                              						choose <b>JSON config</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Choose <b>Launch</b>.
+                           </p>
+                           					
+                           <p>The request type is <code class="code">fleet</code>. When the request is fulfilled,
+                              					    requests of type <code class="code">instance</code> are added, where the state is
+                              					    <code class="code">active</code> and the status is <code class="code">fulfilled</code>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     
+                     			
+                     <p class="title"><b>To create a Spot Fleet request using the AWS CLI</b></p>
+                     <ul>
+                        <li>
+                           <p>Use the following <a href="./cli/latest/reference/ec2/request-spot-fleet.html" target="_blank">request-spot-fleet</a> command to create a Spot Fleet request:
+                           </p>
+                        </li>
+                     </ul>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 request-spot-fleet</code></strong> --spot-fleet-request-config file://<em class="replaceable"><code>config.json</code></em></code></pre>
+                     			<p>For example configuration files, see <a href="spot-fleet-examples.html">Spot Fleet Example Configurations</a>.
+                     </p>
+                     			
+                     <p>The following is example output:</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;SpotFleetRequestId&quot;: &quot;sfr-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE&quot;
+} </code></pre>
+                     		
+                     			<h2 id="manage-spot-fleet">Monitoring Your Spot Fleet</h2>
+                     			
+                     <p>The Spot Fleet launches Spot Instances when your maximum price exceeds the Spot price
+                        and
+                        				capacity is available. The Spot Instances run until they are interrupted or you
+                        				terminate them.
+                     </p>
+                     			
+                     <p class="title"><b>To monitor your Spot Fleet using the console</b></p>
+                     <ol>
+                        <li>
+                           					
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the navigation pane, choose <b>Spot Requests</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Select your Spot Fleet request. The configuration details are available in the
+                              							<b>Description</b> tab.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>To list the Spot Instances for the Spot Fleet, choose the <b>Instances</b>
+                              						tab.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>To view the history for the Spot Fleet, choose the <b>History</b>
+                              						tab.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     			
+                     				
+                     <p class="title"><b>To monitor your Spot Fleet using the AWS CLI</b></p>
+                     				
+                     <p>Use the following <a href="./cli/latest/reference/ec2/describe-spot-fleet-requests.html" target="_blank">describe-spot-fleet-requests</a> command to describe your Spot Fleet
+                        					requests:
+                     </p>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-spot-fleet-requests</code></strong></code></pre>
+                     			<p>Use the following <a href="./cli/latest/reference/ec2/describe-spot-fleet-instances.html" target="_blank">describe-spot-fleet-instances</a> command to describe the Spot Instances
+                        				for the specified Spot Fleet:
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-spot-fleet-instances --spot-fleet-request-id <em class="replaceable"><code>sfr-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE</code></em></code></strong></code></pre>
+                     			<p>Use the following <a href="./cli/latest/reference/ec2/describe-spot-fleet-request-history.html" target="_blank">describe-spot-fleet-request-history</a> command to describe the history for
+                        				the specified Spot Fleet request:
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-spot-fleet-request-history --spot-fleet-request-id <em class="replaceable"><code>sfr-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE</code></em> --start-time 2015-05-18T00:00:00Z</code></strong></code></pre>
+                     		
+                     			<h2 id="modify-spot-fleet">Modifying a Spot Fleet Request</h2>
+                     			
+                     <p>You can modify an active Spot Fleet request to complete the following tasks:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>Increase the target capacity</p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Decrease the target capacity</p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You can&apos;t modify a one-time Spot Fleet
+                           					request.
+                        </p>
+                        <p>You
+                           					can only modify the Spot Instance portion of a Spot Fleet request; you can&apos;t
+                           modify the On-Demand Instance
+                           					portion of a Spot Fleet request.
+                        </p>
+                     </div>
+                     			
+                     <p>When you increase the target capacity, the Spot Fleet launches the additional Spot
+                        Instances according to the allocation strategy for its Spot Fleet request. If the
+                        				allocation strategy is <code class="code">lowestPrice</code>, the Spot Fleet launches the
+                        				instances from the lowest-priced Spot Instance pool in the Spot Fleet request.
+                        If
+                        				the allocation strategy is <code class="code">diversified</code>, the Spot Fleet distributes the
+                        				instances across the pools in the Spot Fleet request.
+                     </p>
+                     			
+                     <p>When you decrease the target capacity, the Spot Fleet cancels any open requests that
+                        
+                        				exceed the new target capacity. You can request that the Spot Fleet terminate
+                        Spot 
+                        				Instances until the size of the fleet reaches the new target capacity. If the
+                        allocation
+                        				strategy is <code class="code">lowestPrice</code>, the Spot Fleet terminates the instances with
+                        				the highest price per unit. If the allocation strategy is <code class="code">diversified</code>,
+                        				the Spot Fleet terminates instances across the pools. Alternatively, you can request
+                        				that the Spot Fleet keep the fleet at its current size, but not replace any Spot
+                        				Instances that are interrupted or that you terminate manually.
+                     </p>
+                     			
+                     <p>When a Spot Fleet terminates an instance because the target capacity was decreased,
+                        the
+                        				instance receives a Spot Instance interruption notice.
+                     </p>
+                     
+                     			
+                     <p class="title"><b>To modify a Spot Fleet request using the console</b></p>
+                     <ol>
+                        <li>
+                           					
+                           <p>Open the Spot console at <a href="https://console.aws.amazon.com/ec2spot/home/fleet" target="_blank">https://console.aws.amazon.com/ec2spot/home/fleet</a>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Select your Spot Fleet request.</p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Choose <b>Actions</b>, and then choose <b>Modify
+                                 							target capacity</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In <b>Modify target capacity</b>, do the following:
+                           </p>
+                           					
+                           <ol>
+                              <li>
+                                 							
+                                 <p>Enter the new target capacity.</p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>(Optional) If you are decreasing the target capacity but want to
+                                    								keep the fleet at its current size, deselect <b>Terminate
+                                       									instances</b>.
+                                 </p>
+                                 						
+                              </li>
+                              <li>
+                                 							
+                                 <p>Choose <b>Submit</b>.
+                                 </p>
+                                 						
+                              </li>
+                           </ol>
+                           				
+                        </li>
+                     </ol>
+                     			
+                     				
+                     <p class="title"><b>To modify a Spot Fleet request using the AWS CLI</b></p>
+                     				
+                     <p>Use the following <a href="./cli/latest/reference/ec2/modify-spot-fleet-request.html" target="_blank">modify-spot-fleet-request</a> command to update the target capacity of
+                        					the specified Spot Fleet request:
+                     </p>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 modify-spot-fleet-request --spot-fleet-request-id <em class="replaceable"><code>sfr-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE</code></em> --target-capacity <em class="replaceable"><code>20</code></em></code></strong></code></pre>
+                     			<p>You can modify the previous command as follows to decrease the target capacity of
+                        the
+                        				specified Spot Fleet without terminating any Spot Instances as a result:
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 modify-spot-fleet-request --spot-fleet-request-id <em class="replaceable"><code>sfr-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE</code></em> --target-capacity <em class="replaceable"><code>10</code></em></code></strong> --excess-capacity-termination-policy NoTermination</code></pre>
+                     		
+                     			<h2 id="cancel-spot-fleet">Canceling a Spot Fleet Request</h2>
+                     			
+                     <p>When you are finished using your Spot Fleet, you can cancel the Spot Fleet request.
+                        This
+                        				cancels all Spot requests associated with the Spot Fleet, so that no new Spot
+                        				Instances are launched for your Spot Fleet. You must specify whether the Spot
+                        Fleet
+                        				should terminate its Spot Instances. If you terminate the instances, the Spot
+                        Fleet
+                        				request enters the <code class="code">cancelled_terminating</code> state. Otherwise, the Spot
+                        				Fleet request enters the <code class="code">cancelled_running</code> state and the instances
+                        				continue to run until they are interrupted or you terminate them manually.
+                     </p>
+                     			
+                     <p class="title"><b>To cancel a Spot Fleet request using the console</b></p>
+                     <ol>
+                        <li>
+                           					
+                           <p>Open the Spot console at <a href="https://console.aws.amazon.com/ec2spot/home/fleet" target="_blank">https://console.aws.amazon.com/ec2spot/home/fleet</a>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Select your Spot Fleet request.</p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Choose <b>Actions</b>, and then choose <b>Cancel spot
+                                 							request</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In <b>Cancel spot request</b>, verify that you want to cancel the Spot Fleet. To keep the fleet at its current
+                              size, deselect <b>Terminate
+                                 							instances</b>. When you are ready, choose
+                              							<b>Confirm</b>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     			
+                     				
+                     <p class="title"><b>To cancel a Spot Fleet request using the AWS CLI</b></p>
+                     				
+                     <p>Use the following <a href="./cli/latest/reference/ec2/cancel-spot-fleet-requests.html" target="_blank">cancel-spot-fleet-requests</a> command to cancel the specified Spot Fleet
+                        					 request and terminate the instances:
+                     </p>
+                     			
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 cancel-spot-fleet-requests --spot-fleet-request-ids <em class="replaceable"><code>sfr-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE</code></em> --terminate-instances</code></strong></code></pre>
+                     			<p>The following is example output:</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;SuccessfulFleetRequests&quot;: [
+        {
+            &quot;SpotFleetRequestId&quot;: &quot;sfr-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE&quot;,
+            &quot;CurrentSpotFleetRequestState&quot;: &quot;cancelled_terminating&quot;,
+            &quot;PreviousSpotFleetRequestState&quot;: &quot;active&quot;
+        }
+    ],
+    &quot;UnsuccessfulFleetRequests&quot;: []
+}</code></pre>
+                     			<p>You can modify the previous command as follows to cancel the specified Spot Fleet
+                        request
+                        				without terminating the instances:
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 cancel-spot-fleet-requests --spot-fleet-request-ids <em class="replaceable"><code>sfr-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE</code></em> --no-terminate-instances</code></strong></code></pre>
+                     			<p>The following is example output:</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;SuccessfulFleetRequests&quot;: [
+        {
+            &quot;SpotFleetRequestId&quot;: &quot;sfr-73fbd2ce-aa30-494c-8788-1cee4EXAMPLE&quot;,
+            &quot;CurrentSpotFleetRequestState&quot;: &quot;cancelled_running&quot;,
+            &quot;PreviousSpotFleetRequestState&quot;: &quot;active&quot;
+        }
+    ],
+    &quot;UnsuccessfulFleetRequests&quot;: []
+}</code></pre>
+                     		</div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="spot-request-examples.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="spot-fleet-examples.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Spot Fleet Request States"><a class="pagetoc" href="#spot-fleet-states">Spot Fleet Request States</a></li>
+                        <li class="pagetoc" name="Spot Fleet Prerequisites"><a class="pagetoc" href="#spot-fleet-prerequisites">Spot Fleet Prerequisites</a></li>
+                        <li class="pagetoc" name="Spot Fleet and IAM Users"><a class="pagetoc" href="#spot-fleet-iam-users">Spot Fleet and IAM Users</a></li>
+                        <li class="pagetoc" name="Spot Fleet Health Checks"><a class="pagetoc" href="#spot-fleet-health-checks">Spot Fleet Health Checks</a></li>
+                        <li class="pagetoc" name="Planning a Spot Fleet Request"><a class="pagetoc" href="#plan-spot-fleet">Planning a Spot Fleet Request</a></li>
+                        <li class="pagetoc" name="Service-Linked Role for Spot Fleet Requests"><a class="pagetoc" href="#service-linked-roles-spot-fleet-requests">Service-Linked Role for Spot Fleet Requests</a></li>
+                        <li class="pagetoc" name="Creating a Spot Fleet Request"><a class="pagetoc" href="#create-spot-fleet">Creating a Spot Fleet Request</a></li>
+                        <li class="pagetoc" name="Monitoring Your Spot Fleet"><a class="pagetoc" href="#manage-spot-fleet">Monitoring Your Spot Fleet</a></li>
+                        <li class="pagetoc" name="Modifying a Spot Fleet Request"><a class="pagetoc" href="#modify-spot-fleet">Modifying a Spot Fleet Request</a></li>
+                        <li class="pagetoc" name="Canceling a Spot Fleet Request"><a class="pagetoc" href="#cancel-spot-fleet">Canceling a Spot Fleet Request</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

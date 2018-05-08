@@ -1,0 +1,1313 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Migrating from a Linux Instance in EC2-Classic to a Linux Instance in a VPC - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="using-vpc.html" title="Amazon EC2 and Amazon Virtual Private Cloud">
+      <link rel="prev" href="vpc-classiclink.html" title="ClassicLink">
+      <link rel="next" href="using-instance-addressing.html" title="Amazon EC2 Instance IP Addressing">
+      <meta name="description" content="Migrate from EC2-Classic to EC2-VPC.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-migrate.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="EC2_Network_and_Security.html">Network and Security</a> &#xBB; <a href="using-vpc.html">Amazon EC2 and Amazon Virtual Private Cloud</a> &#xBB; <span class="breadcrumb">Migrating from a Linux Instance in EC2-Classic to a Linux Instance in a VPC</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="vpc-migrate">Migrating from a <span>Linux</span> Instance in EC2-Classic to a <span>Linux</span> Instance in a VPC
+                     </h1>
+                     <p>Your AWS account might support both EC2-Classic and EC2-VPC, depending on when you
+                        created
+                        		your account and which regions you&apos;ve used. For more information, and to find out
+                        which platform
+                        		your account supports, see <a href="ec2-supported-platforms.html">Supported Platforms</a>. 
+                        		For more information about the benefits of using a VPC, and the differences between
+                        EC2-Classic and EC2-VPC, 
+                        		see <a href="using-vpc.html">Amazon EC2 and Amazon Virtual Private Cloud</a>.
+                     </p>
+                     <p>You create and use resources in your AWS account. Some resources and features, such
+                        as
+                        		enhanced networking and certain instance types, can be used only in a VPC. Some
+                        resources
+                        		can be shared between EC2-Classic and a VPC, while some can&apos;t. For more information,
+                        see
+                        		<a href="using-vpc.html#vpc-classic-shared-resources">Sharing and Accessing Resources Between
+                           			EC2-Classic and EC2-VPC</a>.
+                     </p>
+                     <p>If your account supports EC2-Classic, you might have set up resources for use in EC2-Classic.
+                        
+                        		If you want to migrate from EC2-Classic to a VPC, you must recreate those resources
+                        in your VPC.
+                     </p>
+                     <p>There are two ways of migrating to a VPC. You can do a full migration,
+                        		or you can do an incremental migration over time. The method you
+                        		choose depends on the size and complexity of your application in EC2-Classic. For
+                        example, if
+                        		your application consists of one or two instances running a static website, and
+                        you can afford a
+                        		short period of downtime, you can do a full migration. If you have a multi-tier
+                        application
+                        		with processes that cannot be interrupted, you can do an incremental migration using
+                        		ClassicLink. This allows you to transfer functionality one component at a time until
+                        your
+                        		application is running fully in your VPC.
+                     </p>
+                     <p>If you need to migrate a Windows instance,
+                        		see <a href="./AWSEC2/latest/WindowsGuide/vpc-migrate.html" target="_blank">Migrating a Windows Instance from EC2-Classic to a VPC</a>
+                        		in the <em>Amazon EC2 User Guide for Windows Instances</em>.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#full-migrate">Full Migration to a VPC</a></li>
+                           <li><a href="#classiclink-migrate">Incremental Migration to a VPC Using ClassicLink</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="full-migrate">Full Migration to a VPC</h2>
+                     		
+                     		
+                     <p>Complete the following tasks to fully migrate your application from EC2-Classic to
+                        a VPC.
+                     </p>
+                     		
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Tasks</strong></p>
+                        <ul>
+                           <li><a href="#vpc-migrate-create-vpc">Step 1: Create a VPC</a></li>
+                           <li><a href="#vpc-migrate-security-group">Step 2: Configure Your Security Group</a></li>
+                           <li><a href="#vpc-migrate-create-ami">Step 3: Create an AMI from Your EC2-Classic Instance</a></li>
+                           <li><a href="#vpc-migrate-instance">Step 4: Launch an Instance Into Your VPC</a></li>
+                           <li><a href="#vpc-migrate-example">Example: Migrating a Simple Web Application</a></li>
+                        </ul>
+                     </div>
+                     	
+                     <h3 id="vpc-migrate-create-vpc">Step 1: Create a VPC</h3>
+                     		
+                     		
+                     <p>To start using a VPC, ensure that you have one in your account. You can create one
+                        using one
+                        			of these methods: 
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>Use a new, EC2-VPC-only AWS account. Your EC2-VPC-only account comes with a default
+                                 VPC in
+                                 					each region, which is ready for you to use. Instances that you launch are by
+                                 default
+                                 					launched into this VPC, unless you specify otherwise. For more information about
+                                 your
+                                 					default VPC, see <a href="./AmazonVPC/latest/UserGuide/default-vpc.html" target="_blank">Your Default VPC and
+                                    						Subnets</a>. Use this option if you&apos;d prefer not to set up a VPC yourself, or if you
+                                 					do not need specific requirements for your VPC configuration.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>In your existing AWS account, open the Amazon VPC console and use the VPC wizard to
+                                 create a
+                                 					new VPC. For more information, see <a href="./AmazonVPC/latest/UserGuide/VPC_Scenarios.html" target="_blank">Scenarios
+                                    						for Amazon VPC</a>. Use this option if you want to set up a VPC quickly in your
+                                 					existing EC2-Classic account, using one of the available configuration sets in
+                                 the
+                                 					wizard. You&apos;ll specify this VPC each time you launch an instance. 
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>In your existing AWS account, open the Amazon VPC console and set up the components
+                                 of a VPC
+                                 					according to your requirements. For more information, see <a href="./AmazonVPC/latest/UserGuide/VPC_Subnets.html" target="_blank">Your VPC and Subnets</a>. Use this option if
+                                 					you have specific requirements for your VPC, such as a particular number of subnets.
+                                 					You&apos;ll specify this VPC each time you launch an instance. 
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                     	
+                     <h3 id="vpc-migrate-security-group">Step 2: Configure Your Security Group</h3>
+                     		
+                     		
+                     <p>You cannot use the same security groups between EC2-Classic and a VPC. However, if
+                        you
+                        			want your instances in your VPC to have the same security group rules as your EC2-Classic
+                        			instances, you can use the Amazon EC2 console to copy your existing EC2-Classic
+                        security group
+                        			rules to a new VPC security group. 
+                     </p>
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>You can only copy security group rules to a new security group in the same AWS account
+                           				in the same region. If you&apos;ve created a new AWS account, you cannot use this method
+                           to
+                           				copy your existing security group rules to your new account. You&apos;ll have to create
+                           a new
+                           				security group, and add the rules yourself. For more information about creating
+                           a new
+                           				security group, see <a href="using-network-security.html">Amazon EC2 Security Groups for <span>Linux</span> Instances</a>.
+                        </p>
+                     </div>
+                     		
+                     <p class="title"><b>To copy your security group rules to a new security group</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           				
+                           <p>In the navigation pane, choose <b>Security Groups</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Select the security group that&apos;s associated with your EC2-Classic instance, then choose
+                              <b>Actions</b> and select <b>Copy to new</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the <b>Create Security Group</b> dialog box, specify a name and
+                              					description for your new security group. Select your VPC from the <b>VPC</b>
+                              					list. 
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>The <b>Inbound</b> tab is populated with the rules from your EC2-Classic
+                              					security group. You can modify the rules as required. In the <b>Outbound</b>
+                              					tab, a rule that allows all outbound traffic has automatically been created for
+                              you. For
+                              					more information about modifying security group rules, see <a href="using-network-security.html">Amazon EC2 Security Groups for <span>Linux</span> Instances</a>.
+                           </p>
+                           				
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>If you&apos;ve defined a rule in your EC2-Classic security group that references another
+                                 						security group, you will not be able to use the same rule in your VPC security
+                                 group.
+                                 						Modify the rule to reference a security group in the same VPC.
+                              </p>
+                           </div>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Choose <b>Create</b>.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     	
+                     	
+                     		
+                     <h3 id="vpc-migrate-create-ami">Step 3: Create an AMI from Your EC2-Classic Instance</h3>
+                     		
+                     		
+                     <p>An AMI is a template for launching your instance. You can create your own AMI based
+                        on an
+                        			existing EC2-Classic instance, then use that AMI to launch instances into your
+                        VPC.
+                     </p>
+                     		
+                     		
+                     <p>The method you use to create your AMI depends on the root device type of your instance,
+                        and
+                        			the operating system platform on which your instance runs. To find out the root
+                        device
+                        			type of your instance, go to the <b>Instances</b> page, select your
+                        			instance, and look at the information in the <b>Root device type</b> field
+                        			in the <b>Description</b> tab. If the value is <code class="code">ebs</code>, then your
+                        			instance is EBS-backed. If the value is <code class="code">instance-store</code>, then your instance
+                        			is instance store-backed. You can also use the <a href="./cli/latest/reference/ec2/describe-instances.html" target="_blank">describe-instances</a> AWS CLI
+                        			command to find out the root device type.
+                     </p>
+                     		
+                     <p>The following table provides options for you to create your AMI based on the root
+                        device
+                        			type of your instance, and the software platform.
+                     </p>
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Some instance types support both PV and HVM virtualization, while others support only
+                           one or
+                           				the other. If you plan to use your AMI to launch a different instance type than
+                           your current
+                           				instance type, check that the instance type supports the type of virtualization
+                           that your
+                           				AMI offers. If your AMI supports PV virtualization, and you want to use an instance
+                           type
+                           				that supports HVM virtualization, you may have to reinstall your software on a
+                           base HVM AMI.
+                           				For more information about PV and HVM virtualization, see <a href="virtualization_types.html">Linux AMI Virtualization Types</a>.
+                        </p>
+                     </div>
+                     		
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac21c21c23c15c10c11">
+                              					
+                              <tbody><tr>
+                                 						
+                                 <th>Instance Root Device Type</th>
+                                 						
+                                 <th>Action</th>
+                                 					
+                              </tr>
+                              				
+                              					
+                              <tr>
+                                 						
+                                 <td>EBS</td>
+                                 						
+                                 <td>
+                                    <p>Create an EBS-backed AMI from your instance. For more information, see <a href="creating-an-ami-ebs.html">Creating an Amazon EBS-Backed Linux AMI</a>.
+                                    </p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>Instance store</td>
+                                 						
+                                 <td>
+                                    <p>Create an instance store-backed AMI from your instance using the AMI tools. For
+                                       							more information, see <a href="creating-an-ami-instance-store.html">Creating an Instance Store-Backed Linux AMI</a>.
+                                    </p>
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>Instance store</td>
+                                 						
+                                 <td>
+                                    <p>Convert your instance store-backed instance to an EBS-backed instances. 
+                                       							For more information, see <a href="Using_ConvertingS3toEBS.html">Converting your Instance Store-Backed AMI to an
+                                          			Amazon EBS-Backed AMI</a>.
+                                    </p> 
+                                    						
+                                 </td>
+                                 					
+                              </tr>
+                              				
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     		
+                     			
+                     <h4 id="vpc-migrate-create-volumes">(Optional) Store Your Data on Amazon EBS Volumes</h4>
+                     			
+                     			
+                     <p>You can create an Amazon EBS volume and use it to back up and store the data on your
+                        instance&#x2014;like 
+                        				you would use a physical hard drive. Amazon EBS volumes can be attached and detached
+                        from
+                        				any instance in the same Availability Zone. You can detach a volume from your
+                        instance in
+                        				EC2-Classic, and attach it to a new instance that you launch into your VPC in
+                        the same
+                        				Availability Zone. 
+                     </p>
+                     			
+                     <p>For more information about Amazon EBS volumes, see the following topics:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="EBSVolumes.html">Amazon EBS Volumes</a></p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="ebs-creating-volume.html">Creating an Amazon EBS Volume</a></p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="ebs-attaching-volume.html">Attaching an Amazon EBS Volume to an Instance</a></p>
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>To back up the data on your Amazon EBS volume, you can take periodic snapshots of
+                        your volume.
+                        				If you need to, you can restore an Amazon EBS volume from your snapshot. For more
+                        information about
+                        				Amazon EBS snapshots, see the following topics:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="EBSSnapshots.html">Amazon EBS Snapshots</a></p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="ebs-creating-snapshot.html">Creating an Amazon EBS Snapshot</a></p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="ebs-restoring-volume.html">Restoring an Amazon EBS Volume from a Snapshot</a></p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     	
+                     
+                     	
+                     		
+                     <h3 id="vpc-migrate-instance">Step 4: Launch an Instance Into Your VPC</h3>
+                     		
+                     		
+                     <p>After you&apos;ve created an AMI, you can launch an instance into your VPC. The instance
+                        will
+                        			have the same data and configurations as your existing EC2-Classic instance. 
+                     </p>
+                     		
+                     <p>You can either launch your instance into a VPC that you&apos;ve created in your existing
+                        account,
+                        			or into a new, VPC-only AWS account.
+                     </p>
+                     		
+                     			
+                     <h4 id="use-classic-account">Using Your Existing EC2-Classic Account</h4>
+                     			
+                     			
+                     <p>You can use the Amazon EC2 launch wizard to launch an instance into your VPC.</p>
+                     			
+                     <p class="title"><b>To launch an instance into your VPC</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           					
+                           <p>On the dashboard, choose <b>Launch Instance</b>. 
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>On the <b>Choose an Amazon Machine Image</b> page, select the
+                              							<b>My AMIs</b> category, and select the AMI you created. 
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>On the <b>Choose an Instance Type</b> page, select the type of instance,
+                              and choose <b>Next: Configure Instance Details</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>On the <b>Configure Instance Details</b> page, select your VPC from the
+                              <b>Network</b> list. Select the required subnet from the
+                              <b>Subnet</b> list. Configure any other details you require, then go
+                              through the next pages of the wizard until you reach the <b>Configure Security
+                                 Group</b> page.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Select <b>Select an existing group</b>, and select the security group you
+                              created earlier. Choose <b>Review and Launch</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Review your instance details, then choose <b>Launch</b> to specify a key
+                              pair and launch your instance.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     			
+                     <p>For more information about the parameters you can configure in each step of the wizard,
+                        				see <a href="launching-instance.html">Launching an Instance Using the Launch Instance Wizard</a>.
+                     </p>
+                     		
+                     		
+                     			
+                     <h4 id="use-vpc-only-account">Using Your New, VPC-Only Account</h4>
+                     			
+                     			
+                     <p>To launch an instance in your new AWS account, you&apos;ll first have to share the AMI
+                        you
+                        				created with your new account. You can then use the Amazon EC2 launch wizard to
+                        launch an
+                        				instance into your default VPC. 
+                     </p>
+                     			
+                     <p class="title"><b>To share an AMI with your new AWS account</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           <p>Switch to the account in which you created your AMI.</p>
+                        </li>
+                        <li>
+                           					
+                           <p>In the navigation pane, choose <b>AMIs</b>. 
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the <b>Filter</b> list, ensure <b>Owned by me</b> is
+                              						selected, then select your AMI. 
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the <b>Permissions</b> tab, choose <b>Edit</b>. Enter the
+                              account number of your new AWS account, choose <b>Add Permission</b>,
+                              and then choose <b>Save</b>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     			
+                     <p class="title"><b>To launch an instance into your default VPC</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           <p>Switch to your new AWS account.</p>
+                        </li>
+                        <li>
+                           					
+                           <p>In the navigation pane, choose <b>AMIs</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>In the <b>Filter</b> list, select <b>Private images</b>.
+                              Select the AMI that you shared from your EC2-Classic account, then choose
+                              <b>Launch</b>. 
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>On the <b>Choose an Instance Type</b> page, select the type of instance,
+                              and choose <b>Next: Configure Instance Details</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>On the <b>Configure Instance Details</b> page, your default VPC should be
+                              selected in the <b>Network</b> list. Configure any other details you
+                              require, then go through the next pages of the wizard until you reach the
+                              <b>Configure Security Group</b> page.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Select <b>Select an existing group</b>, and select the security group you
+                              created earlier. Choose <b>Review and Launch</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Review your instance details, then choose <b>Launch</b> to specify a key
+                              pair and launch your instance.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     			
+                     <p>For more information about the parameters you can configure in each step of the wizard,
+                        				see <a href="launching-instance.html">Launching an Instance Using the Launch Instance Wizard</a>.
+                     </p>
+                     		
+                     	
+                     	
+                     	
+                     		
+                     <h3 id="vpc-migrate-example">Example: Migrating a Simple Web Application</h3>
+                     		
+                     		
+                     <p>In this example, you use AWS to host your gardening website. To manage your website,
+                        you
+                        			have three running instances in EC2-Classic. Instances A and B host your public-facing
+                        web
+                        			application, and you use an Elastic Load Balancer to load balance the traffic between
+                        these
+                        			instances. You&apos;ve assigned Elastic IP addresses to instances A and B so that you
+                        have static
+                        			IP addresses for configuration and administration tasks on those instances. Instance
+                        C holds
+                        			your MySQL database for your website. You&apos;ve registered the domain name
+                        				<code class="code">www.garden.example.com</code>, and you&apos;ve used Route&#xA0;53 to create a hosted zone with an
+                        			alias record set that&apos;s associated with the DNS name of your load balancer.
+                     </p>
+                     		
+                     			
+                     <div class="mediaobject">
+                        				
+                        					<img src="../../..//img/vpc-migrate-example-classic.png" alt="
+					A web application in EC2-Classic
+				">
+                        				
+                        				
+                        			
+                     </div>
+                     		
+                     		
+                     <p>The first part of migrating to a VPC is deciding what kind of VPC architecture will
+                        suit
+                        your needs. In this case, you&apos;ve decided on the following: one public subnet for your
+                        web
+                        servers, and one private subnet for your database server. As your website grows, you
+                        can add
+                        more web servers and database servers to your subnets. By default, instances in the
+                        private
+                        subnet cannot access the Internet; however, you can enable Internet access through
+                        a Network
+                        Address Translation (NAT) device in the public subnet. You may want to set up a NAT
+                        device
+                        to support periodic updates and patches from the Internet for your database server.
+                        You&apos;ll
+                        migrate your Elastic IP addresses to EC2-VPC, and create an Elastic Load Balancer
+                        in your
+                        public subnet to load balance the traffic between your web servers.
+                     </p>
+                     		
+                     			
+                     <div class="mediaobject">
+                        				
+                        					<img src="../../..//img/vpc-migrate-example-vpc.png" alt="
+					A web application in a VPC
+				">
+                        				
+                        				
+                        			
+                     </div>
+                     		
+                     		
+                     <p>To migrate your web application to a VPC, you can follow these steps:</p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        			
+                        			
+                        			
+                        		
+                        			
+                        			
+                        
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p><b>Create a VPC</b>: In this case, you can use the VPC wizard in
+                                 the Amazon VPC console to create your VPC and subnets. The second wizard configuration
+                                 creates a VPC with one private and one public subnet, and launches and configures
+                                 a NAT
+                                 device in your public subnet for you. For more information, see <a href="./AmazonVPC/latest/UserGuide/VPC_Scenario2.html" target="_blank">Scenario 2: VPC with Public and Private
+                                    Subnets</a> in the <em>Amazon VPC User Guide</em>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><b>Create AMIs from your instances</b>: Create an AMI from
+                                 					one of your web servers, and a second AMI from your database server. For more
+                                 information,
+                                 					see <a href="vpc-migrate.html#vpc-migrate-create-ami">Step 3: Create an AMI from Your EC2-Classic Instance</a>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><b>Configure your security groups</b>: In your EC2-Classic environment, you
+                                 					have one security group for your web servers, and another security group for
+                                 your database
+                                 					server. You can use the Amazon EC2 console to copy the rules from each security
+                                 group into new
+                                 					security groups for your VPC.  For more information, see <a href="vpc-migrate.html#vpc-migrate-security-group">Step 2: Configure Your Security Group</a>.
+                                 				
+                              </p>
+                              				
+                              <div class="aws-note">
+                                 <p class="aws-note">Tip</p>
+                                 <p>Create the security groups that are referenced by other security groups first.</p>
+                              </div>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><b>Launch an instance into your new VPC</b>: Launch replacement web
+                                 					servers into your public subnet, and launch your replacement database server
+                                 into your
+                                 					private subnet. For more information, see <a href="vpc-migrate.html#vpc-migrate-instance">Step 4: Launch an Instance Into Your VPC</a>.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><b>Configure your NAT device</b>: If you are using a NAT
+                                 instance, you must create security group for it that allows HTTP and HTTPS traffic
+                                 from
+                                 your private subnet. For more information, see <a href="./AmazonVPC/latest/UserGuide/VPC_NAT_Instance.html" target="_blank">NAT Instances</a>. If you are using a
+                                 NAT gateway, traffic from your private subnet is automatically allowed.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><b>Configure your database</b>: When you created an AMI from
+                                 					your database server in EC2-Classic, all the configuration information that was
+                                 stored in
+                                 					that instance was copied to the AMI. You may have to connect to your new database
+                                 server
+                                 					and update the configuration details; for example, if you configured your database
+                                 to
+                                 					grant full read, write, and modification permissions to your web servers in EC2-Classic,
+                                 					you&apos;ll have to update the configuration files to grant the same permissions to
+                                 your new
+                                 					VPC web servers instead. 
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><b>Configure your web servers</b>: Your web servers will have the same
+                                 					configuration settings as your instances in EC2-Classic. For example, if you
+                                 configured
+                                 					your web servers to use the database in EC2-Classic, update your web servers&apos;
+                                 					configuration settings to point to your new database instance.
+                              </p>
+                              				
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>By default, instances launched into a nondefault subnet are not assigned a public
+                                    IP address,
+                                    						unless you specify otherwise at launch. Your new database server may not have
+                                    a public
+                                    						IP address. In this case, you can update your web servers&apos; configuration file
+                                    to use
+                                    						your new database server&apos;s private DNS name. Instances in the same VPC can communicate
+                                    						with each other via private IP address.
+                                 </p>
+                              </div>
+                              			
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Migrate your Elastic IP addresses</b>: Disassociate
+                                 your Elastic IP addresses from your web servers in EC2-Classic, and then migrate them
+                                 to EC2-VPC. After you&apos;ve migrated them, you can associate them with your new web servers
+                                 in your VPC. For more information, see <a href="elastic-ip-addresses-eip.html#migrating-eip">Migrating an Elastic IP Address from EC2-Classic to
+                                    EC2-VPC</a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Create a new load balancer</b>: To continue using
+                                 Elastic Load Balancing to load balance the traffic to your instances, make sure you
+                                 understand the various ways you can configure your load balancer in VPC. For more
+                                 information, see <a href="./elasticloadbalancing/latest/userguide/UserScenariosForVPC.html" target="_blank">Elastic Load
+                                    Balancing in Amazon VPC</a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              <p><b>Update your DNS records</b>: After you&apos;ve set up your load balancer in your
+                                 					public subnet, ensure that your <code class="code">www.garden.example.com</code> domain points to your
+                                 					new load balancer. To do this, you&apos;ll need to update your DNS records and update
+                                 your
+                                 					alias record set in Route&#xA0;53. For more information about using Route&#xA0;53, see
+                                 <a href="./Route53/latest/DeveloperGuide/getting-started.html" target="_blank">Getting Started with Route&#xA0;53</a>.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p><b>Shut down your EC2-Classic resources</b>: After you&apos;ve verified that your
+                                 					web application is working from within the VPC architecture, you can shut down
+                                 your
+                                 					EC2-Classic resources to stop incurring charges for them. Terminate your EC2-Classic
+                                 					instances, and release your EC2-Classic Elastic IP addresses.
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     	
+                     	
+                     	    
+                     <h2 id="classiclink-migrate">Incremental Migration to a VPC Using ClassicLink</h2>
+                     
+                     	
+                     <p>The ClassicLink feature makes it easier to manage an incremental migration to a VPC.
+                        			ClassicLink allows you to link an EC2-Classic instance to a VPC in your account
+                        in
+                        			the same region, allowing your new VPC resources to communicate with the EC2-Classic
+                        			instance using private IPv4 addresses. You can then migrate functionality to the
+                        VPC one
+                        			step at a time. This topic provides some basic steps for managing an incremental
+                        			migration from EC2-Classic to a VPC. 
+                     </p>
+                     	
+                     <p>For more information about ClassicLink, see <a href="vpc-classiclink.html">ClassicLink</a>.
+                     </p>
+                     	
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#classiclink-migrate-preparation">Step 1: Prepare Your Migration Sequence</a></li>
+                           <li><a href="#classiclink-migrate-create-vpc">Step 2: Create a VPC</a></li>
+                           <li><a href="#classiclink-migrate-enable-vpc">Step 3: Enable Your VPC for ClassicLink</a></li>
+                           <li><a href="#classiclink-migrate-ami">Step 4: Create an AMI from Your EC2-Classic Instance</a></li>
+                           <li><a href="#classiclink-migrate-launch-instance">Step 5: Launch an Instance Into Your VPC</a></li>
+                           <li><a href="#classiclink-migrate-attach-instance">Step 6: Link Your EC2-Classic Instances to Your
+                                 			VPC</a></li>
+                           <li><a href="#classiclink-migrate-terminate-instances">Step 7: Complete the VPC
+                                 			Migration</a></li>
+                        </ul>
+                     </div>
+                     	
+                     		
+                     <h3 id="classiclink-migrate-preparation">Step 1: Prepare Your Migration Sequence</h3>
+                     		
+                     		
+                     <p>To use ClassicLink effectively, you must first identify the components of your application
+                        			that must be migrated to the VPC, and then confirm the order in which to migrate
+                        that
+                        			functionality. 
+                     </p>
+                     		
+                     <p>For example, you have an application that relies on a presentation web server, a backend
+                        				database server, and authentication logic for transactions. You may decide to
+                        start the
+                        				migration process with the authentication logic, then the database server, and
+                        finally, the
+                        				web server.
+                     </p>
+                     	
+                     	
+                     		
+                     <h3 id="classiclink-migrate-create-vpc">Step 2: Create a VPC</h3>
+                     		
+                     		
+                     <p>To start using a VPC, ensure that you have one in your account. You can create one
+                        using one
+                        			of these methods: 
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>In your existing AWS account, open the Amazon VPC console and use the VPC wizard to
+                                 create a
+                                 					new VPC. For more information, see <a href="./AmazonVPC/latest/UserGuide/VPC_Scenarios.html" target="_blank">Scenarios
+                                    						for Amazon VPC</a>. Use this option if you want to set up a VPC quickly in your
+                                 					existing EC2-Classic account, using one of the available configuration sets in
+                                 the
+                                 					wizard. You&apos;ll specify this VPC each time you launch an instance. 
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>In your existing AWS account, open the Amazon VPC console and set up the components
+                                 of a VPC
+                                 					according to your requirements. For more information, see <a href="./AmazonVPC/latest/UserGuide/VPC_Subnets.html" target="_blank">Your VPC and Subnets</a>. Use this option if
+                                 					you have specific requirements for your VPC, such as a particular number of subnets.
+                                 					You&apos;ll specify this VPC each time you launch an instance. 
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                     	
+                     		
+                     <h3 id="classiclink-migrate-enable-vpc">Step 3: Enable Your VPC for ClassicLink</h3>
+                     		
+                     		
+                     <p>After you&apos;ve created a VPC, you can enable it for ClassicLink. For more information
+                        about
+                        			ClassicLink, see <a href="vpc-classiclink.html">ClassicLink</a>. 
+                     </p>
+                     		
+                     <p class="title"><b>To enable a VPC for ClassicLink</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon VPC console at
+                              <a href="https://console.aws.amazon.com/vpc/" target="_blank">https://console.aws.amazon.com/vpc/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           <p>In the navigation pane, choose <b>Your VPCs</b>.
+                           </p>
+                        </li>
+                        <li>
+                           				
+                           <p>Select your VPC, and then select <b>Enable ClassicLink</b> from the
+                              						<b>Actions</b> list.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the confirmation dialog box, choose <b>Yes, Enable</b>.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     		
+                     	
+                     	
+                     		
+                     <h3 id="classiclink-migrate-ami">Step 4: Create an AMI from Your EC2-Classic Instance</h3>
+                     		
+                     		
+                     <p>An AMI is a template for launching your instance. You can create your own AMI based
+                        on an
+                        			existing EC2-Classic instance, then use that AMI to launch instances into your
+                        VPC.
+                     </p>
+                     		
+                     		
+                     <p>The method you use to create your AMI depends on the root device type of your instance,
+                        
+                        			and the operating system platform on which your instance runs. To find out the
+                        root device
+                        			type of your instance, go to the <b>Instances</b> page, select your
+                        			instance, and look at the information in the <b>Root device type</b> field
+                        			in the <b>Description</b> tab. If the value is <code class="code">ebs</code>, then your
+                        			instance is EBS-backed. If the value is <code class="code">instance-store</code>, then your instance
+                        			is instance store-backed. You can also use the <a href="./cli/latest/reference/ec2/describe-instances.html" target="_blank">describe-instances</a> AWS CLI command to find out the root device type.
+                     </p>
+                     		
+                     <p>The following table provides options for you to create your AMI based on the root
+                        device
+                        			type of your instance, and the software platform.
+                     </p>
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Some instance types support both PV and HVM virtualization, while others support only
+                           one or
+                           				the other. If you plan to use your AMI to launch a different instance type than
+                           your current
+                           				instance type, check that the instance type supports the type of virtualization
+                           that your
+                           				AMI offers. If your AMI supports PV virtualization, and you want to use an instance
+                           type
+                           				that supports HVM virtualization, you may have to reinstall your software on a
+                           base HVM AMI.
+                           				For more information about PV and HVM virtualization, see <a href="virtualization_types.html">Linux AMI Virtualization Types</a>.
+                        </p>
+                     </div>
+                     		
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac21c21c23c17c15c11">
+                              					
+                              <tbody><tr>
+                                 						
+                                 <th>Instance Root Device Type</th>
+                                 						
+                                 <th>Action</th>
+                                 					
+                              </tr>
+                              				
+                              					
+                              <tr>
+                                 						
+                                 <td>EBS</td>
+                                 						
+                                 <td>Create an EBS-backed AMI from your instance. For more information, see <a href="creating-an-ami-ebs.html">Creating an Amazon EBS-Backed Linux AMI</a>.
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>Instance store</td>
+                                 						
+                                 <td>Create an instance store-backed AMI from your instance using the AMI tools. For
+                                    							more information, see <a href="creating-an-ami-instance-store.html">Creating an Instance Store-Backed Linux AMI</a>.
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>Instance store</td>
+                                 						
+                                 <td>Convert your instance store-backed instance to an EBS-backed instance.
+                                    							For more information, see <a href="Using_ConvertingS3toEBS.html">Converting your Instance Store-Backed AMI to an
+                                       			Amazon EBS-Backed AMI</a>.
+                                 </td>
+                                 					
+                              </tr>
+                              				
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     		
+                     			
+                     <h4 id="classiclink-migrate-create-volumes">(Optional) Store Your Data on Amazon EBS Volumes</h4>
+                     			
+                     			
+                     <p>You can create an Amazon EBS volume and use it to back up and store the data on your
+                        instance&#x2014;like 
+                        				you would use a physical hard drive. Amazon EBS volumes can be attached and detached
+                        from
+                        				any instance in the same Availability Zone. You can detach a volume from your
+                        instance in
+                        				EC2-Classic, and attach it to a new instance that you launch into your VPC in
+                        the same
+                        				Availability Zone. 
+                     </p>
+                     			
+                     <p>For more information about Amazon EBS volumes, see the following topics:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="EBSVolumes.html">Amazon EBS Volumes</a></p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="ebs-creating-volume.html">Creating an Amazon EBS Volume</a></p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="ebs-attaching-volume.html">Attaching an Amazon EBS Volume to an Instance</a></p>
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>To back up the data on your Amazon EBS volume, you can take periodic snapshots of
+                        your volume.
+                        				If you need to, you can restore an Amazon EBS volume from your snapshot. For more
+                        information about
+                        				Amazon EBS snapshots, see the following topics:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p><a href="EBSSnapshots.html">Amazon EBS Snapshots</a></p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="ebs-creating-snapshot.html">Creating an Amazon EBS Snapshot</a></p>
+                           </li>
+                           <li class="listitem">
+                              <p><a href="ebs-restoring-volume.html">Restoring an Amazon EBS Volume from a Snapshot</a></p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     	
+                     
+                     	
+                     		
+                     <h3 id="classiclink-migrate-launch-instance">Step 5: Launch an Instance Into Your VPC</h3>
+                     		
+                     		
+                     <p>The next step in the migration process is to launch instances into your VPC so that
+                        you can
+                        			start transferring functionality to them. You can use the AMIs that you created
+                        in the
+                        			previous step to launch instances into your VPC. The instances will have the same
+                        data and
+                        			configurations as your existing EC2-Classic instances. 
+                     </p>
+                     		
+                     <p class="title"><b>To launch an instance into your VPC using your custom AMI</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           				
+                           <p>On the dashboard, choose <b>Launch Instance</b>. 
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Choose an Amazon Machine Image</b> page, select the
+                              					<b>My AMIs</b> category, and select the AMI you created. 
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Choose an Instance Type</b> page, select the type of instance, and
+                              choose <b>Next: Configure Instance Details</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Configure Instance Details</b> page, select your VPC from the
+                              <b>Network</b> list. Select the required subnet from the
+                              <b>Subnet</b> list. Configure any other details you require, then go
+                              through the next pages of the wizard until you reach the <b>Configure Security
+                                 Group</b> page.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Select <b>Select an existing group</b>, and select the security group you
+                              created earlier. Choose <b>Review and Launch</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Review your instance details, then choose <b>Launch</b> to specify a key
+                              pair and launch your instance.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     		
+                     <p>For more information about the parameters you can configure in each step of the wizard,
+                        			see <a href="launching-instance.html">Launching an Instance Using the Launch Instance Wizard</a>.
+                     </p>
+                     		
+                     <p>After you&apos;ve launched your instance and it&apos;s in the <code class="code">running</code> state, you can
+                        			connect to it and configure it as required.
+                     </p>
+                     	
+                     	
+                     		
+                     <h3 id="classiclink-migrate-attach-instance">Step 6: Link Your EC2-Classic Instances to Your
+                        			VPC
+                     </h3>
+                     		
+                     		
+                     <p>After you&apos;ve configured your instances and made the functionality of your application
+                        				available in the VPC, you can use ClassicLink to enable private IP communication
+                        between
+                        				your new VPC instances and your EC2-Classic instances.
+                     </p>
+                     		
+                     <p class="title"><b>To link an instance to a VPC</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           <p>In the navigation pane, choose <b>Instances</b>. 
+                           </p>
+                        </li>
+                        <li>
+                           				
+                           <p>Select your EC2-Classic instance, then choose <b>Actions</b>,
+                              <b>ClassicLink</b>, and <b>Link to VPC</b>.
+                           </p>
+                           				
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>Ensure that your instance is in the <code class="code">running</code> state.
+                              </p>
+                           </div>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the dialog box, select your ClassicLink-enabled VPC (only VPCs that are enabled
+                              for
+                              					ClassicLink are displayed).
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Select one or more of the VPC security groups to associate with your instance. When
+                              you
+                              						are done, choose <b>Link to VPC</b>.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     	
+                     	
+                     		
+                     <h3 id="classiclink-migrate-terminate-instances">Step 7: Complete the VPC
+                        			Migration
+                     </h3>
+                     		
+                     		
+                     <p>Depending on the size of your application and the functionality that must be migrated,
+                        				repeat steps 4 to 6 until you&apos;ve moved all the components of your application
+                        from
+                        				EC2-Classic into your VPC. 
+                     </p>
+                     		
+                     <p>After you&apos;ve enabled internal communication between the EC2-Classic and VPC instances,
+                        you
+                        must update your application to point to your migrated service in your VPC, instead
+                        of your
+                        service in the EC2-Classic platform. The exact steps for this depend on your application&#x2019;s
+                        design. Generally, this includes updating your destination IP addresses to point to
+                        the IP
+                        addresses of your VPC instances instead of your EC2-Classic instances. You can migrate
+                        your
+                        Elastic IP addresses that you are currently using in the EC2-Classic platform to the
+                        EC2-VPC platform. For more information, see <a href="elastic-ip-addresses-eip.html#migrating-eip">Migrating an Elastic IP Address from EC2-Classic to
+                           EC2-VPC</a>.
+                     </p>
+                     			
+                     <p>After you&apos;ve completed this step and you&apos;ve tested that the application is functioning
+                        from
+                        				your VPC, you can terminate your EC2-Classic instances, and disable ClassicLink
+                        for your
+                        				VPC. You can also clean up any EC2-Classic resources that you may no longer need
+                        to avoid
+                        				incurring charges for them; for example, you can release Elastic IP addresses,
+                        and delete
+                        				the volumes that were associated with your EC2-Classic instances.
+                     </p>
+                     	
+                     	
+                     	
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="vpc-classiclink.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="using-instance-addressing.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Full Migration to a VPC"><a class="pagetoc" href="#full-migrate">Full Migration to a VPC</a></li>
+                        <li class="pagetoc" name="Incremental Migration to a VPC Using ClassicLink"><a class="pagetoc" href="#classiclink-migrate">Incremental Migration to a VPC Using ClassicLink</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

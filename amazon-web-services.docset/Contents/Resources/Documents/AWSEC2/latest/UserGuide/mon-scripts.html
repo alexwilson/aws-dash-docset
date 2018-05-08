@@ -1,0 +1,1458 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Monitoring Memory and Disk Metrics for Amazon EC2 Linux Instances - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="monitoring_ec2.html" title="Monitoring Amazon EC2">
+      <link rel="prev" href="automating_with_cloudwatch_events.html" title="Automating Amazon EC2 with CloudWatch Events">
+      <link rel="next" href="EC2_Network_and_Security.html" title="Network and Security">
+      <meta name="description" content="Walks through how to use Monitoring Scripts to produce and consume custom metrics for your Amazon EC2 Linux instance.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/mon-scripts.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="monitoring_ec2.html">Monitoring Amazon EC2</a> &#xBB; <span class="breadcrumb">Monitoring Memory and Disk Metrics for Amazon EC2 Linux Instances</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="mon-scripts">Monitoring Memory and Disk Metrics for Amazon EC2 Linux Instances</h1>
+                     
+                     <h2 id="new-cloudwatch-agent">New CloudWatch Agent Available</h2>
+                     
+                     <p>A new multi-platform CloudWatch agent is available. You can use a single agent to
+                        collect both
+                        system metrics and log files from Amazon EC2 instances and on-premises servers. The
+                        new agent
+                        supports both Windows Server and Linux and enables you to select the metrics to be
+                        collected,
+                        including sub-resource metrics such as per-CPU core. We recommend you use the new
+                        agent
+                        instead of the older monitoring scripts to collect metrics and logs. For more information
+                        about the CloudWatch agent, see <a href="./AmazonCloudWatch/latest/monitoring/Install-CloudWatch-Agent.html" target="_blank">Collect
+                           Metrics from Amazon EC2 Instances and On-Premises Servers with the CloudWatch Agent</a> in the
+                        <em>Amazon CloudWatch User Guide</em>.
+                     </p>
+                     
+                     
+                     <p>The rest of this section is informational for customers who are still using the older
+                        Perl
+                        scripts for monitoring. You can download these <a href="https://aws.amazon.com/code/8720044071969977" target="_blank">Amazon CloudWatch Monitoring Scripts for Linux</a>
+                        from the AWS sample code library.
+                     </p>
+                     
+                     
+                     <h2 id="monitoring-scripts-intro">CloudWatch Monitoring Scripts</h2>
+                     
+                     
+                     <p>The Amazon CloudWatch Monitoring Scripts for Amazon Elastic Compute Cloud (Amazon
+                        EC2) Linux-based instances demonstrate how
+                        to produce and consume Amazon CloudWatch custom metrics. These sample Perl scripts
+                        comprise a fully
+                        functional example that reports memory, swap, and disk space utilization metrics for
+                        a Linux
+                        instance. 
+                     </p>
+                     
+                     
+                     <p>Standard Amazon CloudWatch usage charges for custom metrics apply to your use of these
+                        scripts. For
+                        more information, see the <a href="https://aws.amazon.com/cloudwatch/pricing" target="_blank">Amazon CloudWatch</a>
+                        pricing page.
+                     </p>
+                     
+                     
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#mon-scripts-systems">Supported Systems</a></li>
+                           <li><a href="#mon-scripts-contents">Package Contents</a></li>
+                           <li><a href="#mon-scripts-perl_prereq">Prerequisites</a></li>
+                           <li><a href="#mon-scripts-getstarted">Getting Started</a></li>
+                           <li><a href="#using_put_script">mon-put-instance-data.pl</a></li>
+                           <li><a href="#using_get_script_powershell">mon-get-instance-stats.pl </a></li>
+                           <li><a href="#script_viewmetrics">Viewing Your Custom Metrics in the Console</a></li>
+                           <li><a href="#mon-script-troubleshooting">Troubleshooting</a></li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     
+                     <h3 id="mon-scripts-systems">Supported Systems</h3>
+                     
+                     
+                     <p>These monitoring scripts are intended for use with Amazon EC2 instances running Linux.
+                        The
+                        scripts have been tested on instances using the following Amazon Machine Images (AMIs),
+                        both
+                        32-bit and 64-bit versions:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Amazon Linux 2014.09.2</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Red Hat Enterprise Linux 7.4 and 6.9</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>SUSE Linux Enterprise Server 12</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Ubuntu Server 16.04 and 14.04</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>On servers running SUSE Linux Enterprise Server 12, you may need to first download
+                           the <code class="code">perl-Switch</code> package. You can 
+                           download and install this package with the following commands:
+                        </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">wget http://download.opensuse.org/repositories/devel:/languages:/perl/SLE_12_SP3/noarch/perl-Switch-2.17-32.1.noarch.rpm
+sudo rpm -i perl-Switch-2.17-32.1.noarch.rpm</code></pre></div>
+                     
+                     
+                     <p>You can also monitor memory and disk metrics on Amazon EC2 instances running Windows
+                        by sending this data to CloudWatch Logs. 
+                        For more information, see <a href="./AWSEC2/latest/WindowsGuide/send_logs_to_cwl.html" target="_blank">Sending Logs, Events, and Performance 
+                           Counters to Amazon CloudWatch</a> in the <em>Amazon EC2 User Guide for Windows Instances</em>.
+                     </p>
+                     
+                     
+                     
+                     
+                     
+                     <h3 id="mon-scripts-contents">Package Contents</h3>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        <p>The package for the monitoring scripts contains the following files:</p>
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><b>CloudWatchClient.pm</b> &#x2013; Shared Perl module that simplifies
+                                 calling Amazon CloudWatch from other scripts.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>mon-put-instance-data.pl</b> &#x2013; Collects system metrics on an
+                                 Amazon EC2 instance (memory, swap, disk space utilization) and sends them to Amazon
+                                 CloudWatch.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>mon-get-instance-stats.pl</b> &#x2013; Queries Amazon CloudWatch and displays
+                                 the most recent utilization statistics for the EC2 instance on which this script is
+                                 executed.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>awscreds.template</b> &#x2013; File template for AWS credentials that
+                                 stores your access key ID and secret access key.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>LICENSE.txt</b> &#x2013; Text file containing the Apache 2.0
+                                 license.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>NOTICE.txt</b> &#x2013; Copyright notice.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     
+                     
+                     <h3 id="mon-scripts-perl_prereq">Prerequisites</h3>
+                     
+                     
+                     <p>With some versions of Linux, you must install additional modules before the monitoring
+                        scripts will work.
+                     </p>
+                     
+                     
+                     <h4 id="mon-scripts-alami">Amazon Linux AMI</h4>
+                     
+                     
+                     
+                     <p>If you are running Amazon Linux AMI version 2014.03 or later, you must install
+                        additional Perl modules.
+                     </p>
+                     
+                     <p class="title"><b>To install the required packages</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Log on to your instance. For more information, see <a href="AccessingInstances.html">Connect to Your Linux Instance</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>At a command prompt, install packages as follows:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>sudo yum install perl-Switch perl-DateTime perl-Sys-Syslog perl-LWP-Protocol-https -y</code></strong></code></pre>
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>If you are running Amazon Linux 2, you may also need to install <code class="code">perl-Digest-SHA.x86_64</code>.
+                              </p>
+                           </div>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     
+                     
+                     <h4 id="mon-scripts-redhat">Red Hat Enterprise Linux</h4>
+                     
+                     
+                     <p>You must install additional Perl modules.</p>
+                     
+                     <p class="title"><b>To install the required packages on Red Hat Enterprise Linux 6.9</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Log on to your instance. For more information, see <a href="AccessingInstances.html">Connect to Your Linux Instance</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>At a command prompt, install packages as follows:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>sudo yum install perl-DateTime perl-CPAN perl-Net-SSLeay perl-IO-Socket-SSL perl-Digest-SHA gcc -y
+sudo yum install zip unzip</code></strong></code></pre>
+                           </li>
+                        <li>
+                           <p>Run CPAN as an elevated user:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">sudo cpan</code></pre>
+                           <p>Press ENTER through the prompts until you see the following prompt:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">cpan[1]&gt;</code></pre></li>
+                        <li>
+                           <p>At the CPAN prompt, run each of the below commands: run one command and it installs,
+                              and when you return to the CPAN prompt, 
+                              run the next command. Press ENTER like before when prompted to continue through the
+                              process: 
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">cpan[1]&gt; install YAML 
+cpan[1]&gt; install LWP::Protocol::https 
+cpan[1]&gt; install Sys::Syslog 
+cpan[1]&gt; install Switch 
+</code></pre></li>
+                     </ol>
+                     
+                     <p class="title"><b>To install the required packages on Red Hat Enterprise Linux 7.4</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Log on to your instance. For more information, see <a href="AccessingInstances.html">Connect to Your Linux Instance</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>At a command prompt, install packages as follows:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>sudo yum install perl-Switch perl-DateTime perl-Sys-Syslog perl-LWP-Protocol-https perl-Digest-SHA --enablerepo=&quot;rhui-REGION-rhel-server-optional&quot; -y 
+sudo yum install zip unzip</code></strong></code></pre></li>
+                     </ol>
+                     
+                     
+                     
+                     
+                     <h4 id="mon-scripts-suse">SUSE Linux Enterprise Server</h4>
+                     
+                     
+                     <p>You must install additional Perl modules.</p>
+                     
+                     <p class="title"><b>To install the required packages on SUSE</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Log on to your instance. For more information, see <a href="AccessingInstances.html">Connect to Your Linux Instance</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>At a command prompt, install packages as follows:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>sudo zypper install perl-Switch perl-DateTime
+sudo zypper install &#x2013;y &quot;perl(LWP::Protocol::https)&quot;</code></strong></code></pre>
+                           </li>
+                     </ol>
+                     
+                     
+                     
+                     
+                     <h4 id="mon-scripts-ubuntu">Ubuntu Server</h4>
+                     
+                     
+                     <p>You must configure your server as follows.</p>
+                     
+                     <p class="title"><b>To install the required packages on Ubuntu</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Log on to your instance. For more information, see <a href="AccessingInstances.html">Connect to Your Linux Instance</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>At a command prompt, install packages as follows:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>sudo apt-get update
+sudo apt-get install unzip
+sudo apt-get install libwww-perl libdatetime-perl</code></strong></code></pre>
+                           </li>
+                     </ol>
+                     
+                     
+                     
+                     
+                     
+                     
+                     <h3 id="mon-scripts-getstarted">Getting Started</h3>
+                     
+                     
+                     <p>The following steps show you how to download, uncompress, and configure the CloudWatch
+                        Monitoring Scripts on an EC2 Linux instance.
+                     </p>
+                     
+                     <p class="title"><b>To download, install, and configure the monitoring scripts</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>At a command prompt, move to a folder where you want to store the monitoring scripts
+                              and run the following command to download them:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">curl https://aws-cloudwatch.s3.amazonaws.com/downloads/CloudWatchMonitoringScripts-1.2.2.zip -O</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Run the following commands to install the monitoring scripts you downloaded:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">unzip CloudWatchMonitoringScripts-1.2.2.zip
+rm CloudWatchMonitoringScripts-1.2.2.zip
+cd aws-scripts-mon</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Ensure that the scripts have permission to perform CloudWatch operations using one
+                              of the
+                              following options:
+                           </p>
+                           
+                           <ul>
+                              
+                              <li>
+                                 
+                                 <p>If you associated an IAM role (instance profile) with your instance, verify that
+                                    it grants permissions to perform the following operations:
+                                 </p>
+                                 
+                                 <div class="itemizedlist">
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    <ul class="itemizedlist" type="disc">
+                                       <li class="listitem">
+                                          
+                                          <p>cloudwatch:PutMetricData</p>
+                                          
+                                       </li>
+                                       <li class="listitem">
+                                          
+                                          <p>cloudwatch:GetMetricStatistics</p>
+                                          
+                                       </li>
+                                       <li class="listitem">
+                                          
+                                          <p>cloudwatch:ListMetrics</p>
+                                          
+                                       </li>
+                                       <li class="listitem">
+                                          
+                                          <p>ec2:DescribeTags</p>
+                                          
+                                       </li>
+                                    </ul>
+                                 </div>
+                                 
+                              </li>
+                              
+                              <li>
+                                 
+                                 <p>Specify your AWS credentials in a credentials file. First, copy the
+                                    <code>awscreds.template</code> file included with the monitoring scripts to
+                                    <code>awscreds.conf</code> as follows:
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">cp awscreds.template awscreds.conf</code></pre>
+                                 <p>Add the following content to this file:</p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">AWSAccessKeyId=<em class="replaceable"><code>my-access-key-id</code></em>
+AWSSecretKey=<em class="replaceable"><code>my-secret-access-key</code></em></code></pre>
+                                 <p>For information about how to view your AWS credentials, see <a href="./general/latest/gr/aws-sec-cred-types.html" target="_blank">Understanding and Getting Your Security
+                                       Credentials</a> in the <em>Amazon Web Services General Reference</em>.
+                                 </p>
+                                 
+                              </li>
+                              
+                           </ul>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     
+                     
+                     <h3 id="using_put_script">mon-put-instance-data.pl</h3>
+                     
+                     
+                     <p>This script collects memory, swap, and disk space utilization data on the current
+                        system.
+                        It then makes a remote call to Amazon CloudWatch to report the collected data as custom
+                        metrics.
+                     </p>
+                     
+                     
+                     <div class="table">
+                        <p class="title"><b>Options</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac19c25b5c17b5">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Name</th>
+                                 
+                                 <th>Description</th>
+                                 
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--mem-util </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Collects and sends the MemoryUtilization metrics in percentages. This metric
+                                       counts memory allocated by applications and the operating system as used, and also
+                                       includes cache
+                                       and buffer memory as used if you specify the <code class="code">--mem-used-incl-cache-buff</code> option. 
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--mem-used </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p> Collects and sends the MemoryUsed metrics, reported in megabytes. This metric
+                                       counts memory allocated by applications and the operating system as used, and also
+                                       includes cache
+                                       and buffer memory as used if you specify the <code class="code">--mem-used-incl-cache-buff</code> option.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--mem-used-incl-cache-buff </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>If you include this option, memory currently used for  cache and buffers is counted
+                                       as &quot;used&quot; when the metrics are reported for <code class="code">--mem-util</code>, 
+                                       <code class="code">--mem-used</code>, and <code class="code">--mem-avail</code>.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--mem-avail </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p> Collects and sends the MemoryAvailable metrics, reported in megabytes. This metric
+                                       counts memory allocated by applications and the operating system as used, and also
+                                       includes cache
+                                       and buffer memory as used if you specify the <code class="code">--mem-used-incl-cache-buff</code> option.
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--swap-util </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p> Collects and sends SwapUtilization metrics, reported in percentages.
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--swap-used </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p> Collects and sends SwapUsed metrics, reported in megabytes. </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--disk-path=PATH </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p> Selects the disk on which to report. </p>
+                                    
+                                    <p>PATH can specify a mount point or any file located on a mount point for the
+                                       filesystem that needs to be reported. For selecting multiple disks, specify a
+                                       <code class="code">--disk-path=PATH</code> for each one of them. 
+                                    </p>
+                                    
+                                    <p> To select a disk for the filesystems mounted on <code class="code">/</code> and
+                                       <code class="code">/home</code>, use the following parameters: 
+                                    </p>
+                                    
+                                    <p><code class="code">--disk-path=/ --disk-path=/home</code></p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--disk-space-util</code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Collects and sends the DiskSpaceUtilization metric for the selected disks.
+                                       The metric is reported in percentages.
+                                    </p>
+                                    
+                                    <p>Note that the disk utilization metrics calculated by this script differ from
+                                       the values calculated by the df -k -l command. If you find the values from df -k -l
+                                       more useful, you can change the calculations in the script.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--disk-space-used</code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Collects and sends the DiskSpaceUsed metric for the selected disks. The
+                                       metric is reported by default in gigabytes. 
+                                    </p>
+                                    
+                                    <p> Due to reserved disk space in Linux operating systems, disk space used and
+                                       disk space available might not accurately add up to the amount of total disk space.
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--disk-space-avail </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Collects and sends the DiskSpaceAvailable metric for the selected disks. The
+                                       metric is reported in gigabytes. 
+                                    </p>
+                                    
+                                    <p> Due to reserved disk space in the Linux operating systems, disk space used
+                                       and disk space available might not accurately add up to the amount of total disk
+                                       space. 
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--memory-units=UNITS </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Specifies units in which to report memory usage. If not specified, memory is
+                                       reported in megabytes. UNITS may be one of the following: bytes, kilobytes,
+                                       megabytes, gigabytes. 
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--disk-space-units=UNITS
+                                          </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Specifies units in which to report disk space usage. If not specified, disk
+                                       space is reported in gigabytes. UNITS may be one of the following: bytes, kilobytes,
+                                       megabytes, gigabytes. 
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--aws-credential- file=PATH
+                                          </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Provides the location of the file containing AWS credentials. </p>
+                                    
+                                    <p>This parameter cannot be used with the <code class="code">--aws-access-key-id</code> and
+                                       -<code class="code">-aws-secret-key</code> parameters. 
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--aws-access-key-id=VALUE
+                                          </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Specifies the AWS access key ID to use to identify the caller. Must be used
+                                       together with the <code class="code">--aws-secret-key</code> option. Do not use this option with
+                                       the <code class="code">--aws-credential-file</code> parameter. 
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--aws-secret-key=VALUE </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Specifies the AWS secret access key to use to sign the request to CloudWatch.
+                                       Must be used together with the <code class="code">--aws-access-key-id</code> option. Do not use
+                                       this option with <code class="code">--aws-credential-file</code> parameter.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--aws-iam-role=VALUE</code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Specifies the IAM role used to provide AWS credentials. The value
+                                       <code class="code">=VALUE</code> is required. If no credentials are specified, the default IAM
+                                       role associated with the EC2 instance is applied. Only one IAM role can be used. If
+                                       no IAM roles are found, or if more than one IAM role is found, the script will
+                                       return an error.
+                                    </p>
+                                    
+                                    <p>Do not use this option with the <code class="code">--aws-credential-file</code>,
+                                       <code class="code">--aws-access-key-id</code>, or <code class="code">--aws-secret-key</code>
+                                       parameters.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--aggregated[=only]</code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Adds aggregated metrics for instance type, AMI ID, and overall for the
+                                       region. The value <code class="code">=only</code> is optional; if specified, the script reports
+                                       only aggregated metrics.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--auto-scaling[=only]</code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Adds aggregated metrics for the Auto Scaling group. The value
+                                       <code class="code">=only</code> is optional; if specified, the script reports only Auto Scaling
+                                       metrics. The <a href="./IAM/latest/UserGuide/ManagingPolicies.html" target="_blank">IAM policy</a>
+                                       associated with the IAM account or role using the scripts need to have permissions
+                                       to call the EC2 action <a href="./AWSEC2/latest/APIReference/ApiReference-query-DescribeTags.html" target="_blank">DescribeTags</a>.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--verify </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Performs a test run of the script that collects the metrics, prepares a
+                                       complete HTTP request, but does not actually call CloudWatch to report the data.
+                                       This option also checks that credentials are provided. When run in verbose mode,
+                                       this option outputs the metrics that will be sent to CloudWatch. 
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--from-cron </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Use this option when calling the script from cron. When this option is used,
+                                       all diagnostic output is suppressed, but error messages are sent to the local system
+                                       log of the user account. 
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--verbose </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Displays detailed information about what the script is doing. </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--help </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Displays usage information. </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--version </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Displays the version number of the script. </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     
+                     <h4 id="using_put_examples">Examples</h4>
+                     
+                     
+                     <p>The following examples assume that you provided an IAM role or
+                        <code>awscreds.conf</code> file. Otherwise, you must provide credentials using the
+                        <code class="code">--aws-access-key-id</code> and <code class="code">--aws-secret-key</code> parameters for these
+                        commands.
+                     </p>
+                     
+                     
+                     <p><b>To perform a simple test run without posting data to CloudWatch</b></p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">./mon-put-instance-data.pl --mem-util --verify --verbose</code></pre>
+                     
+                     <p><b>To collect all available memory metrics and send them to
+                           CloudWatch, counting cache and buffer memory as used</b></p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">./mon-put-instance-data.pl --mem-used-incl-cache-buff --mem-util --mem-used --mem-avail</code></pre>
+                     
+                     <p class="title"><b>To set a cron schedule for metrics reported to CloudWatch</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Start editing the crontab using the following command:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">crontab -e </code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Add the following command to report memory and disk space utilization to CloudWatch
+                              every five minutes:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">*/5 * * * * ~/aws-scripts-mon/mon-put-instance-data.pl --mem-used-incl-cache-buff --mem-util --disk-space-util --disk-path=/ --from-cron</code></pre>
+                           <p>If the script encounters an error, the script will write the error message in the
+                              system log. 
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <p><b>To collect aggregated metrics for an Auto Scaling group and send them to
+                           Amazon CloudWatch without reporting individual instance metrics</b></p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">./mon-put-instance-data.pl --mem-util --mem-used --mem-avail --auto-scaling=only</code></pre>
+                     
+                     <p><b>To collect aggregated metrics for instance type, AMI ID and region, and send
+                           them to Amazon CloudWatch without reporting individual instance metrics</b></p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">./mon-put-instance-data.pl --mem-util --mem-used --mem-avail --aggregated=only</code></pre>
+                     
+                     
+                     
+                     
+                     
+                     <h3 id="using_get_script_powershell">mon-get-instance-stats.pl </h3>
+                     
+                     
+                     <p>This script queries CloudWatch for statistics on memory, swap, and disk space metrics
+                        within the
+                        time interval provided using the number of most recent hours. This data is provided
+                        for the
+                        Amazon EC2 instance on which this script is executed. 
+                     </p>
+                     
+                     
+                     <div class="table">
+                        <p class="title"><b>Options</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac19c25b5c19b5">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Name</th>
+                                 
+                                 <th>Description</th>
+                                 
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--recent-hours=N</code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Specifies the number of recent hours to report on, as represented by
+                                       <code class="code">N</code> where N is an integer. 
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--aws-credential-file=PATH
+                                          </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Provides the location of the file containing AWS credentials. </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--aws-access-key-id=VALUE
+                                          </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Specifies the AWS access key ID to use to identify the caller. Must be used
+                                       together with the <code class="code">--aws-secret-key</code> option. Do not use this option with
+                                       the <code class="code">--aws-credential-file</code> option. 
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--aws-secret-key=VALUE </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Specifies the AWS secret access key to use to sign the request to CloudWatch.
+                                       Must be used together with the <code class="code">--aws-access-key-id</code> option. Do not use
+                                       this option with <code class="code">--aws-credential-file</code> option. 
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--aws-iam-role=VALUE</code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Specifies the IAM role used to provide AWS credentials. The value
+                                       <code class="code">=VALUE</code> is required. If no credentials are specified, the default IAM
+                                       role associated with the EC2 instance is applied. Only one IAM role can be used. If
+                                       no IAM roles are found, or if more than one IAM role is found, the script will
+                                       return an error.
+                                    </p>
+                                    
+                                    <p>Do not use this option with the <code class="code">--aws-credential-file</code>,
+                                       <code class="code">--aws-access-key-id</code>, or <code class="code">--aws-secret-key</code>
+                                       parameters.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--verify </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Performs a test run of the script that collects the metrics, prepares a
+                                       complete HTTP request, but does not actually call CloudWatch to report the data.
+                                       This option also checks that credentials are provided. When run in verbose mode,
+                                       this option outputs the metrics that will be sent to CloudWatch. 
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--verbose </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Displays detailed information about what the script is doing. </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--help </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Displays usage information. </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>
+                                       <code class="code">--version </code>
+                                       
+                                    </p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Displays the version number of the script. </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     
+                     <h4 id="using_get_examples">Example</h4>
+                     
+                     
+                     <p>To get utilization statistics for the last 12 hours, run the following command:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">./mon-get-instance-stats.pl --recent-hours=12</code></pre>
+                     
+                     <p>The following is an example response:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">Instance metric statistics for the last 12 hours.
+
+CPU Utilization
+    Average: 1.06%, Minimum: 0.00%, Maximum: 15.22%
+
+Memory Utilization
+    Average: 6.84%, Minimum: 6.82%, Maximum: 6.89%
+
+Swap Utilization
+    Average: N/A, Minimum: N/A, Maximum: N/A
+
+Disk Space Utilization on /dev/xvda1 mounted as /
+    Average: 9.69%, Minimum: 9.69%, Maximum: 9.69%</code></pre>
+                     
+                     
+                     
+                     
+                     
+                     <h3 id="script_viewmetrics">Viewing Your Custom Metrics in the Console</h3>
+                     
+                     
+                     <p>After you successfully run the <code class="code">mon-put-instance-data.pl</code> script, you can view
+                        your custom metrics in the Amazon CloudWatch console.
+                     </p>
+                     
+                     <p class="title"><b>To view custom metrics</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Run <code class="code">mon-put-instance-data.pl</code> as described previously.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           <p>Open the CloudWatch console at
+                              <a href="https://console.aws.amazon.com/cloudwatch/" target="_blank">https://console.aws.amazon.com/cloudwatch/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>View Metrics</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>For <b>Viewing</b>, your custom metrics posted by the script are
+                              displayed with the prefix <code class="code">System/Linux</code>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     
+                     
+                     <h3 id="mon-script-troubleshooting">Troubleshooting</h3>
+                     
+                     
+                     <p>The <b>CloudWatchClient.pm</b> module caches instance metadata locally. If
+                        you create an AMI from an instance where you have run the monitoring scripts, any
+                        instances
+                        launched from the AMI within the cache TTL (default: six hours, 24 hours for Auto
+                        Scaling groups) emit
+                        metrics using the instance ID of the original instance. After the cache TTL time period
+                        passes, the script retrieves fresh data and the monitoring scripts use the instance
+                        ID of the
+                        current instance. To immediately correct this, remove the cached data using the following
+                        command:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>rm /var/tmp/aws-mon/<em class="replaceable"><code>instance-id</code></em></code></strong></code></pre>
+                     
+                     
+                     </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="automating_with_cloudwatch_events.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="EC2_Network_and_Security.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="New CloudWatch Agent Available"><a class="pagetoc" href="#new-cloudwatch-agent">New CloudWatch Agent Available</a></li>
+                        <li class="pagetoc" name="CloudWatch Monitoring Scripts"><a class="pagetoc" href="#monitoring-scripts-intro">CloudWatch Monitoring Scripts</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

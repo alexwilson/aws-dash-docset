@@ -1,0 +1,472 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Querying Archived Objects - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ObjectOperations.html" title="Operations on Objects">
+      <link rel="prev" href="restoring-objects-rest.html" title="Restore an Archived Object Using the REST API">
+      <link rel="next" href="analytics-storage-class.html" title="Amazon S3 Analytics &#x2013; Storage Class Analysis">
+      <meta name="description" content="Describes how to query Amazon S3 objects archived to Amazon Glacier.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/querying-glacier-archives.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="UsingObjects.html">Working with Amazon S3 Objects</a> &#xBB; <a href="ObjectOperations.html">Operations on Objects</a> &#xBB; <span class="breadcrumb">Querying Archived Objects</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="querying-glacier-archives">Querying Archived Objects</h1>
+                     <p>With the select type of <a href="./AmazonS3/latest/API/RESTObjectPOSTrestore.html" target="_blank">POST Object
+                           restore</a>, you can perform filtering operations using simple Structured Query
+                        Language (SQL) statements directly on your data that is archived by Amazon S3 to Amazon
+                        Glacier. When you
+                        provide an SQL query for an archived object, select runs the query in place and writes
+                        the
+                        output results to an S3 bucket. You can run queries and custom analytics on your data
+                        that
+                        is stored in Amazon Glacier, without having to restore your entire object to Amazon
+                        S3.
+                     </p>
+                     <p>When you perform select queries, Amazon Glacier provides three data access
+                        tiers&#x2014;<em>expedited</em>, <em>standard</em>, and
+                        <em>bulk</em>. All of these tiers provide different data access times and
+                        costs, and you can choose any one of them depending on how quickly you want your data
+                        to be
+                        available. For more information, see <a href="querying-glacier-archives.html#querying-glacier-archives-access-tiers">Data Access Tiers</a>.
+                     </p>
+                     <p>You can use the select type of restore with the AWS SDKs, the Amazon Glacier REST
+                        API, and the
+                        AWS Command Line Interface (AWS CLI).
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#glacier-select-requirements-and-limits">Select Requirements and
+                                 Limits</a></li>
+                           <li><a href="#glacier-select-restrictions">How Do I Query Data Using Select?</a></li>
+                           <li><a href="#glacier-select-access-control">Error Handling</a></li>
+                           <li><a href="#querying-glacier-archives-access-tiers">Data Access Tiers</a></li>
+                           <li><a href="#querying-glacier-archives-more-info">More Info</a></li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="glacier-select-requirements-and-limits">Select Requirements and
+                        Limits
+                     </h2>
+                     
+                     <p>The following are requirements for using select:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Archive objects that are queried by select must be formatted as uncompressed
+                                 comma-separated values (CSV). 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>An S3 bucket for output. The AWS account that you use to initiate an Amazon Glacier
+                                 select job must have write permissions for the S3 bucket. The Amazon S3 bucket must
+                                 be in the same AWS Region as the bucket that contains the archived object that
+                                 is being queried.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The requesting AWS account must have permissions to perform the
+                                 <code class="code">s3:RestoreObject</code> and <code class="code">s3:GetObject</code> actions. For
+                                 more information about these permissions, see <a href="using-with-s3-actions.html#using-with-s3-actions-related-to-bucket-subresources">Permissions Related to Bucket Subresource Operations</a>.
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The archive must not be encrypted with SSE-C or client-side encryption.
+                                 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>The following limits apply when using select:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">   
+                              
+                              <p>There are no limits on the number of records that select can process. An input
+                                 or output record must not exceed 1 MB; otherwise, the query fails. There is a
+                                 limit of 1,048,576 columns per record.
+                              </p>    
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>There is no limit on the size of your final result. However, your results are broken
+                                 into multiple parts. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>An SQL expression is limited to 128 KB.</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h2 id="glacier-select-restrictions">How Do I Query Data Using Select?</h2>
+                     
+                     <p>Using select, you can use SQL commands to query Amazon Glacier archive objects that
+                        are in
+                        encrypted uncompressed CSV format. With this restriction, you can perform simple query
+                        operations on your text-based data in Amazon Glacier. For example, you might look
+                        for a specific
+                        name or ID among a set of archived text files. 
+                     </p>
+                     
+                     <p>To query your Amazon Glacier data, create a select request using the <a href="./AmazonS3/latest/API/RESTObjectPOSTrestore.html" target="_blank">POST Object restore</a> operation.
+                        When performing a select request, you provide the SQL expression, the archive to query,
+                        and the location to store the results. 
+                     </p>
+                     
+                     <p>The following example expression returns all records from the archived object
+                        specified in <a href="./AmazonS3/latest/API/RESTObjectPOSTrestore.html" target="_blank">POST Object
+                           restore</a>.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="SQL ">SELECT * FROM object</code></pre>
+                     <p>Amazon Glacier Select supports a subset of the ANSI SQL language. It supports common
+                        filtering
+                        SQL clauses like <code class="code">SELECT</code>, <code class="code">FROM</code>, and <code class="code">WHERE</code>. It does
+                        not support <code class="code">SUM</code>, <code class="code">COUNT</code>, <code class="code">GROUP BY</code>,
+                        <code class="code">JOINS</code>, <code class="code">DISTINCT</code>, <code class="code">UNION</code>, <code class="code">ORDER
+                           BY</code>, and <code class="code">LIMIT</code>. For more information about support for SQL, see
+                        <a href="./AmazonS3/latest/dev/s3-glacier-select-sql-reference.html" target="_blank">SQL Reference for Amazon S3
+                           Select and Amazon Glacier Select</a> in the <em>Amazon Simple Storage Service Developer Guide</em>.
+                     </p>
+                     
+                     
+                     
+                     
+                     <h3 id="glacier-select-output">Select Output</h3>
+                     
+                     <p>When you initiate a select request, you define an output location for the results
+                        of your select query. This location must be an Amazon S3 bucket in the same AWS Region
+                        as
+                        the bucket that contains the archived object that is being queried. The AWS account
+                        that initiates the job must have permissions to write to the S3 bucket. 
+                     </p>
+                     
+                     <p>You can specify the Amazon S3 storage class and encryption for the output objects
+                        stored in Amazon S3. Select supports SSE-KMS and SSE-S3 encryption. Select doesn&apos;t
+                        support SSE-C and client-side encryption. For more information about Amazon S3 storage
+                        classes and encryption, see <a href="storage-class-intro.html">Storage Classes</a> and <a href="serv-side-encryption.html">Protecting Data Using Server-Side Encryption</a>.
+                     </p>
+                     
+                     <p>Amazon Glacier Select results are stored in the S3 bucket using the prefix provided
+                        in the
+                        output location specified in <a href="./AmazonS3/latest/API/RESTObjectPOSTrestore.html" target="_blank">POST Object restore</a>. From this information, select creates a unique
+                        prefix referring to the job ID. (Prefixes are used to group Amazon S3 objects together
+                        by
+                        beginning object names with a common string.) Under this unique prefix, there are
+                        two new prefixes created, <code class="code">results</code> for results and <code class="code">errors</code>
+                        for logs and errors. Upon completion of the job, a result manifest is written which
+                        contains the location of all results.
+                     </p>
+                     
+                     <p>There is also a placeholder file named <code class="code">job.txt</code> that is written to the
+                        output location. After it is written it is never updated. The placeholder file is
+                        used for
+                        the following:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Validation of the write permission and majority of SQL syntax errors synchronously.
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Providing a static output about your select request that you can easily
+                                 reference whenever you want. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>For example, suppose that you make a select request with the output location for
+                        the results specified as <code class="code">s3://example-bucket/my-prefix</code>, and the job
+                        response returns the job ID as <code class="code">examplekne1209ualkdjh812elkassdu9012e</code>.
+                        After the select job finishes, you can see the following Amazon S3 objects in your
+                        bucket:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">s3://example-bucket/my-prefix/examplekne1209ualkdjh812elkassdu9012e/job.txt
+s3://example-bucket/my-prefix/examplekne1209ualkdjh812elkassdu9012e/results/abc
+s3://example-bucket/my-prefix/examplekne1209ualkdjh812elkassdu9012e/results/def
+s3://example-bucket/my-prefix/examplekne1209ualkdjh812elkassdu9012e/results/ghi
+s3://example-bucket/my-prefix/examplekne1209ualkdjh812elkassdu9012e/result_manifest.txt</code></pre>
+                     <p>The select query results are broken into multiple parts. In the example, select
+                        uses the prefix that you specified when setting the output location and appends the
+                        job ID and the <code class="code">results</code> prefix. It then writes the results in three
+                        parts, with the object names ending in <code class="code">abc</code>, <code class="code">def</code>, and
+                        <code class="code">ghi</code>. The result manifest contains all three files to allow
+                        programmatic retrieval. If the job fails with any error, then a file is visible
+                        under the error prefix and an <code class="code">error_manifest.txt</code> is produced.
+                     </p>
+                     
+                     <p>Presence of a <code class="code">result_manifest.txt</code> file along with the absence of
+                        <code class="code">error_manifest.txt</code> guarantees that the job finished successfully. There is no
+                        guarantee provided on how results are ordered.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>The length of an Amazon S3 object name, also referred to as the
+                           <em>key</em>, can be no more than 1,024 bytes. Amazon Glacier select
+                           reserves 128 bytes for prefixes. And, the length of your Amazon S3 location path
+                           cannot be more than 512 bytes. A request with a length greater than 512 bytes
+                           returns an exception, and the request is not accepted.
+                        </p>
+                     </div>
+                     
+                     
+                     
+                     <h2 id="glacier-select-access-control">Error Handling</h2>
+                     
+                     <p>Select notifies you of two kinds of errors. The first set of errors is sent to you
+                        synchronously when you submit the query in <a href="./AmazonS3/latest/API/RESTObjectPOSTrestore.html" target="_blank">POST Object restore</a>. These
+                        errors are sent to you as part of the HTTP response. Another set of errors can occur
+                        after the query has been accepted successfully, but they happen during query execution.
+                        In this case, the errors are written to the specified output location under the
+                        <code class="code">errors</code> prefix.
+                     </p>
+                     
+                     <p>Select stops executing the query after encountering an error. To execute the query
+                        successfully, you must resolve all errors. You can check the logs to identify which
+                        records caused a failure. 
+                     </p>
+                     
+                     <p>Because queries run in parallel across multiple compute nodes, the errors that you
+                        get
+                        are not in sequential order. For example, if your query fails with an error in row
+                        6,234, it does not mean that all rows before row 6,234 were successfully processed.
+                        The
+                        next run of the query might show an error in a different row. 
+                     </p>
+                     
+                     
+                     <h2 id="querying-glacier-archives-access-tiers">Data Access Tiers</h2>
+                     
+                     
+                     <p>You can specify one of the following data access tiers when querying an archived object:
+                        
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><b><code class="code">Expedited</code></b> &#x2013; Allows you to
+                                 quickly access your data when occasional urgent requests for a subset of
+                                 archives are required. For all but the largest archived object (250 MB+), data
+                                 accessed using <code class="code">Expedited</code> retrievals are typically made available
+                                 within 1&#x2013;5 minutes. There are two types of <code class="code">Expedited</code> data access:
+                                 On-Demand and Provisioned. On-Demand requests are similar to EC2 On-Demand
+                                 instances and are available most of the time. Provisioned requests are
+                                 guaranteed to be available when you need them. For more information, see <a href="querying-glacier-archives.html#querying-glacier-archives-expedited-capacity">Provisioned
+                                    Capacity</a>. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b><code class="code">Standard</code></b> &#x2013; Allows you to
+                                 access any of your archived objects within several hours. Standard retrievals
+                                 typically finish within 3&#x2013;5 hours. This is the default tier.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b><code class="code">Bulk</code></b> &#x2013; The lowest-cost
+                                 data access option in Amazon Glacier, enabling you to retrieve large amounts, even
+                                 petabytes, of data inexpensively in a day. <code class="code">Bulk</code> access typically
+                                 finishes within 5&#x2013;12 hours. 
+                              </p>
+                              
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>To make an <code class="code">Expedited</code>, <code class="code">Standard</code>, or <code class="code">Bulk</code>
+                        request, set the <code class="code">Tier</code> request element in the <a href="./AmazonS3/latest/API/RESTObjectPOSTrestore.html" target="_blank">POST Object restore</a> REST API
+                        request to the option you want, or the equivalent in the AWS CLI or AWS SDKs. For
+                        <code class="code">Expedited</code> access, there is no need to designate whether an expedited
+                        retrieval is On-Demand or Provisioned. If you purchased provisioned capacity, all
+                        <code class="code">Expedited</code> retrievals are automatically served through your provisioned
+                        capacity. For information about tier pricing, see <a href="http://aws.amazon.com/glacier/pricing/" target="_blank">Amazon Glacier Pricing</a>.
+                     </p>
+                     
+                     
+                     
+                     
+                     <h3 id="querying-glacier-archives-expedited-capacity">Provisioned
+                        Capacity
+                     </h3>
+                     
+                     <p>Provisioned capacity guarantees that your retrieval capacity for expedited
+                        retrievals is available when you need it. Each unit of capacity ensures that at
+                        least three expedited retrievals can be performed every five minutes and provides
+                        up
+                        to 150 MB/s of retrieval throughput.
+                     </p>
+                     
+                     <p>You should purchase provisioned retrieval capacity if your workload requires
+                        highly reliable and predictable access to a subset of your data in minutes. Without
+                        provisioned capacity, <code class="code">Expedited</code> retrievals are accepted, except for
+                        rare situations of unusually high demand. However, if you require access to
+                        <code class="code">Expedited</code> retrievals under all circumstances, you must purchase
+                        provisioned retrieval capacity. You can purchase provisioned capacity using the Amazon
+                        S3
+                        console, the Amazon Glacier console, the <a href="./amazonglacier/latest/dev/api-PurchaseProvisionedCapacity.html" target="_blank">Purchase Provisioned
+                           Capacity</a> REST API, the AWS SDKs, or the AWS CLI. For provisioned capacity
+                        pricing information, see the <a href="https://aws.amazon.com/glacier/pricing/" target="_blank">Amazon Glacier
+                           Pricing</a>. 
+                     </p>
+                     
+                     
+                     
+                     <h2 id="querying-glacier-archives-more-info">More Info</h2>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./AmazonS3/latest/API/RESTObjectPOSTrestore.html" target="_blank">POST Object
+                                    restore</a> in the <em>Amazon Simple Storage Service API Reference</em></p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="./AmazonS3/latest/dev/s3-glacier-select-sql-reference.html" target="_blank">SQL Reference for Amazon S3
+                                    Select and Amazon Glacier Select</a> in the <em>Amazon Simple Storage Service Developer Guide</em></p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="restoring-objects-rest.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="analytics-storage-class.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Select Requirements and
+                Limits"><a class="pagetoc" href="#glacier-select-requirements-and-limits">Select Requirements and
+                              Limits</a></li>
+                        <li class="pagetoc" name="How Do I Query Data Using Select?"><a class="pagetoc" href="#glacier-select-restrictions">How Do I Query Data Using Select?</a></li>
+                        <li class="pagetoc" name="Error Handling"><a class="pagetoc" href="#glacier-select-access-control">Error Handling</a></li>
+                        <li class="pagetoc" name="Data Access Tiers"><a class="pagetoc" href="#querying-glacier-archives-access-tiers">Data Access Tiers</a></li>
+                        <li class="pagetoc" name="More Info"><a class="pagetoc" href="#querying-glacier-archives-more-info">Using the REST API</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

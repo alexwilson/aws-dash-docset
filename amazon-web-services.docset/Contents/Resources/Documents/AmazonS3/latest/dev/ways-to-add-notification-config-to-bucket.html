@@ -1,0 +1,568 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Example Walkthrough 1: Configure
+         a Bucket for Notifications (Message Destination: SNS Topic and SQS Queue) - Amazon Simple Storage Service
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="NotificationHowTo.html" title=" Configuring Amazon S3 Event Notifications">
+      <link rel="prev" href="NotificationHowTo.html" title=" Configuring Amazon S3 Event Notifications">
+      <link rel="next" href="notification-walkthrough-2.html" title="Example Walkthrough 2: Configure a Bucket for
+            Notifications (Message Destination: AWS Lambda)">
+      <meta name="description" content="Walk through an example that shows how to configure a bucket for notifications (Amazon SNS or Amazon SQS).">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/ways-to-add-notification-config-to-bucket.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="NotificationHowTo.html"> Configuring Amazon S3 Event Notifications</a> &#xBB; <span class="breadcrumb">Example Walkthrough 1: Configure
+                                    a Bucket for Notifications (Message Destination: SNS Topic and SQS Queue)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ways-to-add-notification-config-to-bucket">Example Walkthrough 1: Configure
+                        a Bucket for Notifications (Message Destination: SNS Topic and SQS Queue)
+                     </h1>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#notification-walkthrough-summary">Walkthrough Summary</a></li>
+                           <li><a href="#step1-create-sns-topic-for-notification">Step 1: Create an Amazon SNS
+                                 Topic</a></li>
+                           <li><a href="#step1-create-sqs-queue-for-notification">Step 2: Create an Amazon SQS
+                                 Queue</a></li>
+                           <li><a href="#step2-enable-notification">Step 3: Add a Notification Configuration to
+                                 Your Bucket</a></li>
+                           <li><a href="#notification-walkthrough-1-test">Step 4: Test the Setup</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="notification-walkthrough-summary">Walkthrough Summary</h2>
+                     
+                     
+                     <p>In this walkthrough you add notification configuration on a bucket requesting
+                        Amazon S3 to:
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Publish events of the <code class="code">s3:ObjectCreated:*</code> type to an Amazon SQS
+                                 queue.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Publish events of the <code class="code">s3:ReducedRedundancyLostObject</code> type
+                                 to an Amazon SNS topic.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>For information about notification configuration, see <a href="NotificationHowTo.html"> Configuring Amazon S3 Event Notifications</a>.
+                     </p>
+                     
+                     <p>You can do all these steps using the console, without writing any code. In
+                        addition, code examples, using AWS SDKs for Java and .NET are also provided so you
+                        can add notification configuration programmatically. 
+                     </p>
+                     
+                     <p>You will do the following in this walkthrough:</p>
+                     
+                     <div class="orderedlist">
+                        
+                        
+                        
+                        
+                        <ol>
+                           <li>
+                              
+                              <p>Create an Amazon SNS topic.</p>
+                              
+                              <p>Using the Amazon SNS console, you create an SNS topic and subscribe to the
+                                 topic so that any events posted to it are delivered to you. You will specify
+                                 email as the communications protocol. After you create a topic, Amazon SNS will
+                                 send an email. You must click a link in the email to confirm the topic
+                                 subscription. 
+                              </p>
+                              
+                              <p>You will attach an access policy to the topic to grant Amazon S3 permission to
+                                 post messages. 
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>Create an Amazon SQS queue.</p>
+                              
+                              <p>Using the Amazon SQS console, you create an SQS queue. You can access any
+                                 messages Amazon S3 sends to the queue programmatically. But for this walkthrough,
+                                 you will verify notification messages in the console. 
+                              </p>
+                              
+                              <p>You will attach an access policy to the topic to grant Amazon S3 permission to
+                                 post messages.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>Add notification configuration to a bucket. </p>
+                              
+                           </li>
+                        </ol>
+                     </div>
+                     
+                     <h2 id="step1-create-sns-topic-for-notification">Step 1: Create an Amazon SNS
+                        Topic
+                     </h2>
+                     
+                     
+                     
+                     <p>Follow the steps to create and subscribe to an Amazon Simple Notification Service
+                        (Amazon SNS) topic.
+                     </p>
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>Using Amazon SNS console create a topic. For instructions, see <a href="./sns/latest/dg/CreateTopic.html" target="_blank">Create a Topic</a> in the
+                              <em>Amazon Simple Notification Service Developer Guide</em>. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Subscribe to the topic. For this exercise, use email as the communications
+                              protocol. For instructions, see <a href="./sns/latest/dg/SubscribeTopic.html" target="_blank">Subscribe to a Topic</a> in
+                              the <em>Amazon Simple Notification Service Developer Guide</em>. 
+                           </p>
+                           
+                           <p>You will get email requesting you to confirm your subscription to the
+                              topic. Confirm the subscription. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Replace the access policy attached to the topic by the following policy.
+                              You must update the policy by providing your SNS topic ARN and bucket
+                              name:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+ &quot;Version&quot;: &quot;2008-10-17&quot;,
+ &quot;Id&quot;: &quot;example-ID&quot;,
+ &quot;Statement&quot;: [
+  {
+   &quot;Sid&quot;: &quot;example-statement-ID&quot;,
+   &quot;Effect&quot;: &quot;Allow&quot;,
+   &quot;Principal&quot;: {
+    &quot;AWS&quot;:&quot;*&quot;  
+   },
+   &quot;Action&quot;: [
+    &quot;SNS:Publish&quot;
+   ],
+   &quot;Resource&quot;: &quot;<em class="replaceable"><code>SNS-topic-ARN</code></em>&quot;,
+   &quot;Condition&quot;: {
+      &quot;ArnLike&quot;: {   &#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;
+      &quot;aws:SourceArn&quot;: &quot;arn:aws:s3:*:*:<em class="replaceable"><code>bucket-name</code></em>&quot;    
+    }
+   }
+  }
+ ]
+}</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Note the topic ARN.</p>
+                           
+                           <p>The SNS topic you created is another resource in your AWS account, and it
+                              has a unique Amazon Resource Name (ARN). You will need this ARN in the next
+                              step. The ARN will be of the following format:
+                           </p>
+                           
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">arn:aws:sns:<em class="replaceable"><code>aws-region</code></em>:<em class="replaceable"><code>account-id</code></em>:<em class="replaceable"><code>topic-name</code></em></code></pre>
+                           </li>
+                     </ol>
+                     
+                     <h2 id="step1-create-sqs-queue-for-notification">Step 2: Create an Amazon SQS
+                        Queue
+                     </h2>
+                     
+                     
+                     <p>Follow the steps to create and subscribe to an Amazon Simple Queue Service (Amazon
+                        SQS) queue.
+                     </p>
+                     
+                     <ol>
+                        <li>
+                           
+                           <p>Using the Amazon SQS console, create a queue. For instructions, see <a href="./AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-getting-started.html" target="_blank">Getting Started with Amazon SQS</a> in
+                              the <em>Amazon Simple Queue Service Developer Guide</em>. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Replace the access policy attached to the queue with the following policy
+                              (in the SQS console, you select the queue, and in the <b>Permissions</b>
+                              tab, click <b>Edit Policy Document (Advanced)</b>.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+ &quot;Version&quot;: &quot;2008-10-17&quot;,
+ &quot;Id&quot;: &quot;example-ID&quot;,
+ &quot;Statement&quot;: [
+  {
+   &quot;Sid&quot;: &quot;example-statement-ID&quot;,
+   &quot;Effect&quot;: &quot;Allow&quot;,
+   &quot;Principal&quot;: {
+    &quot;AWS&quot;:&quot;*&quot;  
+   },
+   &quot;Action&quot;: [
+    &quot;SQS:SendMessage&quot;
+   ],
+   &quot;Resource&quot;: &quot;<em class="replaceable"><code>SQS-queue-ARN</code></em>&quot;,
+   &quot;Condition&quot;: {
+      &quot;ArnLike&quot;: {   &#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;
+      &quot;aws:SourceArn&quot;: &quot;arn:aws:s3:*:*:<em class="replaceable"><code>bucket-name</code></em>&quot;    
+    }
+   }
+  }
+ ]
+}</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>(Optional) If the SQS queue is SSE enabled, add the following policy to
+                              the associated KMS key.
+                           </p>
+                           
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Id&quot;: &quot;example-ID&quot;,
+    &quot;Statement&quot;: [
+        {
+            &quot;Sid&quot;: &quot;example-statement-ID&quot;,
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Principal&quot;: {
+                &quot;Service&quot;: &quot;s3.amazonaws.com&quot;
+            },
+            &quot;Action&quot;: [
+                &quot;kms:GenerateDataKey&quot;,
+                &quot;kms:Decrypt&quot;
+            ],
+            &quot;Resource&quot;: &quot;*&quot;
+        }
+    ]
+}</code></pre>
+                           
+                           </li>
+                        <li>
+                           
+                           <p>Note the queue ARN </p>
+                           
+                           <p>The SQS queue you created is another resource in your AWS account, and it
+                              has a unique Amazon Resource Name (ARN). You will need this ARN in the next
+                              step. The ARN will be of the following format:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">arn:aws:sqs:<em class="replaceable"><code>aws-region</code></em>:<em class="replaceable"><code>account-id</code></em>:<em class="replaceable"><code>queue-name</code></em></code></pre>
+                           </li>
+                     </ol>
+                     
+                     <h2 id="step2-enable-notification">Step 3: Add a Notification Configuration to
+                        Your Bucket
+                     </h2>
+                     
+                     
+                     <p>You can enable bucket notifications either by using the Amazon S3 console or
+                        programmatically by using AWS SDKs. Choose any one of the options to configure
+                        notifications on your bucket. This section provides code examples using the AWS SDKs
+                        for Java and .NET.
+                     </p>
+                     
+                     <h3 id="step2-enable-notification-using-console">Step 3 (option a): Enable
+                        Notifications on a Bucket Using the Console
+                     </h3>
+                     
+                     
+                     <p>Using the Amazon S3 console, add a notification configuration requesting Amazon S3
+                        to:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Publish events of the <code class="code">s3:ObjectCreated:*</code> type to your
+                                 Amazon SQS queue.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Publish events of the <code class="code">s3:ReducedRedundancyLostObject</code> type
+                                 to your Amazon SNS topic.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>After you save the notification configuration, Amazon S3 will post a test message,
+                        which you will get via email. 
+                     </p>
+                     
+                     <p>For instructions, see <a href="./AmazonS3/latest/user-guide/enable-event-notifications.html" target="_blank">How Do I Enable and Configure Event Notifications for an S3 Bucket?</a> 
+                        in the <em>Amazon Simple Storage Service Console User Guide</em>. 
+                     </p>
+                     
+                     
+                     <h3 id="step2-enable-notification-using-awssdk-dotnet">Step 3 (option b):
+                        Enable Notifications on a Bucket Using the AWS SDK for .NET
+                     </h3>
+                     
+                     
+                     <p>The following C# code example provides a complete code listing that adds a
+                        notification configuration to a bucket. You will need to update the code and
+                        provide your bucket name and SNS topic ARN. For information about how to create
+                        and test a working sample, see <a href="UsingTheMPDotNetAPI.html#TestingDotNetApiSamples">Running the Amazon S3 .NET Code Examples</a>. 
+                     </p>
+                     
+                     <div class="example">
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="cs ">using Amazon.S3;
+using Amazon.S3.Model;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace Amazon.DocSamples.S3
+{
+    class EnableNotificationsTest
+    {
+        private const string bucketName = &quot;*** bucket name ***&quot;;
+        private const string snsTopic = &quot;*** SNS topic ARN ***&quot;;
+        private const string sqsQueue = &quot;*** SQS topic ARN ***&quot;;
+        // Specify your bucket region (an example region is shown).
+        private static readonly RegionEndpoint bucketRegion = RegionEndpoint.USWest2;
+        private static IAmazonS3 client;
+
+        public static void Main()
+        {
+            client = new AmazonS3Client(bucketRegion);
+            EnableNotificationAsync().Wait();
+        }
+
+        static async Task EnableNotificationAsync()
+        {
+            try
+            {
+                PutBucketNotificationRequest request = new PutBucketNotificationRequest
+                {
+                    BucketName = bucketName
+                };
+
+                TopicConfiguration c = new TopicConfiguration
+                {
+                    Events = new List&lt;EventType&gt; { EventType.ObjectCreatedCopy },
+                    Topic = snsTopic
+                };
+                request.TopicConfigurations = new List&lt;TopicConfiguration&gt;();
+                request.TopicConfigurations.Add(c);
+                request.QueueConfigurations = new List&lt;QueueConfiguration&gt;();
+                request.QueueConfigurations.Add(new QueueConfiguration()
+                {
+                    Events = new List&lt;EventType&gt; { EventType.ObjectCreatedPut },
+                    Queue = sqsQueue
+                });
+                
+                PutBucketNotificationResponse response = await client.PutBucketNotificationAsync(request);
+            }
+            catch (AmazonS3Exception e)
+            {
+                Console.WriteLine(&quot;Error encountered on server. Message:&apos;{0}&apos; &quot;, e.Message);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(&quot;Unknown error encountered on server. Message:&apos;{0}&apos; &quot;, e.Message);
+            }
+        }
+    }
+}</code></pre></div>
+                     </div>
+                     
+                     
+                     
+                     <h3 id="step2-enable-notification-using-java">Step 3 (option c): Enable
+                        Notifications on a Bucket Using the AWS SDK for Java
+                     </h3>
+                     
+                     
+                     <p>The following example shows how to add a notification configuration to a
+                        bucket. For instructions on creating and testing a working sample, see <a href="UsingTheMPJavaAPI.html#TestingJavaSamples">Testing the Amazon S3 Java Code Examples</a>.
+                     </p>
+                     
+                     <div class="example">
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">import java.io.IOException;
+import java.util.EnumSet;
+
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.BucketNotificationConfiguration;
+import com.amazonaws.services.s3.model.TopicConfiguration;
+import com.amazonaws.services.s3.model.QueueConfiguration;
+import com.amazonaws.services.s3.model.S3Event;
+import com.amazonaws.services.s3.model.SetBucketNotificationConfigurationRequest;
+
+public class EnableNotificationOnABucket {
+
+    public static void main(String[] args) throws IOException {
+        String bucketName = &quot;*** Bucket name ***&quot;;
+        String clientRegion = &quot;*** Client region ***&quot;;
+        String snsTopicARN = &quot;*** SNS Topic ARN ***&quot;;
+        String sqsQueueARN = &quot;*** SQS Queue ARN ***&quot;;
+
+        try {
+            AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
+                    .withCredentials(new ProfileCredentialsProvider())
+                    .withRegion(clientRegion)
+                    .build();
+            BucketNotificationConfiguration notificationConfiguration = new BucketNotificationConfiguration();
+
+            // Add an SNS topic notification.
+            notificationConfiguration.addConfiguration(&quot;snsTopicConfig&quot;,
+                    new TopicConfiguration(snsTopicARN, EnumSet.of(S3Event.ObjectCreated)));
+
+            // Add an SQS queue notification.
+            notificationConfiguration.addConfiguration(&quot;sqsQueueConfig&quot;,
+                    new QueueConfiguration(sqsQueueARN, EnumSet.of(S3Event.ObjectCreated)));
+            
+            // Create the notification configuration request and set the bucket notification configuration.
+            SetBucketNotificationConfigurationRequest request = new SetBucketNotificationConfigurationRequest(
+                    bucketName, notificationConfiguration);
+            s3Client.setBucketNotificationConfiguration(request);
+        }
+        catch(AmazonServiceException e) {
+            // The call was transmitted successfully, but Amazon S3 couldn&apos;t process 
+            // it, so it returned an error response.
+            e.printStackTrace();
+        }
+        catch(SdkClientException e) {
+            // Amazon S3 couldn&apos;t be contacted for a response, or the client
+            // couldn&apos;t parse the response from Amazon S3.
+            e.printStackTrace();
+        }
+    }
+}</code></pre></div>
+                     </div>
+                     
+                     
+                     <h2 id="notification-walkthrough-1-test">Step 4: Test the Setup</h2>
+                     
+                     
+                     
+                     <p>Now you can test the setup by uploading an object to your bucket and verify the
+                        event notification in the Amazon SQS console. For instructions, see <a href="./AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-getting-started.htmlReceiveMessage.html" target="_blank">Receiving a Message</a> in the <em>Amazon Simple Queue Service Developer Guide &quot;Getting Started&quot; section</em>. 
+                     </p>
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="NotificationHowTo.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="notification-walkthrough-2.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Walkthrough Summary"><a class="pagetoc" href="#notification-walkthrough-summary">Walkthrough Summary</a></li>
+                        <li class="pagetoc" name="Step 1: Create an Amazon SNS
+                Topic"><a class="pagetoc" href="#step1-create-sns-topic-for-notification">Step 1: Create an Amazon SNS
+                              Topic</a></li>
+                        <li class="pagetoc" name="Step 2: Create an Amazon SQS
+                Queue"><a class="pagetoc" href="#step1-create-sqs-queue-for-notification">Step 2: Create an Amazon SQS
+                              Queue</a></li>
+                        <li class="pagetoc" name="Step 3: Add a Notification Configuration to
+                Your Bucket"><a class="pagetoc" href="#step2-enable-notification">Step 3: Add a Notification Configuration to
+                              Your Bucket</a></li>
+                        <li class="pagetoc" name="Step 4: Test the Setup"><a class="pagetoc" href="#notification-walkthrough-1-test">Step 4: Test the Setup</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

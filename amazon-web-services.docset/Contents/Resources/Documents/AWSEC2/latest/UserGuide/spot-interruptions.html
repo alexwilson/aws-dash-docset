@@ -1,0 +1,621 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Spot Instance Interruptions - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="using-spot-instances.html" title="Spot Instances">
+      <link rel="prev" href="spot-bid-status.html" title="Spot Request Status">
+      <link rel="next" href="spot-data-feeds.html" title="Spot Instance Data Feed">
+      <meta name="description" content="Learn how to prepare your applications to handle when Amazon EC2 terminates your Spot Instance.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-interruptions.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="instance-purchasing-options.html">Instance Purchasing Options</a> &#xBB; <a href="using-spot-instances.html">Spot Instances</a> &#xBB; <span class="breadcrumb">Spot Instance Interruptions</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="spot-interruptions">Spot Instance Interruptions</h1>
+                     <p>Demand for Spot Instances can vary significantly from moment to moment, and the availability
+                        			of Spot Instances can also vary significantly depending on how many unused EC2
+                        instances
+                        			are available. It is always possible that your Spot Instance will be interrupted.
+                        Therefore, 
+                        			you must ensure that your application is prepared for a Spot Instance interruption.
+                     </p>
+                     <p>The following are the possible reasons that Amazon EC2 will interrupt your Spot Instances:</p>
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>Price &#x2013; The Spot price is greater than your maximum price.</p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Capacity &#x2013; If there are not enough unused EC2 instances to meet the demand for Spot
+                                 Instances, Amazon EC2 interrupts Spot Instances. The order in which the instances
+                                 are
+                                 					interrupted is determined by Amazon EC2.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Constraints &#x2013; If your request includes a constraint such as a launch group or an
+                                 					Availability Zone group, these Spot Instances are terminated as a group when
+                                 the
+                                 					constraint can no longer be met.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     <p>An
+                        			On-Demand Instance specified in a Spot Fleet cannot be interrupted.
+                     </p>
+                     			
+                     <h2 id="interruption-behavior">Interruption Behavior</h2>
+                     
+                     			
+                     <p>You can specify whether Amazon EC2 should hibernate, stop, or terminate Spot Instances
+                        when 
+                        				they are interrupted. You can choose the interruption behavior that meets your
+                        needs. 
+                        				The default is to terminate Spot Instances when they are interrupted.
+                        			    To change the interruption behavior, choose an option from <b>Interruption behavior</b>
+                        				in the console or <code class="code">InstanceInterruptionBehavior</code> in the launch configuration
+                        			    or the launch template.
+                     </p>
+                     			
+                     			
+                     				
+                     <h3 id="stop-spot-instances">Stopping Interrupted Spot Instances</h3>
+                     
+                     				
+                     <p>You can change the behavior so that Amazon EC2 stops Spot Instances when they are
+                        					interrupted if the following requirements are met.
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        <p class="title"><b>Requirements</b></p>
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>For a Spot Instance request, the type must be <code class="code">persistent</code>, not
+                                 							<code class="code">one-time</code>. You cannot specify a launch group in the Spot Instance request.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>For a Spot Fleet request, the type must be <code class="code">maintain</code>, not
+                                 							<code class="code">request</code>.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The root volume must be an EBS volume, not an instance store volume.</p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     				
+                     <p>After a Spot Instance is stopped by the Spot service, it can only be restarted by
+                        the Spot
+                        					service, and only using the same launch configuration. When capacity is available
+                        					that matches the Availability Zone and instance type of a Spot Instance that
+                        is
+                        					stopped, the Spot Instance is started. With Spot Fleet, if capacity is available
+                        					only with a different Availability Zone or instance type, Spot Fleet launches
+                        a new
+                        					Spot Instance using the launch configuration with available capacity.
+                     </p>
+                     				
+                     <p>While a Spot Instance is stopped, you can modify some of its instance attributes,
+                        but not
+                        					the instance type. If you detach or delete an EBS volume, it is not attached
+                        when
+                        					the Spot Instance is started. If you detach the root volume and the Spot service
+                        					attempts to start the Spot Instance, instance start fails and the Spot service
+                        					terminates the stopped instance.
+                     </p>
+                     				
+                     <p>You can terminate a Spot Instance while it is stopped. If you cancel a Spot request
+                        or a
+                        					Spot Fleet, the Spot service terminates any associated Spot Instances that are
+                        					stopped.
+                     </p>
+                     				
+                     <p>While a Spot Instance is stopped, you are charged only for the EBS volumes, which
+                        are
+                        					preserved. With Spot Fleet, if you have many stopped instances, you can exceed
+                        the
+                        					limit on the number of EBS volumes for your account.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="hibernate-spot-instances">Hibernating Interrupted Spot Instances</h3>
+                     
+                     				
+                     <p>You can change the behavior so that Amazon EC2 hibernates Spot Instances when they
+                        are
+                        				    interrupted if the following requirements are met.
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        <p class="title"><b>Requirements</b></p>
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>For a Spot Instance request, the type must be <code class="code">persistent</code>, not
+                                 							<code class="code">one-time</code>. You cannot specify a launch group in the Spot Instance request.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>For a Spot Fleet request, the type must be <code class="code">maintain</code>, not
+                                 							<code class="code">request</code>.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The root volume must be an EBS volume, not an instance store volume, and it must be
+                                 large 
+                                 							enough to store the instance memory (RAM) during hibernation.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The following instances are supported: C3, C4, C5, M4, M5, R3, and R4, with less than
+                                 100 GB of
+                                 							memory.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The following operating systems are supported: Amazon Linux AMI, 
+                                 							Ubuntu with an AWS-tuned Ubuntu kernel (linux-aws) greater than 4.4.0-1041,
+                                 						    and Windows Server 2008 R2 and later.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>Install the hibernation agent on a supported operating system, or use one of the following
+                                 
+                                 							AMIs, which already include the agent:
+                              </p>
+                              						
+                              <div class="itemizedlist">
+                                 							
+                                 							
+                                 							
+                                 							
+                                 							
+                                 						
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p>Amazon Linux AMI 2017.09.1 or later</p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Ubuntu Xenial 16.04 20171121 or later</p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Windows Server 2008 R2 AMI 2017.11.19 or later</p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Windows Server 2012 or Windows Server 2012 R2 AMI 2017.11.19 or later</p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Windows Server 2016 AMI 2017.11.19 or later</p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>Start the agent. We recommend that you use user data to start the agent on instance
+                                 startup. 
+                                 							Alternatively, you could start the agent manually.
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        <p class="title"><b>Recommendation</b></p>
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>We strongly recommend that you use an encrypted EBS volume as the root volume, because
+                                 							instance memory is stored on the root volume during hibernation. This ensures
+                                 that the
+                                 							contents of memory (RAM) are encrypted when the data is at rest on the volume
+                                 and when
+                                 							data is moving between the instance and volume. If your AMI does not have an
+                                 encrypted 
+                                 							root volume, you can copy it to a new AMI and request encryption. For more
+                                 information, 
+                                 							see <a href="EBSEncryption.html">Amazon EBS Encryption</a> and 
+                                 							<a href="CopyingAMIs.html#ami-copy-steps">Copying an AMI</a>.
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     				
+                     <p>When a Spot Instance is hibernated by the Spot service, the EBS volumes are preserved
+                        and 
+                        					instance memory (RAM) is preserved on the root volume. The private IP addresses
+                        of the instance are 
+                        					also preserved. Instance storage volumes and public IP addresses, other than
+                        Elastic IP addresses, 
+                        					are not preserved. While the instance is hibernating, you are charged only for
+                        the EBS volumes.
+                        					With Spot Fleet, if you have many hibernated instances, you can exceed the limit
+                        on the number 
+                        					of EBS volumes for your account.
+                     </p>
+                     				
+                     <p>The agent prompts the operating system to hibernate when the instance receives a signal
+                        					from the Spot service. If the agent is not installed, the underlying operating
+                        					system doesn&apos;t support hibernation, or there isn&apos;t enough volume space to save
+                        					the instance memory, hibernation fails and the Spot service stops the instance
+                        					instead.
+                     </p>
+                     				
+                     <p>When the Spot service hibernates a Spot Instance, you receive an interruption notice,
+                        but you
+                        					do not have two minutes before the Spot Instance is interrupted. Hibernation
+                        begins immediately. 
+                        					While the instance is in the process of hibernating, instance health checks might
+                        fail. 
+                        					When the hibernation process completes, the state of the instance is <code class="code">stopped</code>.
+                     </p>
+                     				
+                     <p>After a Spot Instance is hibernated by the Spot service, it can only be resumed by
+                        the Spot service.
+                        				    The Spot service resumes the instance when capacity becomes available with
+                        a Spot price that is
+                        				    less than your specified maximum price.
+                     </p>
+                     				
+                     <p>For more information, see <a href="spot-interruptions.html#prepare-for-instance-hibernation">Preparing for Instance Hibernation</a>.
+                     </p>
+                     			
+                     		
+                     			
+                     <h2 id="using-spot-instances-managing-interruptions">Preparing for
+                        				Interruptions
+                     </h2>
+                     			
+                     <p>Here are some best practices to follow when you use Spot Instances:</p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>Use the default maximum price, which is the On-Demand price.</p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Ensure that your instance is ready to go as soon as the request is
+                                 						fulfilled by using an Amazon Machine Image (AMI) that contains the required
+                                 						software configuration. You can also use user data to run commands at
+                                 						start-up.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Store important data regularly in a place that won&apos;t be affected when the Spot Instance
+                                 						terminates. For example, you can use Amazon S3, Amazon EBS, or DynamoDB.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Divide the work into small tasks (using a Grid, Hadoop, or queue-based
+                                 						architecture) or use checkpoints so that you can save your work
+                                 						frequently.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>Use Spot Instance interruption notices to monitor the status of your Spot
+                                 						Instances.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>While we make every effort to provide this warning as soon as possible, it is possible
+                                 						that your Spot Instance will be terminated before the warning can be made
+                                 						available. Test your application to ensure that it handles an unexpected
+                                 						instance termination gracefully, even if you are testing for interruption
+                                 						notices. You can do so by running the application using an On-Demand Instance
+                                 and then terminating the On-Demand Instance yourself.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     			
+                     <h2 id="prepare-for-instance-hibernation">Preparing for Instance Hibernation</h2>
+                     
+                     			
+                     <p>You must install a hibernation agent on your instance, unless you used an AMI that
+                        already
+                        				includes the agent. You must run the agent on instance startup, whether the agent
+                        				was included in your AMI or you installed it yourself.
+                     </p>
+                     
+                     <p>The following procedures help you prepare a Linux instance. For directions to prepare
+                        	a Windows instance, see <a href="./AWSEC2/latest/WindowsGuide/spot-interruptions.html#prepare-for-instance-hibernation" target="_blank">Preparing for Instance Hibernation</a> in the <em>Amazon EC2 User Guide for Windows Instances</em>.
+                     </p>
+                     
+                     <p class="title"><b>To prepare an Amazon Linux instance</b></p>
+                     <ol>
+                        <li>
+                           		
+                           <p>Verify that your kernel supports hibernation and update the kernel if necessary.</p>
+                           	
+                        </li>
+                        <li>
+                           		
+                           <p>If your AMI doesn&apos;t include the agent, install the agent using the following command:</p>
+                           		<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>sudo yum update; sudo yum install hibagent</code></strong></code></pre>
+                           	</li>
+                        <li>
+                           		
+                           <p>Add the following to user data:</p>
+                           		<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">#!/bin/bash
+/usr/bin/enable-ec2-spot-hibernation</code></pre>
+                           	</li>
+                     </ol>
+                     
+                     			
+                     <p class="title"><b>To prepare an Ubuntu instance</b></p>
+                     <ol>
+                        <li>
+                           					
+                           <p>If your AMI doesn&apos;t include the agent, install the agent using the following command:</p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>sudo apt-get install hibagent</code></strong></code></pre>
+                           				</li>
+                        <li>
+                           					
+                           <p>Add the following to user data:</p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">#!/bin/bash
+/usr/bin/enable-ec2-spot-hibernation</code></pre>
+                           				</li>
+                     </ol>
+                     			
+                     			
+                     			
+                     		
+                     			
+                     <h2 id="spot-instance-termination-notices">Spot Instance Interruption Notices</h2>
+                     			
+                     <p>The best way to protect against Spot Instance interruption is to architect your application
+                        				to be fault tolerant. In addition, you can take advantage of <em>Spot Instance
+                           				interruption notices</em>, which provide a two-minute warning before Amazon EC2
+                        				must interrupt your Spot Instance. We recommend that you check for these warnings
+                        				every 5 seconds.
+                     </p>
+                     			
+                     <p>This warning is made available as a CloudWatch event and as item in the 
+                        				<a href="ec2-instance-metadata.html">instance metadata</a> on the Spot Instance.
+                     </p>
+                     
+                     			
+                     				
+                     <h3 id="ec2-spot-instance-interruption-warning-event">EC2 Spot Instance Interruption Warning</h3>
+                     				
+                     <p>When Amazon EC2 interrupts your Spot Instance, it emits an event that can be detected
+                        by Amazon CloudWatch Events. 
+                        					For more information, see the <a href="./AmazonCloudWatch/latest/events/" target="_blank">Amazon CloudWatch Events User Guide</a>.
+                     </p>
+                     				
+                     <p>The following is an example of the event for Spot Instance interruption. The possible
+                        values for 
+                        					<code class="code">instance-action</code> are <code class="code">hibernate</code>, <code class="code">stop</code>, and 
+                        					<code class="code">terminate</code>.
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="json ">{
+    &quot;version&quot;: &quot;0&quot;,
+    &quot;id&quot;: &quot;<em class="replaceable"><code>12345678-1234-1234-1234-123456789012</code></em>&quot;,
+    &quot;detail-type&quot;: &quot;EC2 Spot Instance Interruption Warning&quot;,
+    &quot;source&quot;: &quot;aws.ec2&quot;,
+    &quot;account&quot;: &quot;<em class="replaceable"><code>123456789012</code></em>&quot;,
+    &quot;time&quot;: &quot;<em class="replaceable"><code>yyyy</code></em>-<em class="replaceable"><code>mm</code></em>-<em class="replaceable"><code>dd</code></em>T<em class="replaceable"><code>hh</code></em>:<em class="replaceable"><code>mm</code></em>:<em class="replaceable"><code>ss</code></em>Z&quot;,
+    &quot;region&quot;: &quot;<em class="replaceable"><code>us-east-2</code></em>&quot;,
+    &quot;resources&quot;: [&quot;arn:aws:ec2:<em class="replaceable"><code>us-east-2</code></em>:<em class="replaceable"><code>123456789012</code></em>:instance/<em class="replaceable"><code>i-1234567890abcdef0</code></em>&quot;],
+    &quot;detail&quot;: {
+        &quot;instance-id&quot;: &quot;<em class="replaceable"><code>i-1234567890abcdef0</code></em>&quot;,
+        &quot;instance-action&quot;: &quot;<em class="replaceable"><code>action</code></em>&quot;
+    }
+}</code></pre>
+                     			
+                     
+                     			
+                     				<h3 id="instance-action-metadata">instance-action</h3>
+                     
+                     				
+                     <p>If your Spot Instance is marked to be hibernated, stopped, or terminated by the Spot
+                        service, 
+                        					the <code class="code">instance-action</code> item is present in your instance metadata. You can 
+                        					retrieve <code class="code">instance-action</code> as follows.
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/meta-data/spot/instance-action</code></strong></code></pre>
+                     				
+                     
+                     				<p>The <code class="code">instance-action</code> item specifies the action and the approximate time, 
+                        					in UTC, when the action will occur. The following example indicates the time
+                        that this 
+                        					instance will be stopped:
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{&quot;action&quot;: &quot;stop&quot;, &quot;time&quot;: &quot;2017-09-18T08:22:00Z&quot;}</code></pre>
+                     				<p>The following example indicates the time that this instance will be terminated:</p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{&quot;action&quot;: &quot;terminate&quot;, &quot;time&quot;: &quot;2017-09-18T08:22:00Z&quot;}</code></pre>
+                     				<p>The following example indicates that hibernation has started immediately:</p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{&quot;action&quot;: &quot;hibernate&quot;, &quot;time&quot;: &quot;2017-11-28T08:22:00Z&quot;}</code></pre>
+                     			
+                     
+                     			
+                     				<h3 id="termination-time-metadata">termination-time</h3>
+                     
+                     				
+                     <p>If your Spot Instance is marked for termination by the Spot service, the
+                        					<code class="code">termination-time</code> item is present in your instance metadata.
+                        					This item is maintained for backward compatibility; you should use
+                        					<code class="code">instance-action</code> instead. You can retrieve <code class="code">termination-time</code> 
+                        					as follows.
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>if curl -s http://169.254.169.254/latest/meta-data/spot/termination-time | grep -q .*T.*Z; then echo terminated; fi</code></strong></code></pre>
+                     				
+                     
+                     				<p>The <code class="code">termination-time</code> item specifies the approximate
+                        					time in UTC when the instance will receive the shutdown signal. For example:
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">2015-01-05T18:02:00Z</code></pre>
+                     
+                     				<p>If Amazon EC2 is not preparing to terminate the instance, or if you terminated the
+                        Spot
+                        					Instance yourself, the <code class="code">termination-time</code> item is either not present
+                        					(so you receive an HTTP 404 error) or contains a value that is not a time
+                        					value.
+                     </p>
+                     				
+                     <p>If Amazon EC2 fails to terminate the instance, the request status is set to <code class="code">fulfilled</code>.
+                        					Note that <code class="code">termination-time</code> remains in the instance metadata with the original
+                        					approximate time, which is now in the past.
+                     </p>
+                     			
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="spot-bid-status.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="spot-data-feeds.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Interruption Behavior"><a class="pagetoc" href="#interruption-behavior">Interruption Behavior</a></li>
+                        <li class="pagetoc" name="Preparing for
+				Interruptions"><a class="pagetoc" href="#using-spot-instances-managing-interruptions">Preparing for
+                              				Interruptions</a></li>
+                        <li class="pagetoc" name="Preparing for Instance Hibernation"><a class="pagetoc" href="#prepare-for-instance-hibernation">Preparing for Instance Hibernation</a></li>
+                        <li class="pagetoc" name="Spot Instance Interruption Notices"><a class="pagetoc" href="#spot-instance-termination-notices">Spot Instance Interruption Notices</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

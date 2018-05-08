@@ -1,0 +1,447 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Copying an Amazon EBS Snapshot - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="EBSSnapshots.html" title="Amazon EBS Snapshots">
+      <link rel="prev" href="ebs-deleting-snapshot.html" title="Deleting an Amazon EBS Snapshot">
+      <link rel="next" href="ebs-describing-snapshots.html" title="Viewing Amazon EBS Snapshot Information">
+      <meta name="description" content="Copy snapshots across AWS regions, making it easier to leverage multiple regions for geographical expansion, data center migration, and disaster recovery.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-copy-snapshot.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Storage.html">Storage</a> &#xBB; <a href="AmazonEBS.html">Amazon Elastic Block Store (Amazon EBS)</a> &#xBB; <a href="EBSSnapshots.html">Amazon EBS Snapshots</a> &#xBB; <span class="breadcrumb">Copying an Amazon EBS Snapshot</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ebs-copy-snapshot">Copying an Amazon EBS Snapshot</h1>
+                     <p>With Amazon EBS, you can create point-in-time snapshots of volumes, which we store
+                        for you in
+                        Amazon S3. After you&apos;ve created a snapshot and it has finished copying to Amazon S3
+                        (when the snapshot
+                        status is <code class="code">completed</code>), you can copy it from one AWS region to another, or within
+                        the same region. Amazon S3 server-side encryption (256-bit AES) protects a snapshot&apos;s
+                        data
+                        in-transit during a copy operation. The snapshot copy receives an ID that is different
+                        than
+                        the ID of the original snapshot.
+                     </p>
+                     <p>For information about copying an Amazon RDS snapshot, see <a href="./AmazonRDS/latest/UserGuide/USER_CopySnapshot.html" target="_blank">Copying a DB Snapshot</a> in the
+                        <em>Amazon Relational Database Service User Guide</em>.
+                     </p>
+                     <p>If you would like another account to be able to copy your snapshot, you must either
+                        modify
+                        the snapshot permissions to allow access to that account or make the snapshot public
+                        so that
+                        all AWS accounts may copy it. For more information, see <a href="ebs-modifying-snapshot-permissions.html">Sharing an Amazon EBS Snapshot</a>.
+                     </p>
+                     <p>For pricing information about copying snapshots across regions and accounts, see <a href="https://aws.amazon.com/ebs/pricing/" target="_blank">Amazon EBS Pricing</a>. Note that snapshot copy operations
+                        within a single account and region do not copy any actual data and therefore are cost-free
+                        as
+                        long as the following conditions apply:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>The encryption status of the snapshot copy does not change.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>For encrypted snapshots, both the source snapshot and the copy are encrypted with
+                                 the
+                                 default EBS CMK.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="itemizedlist">
+                        
+                        <p class="title"><b>Use Cases</b></p>
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Geographic expansion: Launch your applications in a new region.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Migration: Move an application to a new region, to enable better availability and
+                                 to
+                                 minimize cost.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Disaster recovery: Back up your data and logs across different geographical locations
+                                 at regular intervals. In case of disaster, you can restore your applications using
+                                 point-in-time backups stored in the secondary region. This minimizes data loss and
+                                 recovery time.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Encryption: Encrypt a previously unencrypted snapshot, change the key with which the
+                                 snapshot is encrypted, or, for encrypted snapshots that have been shared with you,
+                                 create
+                                 a copy that you own in order to restore a volume from it.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Data retention and auditing requirements: Copy your encrypted EBS snapshots from one
+                                 AWS account to another to preserve data logs or other files for auditing or data
+                                 retention. Using a different account helps prevent accidental snapshot deletions,
+                                 and
+                                 protects you if your main AWS account is compromised.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="itemizedlist">
+                        
+                        <p class="title"><b>Prerequisites</b></p>
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>You can copy any accessible snapshots that have a <code class="code">completed</code> status,
+                                 including shared snapshots and snapshots that you&apos;ve created.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>You can copy AWS Marketplace, VM Import/Export, and AWS Storage Gateway snapshots,
+                                 but you must
+                                 verify that the snapshot is supported in the destination region.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="itemizedlist">
+                        
+                        <p class="title"><b>Limits</b></p>
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Each account can have up to 5 concurrent snapshot copy requests to a single
+                                 destination region.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>User-defined tags are not copied from the source snapshot to the new snapshot. After
+                                 the copy operation is complete, you can apply user-defined tags to the new snapshot.
+                                 For
+                                 more information, see <a href="Using_Tags.html">Tagging Your Amazon EC2 Resources</a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Snapshots created by the CopySnapshot action have an arbitrary volume ID that should
+                                 not be used for any purpose.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="ebs-incremental-copy">Incremental Copy</h2>      
+                     
+                     <p>The first snapshot copy to another region is always a full copy. Each subsequent
+                        snapshot copy is incremental (which makes the copy process faster), meaning that only
+                        the
+                        blocks in the snapshot that have changed after your last snapshot copy to the same
+                        destination are transferred. Support for incremental snapshots is specific to a cross-region
+                        pair where a previous complete snapshot copy of the source volume is already available,
+                        and
+                        pair where a previous complete snapshot copy of the source volume is already available
+                        in
+                        the destination region, and it is limited to the default EBS CMK for encrypted snapshots.
+                        For example, if you copy an unencrypted snapshot from the US East (N. Virginia) region
+                        to the
+                        US West (Oregon) region, the first snapshot copy of the volume is a full copy and
+                        subsequent snapshot copies of the same volume transferred between the same regions
+                        are
+                        incremental.
+                     </p>    
+                     
+                     
+                     <h2 id="ebs-encrypt-snapshot-copy">Encrypted Snapshots</h2>
+                     
+                     <p>When you copy a snapshot, you can choose to encrypt the copy (if the original snapshot
+                        was not encrypted) or you can specify a CMK different from the original one, and the
+                        resulting copied snapshot uses the new CMK. However, changing the encryption status
+                        of a
+                        snapshot or using a non-default EBS CMK during a copy operation always results in
+                        a full
+                        (not incremental) copy, which may incur greater data transfer and storage charges.
+                        
+                     </p>
+                     
+                     <p>To copy an encrypted snapshot from another account, you must have permissions to use
+                        the
+                        snapshot and you must have permissions to use the customer master key (CMK) that was
+                        used to
+                        encrypt the original snapshot. For more information, see <a href="ebs-modifying-snapshot-permissions.html">Sharing an Amazon EBS Snapshot</a>.
+                     </p>
+                     
+                     <p>When copying an encrypted snapshot that was shared with you, you should consider
+                        re-encrypting the snapshot during the copy process with a different key that you control.
+                        This protects you if the original key is compromised, or if the owner revokes the
+                        key for
+                        any reason, which could cause you to lose access to the volume you created.
+                     </p>
+                     
+                     
+                     <h2 id="ebs-snapshot-copy">Copy a Snapshot</h2>
+                     
+                     <p>Use the following procedure to copy a snapshot using the Amazon EC2 console.</p>
+                     
+                     <p class="title"><b>To copy a snapshot using the console</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>In the navigation pane, choose <b>Snapshots</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Select the snapshot to copy, and then choose <b>Copy</b> from the
+                              <b>Actions</b> list.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Copy Snapshot</b> dialog box, update the following as
+                              necessary:
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><b>Destination region</b>: Select the region where you want to
+                                       write the copy of the snapshot.
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><b>Description</b>: By default, the description includes
+                                       information about the source snapshot so that you can identify a copy from the
+                                       original. You can change this description as necessary.
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><b>Encryption</b>: If the source snapshot is not encrypted, you
+                                       can choose to encrypt the copy. <em>You cannot decrypt an
+                                          encrypted snapshot</em>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li class="listitem">
+                                    
+                                    <p><b>Master Key</b>: The customer master key (CMK) that to be used
+                                       to encrypt this snapshot. You can select from master keys in your account or
+                                       type/paste the ARN of a key from a different account. You can create a new master
+                                       encryption key in the IAM console. 
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Copy</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Copy Snapshot</b> confirmation dialog box, choose
+                              <b>Snapshots</b> to go to the <b>Snapshots</b> page in the
+                              region specified, or choose <b>Close</b>.
+                           </p>
+                           
+                           <p>To view the progress of the copy process, switch to the destination region, and then
+                              refresh the <b>Snapshots</b> page. Copies in progress are listed at the
+                              top of the page.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <p class="title"><b>To check for failure</b></p>
+                     
+                     <p>If you attempt to copy an encrypted snapshot without having permissions to use the
+                        encryption key, the operation fails silently. The error state is not displayed in
+                        the
+                        console until you refresh the page. You can also check the state of the snapshot from
+                        the
+                        command line. For example:
+                     </p>
+                     
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 describe-snapshots --snapshot-id snap-0123abcd</code></strong></code></pre>
+                     <p>If the copy failed because of insufficient key permissions, you see the following
+                        message: <strong class="errortext"><code>&quot;StateMessage&quot;: &quot;Given key ID is not accessible&quot;</code></strong>.
+                     </p>
+                     
+                     <p>When copying an encrypted snapshot, you must have <code class="code">DescribeKey</code> permissions
+                        on the default CMK. Explicitly denying these permissions results in copy failure.
+                        For
+                        information about managing CMK keys, see <a href="./kms/latest/developerguide/control-access.html" target="_blank">Controlling Access to Customer Master Keys</a>.
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        <p class="title"><b>To copy a snapshot using the command line</b></p>
+                        
+                        <p>You can use one of the following commands. For more information about these command
+                           line interfaces, see <a href="concepts.html#access-ec2">Accessing Amazon EC2</a>.
+                        </p>
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./cli/latest/reference/ec2/copy-snapshot.html" target="_blank">copy-snapshot</a>
+                                 (AWS CLI)
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><a href="./powershell/latest/reference/items/Copy-EC2Snapshot.html" target="_blank">Copy-EC2Snapshot</a>
+                                 (AWS Tools for Windows PowerShell)
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ebs-deleting-snapshot.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="ebs-describing-snapshots.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Incremental Copy"><a class="pagetoc" href="#ebs-incremental-copy">Incremental Copy</a></li>
+                        <li class="pagetoc" name="Encrypted Snapshots"><a class="pagetoc" href="#ebs-encrypt-snapshot-copy">Encrypted Snapshots</a></li>
+                        <li class="pagetoc" name="Copy a Snapshot"><a class="pagetoc" href="#ebs-snapshot-copy">Copy a Snapshot</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

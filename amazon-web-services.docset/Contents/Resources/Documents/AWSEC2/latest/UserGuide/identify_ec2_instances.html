@@ -1,0 +1,162 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Identify EC2 Linux Instances - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="Instances.html" title="Amazon EC2 Instances">
+      <link rel="prev" href="instance-identity-documents.html" title="Instance Identity Documents">
+      <link rel="next" href="monitoring_ec2.html" title="Monitoring Amazon EC2">
+      <meta name="description" content="Identify EC2 instances in a mixed computing environment.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/identify_ec2_instances.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <span class="breadcrumb">Identify EC2 Linux Instances</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="identify_ec2_instances">Identify EC2 <span>Linux</span> Instances
+                     </h1>
+                     <p>You may benefit from being able to determine whether a system is an EC2 instance.
+                        
+                        There are two methods that you can use to identify an EC2 instance.
+                     </p>
+                     <p>For information about identifying Windows instances, see <a href="./AWSEC2/latest/WindowsGuide/identify_ec2_instances.html" target="_blank">Identify EC2 Windows Instances</a> 
+                        in the <em>Amazon EC2 User Guide for Windows Instances</em>.
+                     </p>
+                     
+                     <h2 id="inspect-uuid">Inspecting the System UUID</h2>
+                     
+                     
+                     <p>You can get the system UUID and look for the presence of the characters <span>&quot;ec2&quot; or </span>&quot;EC2&quot; in the beginning octet of the UUID. This method
+                        to determine whether a system is an EC2 instance is quick but potentially inaccurate
+                        because there is a small chance that a system that is not an EC2 instance could have
+                        a
+                        UUID that starts with these characters. Furthermore, <span>for EC2 instances that are not using
+                           Amazon Linux, the distribution&apos;s implementation of SMBIOS</span> might represent
+                        the UUID in little-endian format, therefore the &quot;EC2&quot; characters do not appear at
+                        the
+                        beginning of the UUID. For a definitive approach, see <a href="identify_ec2_instances.html#inspect-document">Inspecting the Instance Identity Document</a>.
+                     </p>        
+                     
+                     
+                     <div class="example">
+                        <p class="title"><b>Example : Get the UUID from the hypervisor</b></p>
+                        <div class="example-contents">
+                           <p>If <code>/sys/hypervisor/uuid</code> exists, you can use the following command:
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>cat /sys/hypervisor/uuid</code></strong></code></pre><p>In the following example output, the UUID starts with &quot;ec2&quot;, which indicates that
+                              
+                              the system is probably an EC2 instance.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">ec2e1916-9099-7caf-fd21-012345abcdef</code></pre></div>
+                     </div>
+                     
+                     
+                     <div class="example">
+                        <p class="title"><b>Example : Get the UUID from DMI (HVM instances only)</b></p>
+                        <div class="example-contents">
+                           <p>On HVM instances only, you can use the Desktop Management Interface (DMI). </p>
+                           <p>You can use the <code class="code">dmidecode</code> tool to return the UUID. On Amazon Linux,
+                              				use the following command to install the <code class="code">dmidecode</code> tool if it&apos;s not
+                              				already installed on your instance:
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo yum install dmidecode -y</code></strong></code></pre><p>Then run the following command:</p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo dmidecode --string system-uuid</code></strong></code></pre><p>Alternatively, use the following command:</p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo cat /sys/devices/virtual/dmi/id/product_uuid</code></strong></code></pre><p>In the following example output, the UUID starts with &quot;EC2&quot;, which indicates that
+                              
+                              the system is probably an EC2 instance.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">EC2E1916-9099-7CAF-FD21-01234ABCDEF</code></pre><p>In the following example output, the UUID is represented in little-endian
+                              format.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">45E12AEC-DCD1-B213-94ED-01234ABCDEF</code></pre></div>
+                     </div>
+                     
+                     
+                     
+                     
+                     
+                     <h2 id="inspect-document">Inspecting the Instance Identity Document</h2>
+                     
+                     
+                     <p>For a definitive and cryptographically verified method of identifying an EC2 instance,
+                        check the instance identity document, including its signature. These documents are
+                        available on every EC2 instance at the local, non-routable address
+                        <code>http://169.254.169.254/latest/dynamic/instance-identity/</code>. 
+                        For more information, see <a href="instance-identity-documents.html">Instance Identity Documents</a>.
+                     </p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="instance-identity-documents.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="monitoring_ec2.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Inspecting the System UUID"><a class="pagetoc" href="#inspect-uuid">Inspecting the System UUID</a></li>
+                        <li class="pagetoc" name="Inspecting the Instance Identity Document"><a class="pagetoc" href="#inspect-document">Inspecting the Instance Identity Document</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

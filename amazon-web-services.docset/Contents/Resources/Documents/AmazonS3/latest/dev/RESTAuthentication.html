@@ -1,0 +1,1317 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Signing and Authenticating REST Requests - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="auth-request-sig-v2.html" title="Appendix B: Authenticating Requests (AWS Signature Version 2)">
+      <link rel="prev" href="S3_Authentication2.html" title="Authenticating Requests Using the REST API">
+      <link rel="next" href="UsingHTTPPOST.html" title="Browser-Based Uploads Using POST (AWS Signature Version 2)">
+      <meta name="description" content="Control access to your system by signing and authenticating your requests.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="Appendices.html">Appendices</a> &#xBB; <a href="auth-request-sig-v2.html">Appendix B: Authenticating Requests (AWS Signature Version 2)</a> &#xBB; <span class="breadcrumb">Signing and Authenticating REST Requests</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="RESTAuthentication">Signing and Authenticating REST Requests</h1>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#UsingTemporarySecurityCredentials">Using Temporary Security Credentials</a></li>
+                           <li><a href="#ConstructingTheAuthenticationHeader">The Authentication Header</a></li>
+                           <li><a href="#RESTAuthenticationRequestCanonicalization">Request Canonicalization for
+                                 Signing</a></li>
+                           <li><a href="#ConstructingTheCanonicalizedResourceElement">Constructing the
+                                 CanonicalizedResource Element</a></li>
+                           <li><a href="#RESTAuthenticationConstructingCanonicalizedAmzHeaders">Constructing the
+                                 CanonicalizedAmzHeaders Element</a></li>
+                           <li><a href="#RESTAuthenticationStringToSign">Positional versus Named HTTP Header
+                                 StringToSign Elements</a></li>
+                           <li><a href="#RESTAuthenticationTimeStamp">Time Stamp Requirement</a></li>
+                           <li><a href="#RESTAuthenticationExamples">Authentication Examples</a></li>
+                           <li><a href="#RESTAuthenticationDebugging">REST Request Signing Problems</a></li>
+                           <li><a href="#RESTAuthenticationQueryStringAuth">Query String Request Authentication
+                                 Alternative</a></li>
+                        </ul>
+                     </div>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>This topic explains authenticating requests using Signature Version 2. Amazon S3 now
+                           supports the latest Signature Version 4. This latest signature version is supported
+                           in all regions and any new regions after January 30, 2014 will support only
+                           Signature Version 4. For more information, go to <a href="./AmazonS3/latest/API/sig-v4-authenticating-requests.html" target="_blank">Authenticating Requests
+                              (AWS Signature Version 4)</a> in the
+                           <em>Amazon Simple Storage Service API Reference</em>.
+                        </p>
+                     </div>
+                     <p> Authentication is the process of proving your identity to the system. Identity is
+                        an
+                        important factor in Amazon S3 access control decisions. Requests are allowed or denied
+                        in part
+                        based on the identity of the requester. For example, the right to create buckets is
+                        reserved
+                        for registered developers and (by default) the right to create objects in a bucket
+                        is
+                        reserved for the owner of the bucket in question. As a developer, you&apos;ll be making
+                        requests
+                        that invoke these privileges, so you&apos;ll need to prove your identity to the system
+                        by
+                        authenticating your requests. This section shows you how. 
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p> The content in this section does not apply to HTTP POST. For more information, see
+                           <a href="UsingHTTPPOST.html">Browser-Based Uploads Using POST (AWS Signature Version 2)</a>. 
+                        </p>
+                     </div>
+                     <p> The Amazon S3 REST API uses a custom HTTP scheme based on a keyed-HMAC (Hash Message
+                        Authentication Code) for authentication. To authenticate a request, you first concatenate
+                        selected elements of the request to form a string. You then use your AWS secret access
+                        key
+                        to calculate the HMAC of that string. Informally, we call this process &quot;signing the
+                        request,&quot; and we call the output of the HMAC algorithm the signature, because it simulates
+                        the security properties of a real signature. Finally, you add this signature as a
+                        parameter
+                        of the request by using the syntax described in this section. 
+                     </p>
+                     <p> When the system receives an authenticated request, it fetches the AWS secret access
+                        key
+                        that you claim to have and uses it in the same way to compute a signature for the
+                        message
+                        it received. It then compares the signature it calculated against the signature presented
+                        by
+                        the requester. If the two signatures match, the system concludes that the requester
+                        must have access to the AWS secret access key and therefore acts with the authority
+                        of the
+                        principal to whom the key was issued. If the two signatures do not match, the request
+                        is
+                        dropped and the system responds with an error message. 
+                     </p>
+                     <div class="example">
+                        <p class="title"><b>Example Authenticated Amazon S3 REST Request</b></p>
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">GET /photos/puppy.jpg HTTP/1.1
+Host: johnsmith.s3.amazonaws.com
+Date: Mon, 26 Mar 2007 19:37:58 +0000
+
+Authorization: AWS AKIAIOSFODNN7EXAMPLE:frJIUN8DYpKDtOLCwo//yllqDzg=</code></pre></div>
+                     </div>
+                     <h2 id="UsingTemporarySecurityCredentials">Using Temporary Security Credentials</h2>
+                     
+                     
+                     <p>If you are signing your request using temporary security credentials (see <a href="MakingRequests.html">Making Requests</a>), you must include the
+                        corresponding security token in your request by adding the
+                        <code class="code">x-amz-security-token</code> header. 
+                     </p>
+                     
+                     <p>When you obtain temporary security credentials using the AWS Security Token Service
+                        API, the response includes temporary security credentials and a session token. You
+                        provide the session token value in the <code class="code">x-amz-security-token</code> header when you
+                        send requests to Amazon S3. For information about the AWS Security Token Service API
+                        provided by IAM, go to <a href="./STS/latest/APIReference/API_Operations.html" target="_blank">Action</a> in the <em>AWS Security Token Service API Reference Guide </em>.
+                     </p>
+                     
+                     <h2 id="ConstructingTheAuthenticationHeader">The Authentication Header</h2>
+                     
+                     
+                     
+                     
+                     <p>The Amazon S3 REST API uses the standard HTTP <code class="code">Authorization</code> header to pass
+                        authentication information. (The name of the standard header is unfortunate because
+                        it
+                        carries authentication information, not authorization.) Under the Amazon S3 authentication
+                        scheme, the Authorization header has the following form:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Authorization: AWS <em class="replaceable"><code>AWSAccessKeyId</code></em>:<em class="replaceable"><code>Signature</code></em></code></pre>
+                     <p>Developers are issued an AWS access key ID and AWS secret access key when they
+                        register. For request authentication, the <code class="code">AWSAccessKeyId</code> element
+                        identifies the access key ID that was used to compute the signature and, indirectly,
+                        the
+                        developer making the request.
+                     </p>
+                     
+                     <p>The <code class="code">Signature</code> element is the  RFC 2104 HMAC-SHA1 of selected
+                        elements from the request, and so the <code class="code">Signature</code> part of the
+                        Authorization header will vary from request to request. If the request signature
+                        calculated by the system matches the <code class="code">Signature</code> included with the
+                        request, the requester will have demonstrated possession of the AWS secret access
+                        key.
+                        The request will then be processed under the identity, and with the authority, of
+                        the
+                        developer to whom the key was issued.
+                     </p>
+                     
+                     <p>Following is pseudogrammar that illustrates the construction of the
+                        <code class="code">Authorization</code> request header. (In the example, <code class="code">\n</code> means the
+                        Unicode code point <code class="code">U+000A</code>, commonly called newline).
+                        
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">
+Authorization = &quot;AWS&quot; + &quot; &quot; + AWSAccessKeyId + &quot;:&quot; + Signature;
+
+Signature = Base64( HMAC-SHA1( YourSecretAccessKeyID, UTF-8-Encoding-Of( StringToSign ) ) );
+
+StringToSign = HTTP-Verb + &quot;\n&quot; +
+	Content-MD5 + &quot;\n&quot; +
+	Content-Type + &quot;\n&quot; +
+	Date + &quot;\n&quot; +
+	CanonicalizedAmzHeaders +
+	CanonicalizedResource;
+
+CanonicalizedResource = [ &quot;/&quot; + Bucket ] +
+	&lt;HTTP-Request-URI, from the protocol name up to the query string&gt; +
+	[ subresource, if present. For example &quot;?acl&quot;, &quot;?location&quot;, &quot;?logging&quot;, or &quot;?torrent&quot;];
+
+CanonicalizedAmzHeaders = &lt;described below&gt;</code></pre>
+                     
+                     <p> HMAC-SHA1 is an algorithm defined by <a href="http://www.ietf.org/rfc/rfc2104.txt" target="_blank"> RFC 2104 -
+                           Keyed-Hashing for Message Authentication </a>. The algorithm takes as input two
+                        byte-strings, a key and a message. For Amazon S3 request authentication, use your
+                        AWS secret
+                        access key (<code class="code">YourSecretAccessKeyID</code>) as the key, and the UTF-8
+                        encoding of the <code class="code">StringToSign</code> as the message. The output of
+                        HMAC-SHA1 is also a byte string, called the digest. The <code class="code">Signature</code>
+                        request parameter is constructed by Base64 encoding this digest. 
+                     </p>
+                     
+                     <h2 id="RESTAuthenticationRequestCanonicalization">Request Canonicalization for
+                        Signing
+                     </h2>
+                     
+                     
+                     <p> Recall that when the system receives an authenticated request, it compares the
+                        computed request signature with the signature provided in the request in <code class="code">StringToSign</code>. For that reason, you must compute the signature by using the
+                        same method used by Amazon S3. We call the process of putting a request in an
+                        agreed-upon form for signing <em>canonicalization</em>. 
+                     </p>
+                     
+                     <h2 id="ConstructingTheCanonicalizedResourceElement">Constructing the
+                        CanonicalizedResource Element
+                     </h2>
+                     
+                     
+                     <p>
+                        <code class="code">CanonicalizedResource</code> represents the Amazon S3 resource targeted by
+                        the request. Construct it for a REST request as follows: 
+                     </p>
+                     
+                     <div class="table">
+                        <p class="title"><b>Launch Process</b></p>
+                        <div class="table-contents">
+                           <table id="w70aac69c11c11c25b4">
+                              
+                              <tbody><tr>
+                                 
+                                 <td>
+                                    
+                                    <p>1</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Start with an empty string (<code class="code">&quot;&quot;</code>).
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>2</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>If the request specifies a bucket using the HTTP Host header
+                                       (virtual hosted-style), append the bucket name preceded by a
+                                       <code class="code">&quot;/&quot;</code> (e.g., &quot;/bucketname&quot;). For path-style requests
+                                       and requests that don&apos;t address a bucket, do nothing. For more
+                                       information about virtual hosted-style requests, see <a href="VirtualHosting.html">Virtual Hosting of Buckets</a>. 
+                                    </p>
+                                    
+                                    <p>For a virtual hosted-style request
+                                       &quot;https://johnsmith.s3.amazonaws.com/photos/puppy.jpg&quot;, the
+                                       <code class="code">CanonicalizedResource</code> is &quot;/johnsmith&quot;. 
+                                    </p>
+                                    
+                                    <p>For the path-style request,
+                                       &quot;https://s3.amazonaws.com/johnsmith/photos/puppy.jpg&quot;, the
+                                       <code class="code">CanonicalizedResource</code> is &quot;&quot;.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>3</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>Append the path part of the un-decoded HTTP Request-URI, up-to
+                                       but not including the query string.
+                                    </p>
+                                    
+                                    <p>For a virtual hosted-style request
+                                       &quot;https://johnsmith.s3.amazonaws.com/photos/puppy.jpg&quot;, the
+                                       <code class="code">CanonicalizedResource</code> is
+                                       &quot;/johnsmith/photos/puppy.jpg&quot;.
+                                    </p>
+                                    
+                                    <p>For a path-style request,
+                                       &quot;https://s3.amazonaws.com/johnsmith/photos/puppy.jpg&quot;, the
+                                       <code class="code">CanonicalizedResource</code> is
+                                       &quot;/johnsmith/photos/puppy.jpg&quot;. At this point, the
+                                       <code class="code">CanonicalizedResource</code> is the same for both the
+                                       virtual hosted-style and path-style request.
+                                    </p>
+                                    
+                                    <p>For a request that does not address a bucket, such as <a href="./AmazonS3/latest/API/RESTServiceGET.html" target="_blank">GET Service</a>, append &quot;/&quot;.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    
+                                    <p>4</p>
+                                    
+                                 </td>
+                                 
+                                 <td>
+                                    
+                                    <p>If the request addresses a subresource, such as 
+                                       <code class="code">?versioning</code>, <code class="code">?location</code>,
+                                       <code class="code">?acl</code>, <code class="code">?torrent</code>,
+                                       <code class="code">?lifecycle</code>, or <code class="code">?versionid</code>, append the
+                                       subresource, its value if it has one, and the question mark. Note
+                                       that in case of multiple subresources, subresources must be
+                                       lexicographically sorted by subresource name and separated by
+                                       &apos;&amp;&apos;, e.g., ?acl&amp;versionId=<em class="replaceable"><code>value</code></em>. 
+                                    </p>
+                                    
+                                    <p>The subresources that must be included when
+                                       constructing the CanonicalizedResource Element are acl, lifecycle,
+                                       location, logging, notification, partNumber, policy, requestPayment,
+                                       torrent, uploadId, uploads, versionId, versioning, versions, and
+                                       website. 
+                                    </p>
+                                    
+                                    <p>If the request specifies query string parameters overriding the
+                                       response header values (see <a href="./AmazonS3/latest/API/RESTObjectGET.html" target="_blank">Get Object</a>), append the query string parameters and
+                                       their values. When signing, you do not encode these values; however,
+                                       when making the request, you must encode these parameter values. The
+                                       query string parameters in a GET request include
+                                       <code class="code">response-content-type</code>,
+                                       <code class="code">response-content-language</code>,
+                                       <code class="code">response-expires</code>,
+                                       <code class="code">response-cache-control</code>,
+                                       <code class="code">response-content-disposition</code>, and 
+                                       <code class="code">response-content-encoding</code>.
+                                    </p>
+                                    
+                                    <p>The <code class="code">delete</code> query string parameter must be
+                                       included when you create the CanonicalizedResource for a multi-object
+                                       Delete request.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <p>Elements of the CanonicalizedResource that come from the HTTP Request-URI should be
+                        signed literally as they appear in the HTTP request, including URL-Encoding meta
+                        characters. 
+                     </p>
+                     
+                     <p>The <code class="code">CanonicalizedResource</code> might be different than the HTTP
+                        Request-URI. In particular, if your request uses the HTTP <code class="code">Host</code> header to
+                        specify a bucket, the bucket does not appear in the HTTP Request-URI. However, the
+                        <code class="code">CanonicalizedResource</code> continues to include the bucket. Query
+                        string parameters might also appear in the Request-URI but are not included in
+                        <code class="code">CanonicalizedResource</code>. For more information, see <a href="VirtualHosting.html">Virtual Hosting of Buckets</a>. 
+                     </p>
+                     
+                     <h2 id="RESTAuthenticationConstructingCanonicalizedAmzHeaders">Constructing the
+                        CanonicalizedAmzHeaders Element
+                     </h2>
+                     
+                     
+                     
+                     <p>To construct the CanonicalizedAmzHeaders part of <code class="code">StringToSign</code>,
+                        select all HTTP request headers that start with &apos;x-amz-&apos; (using a case-insensitive
+                        comparison), and use the following process. 
+                     </p>
+                     
+                     <div class="table">
+                        <p class="title"><b>CanonicalizedAmzHeaders Process</b></p>
+                        <div class="table-contents">
+                           <table id="w70aac69c11c11c27b4">
+                              
+                              <tbody><tr>
+                                 
+                                 <td>1</td>
+                                 
+                                 <td>Convert each HTTP header name to lowercase. For example,
+                                    &apos;<code class="code">X-Amz-Date</code>&apos; becomes &apos;<code class="code">x-amz-date</code>&apos;.
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>2</td>
+                                 
+                                 <td>Sort the collection of headers lexicographically by header
+                                    name.
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>3</td>
+                                 
+                                 <td>Combine header fields with the same name into one
+                                    &quot;header-name:comma-separated-value-list&quot; pair as prescribed by RFC 2616,
+                                    section 4.2, without any whitespace between values. For example, the
+                                    two metadata headers &apos;<code class="code">x-amz-meta-username: fred</code>&apos; and
+                                    &apos;<code class="code">x-amz-meta-username: barney</code>&apos; would be combined into
+                                    the single header &apos;<code class="code">x-amz-meta-username:
+                                       fred,barney</code>&apos;.
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>4</td>
+                                 
+                                 <td>&quot;Unfold&quot; long headers that span multiple lines (as allowed by RFC
+                                    2616, section 4.2) by replacing the folding whitespace (including
+                                    new-line) by a single space.
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>5</td>
+                                 
+                                 <td>Trim any whitespace around the colon in the header. For example, the
+                                    header &apos;<code class="code">x-amz-meta-username: fred,barney</code>&apos; would become
+                                    &apos;<code class="code">x-amz-meta-username:fred,barney</code>&apos; 
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>6</td>
+                                 
+                                 <td> Finally, append a newline character (<code class="code">U+000A</code>) to each
+                                    canonicalized header in the resulting list. Construct the
+                                    CanonicalizedResource element by concatenating all headers in this list
+                                    into a single string.
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <h2 id="RESTAuthenticationStringToSign">Positional versus Named HTTP Header
+                        StringToSign Elements
+                     </h2>
+                     
+                     
+                     
+                     
+                     <p> The first few header elements of <code class="code">StringToSign</code> (Content-Type,
+                        Date, and Content-MD5) are positional in nature. <code class="code">StringToSign</code>
+                        does not include the names of these headers, only their values from the request. In
+                        contrast, the &apos;<code class="code">x-amz-</code>&apos; elements are named. Both the header names and the
+                        header values appear in <code class="code">StringToSign</code>. 
+                     </p>
+                     
+                     <p> If a positional header called for in the definition of <code class="code">StringToSign</code> is not present in your request (for example, <code class="code">Content-Type</code>
+                        or <code class="code">Content-MD5</code> are optional for PUT requests and meaningless
+                        for GET requests), substitute the empty string (&quot;&quot;) for that position. 
+                     </p>
+                     
+                     <h2 id="RESTAuthenticationTimeStamp">Time Stamp Requirement</h2>
+                     
+                     
+                     
+                     
+                     <p>A valid time stamp (using either the HTTP <code class="code">Date</code> header or an
+                        <code class="code">x-amz-date</code> alternative) is mandatory for authenticated requests.
+                        Furthermore, the client timestamp included with an authenticated request must be within
+                        15 minutes of the Amazon S3 system time when the request is received. If not, the
+                        request
+                        will fail with the <code class="code">RequestTimeTooSkewed</code> error code. The
+                        intention of these restrictions is to limit the possibility that intercepted requests
+                        could be replayed by an adversary. For stronger protection against eavesdropping,
+                        use
+                        the HTTPS transport for authenticated requests. 
+                     </p>
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>The validation constraint on request date applies only to authenticated
+                           requests that do not use query string authentication. For more information, see
+                           <a href="RESTAuthentication.html#RESTAuthenticationQueryStringAuth">Query String Request Authentication
+                              Alternative</a>.
+                        </p>
+                     </div>
+                     
+                     
+                     <p>Some HTTP client libraries do not expose the ability to set the <code class="code">Date</code>
+                        header for a request. If you have trouble including the value of the &apos;Date&apos; header
+                        in
+                        the canonicalized headers, you can set the timestamp for the request by using an
+                        &apos;<code class="code">x-amz-date</code>&apos; header instead. The value of the <code class="code">x-amz-date</code>
+                        header must be in one of the RFC 2616 formats (<a href="http://www.ietf.org/rfc/rfc2616.txt" target="_blank">http://www.ietf.org/rfc/rfc2616.txt</a>). When an
+                        <code class="code">x-amz-date</code> header is present in a request, the system will ignore any
+                        <code class="code">Date</code> header when computing the request signature. Therefore, if you
+                        include the <code class="code">x-amz-date</code> header, use the empty string for the
+                        <code class="code">Date</code> when constructing the <code class="code">StringToSign</code>. See the
+                        next section for an example. 
+                     </p> 
+                     
+                     <h2 id="RESTAuthenticationExamples">Authentication Examples</h2>
+                     
+                     
+                     <p> The examples in this section use the (non-working) credentials in the following
+                        table. 
+                     </p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac69c11c11c33b4">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Parameter</th>
+                                 
+                                 <th>Value</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>AWSAccessKeyId</td>
+                                 
+                                 <td><code class="code">AKIAIOSFODNN7EXAMPLE</code></td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>AWSSecretAccessKey</td>
+                                 
+                                 <td><code class="code">wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY</code></td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <p>In the example <code class="code">StringToSign</code>s, formatting is not significant, and
+                        <code class="code">\n</code> means the Unicode code point <code class="code">U+000A</code>, commonly called
+                        newline. Also, the examples use &quot;+0000&quot; to designate the time zone. You can use &quot;GMT&quot;
+                        to
+                        designate timezone instead, but the signatures shown in the examples will be
+                        different.
+                     </p>
+                     
+                     
+                     <h3 id="RESTAuthenticationExamples-1">Object GET</h3>
+                     
+                     
+                     
+                     <p>This example gets an object from the johnsmith bucket.</p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac69c11c11c33c10b4">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Request</th>
+                                 
+                                 <th>StringToSign</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">GET /photos/puppy.jpg HTTP/1.1
+Host: johnsmith.s3.amazonaws.com
+Date: Tue, 27 Mar 2007 19:36:42 +0000
+
+<em class="replaceable"><code>Authorization: AWS AKIAIOSFODNN7EXAMPLE:
+bWq2s1WEIj+Ydj0vQ697zp+IXMU=</code></em></code></pre>
+                                    </td>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">GET\n
+\n
+\n
+Tue, 27 Mar 2007 19:36:42 +0000\n
+/johnsmith/photos/puppy.jpg</code></pre>
+                                    </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <p> Note that the CanonicalizedResource includes the bucket name, but the HTTP
+                        Request-URI does not. (The bucket is specified by the Host header.) 
+                     </p>
+                     
+                     
+                     
+                     
+                     <h3 id="RESTAuthenticationExamples-2">Object PUT</h3>
+                     
+                     
+                     
+                     <p>This example puts an object into the johnsmith bucket.</p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac69c11c11c33c14b4">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Request</th>
+                                 
+                                 <th>StringToSign</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">PUT /photos/puppy.jpg HTTP/1.1
+Content-Type: image/jpeg
+Content-Length: 94328
+Host: johnsmith.s3.amazonaws.com
+Date: Tue, 27 Mar 2007 21:15:45 +0000
+
+<em class="replaceable"><code>Authorization: AWS AKIAIOSFODNN7EXAMPLE:
+MyyxeRY7whkBe+bq8fHCL/2kKUg=
+</code></em></code></pre>
+                                    </td>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">PUT\n
+\n
+image/jpeg\n
+Tue, 27 Mar 2007 21:15:45 +0000\n
+/johnsmith/photos/puppy.jpg</code></pre>
+                                    </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <p> Note the Content-Type header in the request and in the StringToSign. Also note
+                        that the Content-MD5 is left blank in the StringToSign, because it is not present
+                        in
+                        the request. 
+                     </p>
+                     
+                     
+                     
+                     
+                     <h3 id="RESTAuthenticationExamples-3">List</h3>
+                     
+                     
+                     
+                     
+                     <p>This example lists the content of the johnsmith bucket.</p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac69c11c11c33c18b4">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Request</th>
+                                 
+                                 <th>StringToSign</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">GET /?prefix=photos&amp;max-keys=50&amp;marker=puppy HTTP/1.1
+User-Agent: Mozilla/5.0
+Host: johnsmith.s3.amazonaws.com
+Date: Tue, 27 Mar 2007 19:42:41 +0000
+
+<em class="replaceable"><code>Authorization: AWS AKIAIOSFODNN7EXAMPLE:
+htDYFYduRNen8P9ZfE/s9SuKy0U=</code></em></code></pre>
+                                    </td>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">GET\n
+\n
+\n
+Tue, 27 Mar 2007 19:42:41 +0000\n
+/johnsmith/</code></pre>
+                                    </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <p> Note the trailing slash on the CanonicalizedResource and the absence of query
+                        string parameters. 
+                     </p>
+                     
+                     
+                     
+                     
+                     <h3 id="RESTAuthenticationExamples-4">Fetch</h3>
+                     
+                     
+                     
+                     <p>This example fetches the access control policy subresource for the &apos;johnsmith&apos;
+                        bucket.
+                     </p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac69c11c11c33c22b4">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Request</th>
+                                 
+                                 <th>StringToSign</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">GET /?acl HTTP/1.1
+Host: johnsmith.s3.amazonaws.com
+Date: Tue, 27 Mar 2007 19:44:46 +0000
+
+<em class="replaceable"><code>Authorization: AWS AKIAIOSFODNN7EXAMPLE:
+c2WLPFtWHVgbEmeEG93a4cG37dM=</code></em></code></pre>
+                                    </td>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">GET\n
+\n
+\n
+Tue, 27 Mar 2007 19:44:46 +0000\n
+/johnsmith/?acl</code></pre>
+                                    </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <p> Notice how the subresource query string parameter is included in the
+                        CanonicalizedResource. 
+                     </p>
+                     
+                     
+                     
+                     
+                     
+                     <h3 id="RESTAuthenticationExamples-5">Delete</h3>
+                     
+                     
+                     
+                     <p>This example deletes an object from the &apos;johnsmith&apos; bucket using the path-style
+                        and Date alternative.
+                     </p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac69c11c11c33c26b4">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Request</th>
+                                 
+                                 <th>StringToSign</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">DELETE /johnsmith/photos/puppy.jpg HTTP/1.1
+User-Agent: dotnet
+Host: s3.amazonaws.com
+Date: Tue, 27 Mar 2007 21:20:27 +0000
+
+x-amz-date: Tue, 27 Mar 2007 21:20:26 +0000
+<em class="replaceable"><code>Authorization: AWS AKIAIOSFODNN7EXAMPLE:lx3byBScXR6KzyMaifNkardMwNk=</code></em></code></pre>
+                                    </td>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">DELETE\n
+\n
+\n
+Tue, 27 Mar 2007 21:20:26 +0000\n
+/johnsmith/photos/puppy.jpg</code></pre>
+                                    </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <p> Note how we used the alternate &apos;x-amz-date&apos; method of specifying the date
+                        (because our client library prevented us from setting the date, say). In this case,
+                        the <code class="code">x-amz-date</code> takes precedence over the <code class="code">Date</code> header.
+                        Therefore, date entry in the signature must contain the value of the
+                        <code class="code">x-amz-date</code> header. 
+                     </p>
+                     
+                     
+                     
+                     <h3 id="RESTAuthenticationExamples-6">Upload</h3>
+                     
+                     
+                     
+                     <p>This example uploads an object to a CNAME style virtual hosted bucket with
+                        metadata.
+                     </p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac69c11c11c33c30b4">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Request</th>
+                                 
+                                 <th>StringToSign</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">PUT /db-backup.dat.gz HTTP/1.1
+User-Agent: curl/7.15.5
+Host: static.johnsmith.net:8080
+Date: Tue, 27 Mar 2007 21:06:08 +0000
+
+x-amz-acl: public-read
+content-type: application/x-download
+Content-MD5: 4gJE4saaMU4BqNR0kLY+lw==
+X-Amz-Meta-ReviewedBy: joe@johnsmith.net
+X-Amz-Meta-ReviewedBy: jane@johnsmith.net
+X-Amz-Meta-FileChecksum: 0x02661779
+X-Amz-Meta-ChecksumAlgorithm: crc32
+Content-Disposition: attachment; filename=database.dat
+Content-Encoding: gzip
+Content-Length: 5913339
+
+<em class="replaceable"><code>Authorization: AWS AKIAIOSFODNN7EXAMPLE:
+ilyl83RwaSoYIEdixDQcA4OnAnc=</code></em></code></pre>
+                                    </td>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">PUT\n
+4gJE4saaMU4BqNR0kLY+lw==\n
+application/x-download\n
+Tue, 27 Mar 2007 21:06:08 +0000\n
+
+x-amz-acl:public-read\n
+x-amz-meta-checksumalgorithm:crc32\n
+x-amz-meta-filechecksum:0x02661779\n
+x-amz-meta-reviewedby:
+joe@johnsmith.net,jane@johnsmith.net\n
+/static.johnsmith.net/db-backup.dat.gz</code></pre>
+                                    </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <p> Notice how the &apos;x-amz-&apos; headers are sorted, trimmed of whitespace, and converted
+                        to
+                        lowercase. Note also that multiple headers with the same name have been joined using
+                        commas to
+                        separate values. 
+                     </p>
+                     
+                     <p> Note how only the <code class="code">Content-Type</code> and <code class="code">Content-MD5</code> HTTP
+                        entity headers appear in the <code class="code">StringToSign</code>. The other
+                        <code class="code">Content-*</code> entity headers do not. 
+                     </p>
+                     
+                     <p> Again, note that the <code class="code">CanonicalizedResource</code> includes the
+                        bucket name, but the HTTP Request-URI does not. (The bucket is specified by the Host
+                        header.) 
+                     </p>
+                     
+                     
+                     
+                     
+                     <h3 id="RESTAuthenticationExamples-7">List All My Buckets</h3>
+                     
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac69c11c11c33c34b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Request</th>
+                                 
+                                 <th>StringToSign</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">GET / HTTP/1.1
+Host: s3.amazonaws.com
+Date: Wed, 28 Mar 2007 01:29:59 +0000
+
+<em class="replaceable"><code>Authorization: AWS AKIAIOSFODNN7EXAMPLE:qGdzdERIC03wnaRNKh6OqZehG9s=</code></em></code></pre>
+                                    </td>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">GET\n
+\n
+\n
+Wed, 28 Mar 2007 01:29:59 +0000\n
+/</code></pre>
+                                    </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     
+                     
+                     <h3 id="RESTAuthenticationExamples-8">Unicode Keys</h3>
+                     
+                     
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac69c11c11c33c38b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Request</th>
+                                 
+                                 <th>StringToSign</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">GET /dictionary/fran%C3%A7ais/pr%c3%a9f%c3%a8re HTTP/1.1
+Host: s3.amazonaws.com
+Date: Wed, 28 Mar 2007 01:49:49 +0000
+<em class="replaceable"><code>Authorization: AWS AKIAIOSFODNN7EXAMPLE:DNEZGsoieTZ92F3bUfSPQcbGmlM=</code></em></code></pre>
+                                    </td>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">GET\n
+\n
+\n
+Wed, 28 Mar 2007 01:49:49 +0000\n
+/dictionary/fran%C3%A7ais/pr%c3%a9f%c3%a8re</code></pre>
+                                    </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>The elements in <code class="code">StringToSign</code> that were derived from the
+                           Request-URI are taken literally, including URL-Encoding and capitalization.
+                           
+                        </p>
+                     </div>
+                     
+                     
+                     
+                     <h2 id="RESTAuthenticationDebugging">REST Request Signing Problems</h2>
+                     
+                     
+                     
+                     
+                     <p> When REST request authentication fails, the system responds to the request with an
+                        XML error document. The information contained in this error document is meant to help
+                        developers diagnose the problem. In particular, the <code class="code">StringToSign</code>
+                        element of the <code class="code">SignatureDoesNotMatch</code> error document tells you
+                        exactly what request canonicalization the system is using. 
+                     </p>
+                     
+                     <p>Some toolkits silently insert headers that you do not know about beforehand, such
+                        as
+                        adding the header <code class="code">Content-Type</code> during a PUT. In most of these cases, the
+                        value of the inserted header remains constant, allowing you to discover the missing
+                        headers by using tools such as Ethereal or tcpmon. 
+                     </p>
+                     
+                     <h2 id="RESTAuthenticationQueryStringAuth">Query String Request Authentication
+                        Alternative
+                     </h2>
+                     
+                     
+                     <p>You can authenticate certain types of requests by passing the required information
+                        as
+                        query-string parameters instead of using the <code class="code">Authorization</code> HTTP header.
+                        This is useful for enabling direct third-party browser access to your private Amazon
+                        S3 data 
+                        without proxying the request. The idea is to construct a &quot;pre-signed&quot; request and
+                        encode
+                        it as a URL that an end-user&apos;s browser can retrieve. Additionally, you can limit a
+                        pre-signed request by specifying an expiration time. 
+                     </p>
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>For examples of using the AWS SDKs to generating pre-signed URLs, see <a href="ShareObjectPreSignedURL.html">Share an Object with Others</a>.
+                           
+                        </p>
+                     </div>
+                     
+                     
+                     <h3 id="CreatingASignature">Creating a Signature</h3>
+                     
+                     
+                     
+                     <p>Following is an example query string authenticated Amazon S3 REST request.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">
+GET /photos/puppy.jpg
+?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&amp;Expires=1141889120&amp;Signature=vjbyPxybdZaNmGa%2ByT272YEAiv4%3D HTTP/1.1
+Host: johnsmith.s3.amazonaws.com
+Date: Mon, 26 Mar 2007 19:37:58 +0000
+</code></pre>
+                     <p>The query string request authentication method doesn&apos;t require any special HTTP
+                        headers. Instead, the required authentication elements are specified as query string
+                        parameters: 
+                     </p>
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac69c11c11c37b6b8">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Query String Parameter Name</th>
+                                 
+                                 <th>Example Value</th>
+                                 
+                                 <th>Description</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td><code class="code">AWSAccessKeyId</code></td>
+                                 
+                                 <td><code class="code">AKIAIOSFODNN7EXAMPLE</code></td>
+                                 
+                                 <td>Your AWS access key ID. Specifies the AWS secret access key used
+                                    to sign the request and, indirectly, the identity of the developer
+                                    making the request.
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td><code class="code">Expires</code></td>
+                                 
+                                 <td><code class="code">1141889120</code></td>
+                                 
+                                 <td>The time when the signature expires, specified as the number of
+                                    seconds since the epoch (00:00:00 UTC on January 1, 1970). A request
+                                    received after this time (according to the server) will be
+                                    rejected. 
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td><code class="code">Signature</code></td>
+                                 
+                                 <td><code class="code">vjbyPxybdZaNmGa%2ByT272YEAiv4%3D</code></td>
+                                 
+                                 <td>The URL encoding of the Base64 encoding of the HMAC-SHA1 of
+                                    StringToSign.
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <p>The query string request authentication method differs slightly from the ordinary
+                        method but only in the format of the <code class="code">Signature</code> request
+                        parameter and the <code class="code">StringToSign</code> element. Following is
+                        pseudo-grammar that illustrates the query string request authentication method. 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">
+Signature = URL-Encode( Base64( HMAC-SHA1( YourSecretAccessKeyID, UTF-8-Encoding-Of( StringToSign ) ) ) );
+
+StringToSign = HTTP-VERB + &quot;\n&quot; +
+    Content-MD5 + &quot;\n&quot; +
+    Content-Type + &quot;\n&quot; +
+    Expires + &quot;\n&quot; +
+    CanonicalizedAmzHeaders +
+    CanonicalizedResource;    </code></pre>
+                     <p><code class="code">YourSecretAccessKeyID</code> is the AWS secret access key ID that 
+                        Amazon assigns to you when you sign up to be an Amazon Web Service developer. Notice
+                        how the <code class="code">Signature</code> is URL-Encoded to make it suitable for
+                        placement in the query string. Note also that in
+                        <code class="code">StringToSign</code>, the HTTP <code class="code">Date</code> positional element
+                        has been replaced with <code class="code">Expires</code>. The
+                        <code class="code">CanonicalizedAmzHeaders</code> and
+                        <code class="code">CanonicalizedResource</code> are the same. 
+                     </p>
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>In the query string authentication method, you do not use the
+                           <code class="code">Date</code> or the <code class="code">x-amz-date request</code> header when
+                           calculating the string to sign.
+                        </p>
+                     </div>
+                     
+                     
+                     
+                     <h4 id="query-str-auth-ex">Query String Request Authentication</h4>
+                     
+                     
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac69c11c11c37b6c20b2">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Request</th>
+                                 
+                                 <th>StringToSign</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">GET /photos/puppy.jpg?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&amp;
+    Signature=NpgCjnDzrM%2BWFzoENXmpNDUsSn8%3D&amp;
+    Expires=1175139620 HTTP/1.1
+
+Host: johnsmith.s3.amazonaws.com</code></pre>
+                                    </td>
+                                 
+                                 <td>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">GET\n
+\n
+\n
+1175139620\n
+
+/johnsmith/photos/puppy.jpg</code></pre>
+                                    </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     <p>We assume that when a browser makes the GET request, it won&apos;t provide a
+                        Content-MD5 or a Content-Type header, nor will it set any x-amz- headers, so
+                        those parts of the <code class="code">StringToSign</code> are left blank. 
+                     </p>
+                     
+                     
+                     
+                     
+                     
+                     
+                     <h4 id="S3_Authentication_Base64">Using Base64 Encoding</h4>
+                     
+                     
+                     <p>HMAC request signatures must be Base64 encoded. Base64 encoding converts the
+                        signature into a simple ASCII string that can be attached to the request.
+                        Characters that could appear in the signature string like plus (+), forward
+                        slash (/), and equals (=) must be encoded if used in a URI. For example, if the
+                        authentication code includes a plus (+) sign, encode it as %2B in the request.
+                        Encode a forward slash as %2F and equals as %3D.
+                     </p>
+                     
+                     <p>For examples of Base64 encoding, refer to the Amazon S3 <a href="RESTAuthentication.html#RESTAuthenticationExamples">Authentication Examples</a>.
+                     </p>
+                     
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="S3_Authentication2.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="UsingHTTPPOST.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Using Temporary Security Credentials"><a class="pagetoc" href="#UsingTemporarySecurityCredentials">Using Temporary Security Credentials</a></li>
+                        <li class="pagetoc" name="The Authentication Header"><a class="pagetoc" href="#ConstructingTheAuthenticationHeader">The Authentication Header</a></li>
+                        <li class="pagetoc" name="Request Canonicalization for
+            Signing"><a class="pagetoc" href="#RESTAuthenticationRequestCanonicalization">Request Canonicalization for
+                              Signing</a></li>
+                        <li class="pagetoc" name="Constructing the
+            CanonicalizedResource Element"><a class="pagetoc" href="#ConstructingTheCanonicalizedResourceElement">Constructing the
+                              CanonicalizedResource Element</a></li>
+                        <li class="pagetoc" name="Constructing the
+            CanonicalizedAmzHeaders Element"><a class="pagetoc" href="#RESTAuthenticationConstructingCanonicalizedAmzHeaders">Constructing the
+                              CanonicalizedAmzHeaders Element</a></li>
+                        <li class="pagetoc" name="Positional versus Named HTTP Header
+            StringToSign Elements"><a class="pagetoc" href="#RESTAuthenticationStringToSign">Positional versus Named HTTP Header
+                              StringToSign Elements</a></li>
+                        <li class="pagetoc" name="Time Stamp Requirement"><a class="pagetoc" href="#RESTAuthenticationTimeStamp">Time Stamp Requirement</a></li>
+                        <li class="pagetoc" name="Authentication Examples"><a class="pagetoc" href="#RESTAuthenticationExamples">Authentication Examples</a></li>
+                        <li class="pagetoc" name="REST Request Signing Problems"><a class="pagetoc" href="#RESTAuthenticationDebugging">REST Request Signing Problems</a></li>
+                        <li class="pagetoc" name="Query String Request Authentication
+            Alternative"><a class="pagetoc" href="#RESTAuthenticationQueryStringAuth">Query String Request Authentication
+                              Alternative</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

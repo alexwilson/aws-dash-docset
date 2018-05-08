@@ -1,0 +1,353 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>The Context Object (Go)
+          - AWS Lambda
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="go-programming-model.html" title="Programming Model for Authoring Lambda Functions in
+    Go">
+      <link rel="prev" href="go-programming-model-handler-types.html" title="Lambda Function Handler
+        (Go)">
+      <link rel="next" href="go-programming-model-logging.html" title="Logging (Go)
+    ">
+      <meta name="description" content="While a Lambda function is executing, it can interact with AWS Lambda to get useful runtime information such as:">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/go-programming-model-context.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-introduction-function.html">Lambda Functions</a> &#xBB; <a href="lambda-app.html">Building Lambda Functions</a> &#xBB; <a href="programming-model-v2.html">Programming Model</a> &#xBB; <a href="go-programming-model.html">Programming Model for Authoring Lambda Functions in
+                                    Go</a> &#xBB; <span class="breadcrumb">The Context Object (Go)
+                                    </span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="go-programming-model-context">The Context Object (Go)
+                        
+                     </h1>
+                     <p>While a Lambda function is executing, it can interact with AWS Lambda to get useful
+                        runtime information such as:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>How much time is remaining before AWS Lambda terminates your Lambda function
+                                 (timeout is one of the Lambda function configuration properties).
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The <a href="https://aws.amazon.com/documentation/cloudwatch/" target="_blank">CloudWatch</a> log group and log stream associated with the Lambda function that
+                                 is executing.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The AWS request ID returned to the client that invoked the Lambda function.
+                                 You can use the request ID for any follow up inquiry with AWS
+                                 support.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>If the Lambda function is invoked through AWS Mobile SDK, you can learn
+                                 more about the mobile application calling the Lambda function.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              <p>In addition to the options listed below, you can also use the AWS X-Ray SDK for <a href="go-tracing.html">Go</a> to identify critical code paths, trace their performance and capture the data for
+                                 analysis. 
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     <p>AWS Lambda provides this information via the <code class="code">context.Context</code> object that the
+                        service passes as a parameter to your Lambda function handler. For more
+                        information, see <a href="go-programming-model-handler-types.html#go-programming-model-handler-types-signatures">Valid Handler Signatures
+                           </a>.
+                     </p>
+                     <p> The following sections provide an example Lambda function that uses the
+                        <code class="code">context</code> object, and then lists all of the available methods and
+                        attributes. 
+                     </p>
+                     <h2 id="go-programming-model-context-access">Accessing Invoke Context Information
+                        
+                     </h2>
+                     
+                     <p>Lambda functions have access to metadata about their environment and the invocation
+                        request. This can be accessed at <a href="https://golang.org/pkg/context/" target="_blank">Package context</a>. Should your handler include <code class="code">context.Context</code> as a 
+                        parameter, Lambda will insert information about your function into the context&apos;s <code class="code">Value</code> property. Note that you need to import the <code class="code">lambdacontext</code> library to access the contents of the <code class="code">context.Context</code> object.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">package main
+ 
+import (
+        &quot;context&quot;
+        &quot;log&quot;
+        &quot;github.com/aws/aws-lambda-go/lambda&quot;
+        &quot;github.com/aws/aws-lambda-go/lambdacontext&quot;
+)
+ 
+func CognitoHandler(ctx context.Context) {
+        lc, _ := lambdacontext.FromContext(ctx)
+        log.Print(lc.Identity.CognitoPoolID)
+}
+ 
+func main() {
+        lambda.Start(CognitoHandler)
+}</code></pre>
+                     <p>In the example above, <code class="code">lc</code> is the variable used to consume the information that the context object captured
+                        and <code class="code">log.Print(lc.Identity.CognitoPoolID)</code> prints that information, in this case, the CognitoPoolID.
+                     </p>    
+                     
+                     
+                     <h3 id="go-programming-model-monitoring-execution-time">Monitoring Execution Time of a Function
+                        
+                     </h3>
+                     
+                     <p>The following example introduces how to use the context object to monitor how long
+                        it takes to execute your Lambda function. This allows you to analyze performance expectations
+                        and adjust your function code accordingly, if needed. 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">package main
+ 
+import (
+        &quot;context&quot;
+        &quot;log&quot;
+        &quot;time&quot;
+        &quot;github.com/aws/aws-lambda-go/lambda&quot;
+)
+ 
+func LongRunningHandler(ctx context.Context) string {
+        deadline, _ := ctx.Deadline()
+        for {
+                select {
+                case &lt;- time.Until(deadline).Truncate(100 * time.Millisecond):
+                        return &quot;Finished before timing out.&quot;
+                default:
+                        log.Print(&quot;hello!&quot;)
+                        time.Sleep(50 * time.Millisecond)
+                }
+        }
+}
+ 
+func main() {
+        lambda.Start(LongRunningHandler)        
+}
+</code></pre>
+                     
+                     <p>The Lambda context library provides the following global variables:</p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><code class="code">MemoryLimitInMB</code>: Memory limit, in MB, you configured for the
+                                 Lambda function.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">FunctionName</code>: Name of the Lambda function that is running.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              <p><code class="code">FunctionVersion</code>: The Lambda function
+                                 version that is executing. If an alias is used to invoke the function, then
+                                 <code class="code">FunctionVersion</code> will be the version the alias points to.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">LogStreamName</code>: The CloudWatch log stream name for the particular
+                                 Lambda function execution. It can be null if the IAM user provided does not have
+                                 permission for CloudWatch actions.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">LogGroupName</code>: The CloudWatch log group name associated with the
+                                 Lambda function invoked. It can be null if the IAM user provided does not have
+                                 permission for CloudWatch actions.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>The Lambda context object also includes the following properties:</p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>
+                                 <code class="code">AwsRequestID</code>: AWS request ID associated with the request. This
+                                 is the ID returned to the client that invoked this Lambda function. You can use the
+                                 request ID
+                                 for any follow up inquiry with AWS support. Note that if AWS Lambda retries the
+                                 function (for example, in a situation where the Lambda function processing Kinesis
+                                 records throw an exception), the request ID remains the same.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><code class="code">ClientContext</code>: Information about the client application and
+                                 device when invoked through the AWS Mobile SDK. It can be null. &#xA0;Client context
+                                 provides client information such as client ID, application title, version name,
+                                 version code, and the application package name.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>
+                                 <code class="code">Identity</code>: Noted in the preceding example. Information about the Amazon Cognito identity
+                                 provider when invoked through the AWS Mobile SDK. It can be null.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              <p><code class="code">InvokedFunctionArn</code>: The ARN used to invoke this function. It can be function ARN or alias ARN. An unqualified
+                                 ARN
+                                 executes the <code class="code">$LATEST</code> version and aliases execute the function version it is
+                                 pointing to. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     <h2 id="go-programming-model-next-step-logging">Next Step
+                        
+                     </h2>
+                     
+                     <p><a href="go-programming-model-logging.html">Logging (Go)
+                           </a></p>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="go-programming-model-handler-types.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="go-programming-model-logging.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Accessing Invoke Context Information
+        "><a class="pagetoc" href="#go-programming-model-context-access">Accessing Invoke Context Information</a></li>
+                        <li class="pagetoc" name="Next Step
+        "><a class="pagetoc" href="#go-programming-model-next-step-logging">Next Step</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

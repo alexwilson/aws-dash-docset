@@ -1,0 +1,563 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Amazon Elastic File System (Amazon EFS) - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="Storage.html" title="Storage">
+      <link rel="prev" href="disk-performance.html" title="Optimizing Disk Performance for Instance Store
+      Volumes">
+      <link rel="next" href="AmazonS3.html" title="Amazon Simple Storage Service (Amazon S3)">
+      <meta name="description" content="Use Amazon EFS to create an EFS file system and mount it to one or more of your Linux instances.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AmazonEFS.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Storage.html">Storage</a> &#xBB; <span class="breadcrumb">Amazon Elastic File System (Amazon EFS)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="AmazonEFS">Amazon Elastic File System (Amazon EFS)</h1>
+                     <p>Amazon EFS provides scalable file storage for use with Amazon EC2. You can create
+                        an EFS file system
+                        and configure your instances to mount the file system. You can use an EFS file system
+                        as a
+                        common data source for workloads and applications running on multiple instances. For
+                        more
+                        information, see the <a href="https://aws.amazon.com/efs" target="_blank">Amazon Elastic File System product page</a>.
+                     </p>
+                     <p>In this tutorial, you create an EFS file system and two Linux instances that
+                        can share data using the file system.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Amazon EFS is not supported on Windows instances.</p>
+                     </div>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Tasks</strong></p>
+                        <ul>
+                           <li><a href="#efs-prerequisites">Prerequisites</a></li>
+                           <li><a href="#efs-create-file-system">Step 1: Create an EFS File System</a></li>
+                           <li><a href="#efs-mount-file-system">Step 2: Mount the File System</a></li>
+                           <li><a href="#efs-test-file-system">Step 3: Test the File System</a></li>
+                           <li><a href="#efs-clean-up">Step 4: Clean Up</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="efs-prerequisites">Prerequisites</h2>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Create a security group (for example, efs-sg) to associate with the EC2
+                                 instances and EFS mount target, and add the following rules:
+                              </p>
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       
+                                       <p>Allow inbound SSH connections to the EC2 instances from your computer
+                                          (the source is the CIDR block for your network).
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p>Allow inbound NFS connections to the file system via the EFS mount
+                                          target from the EC2 instances that are associated with this security
+                                          group (the source is the security group itself). For more information,
+                                          see <a href="security-group-rules-reference.html#sg-rules-efs">Amazon EFS file system</a>, and
+                                          <a href="./efs/latest/ug/security-considerations.html#network-access" target="_blank">Security Groups for Amazon
+                                             EC2 Instances and Mount Targets</a> in the <em>Amazon Elastic File System User Guide</em>.
+                                       </p>
+                                       
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Create a key pair. You must specify a key pair when you configure your
+                                 instances or you can&apos;t connect to them. For more information, see <a href="get-set-up-for-amazon-ec2.html#create-a-key-pair">Create a Key Pair</a>.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <h2 id="efs-create-file-system">Step 1: Create an EFS File System</h2>
+                     
+                     
+                     <p>Amazon EFS enables you to create a file system that multiple instances can mount and
+                        access
+                        at the same time. For more information, see <a href="./efs/latest/ug/creating-using.html" target="_blank">Creating Resources for Amazon EFS</a> in the
+                        <em>Amazon Elastic File System User Guide</em>.
+                     </p>
+                     
+                     <p class="title"><b>To create a file system</b></p>
+                     <ol>
+                        <li>
+                           <p>Open the Amazon Elastic File System console at
+                              <a href="https://console.aws.amazon.com/efs/" target="_blank">https://console.aws.amazon.com/efs/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Create file system</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>On the <b>Configure file system access</b> page, do the
+                              following:
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>For <b>VPC</b>, select the VPC to use for your
+                                    instances.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>For <b>Create mount targets</b>, select all the
+                                    Availability Zones.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>For each Availability Zone, ensure that the value for
+                                    <b>Security group</b> is the security group that you
+                                    created in <a href="AmazonEFS.html#efs-prerequisites">Prerequisites</a>.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>Choose <b>Next Step</b>.
+                                 </p>
+                                 
+                              </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>On the <b>Configure optional settings</b> page, do the
+                              following:
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>For the tag with Key=Name, type a name for the file system in
+                                    <b>Value</b>.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>For <b>Choose performance mode</b>, keep the default
+                                    option, <b>General Purpose</b>.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>Choose <b>Next Step</b>.
+                                 </p>
+                                 
+                              </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>On the <b>Review and create</b> page, choose <b>Create
+                                 File System</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>After the file system is created, note the file system ID, as you&apos;ll use it
+                              later in this tutorial.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="efs-mount-file-system">Step 2: Mount the File System</h2>
+                     
+                     
+                     
+                     <p>Use the following procedure to launch two <code class="code">t2.micro</code> instances. The user
+                        data script mounts the file system to both instances during launch and updates
+                        /etc/fstab to ensure that the file system is remounted after an instance reboot. Note
+                        that T2 instances must be launched in a subnet. You can use a default VPC or a
+                        nondefault VPC.
+                     </p>
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>There are other ways that you can mount the volume (for example, on an already
+                           running instance). For more information, see <a href="./efs/latest/ug/mounting-fs.html" target="_blank">Mounting File Systems</a> in the
+                           <em>Amazon Elastic File System User Guide</em>.
+                        </p>
+                     </div>
+                     
+                     
+                     <p class="title"><b>To launch two instances and mount an EFS file system</b></p>
+                     <ol>
+                        <li> 
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p> 
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Launch Instance</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>On the <b>Choose an Amazon Machine Image</b> page, select an
+                              Amazon Linux AMI with the HVM virtualization type.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>On the <b>Choose an Instance Type</b> page, keep the default
+                              instance type, <code class="code">t2.micro</code> and choose <b>Next: Configure
+                                 Instance Details</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>On the <b>Configure Instance Details</b> page, do the
+                              following:
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>For <b>Number of instances</b>, type 2.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>[Default VPC] If you have a default VPC, it is the default value for
+                                    <b>Network</b>. Keep the default VPC and the default
+                                    value for <b>Subnet</b> to use the default subnet in the
+                                    Availability Zone that Amazon EC2 chooses for your instances.
+                                 </p>
+                                 
+                                 <p>[Nondefault VPC] Select your VPC for <b>Network</b> and
+                                    a public subnet from <b>Subnet</b>.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>[Nondefault VPC] For <b>Auto-assign Public IP</b>,
+                                    choose <b>Enable</b>. Otherwise, your instances do not get
+                                    public IP addresses or public DNS names.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>Under <b>Advanced Details</b>, select <b>As
+                                       text</b>, and paste the following script into <b>User
+                                       data</b>. Update <b>FILE_SYSTEM_ID</b> with the
+                                    ID of your file system. You can optionally update <b>MOUNT_POINT</b> with a directory for your mounted file system. 
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">#!/bin/bash
+yum update -y
+yum install -y nfs-utils
+FILE_SYSTEM_ID=fs-<em class="replaceable"><code>xxxxxxxx</code></em>
+AVAILABILITY_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone )
+REGION=${AVAILABILITY_ZONE:0:-1}
+MOUNT_POINT=<em class="replaceable"><code>/mnt/efs</code></em>
+mkdir -p ${MOUNT_POINT}
+chown ec2-user:ec2-user ${MOUNT_POINT}
+echo ${FILE_SYSTEM_ID}.efs.${REGION}.amazonaws.com:/ ${MOUNT_POINT} nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev 0 0 &gt;&gt; /etc/fstab
+mount -a -t nfs4</code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>Advance to Step 6 of the wizard.</p>
+                                 
+                              </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>On the <b>Configure Security Group</b> page, choose
+                              <b>Select an existing security group</b> and select the
+                              security group that you created in <a href="AmazonEFS.html#efs-prerequisites">Prerequisites</a>, and then choose <b>Review and
+                                 Launch</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>On the <b>Review Instance Launch</b> page, choose
+                              <b>Launch</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the <b>Select an existing key pair or create a new key
+                                 pair</b> dialog box, select <b>Choose an existing key
+                                 pair</b> and choose your key pair. Select the acknowledgment check
+                              box, and choose <b>Launch Instances</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>In the navigation pane, choose <b>Instances</b> to see the
+                              status of your instances. Initially, their status is <code class="code">pending</code>. After
+                              the status changes to <code class="code">running</code>, your instances are ready for
+                              use.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <h2 id="efs-test-file-system">Step 3: Test the File System</h2>
+                     
+                     
+                     <p>You can connect to your instances and verify that the file system is mounted to the
+                        directory that you specified (for example, /mnt/efs).
+                     </p>
+                     
+                     
+                     <p class="title"><b>To verify that the file system is mounted</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Connect to your instances. For more information, see <a href="AccessingInstances.html">Connect to Your Linux Instance</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From the terminal window for each instance, run the <b>df -T</b>
+                              command to verify that the EFS file system is mounted.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">$ </code><strong class="userinput"><code>df -T</code></strong><code class="computeroutput" copy="false">
+Filesystem     Type              1K-blocks    Used          Available Use% Mounted on
+/dev/xvda1     ext4                8123812 1949800            6073764  25% /
+devtmpfs       devtmpfs            4078468      56            4078412   1% /dev
+tmpfs          tmpfs               4089312       0            4089312   0% /dev/shm
+<em class="replaceable"><code>efs-dns</code></em>        nfs4       9007199254740992       0   9007199254740992   0% <em class="replaceable"><code>/mnt/efs</code></em></code></code></pre>
+                           <p>Note that the name of the file system, shown in the example output as
+                              <em class="replaceable"><code>efs-dns</code></em>, has the following form:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><em class="replaceable"><code>file-system-id</code></em>.efs.<em class="replaceable"><code>aws-region</code></em>.amazonaws.com:/</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>(Optional) Create a file in the file system from one instance, and then verify
+                              that you can view the file from the other instance.
+                           </p>
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>From the first instance, run the following command to create the
+                                    file:
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">$ </code><strong class="userinput"><code>sudo touch <em class="replaceable"><code>/mnt/efs</code></em>/test-file.txt</code></strong></code></pre>
+                                 </li>
+                              <li>
+                                 
+                                 <p>From the second instance, run the following command to view the
+                                    file:
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">$ </code><strong class="userinput"><code>ls <em class="replaceable"><code>/mnt/efs</code></em></code></strong><code class="computeroutput" copy="false">
+test-file.txt</code></code></pre>
+                                 </li>
+                           </ol>
+                           
+                        </li>
+                     </ol>
+                     
+                     <h2 id="efs-clean-up">Step 4: Clean Up</h2>
+                     
+                     
+                     
+                     <p>When you are finished with this tutorial, you can terminate the instances and delete
+                        the file system.
+                     </p>
+                     
+                     
+                     <p class="title"><b>To terminate the instances</b></p>
+                     <ol>
+                        <li> 
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p> 
+                        </li>
+                        <li>
+                           
+                           <p>In the navigation pane, choose <b>Instances</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Select the instances to terminate.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Actions</b>, <b>Instance State</b>,
+                              <b>Terminate</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Yes, Terminate</b> when prompted for
+                              confirmation.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <p class="title"><b>To delete the file system</b></p>
+                     <ol>
+                        <li> 
+                           <p>Open the Amazon Elastic File System console at
+                              <a href="https://console.aws.amazon.com/efs/" target="_blank">https://console.aws.amazon.com/efs/</a>.
+                           </p> 
+                        </li>
+                        <li>
+                           
+                           <p>Select the file system to delete.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Choose <b>Actions</b>, <b>Delete file
+                                 system</b>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>When prompted for confirmation, type the ID of the file system and choose
+                              <b>Delete File System</b>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="disk-performance.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="AmazonS3.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Prerequisites"><a class="pagetoc" href="#efs-prerequisites">Prerequisites</a></li>
+                        <li class="pagetoc" name="Step 1: Create an EFS File System"><a class="pagetoc" href="#efs-create-file-system">Step 1: Create an EFS File System</a></li>
+                        <li class="pagetoc" name="Step 2: Mount the File System"><a class="pagetoc" href="#efs-mount-file-system">Step 2: Mount the File System</a></li>
+                        <li class="pagetoc" name="Step 3: Test the File System"><a class="pagetoc" href="#efs-test-file-system">Step 3: Test the File System</a></li>
+                        <li class="pagetoc" name="Step 4: Clean Up"><a class="pagetoc" href="#efs-clean-up">Step 4: Clean Up</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

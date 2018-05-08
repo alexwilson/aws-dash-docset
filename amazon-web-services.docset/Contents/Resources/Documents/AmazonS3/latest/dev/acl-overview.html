@@ -1,0 +1,832 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Access Control List (ACL) Overview - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="S3_ACLs_UsingACLs.html" title="Managing Access with ACLs">
+      <link rel="prev" href="S3_ACLs_UsingACLs.html" title="Managing Access with ACLs">
+      <link rel="next" href="managing-acls.html" title="Managing ACLs">
+      <meta name="description" content="Use ACLs to manage access to buckets and objects. An ACL defines which AWS accounts or groups are granted access and the type of access.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="s3-access-control.html">Managing Access Permissions to Your Amazon S3 Resources</a> &#xBB; <a href="S3_ACLs_UsingACLs.html">Managing Access with ACLs</a> &#xBB; <span class="breadcrumb">Access Control List (ACL) Overview</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="acl-overview">Access Control List (ACL) Overview</h1>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#specifying-grantee">Who Is a Grantee?</a></li>
+                           <li><a href="#permissions">What Permissions Can I Grant?</a></li>
+                           <li><a href="#sample-acl">Sample ACL</a></li>
+                           <li><a href="#canned-acl">Canned ACL</a></li>
+                           <li><a href="#setting-acls">How to Specify an ACL</a></li>
+                        </ul>
+                     </div>
+                     <p>Amazon S3 access control lists (ACLs) enable you to manage access to buckets and objects.
+                        Each
+                        			bucket and object has an ACL attached to it as a subresource. It defines which
+                        AWS
+                        			accounts or groups are granted access and the type of access. When a request is
+                        received
+                        			against a resource, Amazon S3 checks the corresponding ACL to verify that the requester
+                        has
+                        			the necessary access permissions. 
+                     </p>
+                     <p>When you create a bucket or an object, Amazon S3 creates a default ACL that grants
+                        the resource
+                        			owner full control over the resource. This is shown in the following sample bucket
+                        ACL
+                        			(the default object ACL has the same structure):
+                     </p>
+                     <div class="example">
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;AccessControlPolicy xmlns=&quot;http://s3.amazonaws.com/doc/2006-03-01/&quot;&gt;
+  &lt;Owner&gt;
+    &lt;ID&gt;*** Owner-Canonical-User-ID ***&lt;/ID&gt;
+    &lt;DisplayName&gt;owner-display-name&lt;/DisplayName&gt;
+  &lt;/Owner&gt;
+  &lt;AccessControlList&gt;
+    &lt;Grant&gt;
+      &lt;Grantee xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; 
+               xsi:type=&quot;Canonical User&quot;&gt;
+        &lt;ID&gt;*** Owner-Canonical-User-ID ***&lt;/ID&gt;
+        &lt;DisplayName&gt;display-name&lt;/DisplayName&gt;
+      &lt;/Grantee&gt;
+      &lt;Permission&gt;FULL_CONTROL&lt;/Permission&gt;
+    &lt;/Grant&gt;
+  &lt;/AccessControlList&gt;
+&lt;/AccessControlPolicy&gt; </code></pre></div>
+                     </div>
+                     <p>The sample ACL includes an <code class="code">Owner</code> element that identifies the owner by the AWS
+                        			account&apos;s canonical user ID, which is a long string such as
+                        				<code class="code">79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be</code>. The
+                        				<code class="code">Grant</code> element identifies the grantee (either an AWS account or a
+                        			predefined group) and the permission granted. This default ACL has one
+                        				<code class="code">Grant</code> element for the owner. You grant permissions by adding
+                        				<code class="code">Grant</code> elements, with each grant identifying the grantee and the
+                        			permission. 
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>An ACL can have up to 100 grants.</p>
+                     </div>
+                     <h2 id="specifying-grantee">Who Is a Grantee?</h2>
+                     			
+                     			
+                     <p>A grantee can be an AWS account or one of the predefined Amazon S3 groups. You grant
+                        permission
+                        				to an AWS account using the email address or the canonical user ID. However, if
+                        you
+                        				provide an email address in your grant request, Amazon S3 finds the canonical
+                        user ID for
+                        				that account and adds it to the ACL. The resulting ACLs always contain the canonical
+                        				user ID for the AWS account, not the AWS account&apos;s email address.
+                     </p>
+                     			    
+                     	
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Using email addresses to specify a grantee is only supported in the following AWS
+                           				Regions:
+                        </p>
+                        <div class="itemizedlist">
+                           				
+                           				
+                           				
+                           				
+                           				
+                           				
+                           				
+                           				
+                           			
+                           <ul class="itemizedlist" type="disc">
+                              <li class="listitem">
+                                 					
+                                 <p>US East (N. Virginia)</p>
+                                 				
+                              </li>
+                              <li class="listitem">
+                                 					
+                                 <p>US West (N. California)</p>
+                                 				
+                              </li>
+                              <li class="listitem">
+                                 					
+                                 <p>US West (Oregon)</p>
+                                 				
+                              </li>
+                              <li class="listitem">
+                                 					
+                                 <p>Asia Pacific (Singapore)</p>
+                                 				
+                              </li>
+                              <li class="listitem">
+                                 					
+                                 <p>Asia Pacific (Sydney)</p>
+                                 				
+                              </li>
+                              <li class="listitem">
+                                 					
+                                 <p>Asia Pacific (Tokyo)</p>
+                                 				
+                              </li>
+                              <li class="listitem">
+                                 					
+                                 <p>EU (Ireland)</p>
+                                 				
+                              </li>
+                              <li class="listitem">
+                                 					
+                                 <p>South America (S&#xE3;o Paulo)</p>
+                                 				
+                              </li>
+                           </ul>
+                        </div>
+                        <p>For a list of all the Amazon S3 supported regions and endpoints, 
+                           				see <a href="./general/latest/gr/rande.html#s3_region" target="_blank">Regions and Endpoints</a> in the
+                           				<em>AWS General Reference</em>.
+                        </p>
+                     </div>			
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Warning</p>
+                        <p>When you grant other AWS accounts access to your resources, be aware that the AWS
+                           					accounts can delegate their permissions to users under their
+                           					accounts. This is known as <em>cross-account
+                              						access</em>. For information about using cross-account access,
+                           					see <a href="./IAM/latest/UserGuide/id_roles_create_for-user.html" target="_blank">
+                              						Creating a Role to Delegate Permissions to an IAM User</a>
+                           					in the <em>IAM User Guide</em>. 
+                        </p>
+                     </div> 
+                     
+                     			
+                     <h3 id="finding-canonical-id">Finding an AWS Account Canonical User
+                        					ID
+                     </h3>
+                     				
+                     				
+                     <p>The canonical user ID is associated with your AWS account. 
+                        					For	information about how to find the canonical user ID for your account, see
+                        					<a href="./general/latest/gr/acct-identifiers.html#FindingCanonicalId" target="_blank">Finding Your Account Canonical User ID</a>. 
+                        				
+                     </p>
+                     				
+                     <p>You can also look up the canonical user ID of an AWS account by reading the
+                        					ACL of a bucket or an object to which the AWS account has access permissions.
+                        					When an individual AWS account is granted permissions by a grant request, a
+                        					grant entry is added to the ACL with the AWS account&apos;s canonical user ID.
+                        				
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="specifying-grantee-predefined-groups">Amazon S3 Predefined Groups</h3>
+                     				
+                     				
+                     <p>Amazon S3 has a set of predefined groups. When granting account access to a group,
+                        					you specify one of our URIs instead of a canonical user ID. We provide the
+                        					following predefined groups:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p><span class="topcom">Authenticated Users group</span> &#x2013;
+                                 							Represented by
+                                 								<code class="code">http://acs.amazonaws.com/groups/global/AuthenticatedUsers</code>.
+                              </p>
+                              						
+                              <p>This group represents all AWS accounts. <b>Access permission to this
+                                    							group allows any AWS account to access the resource.</b> However, all
+                                 							requests must be signed (authenticated).
+                              </p>
+                              						
+                              <div class="aws-note">
+                                 <p class="aws-note">Warning</p>
+                                 <p>When you grant access to the <b>Authenticated Users group</b>
+                                    								any AWS authenticated user in the world can access your
+                                    								resource.
+                                 </p>
+                              </div> 
+                              						
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><span class="topcom">All Users group</span> &#x2013; Represented by
+                                 								<code class="code">http://acs.amazonaws.com/groups/global/AllUsers</code>.
+                              </p>
+                              						
+                              <p><b>Access permission to this group allows anyone in the world access
+                                    								to the resource.</b> The requests can be signed
+                                 							(authenticated) or unsigned (anonymous). Unsigned requests omit the
+                                 							Authentication header in the request.
+                              </p>
+                              						
+                              <div class="aws-note">
+                                 <p class="aws-note">Warning</p>
+                                 <p>We highly recommend that you never grant the <b>All Users
+                                       									group</b>
+                                    								<code class="code">WRITE</code>, <code class="code">WRITE_ACP</code>, or
+                                    									<code class="code">FULL_CONTROL</code> permissions. For example,
+                                    									<code class="code">WRITE</code> permissions allow anyone to store objects in
+                                    								your bucket, for which you are billed. It also allows others to
+                                    								delete objects that you might want to keep. For more details about
+                                    								these permissions, see the following section <a href="acl-overview.html#permissions">What Permissions Can I Grant?</a>.
+                                 </p>
+                              </div>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><span class="topcom">Log Delivery group</span> &#x2013; Represented
+                                 							by <code class="code">http://acs.amazonaws.com/groups/s3/LogDelivery</code>.
+                              </p>
+                              						
+                              <p>WRITE permission on a bucket enables this group to write server
+                                 							access logs (see <a href="ServerLogs.html">Server Access Logging</a>) to the bucket.
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>When using ACLs, a grantee can be an AWS account or one of the predefined Amazon S3
+                           groups.
+                           						However, the grantee cannot be an IAM user. For more information about AWS
+                           						users and permissions within IAM, go to <a href="./IAM/latest/UserGuide/" target="_blank">Using
+                              							AWS Identity and Access Management</a>.
+                        </p>
+                     </div>
+                     			
+                     		
+                     			
+                     <h2 id="permissions">What Permissions Can I Grant?</h2>
+                     			
+                     			
+                     <p>The following table lists the set of permissions that Amazon S3 supports in an ACL.
+                        The set of
+                        				ACL permissions is the same for an object ACL and a bucket ACL. However, depending
+                        				on the context (bucket ACL or object ACL), these ACL permissions grant permissions
+                        				for specific buckets or object operations. The table lists the permissions and
+                        				describes what they mean in the context of objects and buckets. 
+                     </p>
+                     			
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac27c26c11c17b5">
+                              						
+                              <tbody><tr>
+                                 							
+                                 <th>Permission</th>
+                                 							
+                                 <th>When granted on a bucket</th>
+                                 							
+                                 <th>When granted on an object</th>
+                                 						
+                              </tr>
+                              					
+                              						
+                              <tr>
+                                 							
+                                 <td><code class="code">READ</code></td>
+                                 							
+                                 <td>Allows grantee to list the objects in the bucket</td>
+                                 							
+                                 <td>Allows grantee to read the object data and its metadata</td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td><code class="code">WRITE</code></td>
+                                 							
+                                 <td>Allows grantee to create, overwrite, and delete any object in the
+                                    								bucket
+                                 </td>
+                                 							
+                                 <td>Not applicable</td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td><code class="code">READ_ACP</code></td>
+                                 							
+                                 <td>Allows grantee to read the bucket ACL</td>
+                                 							
+                                 <td>Allows grantee to read the object ACL</td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td><code class="code">WRITE_ACP</code></td>
+                                 							
+                                 <td>Allows grantee to write the ACL for the applicable bucket</td>
+                                 							
+                                 <td>Allows grantee to write the ACL for the applicable object</td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td><code class="code">FULL_CONTROL</code></td>
+                                 							
+                                 <td>Allows grantee the READ, WRITE, READ_ACP, and WRITE_ACP
+                                    								permissions on the bucket
+                                 </td>
+                                 							
+                                 <td>Allows grantee the READ, READ_ACP, and WRITE_ACP permissions on
+                                    								the object
+                                 </td>
+                                 						
+                              </tr>
+                              						
+                              					
+                           </tbody></table>
+                        </div>
+                     </div>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Warning</p>
+                        <p>Use caution when granting access permissions to your S3 buckets and objects.
+                           					For example, granting <code class="code">WRITE</code> access to a bucket allows the grantee
+                           					to create, overwrite, and delete any object in the bucket. We highly recommend
+                           					that you read through this entire <a href="acl-overview.html">Access Control List (ACL) Overview</a> section before granting permissions.
+                        </p>
+                     </div>	 
+                     						
+                     			
+                     				
+                     <h3 id="acl-access-policy-permission-mapping">Mapping of ACL Permissions
+                        					and Access Policy Permissions
+                     </h3>
+                     				
+                     				
+                     <p>As shown in the preceding table, an ACL allows only a finite set of permissions, compared
+                        					to the number of permissions you can set in an access policy (see <a href="using-with-s3-actions.html">Specifying Permissions in a Policy</a>).
+                        					Each of these permissions allows one or more Amazon S3 operations.
+                     </p>
+                     				
+                     <p>The following table shows how each ACL permission maps to the corresponding access
+                        policy
+                        					permissions. As you can see, access policy allows more permissions than ACL
+                        					does. You use ACL primarily to grant basic read/write permissions, similar to
+                        					file system permissions. For more information about when to use ACL, see <a href="access-policy-alternatives-guidelines.html">Guidelines for Using the Available
+                           			Access Policy Options</a>.
+                     </p>
+                     				
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac27c26c11c17b9b7">
+                              							
+                              <tbody><tr>
+                                 								
+                                 <th>ACL permission</th>
+                                 								
+                                 <th>Corresponding access policy permissions when the ACL
+                                    									permission is granted on a bucket 
+                                 </th>
+                                 								
+                                 <th>Corresponding access policy permissions when the ACL
+                                    									permission is granted on an object
+                                 </th>
+                                 							
+                              </tr>
+                              						
+                              							
+                              <tr>
+                                 								
+                                 <td><code class="code">READ</code></td>
+                                 
+                                 								
+                                 <td><code class="code">s3:ListBucket</code>,
+                                    										<code class="code">s3:ListBucketVersions</code>, and
+                                    										<code class="code">s3:ListBucketMultipartUploads</code>
+                                    								
+                                 </td>
+                                 								
+                                 <td><code class="code">s3:GetObject</code>, <code class="code">s3:GetObjectVersion</code>,
+                                    									and <code class="code">s3:GetObjectTorrent</code></td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td><code class="code">WRITE</code></td>
+                                 
+                                 								
+                                 <td>
+                                    <p>
+                                       										<code class="code">s3:PutObject</code> and
+                                       										<code class="code">s3:DeleteObject</code>.
+                                    </p>
+                                    									
+                                    <p>In addition, when the grantee is the bucket owner,
+                                       										granting <code class="code">WRITE</code> permission in a bucket ACL
+                                       										allows the <code class="code">s3:DeleteObjectVersion</code> action to be
+                                       										performed on any version in that bucket.
+                                    </p>
+                                    								
+                                 </td>
+                                 								
+                                 <td>Not applicable</td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td><code class="code">READ_ACP</code></td>
+                                 
+                                 								
+                                 <td><code class="code">s3:GetBucketAcl</code>
+                                    								
+                                 </td>
+                                 								
+                                 <td><code class="code">s3:GetObjectAcl</code> and
+                                    										<code class="code">s3:GetObjectVersionAcl</code></td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td><code class="code">WRITE_ACP</code></td>
+                                 
+                                 								
+                                 <td><code class="code">s3:PutBucketAcl</code></td>
+                                 								
+                                 <td><code class="code">s3:PutObjectAcl</code> and
+                                    										<code class="code">s3:PutObjectVersionAcl</code></td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td><code class="code">FULL_CONTROL</code></td>
+                                 
+                                 								
+                                 <td>Equivalent to granting <code class="code">READ</code>, <code class="code">WRITE</code>, <code class="code">READ_ACP</code>,
+                                    									and <code class="code">WRITE_ACP</code> ACL permissions. Accordingly, this
+                                    									ACL permission maps to a combination of corresponding access
+                                    									policy permissions.
+                                 </td>
+                                 								
+                                 <td>Equivalent to granting <code class="code">READ</code>, <code class="code">READ_ACP</code>, and
+                                    										<code class="code">WRITE_ACP</code> ACL permissions. Accordingly, this
+                                    									ACL permission maps to a combination of corresponding access
+                                    									policy permissions.
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              						
+                           </tbody></table>
+                        </div>
+                     </div>
+                     			
+                     		
+                     <h2 id="sample-acl">Sample ACL</h2>
+                     			
+                     			
+                     <p>The following sample ACL on a bucket identifies the resource owner and a set of
+                        				grants. The format is the XML representation of an ACL in the Amazon S3 REST API.
+                        The
+                        				bucket owner has <code class="code">FULL_CONTROL</code> of the resource. In addition, the ACL
+                        				shows how permissions are granted on a resource to two AWS accounts, identified
+                        by
+                        				canonical user ID, and two of the predefined Amazon S3 groups discussed in the
+                        preceding
+                        				section.
+                     </p>
+                     			
+                     <div class="example">
+                        <div class="example-contents"><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;AccessControlPolicy xmlns=&quot;http://s3.amazonaws.com/doc/2006-03-01/&quot;&gt;
+  &lt;Owner&gt;
+    &lt;ID&gt;Owner-canonical-user-ID&lt;/ID&gt;
+    &lt;DisplayName&gt;display-name&lt;/DisplayName&gt;
+  &lt;/Owner&gt;
+  &lt;AccessControlList&gt;
+    &lt;Grant&gt;
+      &lt;Grantee xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xsi:type=&quot;CanonicalUser&quot;&gt;
+        &lt;ID&gt;Owner-canonical-user-ID&lt;/ID&gt;
+        &lt;DisplayName&gt;display-name&lt;/DisplayName&gt;
+      &lt;/Grantee&gt;
+      &lt;Permission&gt;FULL_CONTROL&lt;/Permission&gt;
+    &lt;/Grant&gt;
+    
+    &lt;Grant&gt;
+      &lt;Grantee xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xsi:type=&quot;CanonicalUser&quot;&gt;
+        &lt;ID&gt;user1-canonical-user-ID&lt;/ID&gt;
+        &lt;DisplayName&gt;display-name&lt;/DisplayName&gt;
+      &lt;/Grantee&gt;
+      &lt;Permission&gt;WRITE&lt;/Permission&gt;
+    &lt;/Grant&gt;
+
+    &lt;Grant&gt;
+      &lt;Grantee xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xsi:type=&quot;CanonicalUser&quot;&gt;
+        &lt;ID&gt;user2-canonical-user-ID&lt;/ID&gt;
+        &lt;DisplayName&gt;display-name&lt;/DisplayName&gt;
+      &lt;/Grantee&gt;
+      &lt;Permission&gt;READ&lt;/Permission&gt;
+    &lt;/Grant&gt;
+
+    &lt;Grant&gt;
+      &lt;Grantee xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xsi:type=&quot;Group&quot;&gt;
+        &lt;URI&gt;http://acs.amazonaws.com/groups/global/AllUsers&lt;/URI&gt; 
+      &lt;/Grantee&gt;
+      &lt;Permission&gt;READ&lt;/Permission&gt;
+    &lt;/Grant&gt;
+    &lt;Grant&gt;
+      &lt;Grantee xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xsi:type=&quot;Group&quot;&gt;
+        &lt;URI&gt;http://acs.amazonaws.com/groups/s3/LogDelivery&lt;/URI&gt;
+      &lt;/Grantee&gt;
+      &lt;Permission&gt;WRITE&lt;/Permission&gt;
+    &lt;/Grant&gt;
+
+  &lt;/AccessControlList&gt;
+&lt;/AccessControlPolicy&gt;</code></pre></div>
+                     </div>
+                     		
+                     <h2 id="canned-acl">Canned ACL</h2>
+                     			
+                     			
+                     <p>Amazon S3 supports a set of predefined grants, known as canned ACLs. Each canned ACL
+                        has a
+                        				predefined set of grantees and permissions. The following table lists the set
+                        of
+                        				canned ACLs and the associated predefined grants. 
+                     </p>
+                     			
+                     				
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac27c26c11c21b4">
+                              							
+                              <tbody><tr>
+                                 								
+                                 <th>Canned ACL</th>
+                                 								
+                                 <th>Applies to</th>
+                                 								
+                                 <th>Permissions added to ACL</th>
+                                 							
+                              </tr>
+                              						
+                              							
+                              <tr>
+                                 								
+                                 <td><code class="code">private</code></td>
+                                 								
+                                 <td>Bucket and object</td>
+                                 								
+                                 <td>Owner gets <code class="code">FULL_CONTROL</code>. No one else has access
+                                    									rights (default).
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td><code class="code">public-read</code></td>
+                                 								
+                                 <td>Bucket and object</td>
+                                 								
+                                 <td>Owner gets <code class="code">FULL_CONTROL</code>. The <code class="code">AllUsers</code> group (see <a href="acl-overview.html#specifying-grantee">Who Is a Grantee?</a>) gets <code class="code">READ</code> access. 
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td><code class="code">public-read-write</code></td>
+                                 								
+                                 <td>Bucket and object</td>
+                                 								
+                                 <td>Owner gets <code class="code">FULL_CONTROL</code>. The
+                                    										<code class="code">AllUsers</code> group gets <code class="code">READ</code> and
+                                    										<code class="code">WRITE</code> access. Granting this on a bucket is
+                                    									generally not recommended.
+                                 </td>
+                                 							
+                              </tr>
+                              						  
+                              <tr>
+                                 						    
+                                 <td><code class="code">aws-exec-read</code></td>
+                                 						    
+                                 <td>Bucket and object</td>
+                                 						    
+                                 <td>Owner gets <code class="code">FULL_CONTROL</code>. Amazon EC2 gets <code class="code">READ</code> 
+                                    						      access to <code class="code">GET</code> an Amazon Machine Image (AMI) bundle from Amazon S3.
+                                 </td>
+                                 						  
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td><code class="code">authenticated-read</code></td>
+                                 								
+                                 <td>Bucket and object</td>
+                                 								
+                                 <td>Owner gets <code class="code">FULL_CONTROL</code>. The
+                                    										<code class="code">AuthenticatedUsers</code> group gets <code class="code">READ</code>
+                                    									access.
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td><code class="code">bucket-owner-read</code></td>
+                                 								
+                                 <td>Object</td>
+                                 								
+                                 <td>Object owner gets <code class="code">FULL_CONTROL</code>. Bucket owner
+                                    									gets <code class="code">READ</code> access. If you specify this canned ACL
+                                    									when creating a bucket, Amazon S3 ignores it.
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td><code class="code">bucket-owner-full-control</code></td>
+                                 								
+                                 <td>Object </td>
+                                 								
+                                 <td>Both the object owner and the bucket owner get
+                                    										<code class="code">FULL_CONTROL</code> over the object. If you specify
+                                    									this canned ACL when creating a bucket, Amazon S3 ignores it.
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td><code class="code">log-delivery-write</code></td>
+                                 								
+                                 <td>Bucket </td>
+                                 								
+                                 <td>The <code class="code">LogDelivery</code> group gets <code class="code">WRITE</code> and <code class="code">READ_ACP</code>
+                                    								permissions on the bucket. For more information about logs, see
+                                    									(<a href="ServerLogs.html">Server Access Logging</a>).
+                                 </td>
+                                 							
+                              </tr>
+                              						
+                           </tbody></table>
+                        </div>
+                     </div>
+                     			
+                     
+                     
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You can specify only one of these canned ACLs in your request.</p>
+                     </div>
+                     
+                     			
+                     <p>You specify a canned ACL in your request using the <code class="code">x-amz-acl</code> request
+                        				header. When Amazon S3 receives a request with a canned ACL in the request, it
+                        adds the
+                        				predefined grants to the ACL of the resource. 
+                     </p>
+                     		
+                     <h2 id="setting-acls">How to Specify an ACL</h2>
+                     			
+                     			
+                     <p>Amazon S3 APIs enable you to set an ACL when you create a bucket or an object. Amazon
+                        S3 also
+                        				provides API to set an ACL on an existing bucket or an object. These APIs provide
+                        				the following methods to set an ACL:
+                     </p>
+                     		
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p><span class="topcom">Set ACL using request headers&#x2014;</span>
+                                 							When you send a request to create a resource (bucket or object), you set
+                                 							an ACL using the request headers. Using these headers, you can either
+                                 							specify a canned ACL or specify grants explicitly (identifying grantee
+                                 							and permissions explicitly). 
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><span class="topcom">Set ACL using request body&#x2014;</span> When you send a request
+                                 						to set an ACL on an existing resource, you can set the ACL either in the
+                                 						request header or in the body. 
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     			
+                     <p> For more information, see <a href="managing-acls.html">Managing ACLs</a>.
+                     </p>
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="S3_ACLs_UsingACLs.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="managing-acls.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Who Is a Grantee?"><a class="pagetoc" href="#specifying-grantee">Who Is a Grantee?</a></li>
+                        <li class="pagetoc" name="What Permissions Can I Grant?"><a class="pagetoc" href="#permissions">What Permissions Can I Grant?</a></li>
+                        <li class="pagetoc" name="Sample ACL"><a class="pagetoc" href="#sample-acl">Sample ACL</a></li>
+                        <li class="pagetoc" name="Canned ACL"><a class="pagetoc" href="#canned-acl">Canned ACL</a></li>
+                        <li class="pagetoc" name="How to Specify an ACL"><a class="pagetoc" href="#setting-acls">How to Specify an ACL</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

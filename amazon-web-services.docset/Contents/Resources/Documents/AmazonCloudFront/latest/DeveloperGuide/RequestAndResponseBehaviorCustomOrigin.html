@@ -1,0 +1,2167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Request and Response Behavior for Custom Origins - Amazon CloudFront</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="RequestAndResponseBehavior.html" title="Request and Response Behavior">
+      <link rel="prev" href="RequestAndResponseBehaviorS3Origin.html" title="Request and Response Behavior for Amazon S3 Origins">
+      <link rel="next" href="http-3xx-status-codes.html" title="How CloudFront Processes HTTP 3xx Status Codes from Your Origin">
+      <meta name="description" content="Describes how CloudFront processes viewer requests and responses for your custom origin server.">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/RequestAndResponseBehaviorCustomOrigin.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="RequestAndResponseBehavior.html">Request and Response Behavior</a> &#xBB; <span class="breadcrumb">Request and Response Behavior for Custom Origins</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="RequestAndResponseBehaviorCustomOrigin">Request and Response Behavior for Custom Origins</h1>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#RequestBehaviorCustomOrigin">How CloudFront Processes and Forwards Requests to Your Custom Origin Server</a></li>
+                           <li><a href="#ResponseBehaviorCustomOrigin">How CloudFront Processes Responses from Your Custom Origin Server</a></li>
+                        </ul>
+                     </div>
+                     			
+                     <h2 id="RequestBehaviorCustomOrigin">How CloudFront Processes and Forwards Requests to Your Custom Origin Server</h2>
+                     			
+                     			
+                     <p>This topic contains information about how CloudFront processes viewer requests and
+                        forwards the requests to
+                        				your custom origin.
+                     </p>
+                     
+                     			
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#RequestCustomClientAuth">Authentication</a></li>
+                           <li><a href="#RequestCustomCaching">Caching Duration and Minimum TTL</a></li>
+                           <li><a href="#RequestCustomIPAddresses">Client IP Addresses</a></li>
+                           <li><a href="#RequestCustomClientSideSslAuth">Client-Side SSL Authentication</a></li>
+                           <li><a href="#RequestCustomCompression">Compression</a></li>
+                           <li><a href="#RequestCustomConditionalGETs">Conditional Requests</a></li>
+                           <li><a href="#RequestCustomCookies">Cookies</a></li>
+                           <li><a href="#request-custom-cors">Cross-Origin Resource Sharing (CORS)</a></li>
+                           <li><a href="#RequestCustomEncryption">Encryption</a></li>
+                           <li><a href="#RequestCustom-get-body">GET Requests That Include a Body</a></li>
+                           <li><a href="#RequestCustomHTTPMethods">HTTP Methods</a></li>
+                           <li><a href="#request-custom-headers-behavior">HTTP Request Headers and CloudFront Behavior 
+                                 						(Custom and S3 Origins)</a></li>
+                           <li><a href="#RequestCustomHTTPVersion">HTTP Version</a></li>
+                           <li><a href="#RequestCustomMaxRequestStringLength">Maximum Length of a Request and Maximum Length of a URL</a></li>
+                           <li><a href="#request-custom-ocsp-stapling">OCSP Stapling</a></li>
+                           <li><a href="#request-custom-persistent-connections">Persistent Connections</a></li>
+                           <li><a href="#RequestCustomProtocols">Protocols</a></li>
+                           <li><a href="#RequestCustomQueryStrings">Query Strings</a></li>
+                           <li><a href="#request-custom-request-timeout">Origin Response Timeout</a></li>
+                           <li><a href="#request-custom-traffic-spikes">Simultaneous Requests for the Same Object (Traffic Spikes)</a></li>
+                           <li><a href="#request-custom-user-agent-header">User-Agent Header</a></li>
+                        </ul>
+                     </div>
+                     
+                     			
+                     				
+                     <h3 id="RequestCustomClientAuth">Authentication</h3>
+                     				
+                     				
+                     <p>For <code class="code">DELETE</code>, <code class="code">GET</code>, <code class="code">HEAD</code>, <code class="code">PATCH</code>,
+                        						<code class="code">POST</code>, and <code class="code">PUT</code> requests, if you configure CloudFront to forward the
+                        						<code class="code">Authorization</code> header to your origin, you can configure your origin server
+                        					to request client authentication. 
+                     </p>
+                     				
+                     <p>For <code class="code">OPTIONS</code> requests, you can configure your origin server to request
+                        					client authentication only if you use the following CloudFront settings:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>Configure CloudFront to forward the <code class="code">Authorization</code> header to your
+                                 							origin
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>Configure CloudFront to <em>not</em> cache the response to
+                                 								<code class="code">OPTIONS</code> requests
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>You can configure CloudFront to forward requests to your origin using either HTTP
+                        or HTTPS;
+                        					for more information, see <a href="using-https.html">Using HTTPS with CloudFront</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestCustomCaching">Caching Duration and Minimum TTL</h3>
+                     				
+                     				
+                     <p>For web distributions, to control how long your objects stay in a CloudFront cache
+                        before
+                        					CloudFront forwards another request to your origin, you can:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>Configure your origin to add a <code class="code">Cache-Control</code> or an
+                                 								<code class="code">Expires</code> header field to each object.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>Specify a value for Minimum TTL in CloudFront cache behaviors.</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>Use the default value of 24 hours.</p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>For more information, see <a href="Expiration.html">Specifying How Long Objects Stay in a CloudFront Edge Cache (Expiration)</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestCustomIPAddresses">Client IP Addresses</h3>
+                     				
+                     				
+                     <p>If a viewer sends a request to CloudFront and does not include an
+                        						<code class="code">X-Forwarded-For</code> request header, CloudFront gets the IP address of the viewer from
+                        					the TCP connection, adds an <code class="code">X-Forwarded-For</code> header that includes the IP
+                        					address, and forwards the request to the origin. For example, if CloudFront gets
+                        the IP address
+                        						<code class="code">192.0.2.2</code> from the TCP connection, it forwards the following header to the
+                        					origin:
+                     </p>
+                     				
+                     <p><code class="code">X-Forwarded-For: 192.0.2.2</code></p>
+                     				
+                     <p>If a viewer sends a request to CloudFront and includes an <code class="code">X-Forwarded-For</code>
+                        					request header, CloudFront gets the IP address of the viewer from the TCP connection,
+                        appends it
+                        					to the end of the <code class="code">X-Forwarded-For</code> header, and forwards the request to the
+                        					origin. For example, if the viewer request includes <code class="code">X-Forwarded-For:
+                           						192.0.2.4,192.0.2.3</code> and CloudFront gets the IP address <code class="code">192.0.2.2</code> from the
+                        					TCP connection, it forwards the following header to the origin:
+                     </p>
+                     				
+                     <p><code class="code">X-Forwarded-For: 192.0.2.4,192.0.2.3,192.0.2.2</code></p>
+                     				
+                     <p>Some applications, such as load balancers (including Elastic Load Balancing), web
+                        					application firewalls, reverse proxies, intrusion prevention systems, and API
+                        Gateway,
+                        					append the IP address of the CloudFront edge server that forwarded the request
+                        onto the end of
+                        					the <code class="code">X-Forwarded-For</code> header. For example, if CloudFront includes
+                        						<code class="code">X-Forwarded-For: 192.0.2.2</code> in a request that it forwards to ELB and if the
+                        					IP address of the CloudFront edge server is 192.0.2.199, the request that your
+                        EC2 instance
+                        					receives contains the following header:
+                     </p>
+                     				
+                     <p><code class="code">X-Forwarded-For: 192.0.2.2,192.0.2.199</code></p>
+                     				
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>The <code class="code">X-Forwarded-For</code> header contains IPv4 addresses (such as 192.0.2.44)
+                           						and IPv6 addresses (such as 2001:0db8:85a3:0000:0000:8a2e:0370:7334), as
+                           						applicable.
+                        </p>
+                     </div>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestCustomClientSideSslAuth">Client-Side SSL Authentication</h3>
+                     				
+                     				
+                     <p>CloudFront does not support client authentication with client-side SSL certificates.
+                        If an
+                        					origin requests a client-side certificate, CloudFront drops the request. 
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestCustomCompression">Compression</h3>
+                     				
+                     				
+                     <p>CloudFront forwards requests that have the <code class="code">Accept-Encoding</code> field values
+                        						<code class="code">&quot;identity&quot;</code> and <code class="code">&quot;gzip&quot;</code>. For more information, see <a href="ServingCompressedFiles.html">Serving Compressed Files</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestCustomConditionalGETs">Conditional Requests</h3>
+                     				
+                     				
+                     <p>When CloudFront receives a request for an object that has expired from an edge cache,
+                        it
+                        					forwards the request to the origin either to get the latest version of the object
+                        or to
+                        					get confirmation from the origin that the CloudFront edge cache already has the
+                        latest version.
+                        					Typically, when the origin last sent the object to CloudFront, it included an
+                        <code class="code">ETag</code>
+                        					value, a <code class="code">LastModified</code> value, or both values in the response. In the new
+                        					request that CloudFront forwards to the origin, CloudFront adds one or both of
+                        the following:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>An <code class="code">If-Match</code> or <code class="code">If-None-Match</code> header that contains the
+                                 								<code class="code">ETag</code> value for the expired version of the object.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>An <code class="code">If-Modified-Since</code> header that contains the
+                                 								<code class="code">LastModified</code> value for the expired version of the object.
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     				
+                     <p>The origin uses this information to determine whether the object has been updated
+                        and,
+                        					therefore, whether to return the entire object to CloudFront or to return only
+                        an HTTP 304
+                        					status code (not modified).
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestCustomCookies">Cookies</h3>
+                     				
+                     				
+                     <p>You can configure CloudFront to forward cookies to your origin. For more information,
+                        see
+                        						<a href="Cookies.html">Configuring CloudFront to Cache Objects Based on Cookies</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="request-custom-cors">Cross-Origin Resource Sharing (CORS)</h3>
+                     				
+                     				
+                     <p>If you want CloudFront to respect cross-origin resource sharing settings, configure
+                        CloudFront to
+                        					forward the <code class="code">Origin</code> header to your origin. For more information, see <a href="header-caching.html">Configuring CloudFront to Cache Objects Based on Request Headers</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestCustomEncryption">Encryption</h3>
+                     				
+                     				
+                     <p>You can require viewers to use HTTPS to send requests to CloudFront and require CloudFront
+                        to
+                        					forward requests to your custom origin by using the protocol that is used by
+                        the viewer.
+                        					For more information, see the following distribution settings:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p><a href="distribution-web-values-specify.html#DownloadDistValuesViewerProtocolPolicy">Viewer Protocol Policy</a></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><a href="distribution-web-values-specify.html#DownloadDistValuesOriginProtocolPolicy">Origin Protocol Policy (Amazon EC2, Elastic Load Balancing, and 
+                                    					Other Custom Origins Only)</a></p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     				
+                     <p>CloudFront forwards HTTPS requests to the origin server using the SSLv3, TLSv1.0,
+                        TLSv1.1,
+                        					and TLSv1.2 protocols. For custom origins, you can choose the SSL protocols that
+                        you want
+                        					CloudFront to use when communicating with your origin:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>If you&apos;re using the CloudFront console, choose protocols by using the <b>Origin
+                                    								SSL Protocols</b> check boxes. For more information, see <a href="distribution-web-creating-console.html">Creating a Web Distribution</a>. 
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>If you&apos;re using the CloudFront API, specify protocols by using the
+                                 								<code class="code">OriginSslProtocols</code> element. For more information, see <a href="./cloudfront/latest/APIReference/DistributionConfigDatatype.html" target="_blank">DistributionConfig Complex
+                                    								Type</a> in the <em>Amazon CloudFront API Reference</em>.
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>If the origin is an Amazon S3 bucket, CloudFront always uses TLSv1.2.</p>
+                     
+                     				
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Other versions of SSL and TLS are not supported.</p>
+                     </div>
+                     
+                     				
+                     <p>For more information about using HTTPS with CloudFront, see <a href="using-https.html">Using HTTPS with CloudFront</a>. For lists of the ciphers that CloudFront supports for HTTPS
+                        					communication between viewers and CloudFront, and between CloudFront and your
+                        origin, see <a href="secure-connections-supported-viewer-protocols-ciphers.html#secure-connections-supported-ciphers">Supported SSL/TLS Protocols and Ciphers for Communication Between Viewers and CloudFront</a>.
+                     </p>
+                     
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestCustom-get-body">GET Requests That Include a Body</h3>
+                     				
+                     				
+                     <p>If a viewer <code class="code">GET</code> request includes a body, CloudFront returns an HTTP status code
+                        					403 (Forbidden) to the viewer.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestCustomHTTPMethods">HTTP Methods</h3>
+                     				
+                     				
+                     <p>If you configure CloudFront to process all of the HTTP methods that it supports, CloudFront
+                        					accepts the following requests from viewers and forwards them to your custom
+                        					origin:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p><code class="code">DELETE</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">GET</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">HEAD</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">OPTIONS</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">PATCH</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">POST</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">PUT</code></p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>CloudFront always caches responses to <code class="code">GET</code> and <code class="code">HEAD</code> requests. You
+                        					can also configure CloudFront to cache responses to <code class="code">OPTIONS</code> requests. CloudFront does not
+                        					cache responses to requests that use the other methods.
+                     </p>
+                     				
+                     <p>For information about configuring whether your custom origin processes these methods,
+                        					see the documentation for your origin.
+                     </p>
+                     				
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>If you configure CloudFront to accept and forward to your origin all of the HTTP methods
+                           						that CloudFront supports, configure your origin server to handle all methods.
+                           For example, if
+                           						you configure CloudFront to accept and forward these methods because you want
+                           to use
+                           							<code class="code">POST</code>, you must configure your origin server to handle <code class="code">DELETE</code>
+                           						requests appropriately so viewers can&apos;t delete resources that you don&apos;t want
+                           them to.
+                           						For more information, see the documentation for your HTTP server.
+                        </p>
+                     </div>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="request-custom-headers-behavior">HTTP Request Headers and CloudFront Behavior 
+                        						(Custom and S3 Origins)
+                     </h3>
+                     				
+                     				
+                     <p>The following table lists HTTP request headers that you can forward to both custom
+                        and
+                        					Amazon S3 origins (with the exceptions that are noted). For each header, the
+                        table includes
+                        					information about the following:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>CloudFront behavior if you don&apos;t configure CloudFront to forward the header to your
+                                 origin,
+                                 							which causes CloudFront to cache your objects based on header values.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>Whether you can configure CloudFront to cache objects based on header values for that
+                                 							header. 
+                              </p>
+                              						
+                              <p>You can configure CloudFront to cache objects based on values in the <code class="code">Date</code>
+                                 							and <code class="code">User-Agent</code> headers, but we don&apos;t recommend it. These headers have a
+                                 							lot of possible values, and caching based on their values would cause CloudFront
+                                 to forward
+                                 							significantly more requests to your origin. 
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>For more information about caching based on header values, see <a href="header-caching.html">Configuring CloudFront to Cache Objects Based on Request Headers</a>.
+                     </p>
+                     
+                     				
+                     <div class="table">
+                        <p class="title"><b></b></p>
+                        <div class="table-contents">
+                           <table id="w313aac25c11b5c29b9">
+                              							
+                              <tbody><tr>
+                                 								
+                                 <th>Header</th>
+                                 								
+                                 <th>Behavior If You Don&apos;t Configure CloudFront to Cache Based on Header Values</th>
+                                 								
+                                 <th>Caching Based on Header Values Is Supported</th>
+                                 							
+                              </tr>
+                              						
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p>Other-defined headers</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the headers to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Accept</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront removes the header.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Accept-Charset</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront removes the header.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Accept-Encoding</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>If the value contains <code class="code">gzip</code>, CloudFront forwards
+                                       											<code class="code">Accept-Encoding: gzip</code> to your origin.
+                                    </p>
+                                    									
+                                    <p>If the value does not contain <code class="code">gzip</code>, CloudFront removes the
+                                       											<code class="code">Accept-Encoding</code> header field before forwarding the request to
+                                       										your origin.
+                                    </p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Accept-Language</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront removes the header.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Authorization</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    									
+                                    <div class="itemizedlist">
+                                       										
+                                       										
+                                       										
+                                       									
+                                       <ul class="itemizedlist" type="disc">
+                                          <li class="listitem">
+                                             											
+                                             <p><code class="code">GET</code> and <code class="code">HEAD</code> requests &#x2013; CloudFront removes
+                                                												the <code class="code">Authorization</code> header field before forwarding the request to
+                                                												your origin.
+                                             </p>
+                                             										
+                                          </li>
+                                          <li class="listitem">
+                                             											
+                                             <p><code class="code">OPTIONS</code> requests &#x2013; CloudFront removes the
+                                                													<code class="code">Authorization</code> header field before forwarding the request to
+                                                												your origin if you configure CloudFront to cache responses to <code class="code">OPTIONS</code>
+                                                												requests.
+                                             </p>
+                                             											
+                                             <p>CloudFront forwards the <code class="code">Authorization</code> header field to your origin
+                                                												if you do not configure CloudFront to cache responses to OPTIONS requests.
+                                             </p>
+                                             										
+                                          </li>
+                                          <li class="listitem">
+                                             											
+                                             <p><code class="code">DELETE</code>, <code class="code">PATCH</code>, <code class="code">POST</code>, and
+                                                													<code class="code">PUT</code> requests &#x2013; CloudFront does not remove the header field
+                                                												before forwarding the request to your origin.
+                                             </p>
+                                             										
+                                          </li>
+                                       </ul>
+                                    </div>
+                                    								
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Cache-Control</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">CloudFront-Forwarded-Proto</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront does not add the header before forwarding the request to your
+                                       										origin.
+                                    </p>
+                                    									
+                                    <p>For more information, see <a href="header-caching.html#header-caching-web-protocol">Configuring CloudFront to Cache Objects Based on the
+                                          					Protocol of the Request</a>.
+                                    </p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">CloudFront-Is-Desktop-Viewer</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront does not add the header before forwarding the request to your
+                                       										origin.
+                                    </p>
+                                    									
+                                    <p>For more information, see <a href="header-caching.html#header-caching-web-device">Configuring CloudFront to Cache Objects Based on the
+                                          					Device Type</a>.
+                                    </p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">CloudFront-Is-Mobile-Viewer</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront does not add the header before forwarding the request to your
+                                       										origin.
+                                    </p>
+                                    									
+                                    <p>For more information, see <a href="header-caching.html#header-caching-web-device">Configuring CloudFront to Cache Objects Based on the
+                                          					Device Type</a>.
+                                    </p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">CloudFront-Is-Tablet-Viewer</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront does not add the header before forwarding the request to your
+                                       										origin.
+                                    </p>
+                                    									
+                                    <p>For more information, see <a href="header-caching.html#header-caching-web-device">Configuring CloudFront to Cache Objects Based on the
+                                          					Device Type</a>.
+                                    </p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">CloudFront-Viewer-Country</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront does not add the header before forwarding the request to your
+                                       										origin.
+                                    </p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Connection</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront replaces this header with <code class="code">Connection: Keep-Alive</code>
+                                       										before forwarding the request to your origin.
+                                    </p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Content-Length</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Content-MD5</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Content-Type</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Cookie</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>If you configure CloudFront to forward cookies, it will forward the
+                                       											<code class="code">Cookie</code> header field to your origin. If you don&apos;t, CloudFront removes
+                                       										the <code class="code">Cookie</code> header field. For more information, see <a href="Cookies.html">Configuring CloudFront to Cache Objects Based on Cookies</a>.
+                                    </p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Date</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes, but not recommended</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Expect</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront removes the header.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">From</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Host</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront sets the value to the domain name of the origin that is associated
+                                       										with the requested object.
+                                    </p>
+                                    								
+                                    <p>You can&apos;t cache based on the Host header for Amazon S3 origins.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes (custom)</p>
+                                    									
+                                    <p>No (S3)</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">If-Match</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">If-Modified-Since</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">If-None-Match</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">If-Range</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">If-Unmodified-Since</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Max-Forwards</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Origin</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Pragma</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Proxy-Authenticate</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront removes the header.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Proxy-Authorization</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront removes the header.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Proxy-Connection</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront removes the header.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Range</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin. For more information, see
+                                       											<a href="RangeGETs.html">How CloudFront Processes Partial Requests for an Object (Range GETs)</a>.
+                                    </p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes, by default</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Referer</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront removes the header.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Request-Range</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">TE</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront removes the header.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Trailer</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront removes the header.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Transfer-Encoding</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Upgrade</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront removes the header.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">User-Agent</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront replaces the value of this header field with <code class="code">Amazon
+                                          											CloudFront</code>. If you want CloudFront to cache your content based on the device
+                                       										the user is using, see <a href="header-caching.html#header-caching-web-device">Configuring CloudFront to Cache Objects Based on the
+                                          					Device Type</a>.
+                                    </p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes, but not recommended</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Via</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">Warning</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">X-Amz-Cf-Id</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront adds the header to the viewer request before forwarding the
+                                       										request to your origin. The header value contains an encrypted string that
+                                       										uniquely identifies the request.
+                                    </p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">X-Edge-*</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront removes all <code class="code">X-Edge-*</code> headers.
+                                    </p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">X-Forwarded-For</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront forwards the header to your origin. For more information, see
+                                       											<a href="RequestAndResponseBehaviorCustomOrigin.html#RequestCustomIPAddresses">Client IP Addresses</a>.
+                                    </p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">X-Forwarded-Proto</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront removes the header.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>Yes</p>
+                                 </td>
+                                 							
+                              </tr>
+                              							
+                              <tr>
+                                 								
+                                 <td>
+                                    <p><code class="code">X-Real-IP</code></p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>CloudFront removes the header.</p>
+                                 </td>
+                                 								
+                                 <td>
+                                    <p>No</p>
+                                 </td>
+                                 							
+                              </tr>
+                              						
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestCustomHTTPVersion">HTTP Version</h3>
+                     				
+                     				
+                     <p>CloudFront forwards requests to your custom origin using HTTP/1.1.</p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestCustomMaxRequestStringLength">Maximum Length of a Request and Maximum Length of a URL</h3>
+                     				
+                     				
+                     <p>The maximum length of a request, including the path, the query string (if any), and
+                        					headers, is 20,480 bytes. 
+                     </p>
+                     				
+                     <p>CloudFront constructs a URL from the request. The maximum length of this URL is 8192
+                        bytes. 
+                     </p>
+                     				
+                     <p>If a request or a URL exceeds these limits, CloudFront returns HTTP status code 413,
+                        Request
+                        					Header Fields Too Large, to the viewer, and then terminates the TCP connection
+                        to the
+                        					viewer.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="request-custom-ocsp-stapling">OCSP Stapling</h3>
+                     				
+                     				
+                     <p>When a viewer submits an HTTPS request for an object, either CloudFront or the viewer
+                        must
+                        					confirm with the certificate authority (CA) that the SSL certificate for the
+                        domain has
+                        					not been revoked. OCSP stapling speeds up certificate validation by allowing
+                        CloudFront to
+                        					validate the certificate and to cache the response from the CA, so the client
+                        doesn&apos;t need
+                        					to validate the certificate directly with the CA.
+                     </p>
+                     				
+                     <p>The performance improvement of OCSP stapling is more pronounced when CloudFront receives
+                        a
+                        					lot of HTTPS requests for objects in the same domain. Each server in a CloudFront
+                        edge location
+                        					must submit a separate validation request. When CloudFront receives a lot of
+                        HTTPS requests for
+                        					the same domain, every server in the edge location soon has a response from the
+                        CA that it
+                        					can &quot;staple&quot; to a packet in the SSL handshake; when the viewer is satisfied that
+                        the
+                        					certificate is valid, CloudFront can serve the requested object. If your distribution
+                        doesn&apos;t
+                        					get much traffic in a CloudFront edge location, new requests are more likely
+                        to be directed to a
+                        					server that hasn&apos;t validated the certificate with the CA yet. In that case, the
+                        viewer
+                        					separately performs the validation step and the CloudFront server serves the
+                        object. That CloudFront
+                        					server also submits a validation request to the CA, so the next time it receives
+                        a request
+                        					that includes the same domain name, it has a validation response from the CA.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="request-custom-persistent-connections">Persistent Connections</h3>
+                     				
+                     				
+                     <p>When CloudFront gets a response from your origin, it tries to maintain the connection
+                        for several seconds in case another request arrives 
+                        					during that period. Maintaining a persistent connection saves the time required
+                        to re-establish the TCP connection and perform another 
+                        					TLS handshake for subsequent requests. 
+                     </p>
+                     				
+                     <p>For more information, including how to configure the duration of persistent connections,
+                        see 
+                        					<a href="distribution-web-values-specify.html#DownloadDistValuesOriginKeepaliveTimeout">Origin Keep-alive Timeout (Amazon EC2, Elastic Load Balancing, and Other Custom Origins
+                           Only)</a> 
+                        					in the section <a href="distribution-web-values-specify.html">Values That You Specify When You Create or Update a Web Distribution</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestCustomProtocols">Protocols</h3>
+                     				
+                     				
+                     <p>CloudFront forwards HTTP or HTTPS requests to the origin server based on the
+                        					following:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>The protocol of the request that the viewer sends to CloudFront, either HTTP or
+                                 							HTTPS.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The value of the <b>Origin Protocol Policy</b> field in the CloudFront
+                                 							console or, if you&apos;re using the CloudFront API, the <code class="code">OriginProtocolPolicy</code>
+                                 							element in the <code class="code">DistributionConfig</code> complex type. In the CloudFront console, the
+                                 							options are <b>HTTP Only</b>, <b>HTTPS Only</b>, and
+                                 								<b>Match Viewer</b>.
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>If you specify <b>HTTP Only</b> or <b>HTTPS Only</b>, CloudFront
+                        					forwards requests to the origin server using the specified protocol, regardless
+                        of the
+                        					protocol in the viewer request.
+                     </p>
+                     				
+                     <p>If you specify <b>Match Viewer</b>, CloudFront forwards requests to the origin
+                        					server using the protocol in the viewer request. Note that CloudFront caches
+                        the object only
+                        					once even if viewers make requests using both HTTP and HTTPS protocols.
+                     </p>
+                     				
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>If CloudFront forwards a request to the origin using the HTTPS protocol, and if the
+                           origin
+                           						server returns an invalid certificate or a self-signed certificate, CloudFront
+                           drops the TCP
+                           						connection.
+                        </p>
+                     </div>
+                     
+                     				
+                     <p>For information about how to update a distribution using the CloudFront console, see
+                        <a href="HowToUpdateDistribution.html">Viewing and Updating CloudFront Distributions</a>. For
+                        					information about how to update a distribution using the CloudFront API, go to
+                        <a href="./cloudfront/latest/APIReference/PutConfig.html" target="_blank">PUT Distribution Config</a> in the
+                        						<em>Amazon CloudFront API Reference</em>. 
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestCustomQueryStrings">Query Strings</h3>
+                     				
+                     				
+                     <p>You can configure whether CloudFront forwards query string parameters to your origin.
+                        For more information, see 
+                        					<a href="QueryStringParameters.html">Configuring CloudFront to Cache Based on Query String Parameters</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="request-custom-request-timeout">Origin Response Timeout</h3>
+                     				
+                     				
+                     <p>The origin response timeout, also known as the origin request timeout or origin read
+                        timeout, applies to both of the 
+                        					following values:
+                     </p>
+                     					
+                     <div class="itemizedlist">
+                        						
+                        						
+                        					
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>The amount of time, in seconds, that CloudFront waits for a response after forwarding
+                                 a request to a custom origin
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>The amount of time, in seconds, that CloudFront waits after receiving a packet of
+                                 a response from the origin 
+                                 							and before receiving the next packet
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>For more information, including how to configure the origin response timeout, see
+                        
+                        					<a href="distribution-web-values-specify.html#DownloadDistValuesOriginResponseTimeout">Origin Response Timeout (Amazon EC2, Elastic Load Balancing, and Other Custom Origins
+                           Only)</a> 
+                        					in the section <a href="distribution-web-values-specify.html">Values That You Specify When You Create or Update a Web Distribution</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="request-custom-traffic-spikes">Simultaneous Requests for the Same Object (Traffic Spikes)</h3>
+                     				
+                     				
+                     <p>When a CloudFront edge location receives a request for an object and either the object
+                        isn&apos;t
+                        					currently in the cache or the object has expired, CloudFront immediately sends
+                        the request to
+                        					your origin. If there&apos;s a traffic spike&#x2014;if additional requests for the same object
+                        					arrive at the edge location before your origin responds to the first request&#x2014;CloudFront
+                        					pauses briefly before forwarding additional requests for the object to your origin.
+                        					Typically, the response to the first request will arrive at the CloudFront edge
+                        location before
+                        					the response to subsequent requests. This brief pause helps to reduce unnecessary
+                        load on
+                        					your origin server. If additional requests are not identical because, for example,
+                        you
+                        					configured CloudFront to cache based on request headers or cookies, CloudFront
+                        forwards all of the
+                        					unique requests to your origin.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="request-custom-user-agent-header">User-Agent Header</h3>
+                     				
+                     				
+                     <p>If you want CloudFront to cache different versions of your objects based on the device
+                        					a user is using to view your content, we recommend that you configure CloudFront
+                        to forward the
+                        					applicable headers to your custom origin:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p><code class="code">CloudFront-Is-Desktop-Viewer</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">CloudFront-Is-Mobile-Viewer</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">CloudFront-Is-SmartTV-Viewer</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">CloudFront-Is-Tablet-Viewer</code></p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>Based on the value of the <code class="code">User-Agent</code> header, CloudFront sets the value of these
+                        					headers to <code class="code">true</code> or <code class="code">false</code> before forwarding the request to your
+                        					origin. If a device falls into more than one category, more than one value might
+                        be
+                        						<code class="code">true</code>. For example, for some tablet devices, CloudFront might set both
+                        						<code class="code">CloudFront-Is-Mobile-Viewer</code> and <code class="code">CloudFront-Is-Tablet-Viewer</code> to
+                        						<code class="code">true</code>. For more information about configuring CloudFront to cache based on request
+                        					headers, see <a href="header-caching.html">Configuring CloudFront to Cache Objects Based on Request Headers</a>.
+                     </p>
+                     				
+                     <p>You can configure CloudFront to cache objects based on values in the <code class="code">User-Agent</code>
+                        					header, but we don&apos;t recommend it. The <code class="code">User-Agent</code> header has a lot of
+                        					possible values, and caching based on those values would cause CloudFront to
+                        forward
+                        					significantly more requests to your origin. 
+                     </p>
+                     				
+                     <p>If you do not configure CloudFront to cache objects based on values in the
+                        						<code class="code">User-Agent</code> header, CloudFront CloudFront adds a <code class="code">User-Agent</code> header
+                        					with the following value before it forwards a request to your origin:
+                     </p>
+                     				
+                     <p><code class="code">User-Agent = Amazon CloudFront</code></p>
+                     				
+                     <p>CloudFront adds this header regardless of whether the request from the viewer includes
+                        a
+                        						<code class="code">User-Agent</code> header. If the request from the viewer includes a
+                        						<code class="code">User-Agent</code> header, CloudFront removes it.
+                     </p>
+                     			
+                     
+                     		
+                     			
+                     <h2 id="ResponseBehaviorCustomOrigin">How CloudFront Processes Responses from Your Custom Origin Server</h2>
+                     			
+                     			
+                     <p>This topic contains information about how CloudFront processes responses from your
+                        custom origin.
+                     </p>
+                     
+                     			
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#Response100Continue">100-Continue Responses</a></li>
+                           <li><a href="#ResponseCustomCaching">Caching</a></li>
+                           <li><a href="#response-custom-canceled-requests">Canceled Requests</a></li>
+                           <li><a href="#ResponseCustomContentNegotiation">Content Negotiation</a></li>
+                           <li><a href="#ResponseCustomCookies">Cookies</a></li>
+                           <li><a href="#ResponseCustomDroppedTCPConnections">Dropped TCP Connections</a></li>
+                           <li><a href="#ResponseCustomRemovedHeaders">HTTP Response Headers that CloudFront Removes or
+                                 					Updates</a></li>
+                           <li><a href="#ResponseCustomMaxFileSize">Maximum File Size</a></li>
+                           <li><a href="#ResponseCustomOriginUnavailable">Origin Unavailable</a></li>
+                           <li><a href="#ResponseCustomRedirects">Redirects</a></li>
+                           <li><a href="#ResponseCustomTransferEncoding">Transfer Encoding</a></li>
+                        </ul>
+                     </div>
+                     
+                     			
+                     				
+                     <h3 id="Response100Continue">100-Continue Responses</h3>
+                     				
+                     <p>Your origin cannot send more than one 100-Continue response to CloudFront. After the
+                        first 100-Continue response, CloudFront expects an HTTP 200 OK response.
+                        				If your origin sends another 100-Continue response after the first one, CloudFront
+                        will return an error.
+                     </p>
+                     			
+                     			
+                     				
+                     <h3 id="ResponseCustomCaching">Caching</h3>
+                     				
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>Ensure that the origin server sets valid and accurate values for the
+                                 								<code class="code">Date</code> and <code class="code">Last-Modified</code> header fields.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>If requests from viewers include the <code class="code">If-Match</code> or
+                                 								<code class="code">If-None-Match</code> request header fields, set the <code class="code">ETag</code> response
+                                 							header field. If you do not specify an <code class="code">ETag</code> value, CloudFront ignores
+                                 							subsequent <code class="code">If-Match</code> or <code class="code">If-None-Match</code> headers.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>CloudFront normally respects a <code class="code">Cache-Control: no-cache</code> header in the
+                                 							response from the origin. For an exception, see <a href="RequestAndResponseBehaviorCustomOrigin.html#request-custom-traffic-spikes">Simultaneous Requests for the Same Object (Traffic Spikes)</a>.
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="response-custom-canceled-requests">Canceled Requests</h3>
+                     				
+                     				
+                     <p>If an object is not in the edge cache, and if a viewer terminates a session (for
+                        					example, closes a browser) after CloudFront gets the object from your origin
+                        but before it can
+                        					deliver the requested object, CloudFront does not cache the object in the edge
+                        location.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="ResponseCustomContentNegotiation">Content Negotiation</h3>
+                     				
+                     				
+                     <p>If your origin returns <code class="code">Vary:*</code> in the response, and if the value of <b>Minimum TTL</b> for the 
+                        					corresponding cache behavior is <b>0</b>, CloudFront caches the object but still forwards every subsequent 
+                        					request for the object to the origin to confirm that the cache contains the latest
+                        version of the object. 
+                        					CloudFront doesn&apos;t include any conditional headers, such as <code class="code">If-None-Match</code> or <code class="code">If-Modified-Since</code>. As a result, 
+                        					your origin returns the object to CloudFront in response to every request.
+                     </p>
+                     				
+                     <p>If your origin returns <code class="code">Vary:*</code> in the response, and if the value of <b>Minimum TTL</b> 
+                        					for the corresponding cache behavior is any other value, CloudFront processes
+                        the <code class="code">Vary</code> header as described in 
+                        					<a href="RequestAndResponseBehaviorCustomOrigin.html#ResponseCustomRemovedHeaders">HTTP Response Headers that CloudFront Removes or
+                           					Updates</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="ResponseCustomCookies">Cookies</h3>
+                     				
+                     				
+                     <p>If you enable cookies for a cache behavior, and if the origin returns cookies with
+                        an
+                        					object, CloudFront caches both the object and the cookies. Note that this reduces
+                        cacheability
+                        					for an object. For more information, see <a href="Cookies.html">Configuring CloudFront to Cache Objects Based on Cookies</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="ResponseCustomDroppedTCPConnections">Dropped TCP Connections</h3>
+                     				
+                     				
+                     <p>If the TCP connection between CloudFront and your origin drops while your origin is
+                        					returning an object to CloudFront, CloudFront behavior depends on whether your
+                        origin included a
+                        						<code class="code">Content-Length</code> header in the response:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p><b>Content-Length header</b> &#x2013; CloudFront returns the
+                                 							object to the viewer as it gets the object from your origin. However, if the
+                                 value of
+                                 							the <code class="code">Content-Length</code> header doesn&apos;t match the size of the object, CloudFront
+                                 							doesn&apos;t cache the object.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><b>Transfer-Encoding: Chunked</b> &#x2013; CloudFront returns
+                                 							the object to the viewer as it gets the object from your origin. However, if
+                                 the
+                                 							chunked response is not complete, CloudFront does not cache the object.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><b>No Content-Length header</b> &#x2013; CloudFront returns
+                                 							the object to the viewer and caches it, but the object may not be complete.
+                                 Without a
+                                 								<code class="code">Content-Length</code> header, CloudFront cannot determine whether the TCP connection
+                                 							was dropped accidentally or on purpose.
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>We recommend that you configure your HTTP server to add a <code class="code">Content-Length</code>
+                        					header to prevent CloudFront from caching partial objects.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="ResponseCustomRemovedHeaders">HTTP Response Headers that CloudFront Removes or
+                        					Updates
+                     </h3>
+                     				
+                     				
+                     <p>CloudFront removes or updates the following header fields before forwarding the response
+                        					from your origin to the viewer: 
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p><code class="code">Set-Cookie</code> &#x2013; If you configure CloudFront to forward cookies, it will
+                                 							forward the <code class="code">Set-Cookie</code> header field to clients. For more information, see
+                                 								<a href="Cookies.html">Configuring CloudFront to Cache Objects Based on Cookies</a>.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">Trailer</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">Transfer-Encoding</code> &#x2013; If your origin returns this header field,
+                                 							CloudFront sets the value to <code class="code">chunked</code> before returning the response to the
+                                 							viewer.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">Upgrade</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">Vary</code> &#x2013; Note the following:
+                              </p>
+                              						
+                              <div class="itemizedlist">
+                                 							
+                                 							
+                                 							
+                                 							
+                                 							
+                                 						
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       								
+                                       <p>If you configure CloudFront to forward any of the device-specific headers to your
+                                          									origin (<code class="code">CloudFront-Is-Desktop-Viewer</code>,
+                                          										<code class="code">CloudFront-Is-Mobile-Viewer</code>,
+                                          										<code class="code">CloudFront-Is-SmartTV-Viewer</code>,
+                                          										<code class="code">CloudFront-Is-Tablet-Viewer</code>) and you configure your origin to
+                                          									return <code class="code">Vary:User-Agent</code> to CloudFront, CloudFront returns
+                                          										<code class="code">Vary:User-Agent</code> to the viewer. For more information, see <a href="header-caching.html#header-caching-web-device">Configuring CloudFront to Cache Objects Based on the
+                                             					Device Type</a>.
+                                       </p>
+                                       							
+                                    </li>
+                                    <li class="listitem">
+                                       								
+                                       <p>If you configure your origin to include either <code class="code">Accept-Encoding</code> or
+                                          										<code class="code">Cookie</code> in the <code class="code">Vary</code> header, CloudFront includes the values in
+                                          									the response to the viewer.
+                                       </p>
+                                       							
+                                    </li>
+                                    <li class="listitem">
+                                       								
+                                       <p>If you configure CloudFront to forward a whitelist of headers to your origin, and
+                                          if
+                                          									you configure your origin to return the header names to CloudFront in the
+                                          										<code class="code">Vary</code> header (for example,
+                                          										<code class="code">Vary:Accept-Charset,Accept-Language</code>), CloudFront returns the
+                                          										<code class="code">Vary</code> header with those value to the viewer.
+                                       </p>
+                                       							
+                                    </li>
+                                    <li class="listitem">
+                                       								
+                                       <p>For information about how CloudFront processes a value of <code class="code">*</code> in the
+                                          										<code class="code">Vary</code> header, see <a href="RequestAndResponseBehaviorCustomOrigin.html#ResponseCustomContentNegotiation">Content Negotiation</a>.
+                                       </p>
+                                       							
+                                    </li>
+                                    <li class="listitem">
+                                       								
+                                       <p>If you configure your origin to include any other values in the
+                                          										<code class="code">Vary</code> header, CloudFront removes the values before returning the response
+                                          									to the viewer.
+                                       </p>
+                                       							
+                                    </li>
+                                 </ul>
+                              </div>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">Via</code> &#x2013; Regardless of whether your origin returns this header
+                                 							field to CloudFront, CloudFront sets the value to:
+                              </p>
+                              						
+                              <p><code class="code">Via: 1.1
+                                    								</code><em class="replaceable"><code>alphanumeric-string</code></em><code class="code">.cloudfront.net
+                                    								(CloudFront)</code></p>
+                              						
+                              <p>before returning the response to the viewer. For example:</p>
+                              						
+                              <p><code class="code">Via: 1.1 1026589cc7887e7a0dc7827b4example.cloudfront.net
+                                    							(CloudFront)</code></p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="ResponseCustomMaxFileSize">Maximum File Size</h3>
+                     				
+                     				
+                     <p>The maximum size of a response body that CloudFront will return to the viewer is 20
+                        GB. This
+                        					includes chunked transfer responses that don&apos;t specify the <code class="code">Content-Length</code>
+                        					header value.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="ResponseCustomOriginUnavailable">Origin Unavailable</h3>
+                     				
+                     				
+                     <p>If your origin server is unavailable and CloudFront gets a request for an object that
+                        is in
+                        					the edge cache but that has expired (for example, because the period of time
+                        specified in
+                        					the <code class="code">Cache-Control max-age</code> directive has passed), CloudFront either serves the
+                        					expired version of the object or serves a custom error page. For more information,
+                        see
+                        						<a href="HTTPStatusCodes.html">How CloudFront Processes and Caches HTTP 4xx and 5xx Status Codes from Your Origin</a>. 
+                     </p>
+                     				
+                     <p>In some cases, an object that is seldom requested is evicted and is no longer
+                        					available in the edge cache. CloudFront can&apos;t serve an object that has been evicted.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="ResponseCustomRedirects">Redirects</h3>
+                     				
+                     				
+                     <p>If you change the location of an object on the origin server, you can configure your
+                        					web server to redirect requests to the new location. After you configure the
+                        redirect, the
+                        					first time a viewer submits a request for the object, CloudFront Front sends
+                        the request to the
+                        					origin, and the origin responds with a redirect (for example, <code class="code">302 Moved
+                           						Temporarily</code>). CloudFront caches the redirect and returns it to the viewer. CloudFront does
+                        					not follow the redirect. 
+                     </p>
+                     				
+                     <p>You can configure your web server to redirect requests to one of the following
+                        					locations:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>The new URL of the object on the origin server. When the viewer follows the
+                                 							redirect to the new URL, the viewer bypasses CloudFront and goes straight to
+                                 the origin. As
+                                 							a result, we recommend that you not redirect requests to the new URL of the
+                                 object on
+                                 							the origin.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>The new CloudFront URL for the object. When the viewer submits the request that contains
+                                 							the new CloudFront URL, CloudFront gets the object from the new location on
+                                 your origin, caches it
+                                 							at the edge location, and returns the object to the viewer. Subsequent requests
+                                 for
+                                 							the object will be served by the edge location. This avoids the latency and
+                                 load
+                                 							associated with viewers requesting the object from the origin. However, every
+                                 new
+                                 							request for the object will incur charges for two requests to CloudFront.
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="ResponseCustomTransferEncoding">Transfer Encoding</h3>
+                     				
+                     				
+                     <p>CloudFront supports only the <code class="code">chunked</code> value of the
+                        						<code class="code">Transfer-Encoding</code> header. If your origin returns <code class="code">Transfer-Encoding:
+                           						chunked</code>, CloudFront returns the object to the client as the object is received at the
+                        					edge location, and caches the object in chunked format for subsequent requests.
+                     </p>
+                     				
+                     <p>If the viewer makes a <code class="code">Range GET</code> request and the origin returns
+                        						<code class="code">Transfer-Encoding: chunked</code>, CloudFront returns the entire object to the viewer
+                        					instead of the requested range.
+                     </p>
+                     				
+                     <p>We recommend that you use chunked encoding if the content length of your response
+                        					cannot be predetermined. For more information, see <a href="RequestAndResponseBehaviorCustomOrigin.html#ResponseCustomDroppedTCPConnections">Dropped TCP Connections</a>. 
+                     </p>
+                     			
+                     
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="RequestAndResponseBehaviorS3Origin.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="http-3xx-status-codes.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="How CloudFront Processes and Forwards Requests to Your Custom Origin Server"><a class="pagetoc" href="#RequestBehaviorCustomOrigin">How CloudFront Processes and Forwards Requests to Your Custom Origin Server</a></li>
+                        <li class="pagetoc" name="How CloudFront Processes Responses from Your Custom Origin Server"><a class="pagetoc" href="#ResponseBehaviorCustomOrigin">How CloudFront Processes Responses from Your Custom Origin Server</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

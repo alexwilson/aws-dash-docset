@@ -1,0 +1,940 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Amazon S3 Analytics &#x2013; Storage Class Analysis - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="Welcome.html" title="What Is Amazon S3?">
+      <link rel="prev" href="querying-glacier-archives.html" title="Querying Archived Objects">
+      <link rel="next" href="storage-inventory.html" title=" Amazon S3 Inventory">
+      <meta name="description" content="Describes Amazon S3 analytics storage class analysis and how to use it.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/analytics-storage-class.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <span class="breadcrumb">Amazon S3 Analytics &#x2013; Storage Class Analysis</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="analytics-storage-class">Amazon S3 Analytics &#x2013; Storage Class Analysis</h1>
+                     <p>By using Amazon S3 analytics <em>storage class analysis</em> you can analyze storage
+                        access patterns to help you decide when to transition the right data to the right
+                        storage class.
+                        This new Amazon S3 analytics feature observes data access patterns to help you determine
+                        when to
+                        transition less frequently accessed STANDARD storage to the STANDARD_IA (IA, for infrequent
+                        access) storage class. For more information about storage classes, see <a href="storage-class-intro.html">Storage Classes</a>.
+                        
+                     </p>
+                     <p>After storage class analysis observes the infrequent access patterns of a filtered
+                        set of
+                        data over a period of time, you can use the analysis results to help you improve your
+                        lifecycle
+                        policies. You can configure storage class analysis to analyze all the objects in a
+                        bucket. Or,
+                        you can configure filters to group objects together for analysis by common prefix
+                        (that is, objects
+                        that have names that begin with a common string), by object tags, or by both prefix
+                        and tags. You&apos;ll most
+                        likely find that filtering by object groups is the best way to benefit from storage
+                        class
+                        analysis. 
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Storage class analysis does not give recommendations for transitions to the ONEZONE_IA
+                           or GLACIER
+                           storage classes.
+                        </p>
+                     </div>
+                     <p>You can have multiple storage class analysis filters per bucket, up to 1,000, and
+                        will
+                        receive a separate analysis for each filter. Multiple filter configurations allow
+                        you analyze
+                        specific groups of objects to improve your lifecycle policies that transition objects
+                        to
+                        STANDARD_IA. 
+                     </p>
+                     <p>Storage class analysis shows storage usage visualizations in the Amazon S3 console
+                        that are
+                        updated daily. The storage usage data can also be exported daily to a file in an S3
+                        bucket. You
+                        can open the exported usage report file in a spreadsheet application or use it with
+                        the business
+                        intelligence tools of your choice such as Amazon QuickSight.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#analytics-storage-class-how-to-set-up">How Do I Set Up Storage Class Analysis?</a></li>
+                           <li><a href="#analytics-storage-class-contents">How Do I Use Storage Class Analysis?</a></li>
+                           <li><a href="#analytics-storage-class-export-to-file">How Can I Export Storage Class Analysis
+                                 Data?</a></li>
+                           <li><a href="#analytics-storage-class-related-resources">Amazon S3 Analytics REST APIs</a></li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="analytics-storage-class-how-to-set-up">How Do I Set Up Storage Class Analysis?</h2>
+                     
+                     
+                     
+                     <p>You set up storage class analysis by configuring what object data you want to analyze.
+                        
+                        You can configure storage class analysis to do the following:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><b>Analyze the entire contents of a bucket.</b></p>
+                              
+                              <p>You&apos;ll receive an analysis for all the objects in the bucket.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Analyze objects grouped together by prefix and
+                                    tags.</b></p>
+                              
+                              <p>You can configure filters that group objects together for analysis by prefix, or by
+                                 object tags, or by a combination of prefix and tags. You receive a separate analysis
+                                 for each filter you configure. You can have multiple filter configurations per bucket,
+                                 up
+                                 to 1,000. 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Export analysis data.</b>
+                                 
+                              </p>
+                              
+                              <p>When you configure storage class analysis for a bucket or filter, you can choose to
+                                 have the analysis data exported to a file each day. The analysis for the day is added
+                                 to
+                                 the file to form a historic analysis log for the configured filter. The file is updated
+                                 daily at the destination of your choice. When selecting data to export, you specify
+                                 a
+                                 destination bucket and optional destination prefix where the file is written.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>You can use the Amazon S3 console, the REST API, or the AWS CLI or AWS SDKs to configure
+                        storage class analysis.
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>For information about how to configure storage class analysis in the Amazon S3 console,
+                                 see <a href="./AmazonS3/latest/user-guide/configure-analytics-storage-class.html" target="_blank">
+                                    How Do I Configure Storage Class Analysis?</a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>To use the Amazon S3 API, use the 
+                                 <a href="./AmazonS3/latest/API/RESTBucketPUTAnalyticsConfig.html" target="_blank">PutBucketAnalyticsConfiguration</a>
+                                 REST API, or the equivalent, from the AWS CLI or AWS SDKs. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>  
+                     
+                     
+                     <h2 id="analytics-storage-class-contents">How Do I Use Storage Class Analysis?</h2>
+                     
+                     
+                     
+                     <p>You use storage class analysis to observe your data access patterns over time to gather
+                        information to help you improve the lifecycle management of your STANDARD_IA storage.
+                        After
+                        you configure a filter, you&apos;ll start seeing data analysis based on the filter in the
+                        Amazon S3
+                        console in 24 to 48 hours. However, storage class analysis observes the access patterns
+                        of a
+                        filtered data set for 30 days or longer to gather information for analysis before
+                        giving a
+                        result. The analysis continues to run after the initial result and updates the result
+                        as the
+                        access patterns change
+                     </p>
+                     
+                     <p>When you first configure a filter the Amazon S3 console shows a message similar to
+                        the
+                        following.
+                     </p>
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/storage-class-analysis-observe-bar-start-observe.png" alt="
+        Screen shot.
+      ">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                     </div>
+                     
+                     <p>Storage class analysis observes the access patterns of a filtered object data set
+                        for 30
+                        days or longer to gather enough information for the analysis. After storage class
+                        analysis has
+                        gathered sufficient information, you&apos;ll see a message in the Amazon S3 console similar
+                        to the
+                        following.
+                     </p>
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/storage-class-analysis-observe-bar.png" alt="
+        Screen shot.
+      ">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                     </div>
+                     
+                     <p>When performing the analysis for infrequently accessed objects storage class analysis
+                        looks at the filtered set of objects grouped together based on age since they were
+                        uploaded to
+                        Amazon S3. Storage class analysis determines if the age group is infrequently accessed
+                        by looking
+                        at the following factors for the filtered data set:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Objects in the STANDARD storage class that are larger than 128K.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>How much average total storage you have per age group.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Average number of bytes transferred out (not frequency) per age group.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Analytics export data only includes requests with data relevant to storage class
+                                 analysis. This might cause differences in the number of requests, and the total upload
+                                 and
+                                 request bytes compared to what are shown in storage metrics or tracked by your own
+                                 internal systems.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Failed GET and PUT requests are not counted for the analysis. However, you will see
+                                 failed requests in storage metrics. 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p><b>How Much of My Storage did I Retrieve?</b></p>
+                     
+                     <p>The Amazon S3 console graphs how much of the storage in the filtered data set has
+                        been retrieved
+                        for the observation period as shown in the following example.
+                     </p>
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/storage-class-analysis-how-much-retrieved.png" alt="
+        Screen shot.
+      ">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                     </div>
+                     
+                     
+                     <p><b>What Percentage of My Storage did I Retrieve?</b></p>
+                     
+                     <p>The Amazon S3 console also graphs what percentage of the storage in the filtered data
+                        set has been retrieved
+                        for the observation period as shown in the following example.
+                     </p> 
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/storage-class-analysis-percentage-retrieved.png" alt="
+        Screen shot.
+      ">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                     </div>
+                     
+                     <p>As stated earlier in this topic, when you are performing the analysis for infrequently
+                        accessed objects,
+                        storage class analysis looks at the filtered set of objects grouped together based
+                        on the age
+                        since they were uploaded to Amazon S3. The storage class analysis uses the following
+                        predefined
+                        object age groups: 
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Amazon S3 Objects less than 15 days old</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Amazon S3 Objects 15-29 days old</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Amazon S3 Objects 30-44 days old</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Amazon S3 Objects 45-59 days old</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Amazon S3 Objects 60-74 days old</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Amazon S3 Objects 75-89 days old</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Amazon S3 Objects 90-119 days old</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Amazon S3 Objects 120-149 days old</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Amazon S3 Objects 150-179 days old</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Amazon S3 Objects 180-364 days old</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Amazon S3 Objects 365-729 days old</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Amazon S3 Objects 730 days and older</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     <p>Usually it takes about 30 days of observing access patterns to gather enough information
+                        for an analysis result. It might take longer than 30 days, depending on the unique
+                        access
+                        pattern of your data. However, after you configure a filter you&apos;ll start seeing data
+                        analysis
+                        based on the filter in the Amazon S3 console in 24 to 48 hours. You can see analysis
+                        on a daily
+                        basis of object access broken down by object age group in the Amazon S3 console. 
+                     </p>
+                     
+                     
+                     <p><b>How Much of My Storage is Infrequently Accessed?</b></p>
+                     
+                     <p>The Amazon S3 console shows the access patterns grouped by the predefined object age
+                        groups as
+                        shown in the following example.
+                     </p>
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/storage-class-analysis-infrequently-accesses.png" alt="
+        Screen shot.
+      ">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                     </div>
+                     
+                     <p>The <b>Frequently accessed</b> or <b>Infrequently accessed</b>
+                        text shown at the bottom of each age group is based on the same logic as the lifecycle
+                        policy
+                        recommendation being prepared. After a recommended age for a lifecycle policy is ready
+                        (RecommendedObjectAge), all of the age tiers younger than that recommended age are
+                        marked as
+                        infrequently accessed, regardless of the current cumulative access ratio. This text
+                        is meant
+                        as a visual aid to help you in the lifecycle creation process. 
+                     </p>
+                     
+                     
+                     <h2 id="analytics-storage-class-export-to-file">How Can I Export Storage Class Analysis
+                        Data?
+                     </h2>
+                     
+                     
+                     <p>You can choose to have storage class analysis export analysis reports to a comma-separated
+                        values (CSV) flat file. Reports are updated daily and are based on the object age
+                        group
+                        filters you configure. When using the Amazon S3 console you can choose the export
+                        report option
+                        when you create a filter. When selecting data export you specify a destination bucket
+                        and
+                        optional destination prefix where the file is written. You can export the data to
+                        a
+                        destination bucket in a different account. The destination bucket must be in the same
+                        region
+                        as the bucket that you configure to be analyzed.
+                     </p>
+                     
+                     <p>You must create a bucket policy on the destination bucket to grant permissions to
+                        Amazon S3 to verify what AWS account owns the bucket and to write objects to the bucket
+                        in
+                        the defined location. For an example policy, see <a href="example-bucket-policies.html#example-bucket-policies-use-case-9">Granting Permissions for Amazon S3 Inventory and
+                           Amazon S3 Analytics</a>.
+                     </p>
+                     
+                     <p>After you configure storage class analysis reports, you start getting the exported
+                        report 
+                        daily after 24 hours. After that, Amazon S3 continues monitoring and providing daily
+                        exports. 
+                     </p>
+                     
+                     
+                     <p>You can open the CSV file in a spreadsheet application or import the file into other
+                        applications like <a href="./quicksight/latest/user/welcome.html" target="_blank">Amazon
+                           QuickSight</a>. For information on using Amazon S3 files with Amazon QuickSight, see <a href="./quicksight/latest/user/create-a-data-set-s3.html" target="_blank"> Create a Data Set
+                           Using Amazon S3 Files</a> in the <em>Amazon QuickSight User
+                           Guide</em>. 
+                     </p>
+                     
+                     <p>Data in the exported file is sorted by date within object age group as shown in following
+                        examples. If the storage class is STANDARD the row also contains data for the columns
+                        <code class="code">ObjectAgeForSIATransition</code> and
+                        <code class="code">RecommendedObjectAgeForSIATransition</code>.
+                     </p>
+                     
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/storage-class-analysis-export-file1.png" alt="
+        Screen shot.
+      ">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                     </div>
+                     
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/storage-class-analysis-export-file2.png" alt="
+        Screen shot.
+      ">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                     </div>
+                     
+                     <p>At the end of the report the object age group is ALL. The ALL rows contain cumulative
+                        totals for all the age groups for that day as shown in the following example. 
+                     </p>
+                     
+                     <div class="mediaobject">
+                        
+                        <img src="../../..//img/storage-class-analysis-export-file3.png" alt="
+        Screen shot.
+      ">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                     </div>
+                     
+                     <p>The next section describes the columns used in the report.</p>
+                     
+                     
+                     
+                     <h3 id="analytics-storage-class-export-file-layout">Exported File Layout </h3>
+                     
+                     
+                     
+                     <p>The following table describe the layout of the exported file.</p> 
+                     
+                     
+                     <p>If you see an expand arrow (<b>&#x2197;</b>) in the upper-right corner of the table, you can open the table in a new
+                        window. To close the window, choose the close button (<b>X</b>) in the lower-right corner.
+                     </p>
+                     
+                     
+                     
+                     <div class="table">
+                        <p class="title"><b>Amazon S3 Storage Class Analysis Export File Layout</b></p><a id="storage-class-analysis-export-file"></a><div class="table-contents">
+                           <table id="w70aac20c21c23b9">
+                              
+                              <tbody><tr>
+                                 
+                                 <th>Column Name</th>
+                                 
+                                 <th>Dimension/Metric</th>
+                                 
+                                 <th>DataType</th>
+                                 
+                                 <th>Description</th>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>Date </td>
+                                 
+                                 <td>Dimension</td>
+                                 
+                                 <td>String </td>
+                                 
+                                 <td>Date when the record was processed. Format is MM-DD-YYYY.</td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>ConfigId </td>
+                                 
+                                 <td>Dimension</td>
+                                 
+                                 <td>String </td>
+                                 
+                                 <td>
+                                    <p>Value entered as the filter name when adding the filter configuration. </p>
+                                 </td>
+                                 
+                              </tr>  
+                              
+                              <tr>
+                                 
+                                 <td>Filter</td>
+                                 
+                                 <td>Dimension</td>
+                                 
+                                 <td>String </td>
+                                 
+                                 <td>
+                                    <p>Full filter values as configured when adding the filter configuration.</p>
+                                 </td>
+                                 
+                              </tr>  
+                              
+                              <tr>
+                                 
+                                 <td>StorageClass</td>
+                                 
+                                 <td>Dimension</td>
+                                 
+                                 <td>String </td>
+                                 
+                                 <td>
+                                    <p>Storage class of the data.</p>
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>ObjectAge</td>
+                                 
+                                 <td>Dimension</td>
+                                 
+                                 <td>String </td>
+                                 
+                                 <td>
+                                    <p>Age group for the objects in the filter. In addition to the 12 different age groups
+                                       (0-14
+                                       days, 15-29 days, 30-44 days, 45-59 days, 60-74 days, 75-89 days, 90-119 days,
+                                       120-149 days, 150-179 days, 180-364 days, 365-729 days, 730 days+) for 128KB+
+                                       objects, there is one extra value=&apos;ALL&apos;, which represents all age groups.
+                                    </p>
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>ObjectCount </td>
+                                 
+                                 <td>Metric </td>
+                                 
+                                 <td> Integer </td>
+                                 
+                                 <td>
+                                    <p>Total number of objects counted per storage class for the day in the age group. For
+                                       the
+                                       <code class="code">AgeGroup=&apos;ALL&apos;</code>, the value is the total object count for all the age
+                                       groups for the day.
+                                    </p>
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>DataUploaded_MB </td>
+                                 
+                                 <td>Metric</td>
+                                 
+                                 <td>Number</td>
+                                 
+                                 <td>
+                                    <p>Total data in MB uploaded per storage class for the day in the age group. For the
+                                       <code class="code">AgeGroup=&apos;ALL&apos;</code>, the value is the total upload count in MB for all
+                                       the age groups for the day. (Note that you will not see multipart object upload
+                                       activity in your export data because multipart upload requests do not currently
+                                       have storage class information.)
+                                    </p>
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>Storage_MB </td>
+                                 
+                                 <td>Metric</td>
+                                 
+                                 <td>Number </td>
+                                 
+                                 <td>
+                                    <p>Total storage in MB per storage class for the day in the age group. For the
+                                       <code class="code">AgeGroup=&apos;ALL&apos;</code>, the value is the overall storage count in MB for
+                                       all the age groups for the day.
+                                    </p>
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>DataRetrieved_MB</td>
+                                 
+                                 <td>Metric</td>
+                                 
+                                 <td>Number</td>
+                                 
+                                 <td>
+                                    <p>Data transferred out in MBs per storage class with GET requests for the day in the
+                                       age group.
+                                       For <code class="code">AgeGroup=&apos;ALL&apos;</code>, the value is the overall data transferred out in
+                                       MB with GET requests for all the age groups for the day.
+                                    </p>
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>GetRequestCount</td>
+                                 
+                                 <td>Metric</td>
+                                 
+                                 <td>Integer</td>
+                                 
+                                 <td>
+                                    <p>Number of GET requests made per storage class for the day in the age group. For
+                                       AgeGroup=&apos;ALL&apos;, the value represents the overall GET request count for all the age
+                                       groups for the day.
+                                    </p>
+                                    
+                                 </td>
+                                 
+                              </tr>
+                              
+                              
+                              <tr>
+                                 
+                                 <td>CumulativeAccessRatio</td>
+                                 
+                                 <td>Metric</td>
+                                 
+                                 <td>Number</td>
+                                 
+                                 <td>
+                                    <p>Cumulative access ratio. This ratio is used to represent the usage/byte heat on any
+                                       given age
+                                       group to help determine if an age group is eligible for transition to STANDARD_IA.
+                                       
+                                    </p>
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>ObjectAgeForSIATransition</td>
+                                 
+                                 <td>Metric</td>
+                                 
+                                 <td>Integer In Days </td>
+                                 
+                                 <td>
+                                    <p>This value exists only where the <code class="code">AgeGroup=&#x2019;ALL&#x2019;</code> and storage class = STANDARD. It
+                                       represents the observed age for transition to STANDARD_IA.
+                                    </p>
+                                 </td>
+                                 
+                              </tr>
+                              
+                              <tr>
+                                 
+                                 <td>RecommendedObjectAgeForSIATransition </td>
+                                 
+                                 <td>Metric</td>
+                                 
+                                 <td>Integer In Days </td>
+                                 
+                                 <td>
+                                    <p>This value exists only where the <code class="code">AgeGroup=&#x2019;ALL&#x2019;</code> and storage class = STANDARD. It
+                                       represents the object age in days to consider for transition to STANDARD_IA after
+                                       the <code class="code">ObjectAgeForSIATransition</code> stabilizes.
+                                    </p>
+                                 </td>
+                                 
+                              </tr>
+                              
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     
+                     
+                     <h2 id="analytics-storage-class-related-resources">Amazon S3 Analytics REST APIs</h2>
+                     
+                     
+                     <p>The following are the REST operations used for storage inventory.</p>
+                     
+                     <div class="itemizedlist">	
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p> <a href="./AmazonS3/latest/API/RESTBucketDELETEAnalyticsConfiguration.html" target="_blank">
+                                    DELETE Bucket analytics configuration</a>
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p> <a href="./AmazonS3/latest/API/RESTBucketGETAnalyticsConfig.html" target="_blank">
+                                    GET Bucket analytics configuration</a>
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p> <a href="./AmazonS3/latest/API/RESTBucketListAnalyticsConfigs.html" target="_blank">
+                                    List Bucket Analytics Configuration</a>
+                                 
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p> <a href="./AmazonS3/latest/API/RESTBucketPUTAnalyticsConfig.html" target="_blank">
+                                    PUT Bucket analytics configuration</a>
+                                 
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="querying-glacier-archives.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="storage-inventory.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="How Do I Set Up Storage Class Analysis?"><a class="pagetoc" href="#analytics-storage-class-how-to-set-up">How to Set Up Storage Class Analysis</a></li>
+                        <li class="pagetoc" name="How Do I Use Storage Class Analysis?"><a class="pagetoc" href="#analytics-storage-class-contents">Storage Class Analysis</a></li>
+                        <li class="pagetoc" name="How Can I Export Storage Class Analysis
+      Data?"><a class="pagetoc" href="#analytics-storage-class-export-to-file">How Can I Export Storage Class Analysis
+                              Data?</a></li>
+                        <li class="pagetoc" name="Amazon S3 Analytics REST APIs"><a class="pagetoc" href="#analytics-storage-class-related-resources">Amazon S3 Analytics REST APIs</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

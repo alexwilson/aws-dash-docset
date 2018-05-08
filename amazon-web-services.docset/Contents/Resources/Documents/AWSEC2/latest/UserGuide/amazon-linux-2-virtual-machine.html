@@ -1,0 +1,221 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Running Amazon Linux 2 as a Virtual Machine On-Premises - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="amazon-linux-ami-basics.html" title="Amazon Linux">
+      <link rel="prev" href="amazon-linux-ami-basics.html" title="Amazon Linux">
+      <link rel="next" href="UserProvidedKernels.html" title="User Provided Kernels">
+      <meta name="description" content="Use the Amazon Linux 2 virtual machine images for on-premises development and testing. These images are available for use on the following virtualization platforms:">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/amazon-linux-2-virtual-machine.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="AMIs.html">Amazon Machine Images (AMI)</a> &#xBB; <a href="amazon-linux-ami-basics.html">Amazon Linux</a> &#xBB; <span class="breadcrumb">Running Amazon Linux 2 as a Virtual Machine On-Premises</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="amazon-linux-2-virtual-machine">Running Amazon Linux 2 as a Virtual Machine On-Premises</h1>
+                     <p>Use the Amazon Linux 2 virtual machine images for on-premises development and testing.
+                        These images are available for use on the following virtualization platforms:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>VMWare</p>
+                           </li>
+                           <li class="listitem">
+                              <p>Oracle VM VirtualBox</p>
+                           </li>
+                           <li class="listitem">
+                              <p>Microsoft Hyper-V</p>
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>KVM</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <p class="title"><b>To run Amazon Linux on a virtual machine</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Download the VM image for your virtualization platform from <a href="https://cdn.amazonlinux.com/os-images/latest/" target="_blank">https://cdn.amazonlinux.com/os-images/latest/</a>.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Create a cloud-init configuration ISO.</p>
+                           
+                           
+                           <ol>
+                              <li>
+                                 
+                                 <p>Create <code class="code">meta-data</code> and <code class="code">user-data</code> configuration
+                                    files. The following is an example <code class="code">meta-data</code> configuration
+                                    file:
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">local-hostname: amazonlinux.onprem
+
+# eth0 is the default network interface enabled in the image. You can configure static network settings with an entry like below.
+#network-interfaces: |
+#  iface eth0 inet static
+#  address 192.168.1.10
+#  network 192.168.1.0
+#  netmask 255.255.255.0
+#  broadcast 192.168.1.255
+#  gateway 192.168.1.254</code></pre>
+                                 <p>The following is an example <code class="code">user-data</code> configuration file,
+                                    which creates multiple users and provides access mechanisms for each
+                                    (plaintext password, hashed password, and a key pair).
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">#cloud-config
+# vim:syntax=yaml
+users:
+# A user by the name ec2-user is created in the image by default.
+  - default
+# The following entry creates user1 and assigns a plain text password.
+# Please note that the use of a plain text password is not recommended from security best practises standpoint.
+  - name: user1
+    groups: sudo
+    sudo: [&apos;ALL=(ALL) NOPASSWD:ALL&apos;]
+    plain_text_passwd: <em class="replaceable"><code>plain-text-password</code></em>
+    lock_passwd: false
+# The following entry creates user2 and attaches a hashed password to the user. Hashed passwords can be generated with:
+# python -c &apos;import crypt,getpass; print crypt.crypt(getpass.getpass())&apos;
+  - name: user2
+    passwd: <em class="replaceable"><code>hashed-password</code></em>
+    lock_passwd: false
+# The following entry creates user3, disables password-based login and enables an SSH public key.
+  - name: user3
+    ssh-authorized-keys:
+            - <em class="replaceable"><code>ssh-public-key-information</code></em>
+    lock_passwd: true
+
+chpasswd:
+  list: |
+    ec2-user:<em class="replaceable"><code>plain-text-password</code></em>
+# In the above line, do not add any spaces after &apos;ec2-user:&apos;.</code></pre>
+                                 <p>For more information about supported directives, see <a href="http://cloudinit.readthedocs.io/en/latest/topics/modules.html" target="_blank">http://cloudinit.readthedocs.io/en/latest/topics/modules.html</a>.
+                                 </p>
+                                 
+                              </li>
+                              <li>
+                                 
+                                 <p>Create an ISO image.</p>
+                                 
+                                 <p>For Linux, use a tool such as <b>genisoimage</b> to create
+                                    an ISO image from the <code class="code">user-data</code> and <code class="code">meta-data</code>
+                                    configuration files. The following example creates
+                                    <code class="code">seed.iso</code>:
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">$ </code>genisoimage -output seed.iso -volid cidata -joliet -rock user-data meta-data</code></pre>
+                                 <p>For macOS, you can use the <b>hdiutil</b> tool. Copy the
+                                    <code class="code">user-data</code> and <code class="code">meta-data</code> configuration
+                                    files to a folder, and then specify the folder name in the command. The
+                                    following example creates <code class="code">seed.iso</code> from the files in the
+                                    <code class="code">seedconfig/</code> directory:
+                                 </p>
+                                 <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">$ </code>hdiutil makehybrid -o seed.iso -hfs -joliet -iso -default-volume-name cidata <em class="replaceable"><code>seedconfig</code></em>/</code></pre>
+                                 </li>
+                           </ol>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Create a virtual machine using the VM image that you downloaded, and attach
+                              the configuration ISO that you created. Connect to your virtual machine using
+                              the information that you provided in the <code class="code">user-data</code> configuration
+                              file. For more information, see the documentation for your virtualization
+                              platform.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>The ISO must be attached to the virtual machine on first boot so that the configuration
+                                 can be
+                                 applied.
+                              </p>
+                           </div>
+                           
+                        </li>
+                     </ol>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="amazon-linux-ami-basics.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="UserProvidedKernels.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

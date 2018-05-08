@@ -1,0 +1,1763 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Instance Metadata and User Data - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="Configure_Instance.html" title="Configuring Your Amazon Linux Instance">
+      <link rel="prev" href="user-data.html" title="Running Commands on Your Linux Instance at Launch">
+      <link rel="next" href="instance-identity-documents.html" title="Instance Identity Documents">
+      <meta name="description" content="Access instance metadata, dynamic data, and user data to configure and manage a running instance.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="Configure_Instance.html">Configuring Your Amazon Linux Instance</a> &#xBB; <span class="breadcrumb">Instance Metadata and User Data</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ec2-instance-metadata">Instance Metadata and User Data</h1>
+                     <p><em>Instance metadata</em> is data about your instance that you can use to
+                        		configure or manage the running instance. Instance metadata is divided into categories.
+                        For
+                        		more information, see <a href="ec2-instance-metadata.html#instancedata-data-categories">Instance Metadata Categories</a>.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Although you can only access instance metadata and user data from within the instance
+                           			itself, the data is not protected by cryptographic methods. Anyone who can access
+                           the
+                           			instance can view its metadata. Therefore, you should take suitable precautions
+                           to
+                           			protect sensitive data (such as long-lived encryption keys). You should not store
+                           			sensitive data, such as passwords, as user data.
+                        </p>
+                     </div>
+                     <p>You can also use instance metadata to access <em>user data</em> that you 
+                        		specified when launching your instance. For example, you can specify parameters
+                        for configuring your instance, or
+                        		attach a simple script. You can also use this data to build more generic AMIs that
+                        can be
+                        		modified by configuration files supplied at launch time. For example, if you run
+                        web servers
+                        		for various small businesses, they can all use the same AMI and retrieve their content
+                        from
+                        		the Amazon S3 bucket you specify in the user data at launch. To add a new customer
+                        at any time,
+                        		simply create a bucket for the customer, add their content, and launch your AMI.
+                        If you
+                        		launch more than one instance at the same time, the user data is available to all
+                        instances
+                        		in that reservation.
+                     </p>
+                     <p>EC2 instances can also include <em>dynamic data</em>, such as an instance
+                        		identity document that is generated when the instance is launched. For more information,
+                        see
+                        		<a href="ec2-instance-metadata.html#dynamic-data-categories">Dynamic Data Categories</a>.
+                     </p>
+                     <div class="highlights">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#instancedata-data-retrieval">Retrieving Instance Metadata</a></li>
+                           <li><a href="#instancedata-add-user-data">Working with Instance User Data</a></li>
+                           <li><a href="#instancedata-dynamic-data-retrieval">Retrieving Dynamic Data</a></li>
+                           <li><a href="#AMI-launch-index-examples">Example: AMI Launch Index Value</a></li>
+                           <li><a href="#instancedata-data-categories">Instance Metadata Categories</a></li>
+                           <li><a href="instance-identity-documents.html">Instance Identity Documents</a></li>
+                        </ul>
+                     </div>
+                     		
+                     <h2 id="instancedata-data-retrieval">Retrieving Instance Metadata</h2>
+                     
+                     		
+                     <p>Because your instance metadata is available from your running instance, you do not
+                        			need to use the Amazon EC2 console or the AWS CLI. This can be helpful when you&apos;re
+                        writing
+                        			scripts to run from your instance. For example, you can access the local IP address
+                        of
+                        			your instance from instance metadata to manage a connection to an external
+                        			application.
+                     </p>
+                     
+                     		
+                     <p>To view all categories of instance metadata from within a running instance, use the
+                        			following URI:
+                     </p>
+                     		<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">http://169.254.169.254/latest/meta-data/</code></pre>
+                     
+                     		<p>Note that you are not billed for HTTP requests used to retrieve instance metadata
+                        and
+                        			user data.
+                     </p>
+                     
+                     		
+                     <p>You can use a tool such as cURL, or if your instance supports it, the GET
+                        			command; for example:
+                     </p>
+                     		<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/meta-data/</code></strong></code></pre>
+                     		<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>GET http://169.254.169.254/latest/meta-data/</code></strong></code></pre>
+                     		<p>You can also download the <a href="https://aws.amazon.com/code/ec2-instance-metadata-query-tool/" target="_blank">Instance Metadata Query tool</a>,
+                        			which allows you to query the instance metadata without having to type out the
+                        full URI or category names.
+                     </p>
+                     
+                     		
+                     		
+                     		
+                     		
+                     
+                     		
+                     <p>All instance metadata is returned as text (content type <code class="code">text/plain</code>). A request
+                        			for a specific metadata resource returns the appropriate value, or a <code class="code">404 - Not
+                           				Found</code> HTTP error code if the resource is not available. 
+                     </p>
+                     		
+                     <p>A request for a general metadata resource (the URI ends with a /) returns a list of
+                        			available resources, or a <code class="code">404 - Not Found</code> HTTP error code if there is no
+                        			such resource. The list items are on separate lines, terminated by line feeds (ASCII
+                        			10). 
+                     </p>
+                     
+                     		
+                     			
+                     <h3 id="instancedata-meta-data-retrieval-examples">Examples of Retrieving
+                        				Instance Metadata
+                     </h3>
+                     
+                     			
+                     <p>This example gets the available versions of the instance metadata. These versions
+                        				do not necessarily correlate with an Amazon EC2 API version. The earlier versions
+                        are
+                        				available to you in case you have scripts that rely on the structure and information
+                        				present in a previous version. 
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/</code></strong>
+<code class="computeroutput" copy="false">1.0
+2007-01-19
+2007-03-01
+2007-08-29
+2007-10-10
+2007-12-15
+2008-02-01
+2008-09-01
+2009-04-04
+2011-01-01
+2011-05-01
+2012-01-12
+2014-02-25
+2014-11-05
+2015-10-20
+2016-04-19
+2016-06-30
+2016-09-02
+latest</code></code></pre>
+                     			
+                     
+                     			<p>This example gets the top-level metadata items. Some items are only available for
+                        				instances in a VPC. For more information about each of these items, see <a href="ec2-instance-metadata.html#instancedata-data-categories">Instance Metadata Categories</a>.
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/meta-data/</code></strong>    
+<code class="computeroutput" copy="false">ami-id
+ami-launch-index
+ami-manifest-path
+block-device-mapping/
+hostname
+iam/
+instance-action
+instance-id
+instance-type
+local-hostname
+local-ipv4
+mac
+metrics/
+network/
+placement/
+profile
+public-hostname
+public-ipv4
+public-keys/
+reservation-id
+security-groups
+services/</code></code></pre>
+                     			
+                     
+                     			<p>These examples get the value of some of the metadata items from the preceding
+                        				example.
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/meta-data/ami-id</code></strong>
+<code class="computeroutput" copy="false">ami-12345678</code></code></pre>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/meta-data/reservation-id</code></strong>
+<code class="computeroutput" copy="false">r-fea54097</code></code></pre>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/meta-data/local-hostname</code></strong>
+<code class="computeroutput" copy="false">ip-10-251-50-12.ec2.internal</code></code></pre>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/meta-data/public-hostname</code></strong>
+<code class="computeroutput" copy="false">ec2-203-0-113-25.compute-1.amazonaws.com</code></code></pre>
+                     
+                     			
+                     			
+                     			
+                     			
+                     			
+                     			<p>This example gets the list of available public keys.</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/meta-data/public-keys/</code></strong>
+<code class="computeroutput" copy="false">0=my-public-key</code></code></pre>
+                     
+                     			<p>This example shows the formats in which public key 0 is available. </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/meta-data/public-keys/0/</code></strong>
+<code class="computeroutput" copy="false">openssh-key</code></code></pre>
+                     
+                     			<p>This example gets public key 0 (in the OpenSSH key format).</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/meta-data/public-keys/0/openssh-key</code></strong>
+<code class="computeroutput" copy="false">ssh-rsa MIICiTCCAfICCQD6m7oRw0uXOjANBgkqhkiG9w0BAQUFADCBiDELMAkGA1UEBhMC
+VVMxCzAJBgNVBAgTAldBMRAwDgYDVQQHEwdTZWF0dGxlMQ8wDQYDVQQKEwZBbWF6
+b24xFDASBgNVBAsTC0lBTSBDb25zb2xlMRIwEAYDVQQDEwlUZXN0Q2lsYWMxHzAd
+BgkqhkiG9w0BCQEWEG5vb25lQGFtYXpvbi5jb20wHhcNMTEwNDI1MjA0NTIxWhcN
+MTIwNDI0MjA0NTIxWjCBiDELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAldBMRAwDgYD
+VQQHEwdTZWF0dGxlMQ8wDQYDVQQKEwZBbWF6b24xFDASBgNVBAsTC0lBTSBDb25z
+b2xlMRIwEAYDVQQDEwlUZXN0Q2lsYWMxHzAdBgkqhkiG9w0BCQEWEG5vb25lQGFt
+YXpvbi5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAMaK0dn+a4GmWIWJ
+21uUSfwfEvySWtC2XADZ4nB+BLYgVIk60CpiwsZ3G93vUEIO3IyNoH/f0wYK8m9T
+rDHudUZg3qX4waLG5M43q7Wgc/MbQITxOUSQv7c7ugFFDzQGBzZswY6786m86gpE
+Ibb3OhjZnzcvQAaRHhdlQWIMm2nrAgMBAAEwDQYJKoZIhvcNAQEFBQADgYEAtCu4
+nUhVVxYUntneD9+h8Mg9q6q+auNKyExzyLwaxlAoo7TJHidbtS4J5iNmZgXL0Fkb
+FFBjvSfpJIlJ00zbhNYS5f6GuoEDmFJl0ZxBHjJnyp378OD8uTs7fLvjx79LjSTb
+NYiytVbZPQUQ5Yaxu2jXnimvw3rrszlaEXAMPLE my-public-key</code></code></pre>
+                     
+                     			<p>This example shows the information available for a specific network interface
+                        				(indicated by the MAC address) on an NAT instance in the EC2-Classic platform.
+                        
+                     </p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/02:29:96:8f:6a:2d/</code></strong>
+<code class="computeroutput" copy="false">device-number
+local-hostname
+local-ipv4s
+mac
+owner-id
+public-hostname
+public-ipv4s</code></code></pre>
+                     			
+                     			
+                     			<p>This example gets the subnet ID for an instance launched into a VPC.</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/02:29:96:8f:6a:2d/subnet-id</code></strong>
+<code class="computeroutput" copy="false">subnet-be9b61d7</code></code></pre>
+                     			
+                     
+                     		
+                     
+                     		
+                     			<h3 id="instancedata-throttling">Throttling</h3>
+                     			
+                     			
+                     <p>We throttle queries to the instance metadata service on a per-instance basis, and
+                        we place
+                        				limits on the number of simultaneous connections from an instance to the instance
+                        				metadata service. 
+                     </p>
+                     			
+                     <p>If you&apos;re using the instance metadata service to retrieve AWS security
+                        				credentials, avoid querying for credentials during every transaction or concurrently
+                        				from a high number of threads or processes, as this may lead to throttling. Instead,
+                        				we recommend that you cache the credentials until they start approaching their
+                        				expiry time. 
+                     </p>
+                     			
+                     <p>If you&apos;re throttled while accessing the instance metadata service, retry your
+                        				query with an exponential backoff strategy.
+                     </p>
+                     		
+                     	
+                     		
+                     <h2 id="instancedata-add-user-data">Working with Instance User Data</h2>
+                     
+                     		
+                     <p>When working with instance user data, keep the following in mind:</p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>User data is treated as opaque data: what you give is what you get back. It is
+                                 					up to the instance to be able to interpret it.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>User data is limited to 16 KB. This limit applies to the data in raw form, not
+                                 					base64-encoded form.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>User data must be base64-encoded. The Amazon EC2 console can perform the base64 encoding
+                                 
+                                 					for you or accept base64-encoded input.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>User data must be decoded when you retrieve it. The data is decoded when you 
+                                 					retrieve it using instance metadata and the console.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>If you stop an instance, modify its user data, and start the instance, the updated
+                                 
+                                 					user data is not executed when you start the 
+                                 					instance.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     
+                     	
+                     <h3 id="specify-user-data-launch">Specify Instance User Data at Launch</h3>
+                     	
+                     	
+                     <p>You can specify user data when you launch an instance. For more information, see
+                        		<a href="launching-instance.html">Launching an Instance Using the Launch Instance Wizard</a> and 
+                        		<a href="user-data.html">Running Commands on Your Linux Instance at Launch</a>.
+                     </p>
+                     	
+                     
+                     
+                     		
+                     			
+                     <h3 id="modify-user-data-run">Modify Instance User Data</h3>
+                     			
+                     			
+                     <p>You can modify user data for an instance in the stopped state if the root volume is
+                        an EBS volume.
+                        				For more information, see <a href="user-data.html#user-data-view-change">View and Update the Instance User Data</a>.
+                     </p>
+                     		
+                     
+                     		
+                     			
+                     <h3 id="instancedata-user-data-retrieval">Retrieve Instance User Data</h3>
+                     			
+                     			
+                     <p>To retrieve user data from within a running instance, use the following URI:</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">http://169.254.169.254/latest/user-data</code></pre>
+                     			<p>A request for user data returns the data as it is (content type
+                        				<code class="code">application/octet-stream</code>). 
+                     </p>
+                     			
+                     			
+                     <p>This example returns user data that was provided as comma-separated text:</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/user-data</code></strong>
+<code class="computeroutput" copy="false">1234,john,reboot,true | 4512,richard, | 173,,,</code></code></pre>
+                     			
+                     			
+                     			<p>This example returns user data that was provided as a script:</p>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/user-data</code></strong>
+<code class="computeroutput" copy="false">#!/bin/bash
+yum update -y
+service httpd start
+chkconfig httpd on</code></code></pre>
+                     			
+                     			
+                     			<p>To retrieve user data for an instance from your own computer, see <a href="user-data.html#user-data-api-cli">User Data and the AWS CLI</a></p>
+                     		
+                     
+                     	
+                     		
+                     <h2 id="instancedata-dynamic-data-retrieval">Retrieving Dynamic Data</h2>
+                     
+                     		
+                     <p>To retrieve dynamic data from within a running instance, use the following URI: </p>
+                     		<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">http://169.254.169.254/latest/dynamic/</code></pre>
+                     
+                     		<p>This example shows how to retrieve the high-level instance identity categories:</p>
+                     		<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/dynamic/instance-identity/</code></strong>
+<code class="computeroutput" copy="false">rsa2048
+pkcs7
+document
+signature
+dsa2048</code></code></pre>
+                     		
+                     		
+                     		<p>For more information about dynamic data and examples of how to retrieve it, see <a href="instance-identity-documents.html">Instance Identity Documents</a>.
+                     </p>
+                     	
+                     <h2 id="AMI-launch-index-examples">Example: AMI Launch Index Value</h2>
+                     		
+                     		
+                     <p>This example demonstrates how you can use both user data and instance metadata to
+                        			configure your instances. 
+                     </p>
+                     		
+                     <p>Alice wants to launch four instances of her favorite database AMI, with the first
+                        			acting as master and the remaining three acting as replicas. When she launches
+                        them, she
+                        			wants to add user data about the replication strategy for each replicant. She is
+                        aware
+                        			that this data will be available to all four instances, so she needs to structure
+                        the
+                        			user data in a way that allows each instance to recognize which parts are applicable
+                        to
+                        			it. She can do this using the <code class="code">ami-launch-index</code> instance metadata value,
+                        			which will be unique for each instance.
+                     </p>
+                     		
+                     <p>Here is the user data that Alice has constructed:</p>
+                     		<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">replicate-every=1min | replicate-every=5min | replicate-every=10min</code></pre>
+                     		<p>The <code class="code">replicate-every=1min</code> data defines the first replicant&apos;s
+                        			configuration, <code class="code">replicate-every=5min</code> defines the second replicant&apos;s
+                        			configuration, and so on. Alice decides to provide this data as an ASCII string
+                        with a
+                        			pipe symbol (<code class="code">|</code>) delimiting the data for the separate instances.
+                     </p>
+                     		
+                     <p>Alice launches four instances using the <a href="./cli/latest/reference/ec2/run-instances.html" target="_blank">run-instances</a> command, specifying
+                        			the user data: 
+                     </p>
+                     		<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><strong class="userinput"><code>aws ec2 run-instances --image-id <em class="replaceable"><code>ami-12345678</code></em> --count 4 --instance-type t2.micro --user-data &quot;replicate-every=1min | replicate-every=5min | replicate-every=10min&quot;</code></strong></code></pre>
+                     		<p>After they&apos;re launched, all instances have a copy of the user data and the common
+                        			metadata shown here:
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>AMI id: ami-12345678</p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Reservation ID: r-1234567890abcabc0</p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Public keys: none </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Security group name: default</p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>Instance type: t2.micro</p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <p>However, each instance has certain unique metadata.</p>
+                     		
+                     <div class="table">
+                        <p class="title"><b>Instance 1</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac17c17c23c19c22">
+                              					
+                              <tbody><tr>
+                                 						
+                                 <th>Metadata</th>
+                                 						
+                                 <th>Value</th>
+                                 					
+                              </tr>
+                              				
+                              					
+                              <tr>
+                                 						
+                                 <td>instance-id</td>
+                                 						
+                                 <td>i-1234567890abcdef0</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>ami-launch-index</td>
+                                 						
+                                 <td>0</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>public-hostname</td>
+                                 						
+                                 <td>ec2-203-0-113-25.compute-1.amazonaws.com</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>public-ipv4</td>
+                                 						
+                                 <td>67.202.51.223</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>local-hostname</td>
+                                 						
+                                 <td>ip-10-251-50-12.ec2.internal</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>local-ipv4</td>
+                                 						
+                                 <td>10.251.50.35</td>
+                                 					
+                              </tr>
+                              				
+                           </tbody></table>
+                        </div>
+                     </div>
+                     			
+                     		
+                     <div class="table">
+                        <p class="title"><b>Instance 2</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac17c17c23c19c24">
+                              					
+                              <tbody><tr>
+                                 						
+                                 <th>Metadata</th>
+                                 						
+                                 <th>Value</th>
+                                 					
+                              </tr>
+                              				
+                              					
+                              <tr>
+                                 						
+                                 <td>instance-id</td>
+                                 						
+                                 <td>i-0598c7d356eba48d7</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>ami-launch-index</td>
+                                 						
+                                 <td>1</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>public-hostname</td>
+                                 						
+                                 <td>ec2-67-202-51-224.compute-1.amazonaws.com</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>public-ipv4</td>
+                                 						
+                                 <td>67.202.51.224</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>local-hostname</td>
+                                 						
+                                 <td>ip-10-251-50-36.ec2.internal</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>local-ipv4</td>
+                                 						
+                                 <td>10.251.50.36</td>
+                                 					
+                              </tr>
+                              				
+                           </tbody></table>
+                        </div>
+                     </div>
+                     			
+                     		
+                     <div class="table">
+                        <p class="title"><b>Instance 3</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac17c17c23c19c26">
+                              					
+                              <tbody><tr>
+                                 						
+                                 <th>Metadata</th>
+                                 						
+                                 <th>Value</th>
+                                 					
+                              </tr>
+                              				
+                              					
+                              <tr>
+                                 						
+                                 <td>instance-id</td>
+                                 						
+                                 <td>i-0ee992212549ce0e7</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>ami-launch-index</td>
+                                 						
+                                 <td>2</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>public-hostname</td>
+                                 						
+                                 <td>ec2-67-202-51-225.compute-1.amazonaws.com</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>public-ipv4</td>
+                                 						
+                                 <td>67.202.51.225</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>local-hostname</td>
+                                 						
+                                 <td>ip-10-251-50-37.ec2.internal</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>local-ipv4</td>
+                                 						
+                                 <td>10.251.50.37</td>
+                                 					
+                              </tr>
+                              				
+                           </tbody></table>
+                        </div>
+                     </div>
+                     
+                     		
+                     <div class="table">
+                        <p class="title"><b>Instance 4</b></p>
+                        <div class="table-contents">
+                           <table id="w185aac17c17c23c19c28">
+                              					
+                              <tbody><tr>
+                                 						
+                                 <th>Metadata</th>
+                                 						
+                                 <th>Value</th>
+                                 					
+                              </tr>
+                              				
+                              					
+                              <tr>
+                                 						
+                                 <td>instance-id</td>
+                                 						
+                                 <td>i-1234567890abcdef0</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>ami-launch-index</td>
+                                 						
+                                 <td>3</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>public-hostname</td>
+                                 						
+                                 <td>ec2-67-202-51-226.compute-1.amazonaws.com</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>public-ipv4</td>
+                                 						
+                                 <td>67.202.51.226</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>local-hostname</td>
+                                 						
+                                 <td>ip-10-251-50-38.ec2.internal</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>local-ipv4</td>
+                                 						
+                                 <td>10.251.50.38</td>
+                                 					
+                              </tr>
+                              				
+                           </tbody></table>
+                        </div>
+                     </div>
+                     		
+                     <p>Alice can use the <code class="code">ami-launch-index</code> value to determine which portion of the user data
+                        			is applicable to a particular instance.
+                     </p>
+                     		
+                     <div class="orderedlist">
+                        				
+                        				
+                        				
+                        				
+                        		
+                        <ol>
+                           <li>
+                              					
+                              <p>She connects to one of the instances, and retrieves the <code class="code">ami-launch-index</code>
+                                 						for that instance to ensure it is one of the replicants:
+                              </p>
+                              					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>curl http://169.254.169.254/latest/meta-data/ami-launch-index</code></strong>
+<code class="computeroutput" copy="false">2</code></code></pre>
+                              				</li>
+                           <li>
+                              					
+                              <p>She saves the <code class="code">ami-launch-index</code> as a variable:
+                              </p>
+                              					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code>ami_launch_index=`curl http://169.254.169.254/latest/meta-data/ami-launch-index`</code></pre>
+                              				</li>
+                           <li>
+                              					
+                              <p>She saves the user data as a variable:</p>
+                              					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code>user_data=`curl http://169.254.169.254/latest/user-data/`</code></pre>
+                              				</li>
+                           <li>
+                              					
+                              <p>Finally, Alice uses the <b>cut</b> command to extract the
+                                 						portion of the user data that is applicable to that instance:
+                              </p>
+                              					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>echo $user_data | cut -d&quot;|&quot; -f&quot;$ami_launch_index&quot;</code></strong>
+<code class="code" copy="true">replicate-every=5min</code></code></pre>
+                              				</li>
+                        </ol>
+                     </div>
+                     	
+                     <h2 id="instancedata-data-categories">Instance Metadata Categories</h2>
+                     		
+                     
+                     		
+                     <p>The following table lists the categories of instance metadata.</p>
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Category names that are formatted in red text are placeholders for data that is unique
+                           to your
+                           				instance; for example, <em class="replaceable"><code>mac</code></em> represents the MAC address for
+                           				the network interface. You must replace the placeholders with the actual
+                           				values.
+                        </p>
+                     </div>
+                     		
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac17c17c23c21b6">
+                              					
+                              <tbody><tr>
+                                 						
+                                 <th>Data</th>
+                                 						
+                                 <th>Description</th>
+                                 						
+                                 <th>Version Introduced</th>
+                                 					
+                              </tr>
+                              				
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">ami-id</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The AMI ID used to launch the instance.</td>
+                                 						
+                                 <td>1.0</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">ami-launch-index</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>If you started more than one instance at the same time, this value
+                                    							indicates the order in which the instance was launched. The value of the
+                                    							first instance launched is 0.
+                                 </td>
+                                 						
+                                 <td>1.0</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">ami-manifest-path</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The path to the AMI manifest file in Amazon S3. If you used an
+                                    							Amazon EBS-backed AMI to launch the instance, the returned result is
+                                    								<code class="code">unknown</code>.
+                                 </td>
+                                 						
+                                 <td>1.0</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">ancestor-ami-ids</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The AMI IDs of any instances that were rebundled to create this AMI.
+                                    							This value will only exist if the AMI manifest file contained an
+                                    								<code class="code">ancestor-amis</code> key.
+                                 </td>
+                                 						
+                                 <td>2007-10-10</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td><code class="code">block-device-mapping/ami</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The virtual device that contains the root/boot file system.</td>
+                                 						
+                                 <td>2007-12-15</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">block-device-mapping/ebs</code><em>N</em>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The virtual devices associated with Amazon EBS volumes, if any are
+                                    							present. Amazon EBS volumes are only available in metadata if they were
+                                    							present at launch time or when the instance was last started. The
+                                    								<em>N</em> indicates the index of the Amazon EBS volume (such
+                                    							as <code class="code">ebs1</code> or <code class="code">ebs2</code>).
+                                 </td>
+                                 						
+                                 <td>2007-12-15</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">block-device-mapping/ephemeral</code><em>N</em>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The virtual devices associated with ephemeral devices, if any are
+                                    							present. The <em>N</em> indicates the index of the ephemeral
+                                    							volume.
+                                 </td>
+                                 						
+                                 <td>2007-12-15</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">block-device-mapping/root</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The virtual devices or partitions associated with the root devices,
+                                    							or partitions on the virtual device, where the root (/ or C:) file
+                                    							system is associated with the given instance.
+                                 </td>
+                                 						
+                                 <td>2007-12-15</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">block-device-mapping/swap</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The virtual devices associated with <code class="code">swap</code>. Not always
+                                    							present.
+                                 </td>
+                                 						
+                                 <td>2007-12-15</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td><code class="code">elastic-gpus/associations/<em class="replaceable"><code>elastic-gpu-id</code></em></code></td>
+                                 						
+                                 <td>If there is an Elastic GPU attached to the instance, contains a JSON
+                                    							string with information about the Elastic GPU, including its ID and
+                                    							connection information.
+                                 </td>
+                                 						
+                                 <td>2016-11-30</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td><code class="code">hostname</code></td>
+                                 						
+                                 <td>The private IPv4 DNS hostname of the instance. In cases where multiple network
+                                    							interfaces are present, this refers to the eth0 device (the device for
+                                    							which the device number is 0).
+                                 </td>
+                                 						
+                                 <td>1.0</td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">iam/info</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>If there is an IAM role associated with the instance, contains information about the
+                                    							last time the instance profile was updated, including the instance&apos;s
+                                    							LastUpdated date, InstanceProfileArn, and InstanceProfileId. Otherwise,
+                                    							not present.
+                                 </td>
+                                 						
+                                 <td>2012-01-12</td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">iam/security-credentials/<em class="replaceable"><code>role-name</code></em></code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>If there is an IAM role associated with the instance,
+                                    								<em class="replaceable"><code>role-name</code></em> is the name of the role, and
+                                    								<em class="replaceable"><code>role-name</code></em> contains the temporary security
+                                    							credentials associated with the role (for more information, see <a href="iam-roles-for-amazon-ec2.html#instance-metadata-security-credentials">Retrieving Security Credentials from Instance Metadata</a>).
+                                    							Otherwise, not present.
+                                 </td>
+                                 						
+                                 <td>2012-01-12</td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">instance-action</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>Notifies the instance that it should reboot in preparation for
+                                    							bundling. Valid values: <code class="code">none</code> | <code class="code">shutdown |
+                                       								bundle-pending</code>.
+                                 </td>
+                                 						
+                                 <td>2008-09-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">instance-id</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The ID of this instance.</td>
+                                 						
+                                 <td>1.0</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">instance-type</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The type of instance. For more information, see <a href="instance-types.html">Instance Types</a>.
+                                 </td>
+                                 						
+                                 <td>2007-08-29</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">kernel-id</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The ID of the kernel launched with this instance, if
+                                    							applicable.
+                                 </td>
+                                 						
+                                 <td>2008-02-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">local-hostname</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The private IPv4 DNS hostname of the instance. In cases where multiple network
+                                    							interfaces are present, this refers to the eth0 device (the device for
+                                    							which the device number is 0).
+                                 </td>
+                                 						
+                                 <td>2007-01-19</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">local-ipv4</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The private IPv4 address of the instance. In cases where multiple network interfaces
+                                    							are present, this refers to the eth0 device (the device for which the
+                                    							device number is 0).
+                                 </td>
+                                 						
+                                 <td>1.0</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">mac</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The instance&apos;s media access control (MAC) address. In cases where
+                                    							multiple network interfaces are present, this refers to the eth0 device
+                                    							(the device for which the device number is 0).
+                                 </td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/device-number</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The unique device number associated with that interface. The device
+                                    							number corresponds to the device name; for example, a
+                                    								<code class="code">device-number</code> of 2 is for the eth2 device. This
+                                    							category corresponds to the <code class="code">DeviceIndex</code> and
+                                    								<code class="code">device-index</code> fields that are used by the Amazon EC2 API and
+                                    							the EC2 commands for the AWS CLI.
+                                 </td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/ipv4-associations/<em class="replaceable"><code>public-ip</code></em></code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The private IPv4 addresses that are associated with each
+                                    								<code class="code">public-ip</code> address and assigned to that
+                                    							interface.
+                                 </td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td><code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/ipv6s</code></td>
+                                 						
+                                 <td>The IPv6 addresses associated with the interface. Returned only for
+                                    							instances launched into a VPC. 
+                                 </td>
+                                 						
+                                 <td>2016-06-30 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/local-hostname</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The interface&apos;s local hostname.</td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/local-ipv4s</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The private IPv4 addresses associated with the interface. </td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/mac</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The instance&apos;s MAC address.</td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td><code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/owner-id</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The ID of the owner of the network interface. In multiple-interface
+                                    							environments, an interface can be attached by a third party, such as
+                                    							Elastic Load Balancing. Traffic on an interface is always billed to the interface
+                                    							owner.
+                                 </td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/public-hostname</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The interface&apos;s public DNS (IPv4). If the instance is in a VPC, this category is only
+                                    							returned if the <code class="code">enableDnsHostnames</code> attribute is set to
+                                    								<code class="code">true</code>. For more information, see <a href="./AmazonVPC/latest/UserGuide/vpc-dns.html" target="_blank">Using DNS with Your
+                                       							VPC</a>.
+                                 </td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/public-ipv4s</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The Elastic IP addresses associated with the interface. There may be multiple IPv4
+                                    							addresses on an instance. 
+                                 </td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td><code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/security-groups</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>Security groups to which the network interface belongs. Returned only
+                                    							for instances launched into a VPC. 
+                                 </td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/security-group-ids</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The IDs of the security groups to which the network interface belongs. Returned only
+                                    							for instances launched into a VPC. For more information on security
+                                    							groups in the EC2-VPC platform, see <a href="./AmazonVPC/latest/UserGuide/VPC_SecurityGroups.html" target="_blank">Security Groups for Your
+                                       								VPC</a>.
+                                 </td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/subnet-id</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The ID of the subnet in which the interface resides. Returned only
+                                    							for instances launched into a VPC. 
+                                 </td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/subnet-ipv4-cidr-block</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The IPv4 CIDR block of the subnet in which the interface resides. Returned only for
+                                    							instances launched into a VPC. 
+                                 </td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td><code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/subnet-ipv6-cidr-blocks</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The IPv6 CIDR block of the subnet in which the interface resides.
+                                    							Returned only for instances launched into a VPC.
+                                 </td>
+                                 						
+                                 <td>2016-06-30 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/vpc-id</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The ID of the VPC in which the interface resides. Returned only for
+                                    							instances launched into a VPC. 
+                                 </td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td><code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/vpc-ipv4-cidr-block</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The primary IPv4 CIDR block of the VPC. Returned
+                                    							only for instances launched into a VPC. 
+                                 </td>
+                                 						
+                                 <td>2011-01-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td><code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/vpc-ipv4-cidr-blocks</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The IPv4 CIDR blocks for the VPC. Returned only for instances launched into a VPC.
+                                    
+                                 </td>
+                                 						
+                                 <td>2016-06-30 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td><code class="code">network/interfaces/macs/<em class="replaceable"><code>mac</code></em>/vpc-ipv6-cidr-blocks</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The IPv6 CIDR block of the VPC in which the interface resides.
+                                    							Returned only for instances launched into a VPC.
+                                 </td>
+                                 						
+                                 <td>2016-06-30 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">placement/availability-zone</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The Availability Zone in which the instance launched.</td>
+                                 						
+                                 <td>2008-02-01</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">product-codes</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>Marketplace product codes associated with the instance, if any. </td>
+                                 						
+                                 <td>2007-03-01</td>
+                                 					
+                              </tr>
+                              					
+                              					
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">public-hostname</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The instance&apos;s public DNS. If the instance is in a VPC, this category
+                                    							is only returned if the <code class="code">enableDnsHostnames</code> attribute is set
+                                    							to <code class="code">true</code>. For more information, see <a href="./AmazonVPC/latest/UserGuide/vpc-dns.html" target="_blank">Using DNS with Your
+                                       							VPC</a>.
+                                 </td>
+                                 						
+                                 <td>2007-01-19</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">public-ipv4</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The public IPv4 address. If an Elastic IP address is associated with the instance,
+                                    the
+                                    							value returned is the Elastic IP address.
+                                 </td>
+                                 						
+                                 <td>2007-01-19</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">public-keys/0/openssh-key</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>Public key. Only available if supplied at instance launch
+                                    							time.
+                                 </td>
+                                 						
+                                 <td>1.0</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">ramdisk-id</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The ID of the RAM disk specified at launch time, if
+                                    							applicable.
+                                 </td>
+                                 						
+                                 <td>2007-10-10</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">reservation-id</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>The ID of the reservation.</td>
+                                 						
+                                 <td>1.0</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">security-groups</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>
+                                    							
+                                    <p>The names of the security groups applied to the instance.</p>
+                                    							
+                                    <p>After launch, you can only change the security groups of
+                                       								instances running in a VPC. Such changes are reflected here and in
+                                       										network/interfaces/macs/<em><em class="replaceable"><code>mac</code></em></em>/security-groups.
+                                    </p>
+                                    						
+                                 </td>
+                                 						
+                                 <td>1.0</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">services/domain</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>
+                                    							
+                                    <p>The domain for AWS resources for the region; for example,
+                                       									<code class="code">amazonaws.com</code> for us-east-1.
+                                    </p>
+                                    						
+                                 </td>
+                                 						
+                                 <td>2014-02-25</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">services/partition</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>
+                                    							
+                                    <p>The partition that the resource is in. For standard AWS regions,
+                                       								the partition is <code class="code">aws</code>. If you have resources in other
+                                       								partitions, the partition is
+                                       										<code class="code">aws-<em class="replaceable"><code>partitionname</code></em></code>.
+                                       								For example, the partition for resources in the China (Beijing)
+                                       								region is <code class="code">aws-cn</code>.
+                                    </p>
+                                    						
+                                 </td>
+                                 						
+                                 <td>2015-10-20</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">spot/instance-action</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>
+                                    							
+                                    <p>The action (stop or terminate) and the approximate time, in UTC, 
+                                       								when the Spot service will stop or terminate the Spot instance.
+                                       								For more information, see <a href="spot-interruptions.html#instance-action-metadata">instance-action</a>.
+                                    </p>
+                                    						
+                                 </td>
+                                 						
+                                 <td>2016-11-15</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>
+                                    							<code class="code">spot/termination-time</code>
+                                    						
+                                 </td>
+                                 						
+                                 <td>
+                                    							
+                                    <p>The approximate time, in UTC, that the operating system for your
+                                       								Spot instance will receive the shutdown signal. This item is present
+                                       								and contains a time value (for example, 2015-01-05T18:02:00Z) only
+                                       								if the Spot instance has been marked for termination by Amazon EC2. The
+                                       								termination-time item is not set to a time if you terminated the
+                                       								Spot instance yourself. For more information, see <a href="spot-interruptions.html#termination-time-metadata">termination-time</a>.
+                                    </p>
+                                    						
+                                 </td>
+                                 						
+                                 <td>2014-11-05</td>
+                                 					
+                              </tr>
+                              				
+                           </tbody></table>
+                        </div>
+                     </div>
+                     		
+                     <h3 id="dynamic-data-categories">Dynamic Data Categories</h3>
+                     			
+                     
+                     			
+                     <p>The following table lists the categories of dynamic data.</p>
+                     			
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w185aac17c17c23c21b8b4">
+                              						
+                              <tbody><tr>
+                                 							
+                                 <th>Data</th>
+                                 							
+                                 <th>Description</th>
+                                 							
+                                 <th>Version introduced</th>
+                                 						
+                              </tr>
+                              					
+                              						
+                              <tr>
+                                 							
+                                 <td>
+                                    								<code class="code">fws/instance-monitoring</code>
+                                    							
+                                 </td>
+                                 							
+                                 <td>Value showing whether the customer has enabled detailed
+                                    								one-minute monitoring in CloudWatch. Valid values: <code class="code">enabled |
+                                       									disabled</code></td>
+                                 							
+                                 <td>2009-04-04</td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td><code class="code">instance-identity/document</code>
+                                    							
+                                 </td>
+                                 							
+                                 <td>JSON containing instance attributes, such as instance-id, private
+                                    								IP address, etc. See <a href="instance-identity-documents.html">Instance Identity Documents</a>. 
+                                 </td>
+                                 							
+                                 <td>2009-04-04</td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td><code class="code">instance-identity/pkcs7</code>
+                                    							
+                                 </td>
+                                 							
+                                 <td>Used to verify the document&apos;s authenticity and content against
+                                    								the signature. See <a href="instance-identity-documents.html">Instance Identity Documents</a>. 
+                                 </td>
+                                 							
+                                 <td>2009-04-04</td>
+                                 						
+                              </tr>
+                              						
+                              <tr>
+                                 							
+                                 <td><code class="code">instance-identity/signature</code>
+                                    							
+                                 </td>
+                                 							
+                                 <td>Data that can be used by other parties to verify its origin and
+                                    								authenticity. See <a href="instance-identity-documents.html">Instance Identity Documents</a>. 
+                                 </td>
+                                 							
+                                 <td>2009-04-04</td>
+                                 						
+                              </tr>
+                              					
+                           </tbody></table>
+                        </div>
+                     </div>
+                     		
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="user-data.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="instance-identity-documents.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Retrieving Instance Metadata"><a class="pagetoc" href="#instancedata-data-retrieval">Retrieving Instance Metadata</a></li>
+                        <li class="pagetoc" name="Working with Instance User Data"><a class="pagetoc" href="#instancedata-add-user-data">Working with Instance User Data</a></li>
+                        <li class="pagetoc" name="Retrieving Dynamic Data"><a class="pagetoc" href="#instancedata-dynamic-data-retrieval">Retrieving Dynamic Data</a></li>
+                        <li class="pagetoc" name="Example: AMI Launch Index Value"><a class="pagetoc" href="#AMI-launch-index-examples">Example: AMI Launch Index Value</a></li>
+                        <li class="pagetoc" name="Instance Metadata Categories"><a class="pagetoc" href="#instancedata-data-categories">Instance Metadata Categories</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

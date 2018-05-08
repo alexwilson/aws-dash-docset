@@ -1,0 +1,485 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Using AWS CloudTrail to Capture Requests Sent to the CloudFront API - Amazon CloudFront</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="Introduction.html" title="What Is Amazon CloudFront?">
+      <link rel="prev" href="monitoring-using-cloudwatch.html" title="Monitoring CloudFront Activity Using CloudWatch">
+      <link rel="next" href="tagging.html" title="Tagging Amazon CloudFront Distributions">
+      <meta name="description" content="CloudFront is integrated with CloudTrail, an AWS service that captures information about every request that is sent to the CloudFront API by your AWS account, including your IAM users. CloudTrail periodically saves log files of these requests to an Amazon S3 bucket that you specify. CloudTrail captures information about all requests, whether they were made using the CloudFront console, the CloudFront API, the AWS SDKs, the CloudFront CLI, or another service, for example, AWS CloudFormation.">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/logging_using_cloudtrail.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <span class="breadcrumb">Using AWS CloudTrail to Capture Requests Sent to the CloudFront API</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="logging_using_cloudtrail">Using AWS CloudTrail to Capture Requests Sent to the CloudFront API</h1>
+                     <p>CloudFront is integrated with CloudTrail, an AWS service that captures information
+                        about every request that is sent to the 
+                        		CloudFront API by your AWS account, including your IAM users. CloudTrail periodically
+                        saves log files of these requests to an Amazon S3 bucket 
+                        		that you specify. CloudTrail captures information about all requests, whether they
+                        were made using the CloudFront console, the CloudFront API, the AWS SDKs, 
+                        		the CloudFront CLI, or another service, for example, AWS CloudFormation.
+                     </p>
+                     <p>You can use information in the CloudTrail log files to determine which requests were
+                        made to CloudFront, the source IP address 
+                        		from which each request was made, who made the request, when it was made, and so
+                        on. To learn more about CloudTrail, 
+                        		including how to configure and enable it, see the <em><a href="./awscloudtrail/latest/userguide/" target="_blank">AWS CloudTrail User Guide</a></em>.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>CloudFront is a global service. To view CloudFront requests in CloudTrail logs, you
+                           must update an existing trail to include global services. 
+                           		For more information, see <a href="./awscloudtrail/latest/userguide/cloudtrail-user-guide.html" target="_blank">Updating a Trail</a> and 
+                           		<a href="./awscloudtrail/latest/userguide/cloudtrail-concepts.html#cloudtrail-concepts-global-service-events" target="_blank">About Global Service Events</a> in the 
+                           		<em>AWS CloudTrail User Guide</em>. 
+                        </p>
+                     </div>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#cloudfront_info_in_cloudtrail">CloudFront Information in CloudTrail Log Files</a></li>
+                           <li><a href="#understanding_cloudfront_entries">Understanding CloudFront Log File Entries</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="cloudfront_info_in_cloudtrail">CloudFront Information in CloudTrail Log Files</h2>
+                     		
+                     
+                     		
+                     <p>When you enable CloudTrail, CloudTrail captures every request that you make to every
+                        AWS service that CloudTrail supports. 
+                        			(For a list of supported services, see <a href="./awscloudtrail/latest/userguide/what_is_cloud_trail_supported_services.html" target="_blank">Supported Services</a> 
+                        			in the <em>AWS CloudTrail User Guide</em>.) The log files aren&apos;t organized or sorted by service; each log file might 
+                        			contain records from more than one service. CloudTrail determines when to create
+                        a new log file.
+                     </p>
+                     		
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>CloudTrail supports all CloudFront API actions.</p>
+                     </div>
+                     		
+                     		
+                     <p>Every log file entry contains information about who made the request. The user identity
+                        information in the log file 
+                        			helps you determine whether the request was made using root or IAM user credentials,
+                        using temporary security credentials 
+                        			for a role or federated user, or by another AWS service. For more information,
+                        see 
+                        			<a href="./awscloudtrail/latest/userguide/event_reference_user_identity.html" target="_blank">userIdentity Element</a> 
+                        			in the <em>AWS CloudTrail User Guide</em>.
+                     </p>
+                     		
+                     <p>You can store log files for as long as you want. You can also define Amazon S3 lifecycle
+                        rules to archive or delete log files automatically.
+                     </p>
+                     		
+                     <p>By default, your log files are encrypted by using Amazon S3 server-side encryption
+                        (SSE).
+                     </p>
+                     		
+                     <p>You can choose to have CloudTrail publish Amazon SNS notifications when new log files
+                        are delivered if you want to take quick action 
+                        			upon log file delivery. For more information, see <a href="./awscloudtrail/latest/userguide/getting_notifications_top_level.html" target="_blank">Configuring Amazon SNS Notifications</a> 
+                        			in the <em>AWS CloudTrail User Guide</em>.
+                     </p> 
+                     		
+                     <p>You can also aggregate log files from multiple AWS regions and multiple AWS accounts
+                        into a single Amazon S3 bucket. 
+                        			For more information, see <a href="./awscloudtrail/latest/userguide/aggregating_logs_top_level.html" target="_blank">Aggregating CloudTrail Log Files to a Single Amazon S3 Bucket</a> 
+                        			in the <em>AWS CloudTrail User Guide</em>. 
+                        		
+                     </p>
+                     
+                     	
+                     <h2 id="understanding_cloudfront_entries">Understanding CloudFront Log File Entries</h2>
+                     
+                     		
+                     
+                     		
+                     <p>Each JSON-formatted CloudTrail log file can contain one or more log entries. A log
+                        entry represents a single request from any source and 
+                        			includes information about the requested action, including any parameters, the
+                        date and time of the action, and so on. The log 
+                        			entries are not guaranteed to be in any particular order; they are not an ordered
+                        stack trace of API calls.
+                     </p>
+                     		
+                     		
+                     <p>The <code class="code">eventName</code> element identifies the action that occurred and the API version that was used to
+                        perform that action. 
+                        			For example, the following <code class="code">eventName</code> value indicates that a web distribution was updated, and the 2014-01-31 API version
+                        
+                        			was used to perform the action:
+                     </p>
+                     		
+                     		
+                     <p><code class="code">UpdateDistribution2014_01_31</code></p>
+                     		
+                     		
+                     <p>The following example shows a CloudTrail log entry that demonstrates five actions:</p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			 
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Updating a web distribution configuration. The value of <code class="code">eventName</code> is
+                                 <code class="code">UpdateDistribution</code>.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Listing web distributions that are associated with the current account. The value
+                                 of <code class="code">eventName</code> is 
+                                 				<code class="code">ListDistributions</code>.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Getting the configuration for a specific web distribution. The value of <code class="code">eventName</code> is 
+                                 				<code class="code">GetDistribution</code>.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Creating an invalidation batch request. The value of <code class="code">eventName</code> is <code class="code">CreateInvalidation</code>.
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>Listing origin access identities that are associated with the current account. The
+                                 value of <code class="code">eventName</code> is 
+                                 				<code class="code">ListCloudFrontOriginAccessIdentities</code>.
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+   &quot;Records&quot;: [{
+      &quot;eventVersion&quot;: &quot;1.01&quot;,
+      &quot;userIdentity&quot;: {
+         &quot;type&quot;: &quot;IAMUser&quot;,
+         &quot;principalId&quot;: &quot;A1B2C3D4E5F6G7EXAMPLE&quot;,
+         &quot;arn&quot;: &quot;arn:aws:iam::111122223333:user/smithj&quot;,
+         &quot;accountId&quot;: &quot;111122223333&quot;,
+         &quot;accessKeyId&quot;: &quot;AKIAIOSFODNN7EXAMPLE&quot;,
+         &quot;userName&quot;: &quot;smithj&quot;
+      },
+      &quot;eventTime&quot;: &quot;2014-05-06T18:00:32Z&quot;,
+      &quot;eventName&quot;: &quot;UpdateDistribution2014_01_31&quot;,
+      &quot;sourceIPAddress&quot;: &quot;192.0.2.17&quot;,
+      &quot;userAgent&quot;: &quot;aws-sdk-ruby/1.39.0 ruby/1.9.3 x86_64-linux&quot;,
+      &quot;requestParameters&quot;: {
+         &quot;id&quot;: &quot;EDFDVBD6EXAMPLE&quot;,
+         &quot;ifMatch&quot;: &quot;E9LHASXEXAMPLE&quot;,
+         &quot;distributionConfig&quot;: {
+            &quot;restrictions&quot;: {
+               &quot;geoRestriction&quot;: {
+                  &quot;quantity&quot;: 0,
+                  &quot;restrictionType&quot;: &quot;none&quot;
+               }
+            },
+            &quot;customErrorResponses&quot;: {
+               &quot;quantity&quot;: 0
+            },
+            &quot;defaultRootObject&quot;: &quot;index.html&quot;,
+            &quot;aliases&quot;: {
+               &quot;quantity&quot;: 1,
+               &quot;items&quot;: [&quot;example.com&quot;]
+            },
+            &quot;logging&quot;: {
+               &quot;bucket&quot;: &quot;&quot;,
+               &quot;enabled&quot;: false,
+               &quot;prefix&quot;: &quot;&quot;,
+               &quot;includeCookies&quot;: false
+            },
+            &quot;viewerCertificate&quot;: {
+               &quot;iAMCertificateId&quot;: &quot;A1B2C3D4E5F6G7EXAMPLE&quot;,
+               &quot;sSLSupportMethod&quot;: &quot;sni-only&quot;
+            },
+            &quot;callerReference&quot;: &quot;2014-05-06 64832&quot;,
+            &quot;defaultCacheBehavior&quot;: {
+               &quot;targetOriginId&quot;: &quot;Images&quot;,
+               &quot;allowedMethods&quot;: {
+                  &quot;items&quot;: [&quot;GET&quot;,
+                  &quot;HEAD&quot;],
+                  &quot;quantity&quot;: 2
+               },
+               &quot;forwardedValues&quot;: {
+                  &quot;cookies&quot;: {
+                     &quot;forward&quot;: &quot;none&quot;
+                  },
+                  &quot;queryString&quot;: false
+               },
+               &quot;minTTL&quot;: 300,
+               &quot;trustedSigners&quot;: {
+                  &quot;enabled&quot;: false,
+                  &quot;quantity&quot;: 0
+               },
+               &quot;viewerProtocolPolicy&quot;: &quot;redirect-to-https&quot;,
+               &quot;smoothStreaming&quot;: false
+            },
+            &quot;origins&quot;: {
+               &quot;items&quot;: [{
+                  &quot;customOriginConfig&quot;: {
+                     &quot;hTTPSPort&quot;: 443,
+                     &quot;originProtocolPolicy&quot;: &quot;http-only&quot;,
+                     &quot;hTTPPort&quot;: 80
+                  },
+                  &quot;domainName&quot;: &quot;myawsbucket.s3-website-us-east-2.amazonaws.com&quot;,
+                  &quot;id&quot;: &quot;Web page origin&quot;
+               },
+               {
+                  &quot;customOriginConfig&quot;: {
+                     &quot;hTTPSPort&quot;: 443,
+                     &quot;originProtocolPolicy&quot;: &quot;http-only&quot;,
+                     &quot;hTTPPort&quot;: 80
+                  },
+                  &quot;domainName&quot;: &quot;myotherawsbucket.s3-website-us-west-2.amazonaws.com&quot;,
+                  &quot;id&quot;: &quot;Images&quot;
+               }],
+               &quot;quantity&quot;: 2
+            },
+            &quot;enabled&quot;: true,
+            &quot;cacheBehaviors&quot;: {
+                  &quot;allowedMethods&quot;: {
+                     &quot;items&quot;: [&quot;GET&quot;,
+                     &quot;HEAD&quot;],
+                     &quot;quantity&quot;: 2
+                  },
+                  &quot;trustedSigners&quot;: {
+                     &quot;enabled&quot;: false,
+                     &quot;quantity&quot;: 0
+                  },
+                  &quot;targetOriginId&quot;: &quot;Web page origin&quot;,
+                  &quot;smoothStreaming&quot;: false,
+                  &quot;viewerProtocolPolicy&quot;: &quot;redirect-to-https&quot;,
+                  &quot;minTTL&quot;: 300,
+                  &quot;forwardedValues&quot;: {
+                     &quot;cookies&quot;: {
+                        &quot;forward&quot;: &quot;none&quot;
+                     },
+                     &quot;queryString&quot;: false
+                  },
+                  &quot;pathPattern&quot;: &quot;*.html&quot;
+               }],
+               &quot;quantity&quot;: 1
+            },
+            &quot;priceClass&quot;: &quot;PriceClass_All&quot;,
+            &quot;comment&quot;: &quot;Added an origin and a cache behavior&quot;
+         }
+      },
+      &quot;responseElements&quot;: {
+         &quot;eTag&quot;: &quot;E2QWRUHEXAMPLE&quot;,
+         &quot;distribution&quot;: {
+            &quot;domainName&quot;: &quot;d111111abcdef8.cloudfront.net&quot;,
+            &quot;status&quot;: &quot;InProgress&quot;,
+            &quot;distributionConfig&quot;: {
+            <em class="replaceable"><code>distributionConfig response omitted</code></em>
+            },
+            &quot;id&quot;: &quot;EDFDVBD6EXAMPLE&quot;,
+            &quot;lastModifiedTime&quot;: &quot;May 6, 2014 6:00:32 PM&quot;,
+            &quot;activeTrustedSigners&quot;: {
+               &quot;quantity&quot;: 0,
+               &quot;enabled&quot;: false
+            },
+            &quot;inProgressInvalidationBatches&quot;: 0
+         }
+      },
+      &quot;requestID&quot;: &quot;4e6b66f9-d548-11e3-a8a9-73e33example&quot;,
+      &quot;eventID&quot;: &quot;5ab02562-0fc5-43d0-b7b6-90293example&quot;
+   },
+   {
+      &quot;eventVersion&quot;: &quot;1.01&quot;,
+      &quot;userIdentity&quot;: {
+         &quot;type&quot;: &quot;IAMUser&quot;,
+         &quot;principalId&quot;: &quot;A1B2C3D4E5F6G7EXAMPLE&quot;,
+         &quot;arn&quot;: &quot;arn:aws:iam::111122223333:user/smithj&quot;,
+         &quot;accountId&quot;: &quot;111122223333&quot;,
+         &quot;accessKeyId&quot;: &quot;AKIAIOSFODNN7EXAMPLE&quot;,
+         &quot;userName&quot;: &quot;smithj&quot;
+      },
+      &quot;eventTime&quot;: &quot;2014-05-06T18:01:35Z&quot;,
+      &quot;eventName&quot;: &quot;ListDistributions2014_01_31&quot;,
+      &quot;sourceIPAddress&quot;: &quot;192.0.2.17&quot;,
+      &quot;userAgent&quot;: &quot;aws-sdk-ruby/1.39.0 ruby/1.9.3 x86_64-linux&quot;,
+      &quot;requestParameters&quot;: null,
+      &quot;responseElements&quot;: null,
+      &quot;requestID&quot;: &quot;52de9f97-d548-11e3-8fb9-4dad0example&quot;,
+      &quot;eventID&quot;: &quot;eb91f423-6dd3-4bb0-a148-3cdfbexample&quot;
+   },
+   {
+      &quot;eventVersion&quot;: &quot;1.01&quot;,
+      &quot;userIdentity&quot;: {
+         &quot;type&quot;: &quot;IAMUser&quot;,
+         &quot;principalId&quot;: &quot;A1B2C3D4E5F6G7EXAMPLE&quot;,
+         &quot;arn&quot;: &quot;arn:aws:iam::111122223333:user/smithj&quot;,
+         &quot;accountId&quot;: &quot;111122223333&quot;,
+         &quot;accessKeyId&quot;: &quot;AKIAIOSFODNN7EXAMPLE&quot;,
+         &quot;userName&quot;: &quot;smithj&quot;
+      },
+      &quot;eventTime&quot;: &quot;2014-05-06T18:01:59Z&quot;,
+      &quot;eventName&quot;: &quot;GetDistribution2014_01_31&quot;,
+      &quot;sourceIPAddress&quot;: &quot;192.0.2.17&quot;,
+      &quot;userAgent&quot;: &quot;aws-sdk-ruby/1.39.0 ruby/1.9.3 x86_64-linux&quot;,
+      &quot;requestParameters&quot;: {
+         &quot;id&quot;: &quot;EDFDVBD6EXAMPLE&quot;
+      },
+      &quot;responseElements&quot;: null,
+      &quot;requestID&quot;: &quot;497b3622-d548-11e3-8fb9-4dad0example&quot;,
+      &quot;eventID&quot;: &quot;c32289c7-005a-46f7-9801-cba41example&quot;
+   },
+   {
+      &quot;eventVersion&quot;: &quot;1.01&quot;,
+      &quot;userIdentity&quot;: {
+         &quot;type&quot;: &quot;IAMUser&quot;,
+         &quot;principalId&quot;: &quot;A1B2C3D4E5F6G7EXAMPLE&quot;,
+         &quot;arn&quot;: &quot;arn:aws:iam::111122223333:user/smithj&quot;,
+         &quot;accountId&quot;: &quot;111122223333&quot;,
+         &quot;accessKeyId&quot;: &quot;AKIAIOSFODNN7EXAMPLE&quot;,
+         &quot;userName&quot;: &quot;smithj&quot;
+      },
+      &quot;eventTime&quot;: &quot;2014-05-06T18:02:27Z&quot;,
+      &quot;eventName&quot;: &quot;CreateInvalidation2014_01_31&quot;,
+      &quot;sourceIPAddress&quot;: &quot;192.0.2.17&quot;,
+      &quot;userAgent&quot;: &quot;aws-sdk-ruby/1.39.0 ruby/1.9.3 x86_64-linux&quot;,
+      &quot;requestParameters&quot;: {
+         &quot;invalidationBatch&quot;: {
+            &quot;callerReference&quot;: &quot;2014-05-06 64947&quot;,
+            &quot;paths&quot;: {
+               &quot;quantity&quot;: 3,
+               &quot;items&quot;: [&quot;/images/new.jpg&quot;,
+               &quot;/images/logo.jpg&quot;,
+               &quot;/images/banner.jpg&quot;]
+            }
+         },
+         &quot;distributionId&quot;: &quot;EDFDVBD6EXAMPLE&quot;
+      },
+      &quot;responseElements&quot;: {
+         &quot;invalidation&quot;: {
+            &quot;createTime&quot;: &quot;May 6, 2014 6:02:27 PM&quot;,
+            &quot;invalidationBatch&quot;: {
+               &quot;callerReference&quot;: &quot;2014-05-06 64947&quot;,
+               &quot;paths&quot;: {
+                  &quot;quantity&quot;: 3,
+                  &quot;items&quot;: [&quot;/images/banner.jpg&quot;,
+                  &quot;/images/logo.jpg&quot;,
+                  &quot;/images/new.jpg&quot;]
+               }
+            },
+            &quot;status&quot;: &quot;InProgress&quot;,
+            &quot;id&quot;: &quot;ISRZ85EXAMPLE&quot;
+         },
+         &quot;location&quot;: &quot;https://cloudfront.amazonaws.com/2014-01-31/distribution/EDFDVBD6EXAMPLE/invalidation/ISRZ85EXAMPLE&quot;
+      },
+      &quot;requestID&quot;: &quot;4e200613-d548-11e3-a8a9-73e33example&quot;,
+      &quot;eventID&quot;: &quot;191ebb93-66b7-4517-a741-92b0eexample&quot;
+   },
+   {
+      &quot;eventVersion&quot;: &quot;1.01&quot;,
+      &quot;userIdentity&quot;: {
+         &quot;type&quot;: &quot;IAMUser&quot;,
+         &quot;principalId&quot;: &quot;A1B2C3D4E5F6G7EXAMPLE&quot;,
+         &quot;arn&quot;: &quot;arn:aws:iam::111122223333:user/smithj&quot;,
+         &quot;accountId&quot;: &quot;111122223333&quot;,
+         &quot;accessKeyId&quot;: &quot;AKIAIOSFODNN7EXAMPLE&quot;,
+         &quot;userName&quot;: &quot;smithj&quot;
+      },
+      &quot;eventTime&quot;: &quot;2014-05-06T18:03:08Z&quot;,
+      &quot;eventName&quot;: &quot;ListCloudFrontOriginAccessIdentities2014_01_31&quot;,
+      &quot;sourceIPAddress&quot;: &quot;192.0.2.17&quot;,
+      &quot;userAgent&quot;: &quot;aws-sdk-ruby/1.39.0 ruby/1.9.3 x86_64-linux&quot;,
+      &quot;requestParameters&quot;: null,
+      &quot;responseElements&quot;: null,
+      &quot;requestID&quot;: &quot;42ca4299-d548-11e3-8fb9-4dad0example&quot;,
+      &quot;eventID&quot;: &quot;7aeb434f-eb55-4e2a-82d8-417d5example&quot;
+   }]
+}</code></pre>
+                     
+                     	</div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="monitoring-using-cloudwatch.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="tagging.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="CloudFront Information in CloudTrail Log Files"><a class="pagetoc" href="#cloudfront_info_in_cloudtrail">CloudFront Information in CloudTrail Log Files</a></li>
+                        <li class="pagetoc" name="Understanding CloudFront Log File Entries"><a class="pagetoc" href="#understanding_cloudfront_entries">Understanding CloudFront Log File Entries</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,604 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Customizing Error Responses - Amazon CloudFront</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="WorkingWithObjects.html" title="Working with Objects">
+      <link rel="prev" href="Invalidation.html" title="Invalidating Objects (Web Distributions Only)">
+      <link rel="next" href="RangeGETs.html" title="How CloudFront Processes Partial Requests for an Object (Range GETs)">
+      <meta name="description" content="Display custom error messages when objects are unavailable.">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/custom-error-pages.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="WorkingWithObjects.html">Working with Objects</a> &#xBB; <span class="breadcrumb">Customizing Error Responses</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="custom-error-pages">Customizing Error Responses</h1>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#custom-error-pages-cache-behavior">Creating or Updating a Cache Behavior for
+                                 				Custom Error Pages</a></li>
+                           <li><a href="#custom-error-pages-response-code">Changing Response Codes</a></li>
+                           <li><a href="#custom-error-pages-expiration">Controlling How Long CloudFront Caches
+                                 				Errors</a></li>
+                           <li><a href="#custom-error-pages-unavailable">How CloudFront Responds When a Custom Error Page Is
+                                 				Unavailable</a></li>
+                           <li><a href="#custom-error-pages-charges">Pricing for Custom Error Pages</a></li>
+                           <li><a href="#custom-error-pages-procedure">Configuring Error Response Behavior</a></li>
+                        </ul>
+                     </div>
+                     <p>If the objects that you&apos;re serving through CloudFront are unavailable for some reason,
+                        your web
+                        			server typically returns an HTTP status code to CloudFront. For example, if a viewer
+                        specifies an
+                        			invalid URL, your web server returns a 404 status code to CloudFront, and CloudFront
+                        returns that status
+                        			code to the viewer. The viewer displays a brief and sparsely formatted default
+                        message similar
+                        			to this:
+                     </p>
+                     <p><code class="code">Not Found: The requested URL /myfilename.html was not found on this
+                           			server.</code></p>
+                     <p>If you&apos;d rather display a custom error message, possibly using the same formatting
+                        as the
+                        			rest of your website, you can have CloudFront return to the viewer an object (for
+                        example, an HTML
+                        			file) that contains your custom error message. 
+                     </p>
+                     <div class="mediaobject">
+                        			
+                        				<img src="../../..//img/custom-error-page-aws-404-example.png" alt="
+				AWS 404 page.
+			">
+                        				
+                        				
+                        			
+                        			
+                        		
+                     </div>
+                     <p>You can specify a different object for each supported HTTP status code, or you can
+                        use the
+                        			same object for all of the supported status codes. You can also choose to specify
+                        objects for
+                        			some status codes and not for others. 
+                     </p>
+                     <p>The objects that you&apos;re serving through CloudFront can be unavailable for a variety
+                        of reasons.
+                        			These fall into two broad categories:
+                     </p>
+                     <div class="itemizedlist">
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p><b>Client errors</b> indicate a problem with the request.
+                                 					For example, an object with the specified name isn&apos;t available, or the user doesn&apos;t
+                                 have
+                                 					the permissions required to get an object in your Amazon S3 bucket. When a client
+                                 error occurs,
+                                 					the origin returns an HTTP status code in the 400 range to CloudFront.
+                              </p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><b>Server errors</b> indicate a problem with the origin
+                                 					server. For example, the HTTP server is busy or unavailable. When a server error
+                                 occurs,
+                                 					either your origin server returns an HTTP status code in the 500 range to CloudFront,
+                                 or CloudFront
+                                 					doesn&apos;t get a response from your origin server for a certain period of time and
+                                 assumes a
+                                 					504 status code (gateway timeout).
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     <p>The HTTP status codes for which CloudFront can return a custom error page include
+                        the
+                        			following:
+                     </p>
+                     <div class="itemizedlist">
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>400, 403, 404, 405, 414, 416</p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>500, 501, 502, 503, 504</p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You can create a custom error page for HTTP status code 416 (Requested Range Not
+                           				Satisfiable), and you can change the HTTP status code that CloudFront returns
+                           to viewers when your
+                           				origin returns a status code 416 to CloudFront. (For more information, see <a href="custom-error-pages.html#custom-error-pages-response-code">Changing Response Codes</a>.) However, CloudFront doesn&apos;t cache status
+                           				code 416 responses, so you can specify a value for <b>Error Caching Minimum
+                              					TTL</b> for status code 416, but CloudFront doesn&apos;t use it. 
+                        </p>
+                     </div>
+                     <p>For a detailed explanation of how CloudFront handles error responses from your origin,
+                        see <a href="HTTPStatusCodes.html">How CloudFront Processes and Caches HTTP 4xx and 5xx Status Codes from Your Origin</a>.
+                     </p>
+                     <h2 id="custom-error-pages-cache-behavior">Creating or Updating a Cache Behavior for
+                        				Custom Error Pages
+                     </h2>
+                     			
+                     			
+                     <p>If you want to store your objects and your custom error pages in different locations,
+                        				your distribution must include a cache behavior for which the following is true:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>The value of <b>Path Pattern</b> matches the path to your custom error
+                                 						messages. For example, suppose you saved custom error pages for 4xx errors in
+                                 an Amazon S3
+                                 						bucket in a directory named <code>/4xx-errors</code>. Your distribution must
+                                 						include a cache behavior for which the path pattern routes requests for your
+                                 custom
+                                 						error pages to that location, for example, <b>/4xx-errors/*</b>. 
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>The value of <b>Origin</b> specifies the value of <b>Origin
+                                    							ID</b> for the origin that contains your custom error pages.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>For more information, see <a href="distribution-web-values-specify.html#DownloadDistValuesCacheBehavior">Cache Behavior Settings</a> in the topic <a href="distribution-web-values-specify.html">Values That You Specify When You Create or Update a Web Distribution</a>.
+                     </p>
+                     		
+                     <h2 id="custom-error-pages-response-code">Changing Response Codes</h2>
+                     			
+                     			
+                     <p>You can choose the HTTP status code CloudFront returns along with a custom error page
+                        for a
+                        				given HTTP status code. For example, if your origin returns a 500 status code
+                        to CloudFront, you
+                        				might want CloudFront to return a custom error page and a 200 status code (OK)
+                        to the viewer.
+                        				There are a variety of reasons that you might want CloudFront to return a status
+                        code to the
+                        				viewer that is different from the one that your origin returned to CloudFront:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>Some internet devices (some firewalls and corporate proxies, for example) intercept
+                                 						HTTP 4xx and 5xx and prevent the response from being returned to the viewer.
+                                 If you
+                                 						substitute <code class="code">200</code>, the response typically won&apos;t be intercepted.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>If you don&apos;t care about distinguishing among different client errors or server
+                                 						errors, you can specify <b>400</b> or <b>500</b> as the
+                                 						value that CloudFront returns for all 4xx or 5xx status codes.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>You might want to return a <code class="code">200</code> status code (OK) and static website so
+                                 						your customers don&apos;t know that your website is down.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     			
+                     <p>If you enable CloudFront access logs and you configure CloudFront to change the HTTP
+                        status code in
+                        				the response, the value of the <code class="code">sc-status</code> column in access logs will contain the
+                        				status code that you specify. However, the value of the <code class="code">x-edge-result-type</code>
+                        				column will not be affected; it will still contain the result type of the response
+                        from the
+                        				origin. For example, suppose you configure CloudFront to return a status code
+                        of <code class="code">200</code>
+                        				to the viewer when the origin returns <code class="code">404</code> (Not Found) to CloudFront. When the origin
+                        				responds to a request with a <code class="code">404</code> status code, the value in the
+                        					<code class="code">sc-status</code> column in the access log will be <code class="code">200</code>, but the value in
+                        				the <code class="code">x-edge-result-type</code> column will be <code class="code">Error</code>.
+                     </p>
+                     
+                     			
+                     <p>You can configure CloudFront to return any of the following HTTP status codes along
+                        with a
+                        				custom error page:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>200</p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>400, 403, 404, 405, 414, 416</p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>500, 501, 502, 503, 504</p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <h2 id="custom-error-pages-expiration">Controlling How Long CloudFront Caches
+                        				Errors
+                     </h2>
+                     			
+                     			
+                     <p>By default, when your origin returns an HTTP 4xx or 5xx status code, CloudFront caches
+                        these
+                        				error responses for five minutes and then submits the next request for the object
+                        to your
+                        				origin to see whether the problem that caused the error has been resolved and
+                        the requested
+                        				object is now available.
+                     </p>
+                     			
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>You can create a custom error page for HTTP status code 416 (Requested Range Not
+                           					Satisfiable), and you can change the HTTP status code that CloudFront returns
+                           to viewers when
+                           					your origin returns a status code 416 to CloudFront. (For more information, see
+                           <a href="custom-error-pages.html#custom-error-pages-response-code">Changing Response Codes</a>.) However, CloudFront doesn&apos;t cache status
+                           					code 416 responses, so you can specify a value for <b>Error Caching Minimum
+                              						TTL</b> for status code 416, but CloudFront doesn&apos;t use it. 
+                        </p>
+                     </div>
+                     			
+                     <p>You can specify the error-caching duration&#x2014;the <b>Error Caching Minimum
+                           					TTL</b>&#x2014;for each 4xx and 5xx status code that CloudFront caches. For a procedure,
+                        				see <a href="custom-error-pages.html#custom-error-pages-procedure">Configuring Error Response Behavior</a>. When 
+                        				you specify a duration, note the following:
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>If you specify a short error-caching duration, CloudFront forwards more requests to
+                                 your
+                                 						origin than if you specify a longer duration. For 5xx errors, this may aggravate
+                                 the
+                                 						problem that originally caused your origin to return an error.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>When your origin returns an error for an object, CloudFront responds to requests for
+                                 the
+                                 						object either with the error response or with your custom error page until the
+                                 						error-caching duration elapses. If you specify a long error-caching duration,
+                                 CloudFront might
+                                 						continue to respond to requests with an error response or your custom error
+                                 page for a
+                                 						long time after the object becomes available again.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>If you want to control how long CloudFront caches errors for individual objects, you
+                        can
+                        				configure your origin server to add the applicable header to the error response
+                        for that
+                        				object: 
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><b>If the origin adds a <code class="code">Cache-Control max-age</code> or
+                                    								<code class="code">Cache-Control s-maxage</code> directive, or an <code class="code">Expires</code>
+                                    							header:</b> CloudFront caches error responses for the greater of the value in the
+                                 						header or the value of <b>Error Caching Minimum TTL</b>.
+                              </p>
+                              					
+                              <p>Be aware that <code class="code">Cache-Control max-age</code> and <code class="code">Cache-Control s-maxage</code>
+                                 						values cannot be greater than the <b>Maximum TTL</b> value set for the cache behavior for
+                                 						which the error page is being fetched.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><b>If the origin adds other <code class="code">Cache-Control</code> directives
+                                    							or adds no headers:</b> CloudFront caches error responses for the value of
+                                 							<b>Error Caching Minimum TTL</b>.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     <p>If the expiration time for a 4xx or 5xx status code for an object is longer than you
+                        				want to wait, you can invalidate the status code by using the URL of the requested
+                        object.
+                        				If your origin is returning an error response for multiple objects, you need to
+                        invalidate
+                        				each object separately. For more information about invalidating objects, see <a href="Invalidation.html">Invalidating Objects (Web Distributions Only)</a>.
+                     </p>
+                     		
+                     <h2 id="custom-error-pages-unavailable">How CloudFront Responds When a Custom Error Page Is
+                        				Unavailable
+                     </h2>
+                     			
+                     			
+                     <p>If you configure CloudFront to return a custom error page for an HTTP status code
+                        but the
+                        				custom error page isn&apos;t available, CloudFront returns to the viewer the status
+                        code that CloudFront
+                        				received from the origin that contains the custom error pages. For example, suppose
+                        your
+                        				custom origin returns a 500 status code and you have configured CloudFront to
+                        get a custom error
+                        				page for a 500 status code from an Amazon S3 bucket. However, someone accidentally
+                        deleted the
+                        				custom error page from your bucket. CloudFront will return an HTTP 404 status
+                        code (not found) to
+                        				the viewer that requested the object.
+                     </p>
+                     		
+                     <h2 id="custom-error-pages-charges">Pricing for Custom Error Pages</h2>
+                     			
+                     			
+                     <p>When CloudFront returns a custom error page to a viewer, you pay the standard CloudFront
+                        charges for
+                        				the custom error page, not the charges for the requested object. For more information
+                        about
+                        				CloudFront charges, see <a href="http://aws.amazon.com/cloudfront/pricing/" target="_blank">Amazon CloudFront
+                           					Pricing</a>.
+                     </p>
+                     		
+                     <h2 id="custom-error-pages-procedure">Configuring Error Response Behavior</h2>
+                     			
+                     			
+                     <p>You can use either the CloudFront API or console to configure CloudFront error responses.
+                        For
+                        				information about using the CloudFront API to configure error responses, go to
+                        <a href="./cloudfront/latest/APIReference/PutConfig.html" target="_blank">PUT Distribution Config</a> in the
+                        					<em>Amazon CloudFront API Reference</em>, and see the <code class="code">CustomErrorResponses</code>
+                        				element. 
+                     </p>
+                     			
+                     <p class="title"><b>To configure CloudFront error responses using the console</b></p>
+                     <ol>
+                        <li>
+                           					
+                           <p>Create the custom error pages that you want CloudFront to return to viewers when your
+                              						origin returns HTTP 4xx or 5xx errors. Save the pages in a location that is
+                              accessible
+                              						to CloudFront. 
+                           </p>
+                           					
+                           <p>We recommend that you store custom error pages in an Amazon S3 bucket even if you&apos;re
+                              						using a custom origin. If you store custom error pages on an HTTP server and
+                              the server
+                              						starts to return 5xx errors, CloudFront can&apos;t get the files that you want to
+                              return to viewers
+                              						because the origin server is unavailable.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Confirm that you have granted CloudFront at least <code class="code">read</code> permission to your
+                              						custom error page objects.
+                           </p>
+                           					
+                           <p>For more information about Amazon S3 permissions, see <a href="./AmazonS3/latest/dev/UsingAuthAccess.html" target="_blank">Access Control</a> in the
+                              							<em>Amazon Simple Storage Service Developer Guide</em>. For information on using the Amazon S3 console to
+                              						update permissions, go to the <a href="./AmazonS3/latest/UG/Welcome.html" target="_blank"><em>Amazon Simple Storage Service Console User
+                                    								Guide</em></a>. 
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>(Optional) Configure your origin server to add <code class="code">Cache-Control</code> directives
+                              						or an <code class="code">Expires</code> header along with the error response for specific objects, if
+                              						applicable. For more information, see <a href="custom-error-pages.html#custom-error-pages-expiration">Controlling How Long CloudFront Caches
+                                 				Errors</a>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           <p>Sign in to the AWS Management Console and open the CloudFront console at
+                              <a href="https://console.aws.amazon.com/cloudfront/" target="_blank">https://console.aws.amazon.com/cloudfront/</a>.
+                           </p>
+                        </li>
+                        <li>
+                           					
+                           <p>In the list of distributions, select the distribution to update and choose
+                              							<b>Distribution Settings</b>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Choose the <b>Error Pages</b> tab. Then either choose <b>Create
+                                 							Custom Error Response</b>, or choose an existing error code and choose
+                              							<b>Edit</b>.
+                           </p>
+                           							
+                           <div class="mediaobject">
+                              								
+                              									<img src="../../..//img/create-custom-error-response.png" alt="
+									Select Web as the distribution type.
+								">
+                              									
+                              									
+                              								
+                              								
+                              							
+                           </div>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>Enter the applicable values. For more information, see 
+                              						<a href="distribution-web-values-specify.html#DownloadDistValuesErrorPages">Custom Error Pages and Error Caching</a>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>If you configured CloudFront to return custom error pages, add or update the applicable
+                              cache behaviors. For more information, see 
+                              						<a href="custom-error-pages.html#custom-error-pages-cache-behavior">Creating or Updating a Cache Behavior for
+                                 				Custom Error Pages</a>.
+                           </p>
+                           				
+                        </li>
+                        <li>
+                           					
+                           <p>To save your changes, choose <b>Yes, Edit</b>.
+                           </p>
+                           				
+                        </li>
+                     </ol>
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="Invalidation.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="RangeGETs.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Creating or Updating a Cache Behavior for
+				Custom Error Pages"><a class="pagetoc" href="#custom-error-pages-cache-behavior">Creating or Updating a Cache Behavior for
+                              				Custom Error Pages</a></li>
+                        <li class="pagetoc" name="Changing Response Codes"><a class="pagetoc" href="#custom-error-pages-response-code">Changing Response Codes</a></li>
+                        <li class="pagetoc" name="Controlling How Long CloudFront Caches
+				Errors"><a class="pagetoc" href="#custom-error-pages-expiration">Controlling How Long CloudFront Caches
+                              				Errors</a></li>
+                        <li class="pagetoc" name="How CloudFront Responds When a Custom Error Page Is
+				Unavailable"><a class="pagetoc" href="#custom-error-pages-unavailable">How CloudFront Responds When a Custom Error Page Is
+                              				Unavailable</a></li>
+                        <li class="pagetoc" name="Pricing for Custom Error Pages"><a class="pagetoc" href="#custom-error-pages-charges">Pricing for Custom Error Pages</a></li>
+                        <li class="pagetoc" name="Configuring Error Response Behavior"><a class="pagetoc" href="#custom-error-pages-procedure">Configuring Error Response Behavior</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

@@ -1,0 +1,457 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Creating Wait Conditions in a Template - AWS CloudFormation</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="CHAP_Using.html" title="Walkthroughs">
+      <link rel="prev" href="deploying.applications.html" title="Deploying Applications on Amazon EC2 with AWS CloudFormation">
+      <link rel="next" href="CHAP_TemplateQuickRef.html" title="Template Snippets">
+      <meta name="description" content="Create a wait condition in a template to coordinate the creation of stack resources or track the progress of a configuration process.">
+      <meta name="keywords" content="CloudFormation,AWSCloudFormation,resource provisioning,resource configuration,infrastructure management,CloudFormer,CloudFormation Designer,CloudFormation stack,CloudFormation stackset,CloudFormation template,change set">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS CloudFormation">
+      <meta name="guide" content="User Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-waitcondition.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudformation">AWS CloudFormation</a> &#xBB; <a href="index.html">User Guide</a> &#xBB; <a href="template-guide.html">Working with AWS CloudFormation Templates</a> &#xBB; <a href="CHAP_Using.html">Walkthroughs</a> &#xBB; <span class="breadcrumb">Creating Wait Conditions in a Template</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="using-cfn-waitcondition">Creating Wait Conditions in a Template</h1>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>For Amazon EC2 and Auto Scaling resources, we recommend that you use a CreationPolicy
+                           attribute instead of wait conditions.
+                           Add a CreationPolicy attribute to those resources, and use the cfn-signal helper script
+                           to signal when an instance creation process has completed successfully.
+                        </p>
+                        <p>For more information, see <a href="aws-attribute-creationpolicy.html">CreationPolicy</a> or <a href="deploying.applications.html">Deploying Applications on Amazon EC2 with AWS CloudFormation</a>.
+                        </p>
+                     </div>
+                     <p>Using the <a href="aws-properties-waitcondition.html">AWS::CloudFormation::WaitCondition</a> resource and <a href="aws-attribute-creationpolicy.html">CreationPolicy</a>
+                        attribute, you can do the following:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Coordinate stack resource creation with other configuration actions that are
+                                 external to the stack creation
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Track the status of a configuration process</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <p>For example, you can start the creation of another resource after an application
+                        configuration is partially complete, or you can send signals during an installation
+                        and
+                        configuration process to track its progress.
+                     </p>
+                     <h2 id="using-cfn-waitconditionhandle">Using a Wait Condition Handle</h2>
+                     
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>If you use the <a href="./AmazonVPC/latest/UserGuide/vpc-endpoints.html" target="_blank">VPC
+                              endpoint</a> feature, resources in the VPC that respond to wait
+                           conditions must have access to AWS CloudFormation-specific Amazon Simple Storage Service
+                           (Amazon S3) buckets. Resources
+                           must send wait condition responses to a pre-signed Amazon S3 URL. If they can&apos;t send
+                           responses to Amazon S3, AWS CloudFormation won&apos;t receive a response and the stack
+                           operation fails.
+                           For more information, see <a href="cfn-vpce-bucketnames.html">AWS CloudFormation and VPC Endpoints</a> and <a href="./AmazonS3/latest/dev/example-bucket-policies-vpc-endpoint.html" target="_blank">Example Bucket Policies for VPC Endpoints for Amazon S3</a>.
+                        </p>
+                     </div>
+                     
+                     <p>You can use the wait condition and wait condition handle to make AWS CloudFormation
+                        pause the
+                        creation of a stack and wait for a signal before it continues to create the stack.
+                        For example, you might want to download and configure applications on an Amazon EC2
+                        instance before considering the creation of that Amazon EC2 instance complete.
+                     </p>
+                     
+                     <p>The following list provides a summary of how a wait condition with a wait
+                        condition handle works:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>AWS CloudFormation creates a wait condition just like any other resource. When AWS
+                                 CloudFormation
+                                 creates a wait condition, it reports the wait condition&#x2019;s status as
+                                 CREATE_IN_PROGRESS and waits until it receives the requisite number of
+                                 success signals or the wait condition&#x2019;s timeout period has expired. If AWS
+                                 CloudFormation receives the requisite number of success signals before the
+                                 time out period expires, it continues creating the stack; otherwise, it sets
+                                 the wait condition&#x2019;s status to CREATE_FAILED and rolls the stack
+                                 back.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The <code class="code">Timeout</code> property determines how long AWS CloudFormation waits for the
+                                 requisite number of success signals. <code class="code">Timeout</code> is a minimum-bound
+                                 property, meaning the timeout occurs no sooner than the time you specify,
+                                 but can occur shortly thereafter. The maximum time that you can specify is
+                                 43200 seconds (12 hours ).
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Typically, you want a wait condition to begin immediately after the
+                                 creation of a specific resource, such as an Amazon EC2 instance, RDS DB
+                                 instance, or Auto Scaling group. You do this by adding the <a href="aws-attribute-dependson.html">DependsOn attribute</a> to a wait
+                                 condition. When you add a DependsOn attribute to a wait condition, you
+                                 specify that the wait condition is created only after the creation of a
+                                 particular resource has completed. When the wait condition is created, AWS CloudFormation
+                                 begins the timeout period and waits for success signals.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>You can also use the DependsOn attribute on other resources. For example,
+                                 you may want an RDS DB instance to be created and a database configured on
+                                 that DB instance first before creating the EC2 instances that use that
+                                 database. In this case, you create a wait condition that has a DependsOn
+                                 attribute that specifies the DB instance, and you create EC2 instance
+                                 resources that have DependsOn attributes that specify the wait condition.
+                                 This would ensure that the EC2 instances would only be created directly
+                                 after the DB instance and the wait condition were completed.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>AWS CloudFormation must receive a specified number of success signals for a wait
+                                 condition before setting that wait condition&#x2019;s status to CREATE_COMPLETE
+                                 continuing the creation of the stack. The wait condition&#x2019;s Count property
+                                 specifies the number of success signals. If none is set, the default is
+                                 1.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>A wait condition requires a wait condition handle to set up a presigned
+                                 URL that is used as the signaling mechanism. The presigned URL enables you
+                                 to send a signal without having to supply your AWS credentials. You use that
+                                 presigned URL to signal success or failure, which is encapsulated in a JSON
+                                 statement. For the format of that JSON statement, see the <a href="using-cfn-waitcondition.html#using-cfn-waitcondition-signaljson">Wait Condition Signal JSON
+                                    Format</a>.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>If a wait condition receives the requisite number of success signals (as
+                                 defined in the Count property) before the timeout period expires, AWS
+                                 CloudFormation marks the wait condition as CREATE_COMPLETE and continues
+                                 creating the stack. Otherwise, AWS CloudFormation fails the wait condition
+                                 and rolls the stack back (for example, if the timeout period expires without
+                                 requisite success signals or if a failure signal is received).
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p class="title"><b>To use a wait condition in a stack:</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Declare an AWS::CloudFormation::WaitConditionHandle resource in the
+                              stack&apos;s template. A wait condition handle has no properties; however, a
+                              reference to a WaitConditionHandle resource resolves to a pre-signed URL
+                              that you can use to signal success or failure to the WaitCondition. For
+                              example:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">&quot;myWaitHandle&quot; : {
+     &quot;Type&quot; : &quot;AWS::CloudFormation::WaitConditionHandle&quot;,
+     &quot;Properties&quot; : {
+     }
+}</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Declare an AWS::CloudFormation::WaitCondition resource in the stack&apos;s
+                              template. A WaitCondition resource has two required properties: Handle is a
+                              reference to a WaitConditionHandle declared in the template and Timeout is
+                              the number seconds for AWS CloudFormation to wait. You can optionally set
+                              the Count property, which determines the number of success signals that the
+                              wait condition must receive before AWS CloudFormation can resume creating
+                              the stack.
+                           </p>
+                           
+                           <p>To control when the wait condition is triggered, you set a DependsOn
+                              attribute on the wait condition. A DependsOn clause associates a resource
+                              with the wait condition. After AWS CloudFormation creates the DependsOn
+                              resource, it blocks further stack resource creation until one of the
+                              following events occur: a) the timeout period expires b) The requisite
+                              number of success signals are received c) A failure signal is
+                              received.
+                           </p>
+                           
+                           <p>Here is an example of a wait condition that begins after the successful
+                              creation of the Ec2Instance resource, uses the myWaitHandle resource as the
+                              WaitConditionHandle, has a timeout of 4500 seconds, and has the default
+                              Count of 1 (since no Count property is specified):
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">&quot;myWaitCondition&quot; : {
+    &quot;Type&quot; : &quot;AWS::CloudFormation::WaitCondition&quot;,
+    &quot;DependsOn&quot; : &quot;Ec2Instance&quot;,
+    &quot;Properties&quot; : {
+        &quot;Handle&quot; : { &quot;Ref&quot; : &quot;myWaitHandle&quot; },
+         &quot;Timeout&quot; : &quot;4500&quot;
+    }
+}</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p>Get the presigned URL to use for signaling.</p>
+                           
+                           <p>In the template, the presigned URL can be retrieved by passing the
+                              logical name of the AWS::CloudFormation::WaitConditionHandle resource to the
+                              Ref intrinsic function. For example, you can use the UserData property on
+                              AWS::EC2::Instance resources to pass the presigned URL to the Amazon EC2
+                              instances so that scripts or applications running on those instances can
+                              signal success or failure to AWS CloudFormation:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">&quot;UserData&quot; : {
+   &quot;Fn::Base64&quot; : {
+       &quot;Fn::Join&quot; : [ &quot;&quot;, [&quot;SignalURL=&quot;, { &quot;Ref&quot; : &quot;myWaitHandle&quot; } ] ]
+   }
+}</code></pre>
+                           <p>Note: In the AWS Management Console or the AWS CloudFormation command line tools,
+                              the presigned URL is displayed as the physical ID of the wait condition
+                              handle resource.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Select a method for detecting when the stack enters the wait
+                              condition.
+                           </p>
+                           
+                           <p>If you create the stack with notifications enabled, AWS CloudFormation publishes a
+                              notification for every stack event to the specified topic. If you or your
+                              application subscribe to that topic, you can monitor the notifications for
+                              the wait condition handle creation event and retrieve the presigned URL from
+                              the notification message.
+                           </p>
+                           
+                           <p>You can also monitor the stack&apos;s events using the AWS Management
+                              Console, the AWS CloudFormation command line tools, or the AWS CloudFormation API.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Use the presigned URL to signal success or failure.</p>
+                           
+                           <p>To send a signal, you send an HTTP request message using the presigned
+                              URL. The request method must be PUT and the Content-Type header must be an
+                              empty string or omitted. The request message must be a JSON structure of the
+                              form specified in <a href="using-cfn-waitcondition.html#using-cfn-waitcondition-signaljson">Wait Condition Signal JSON
+                                 Format</a>.
+                           </p>
+                           
+                           <p>You need to send the number of success signals specified by the Count
+                              property in order for AWS CloudFormation to continue stack creation. If you have a
+                              Count
+                              that is greater than 1, the UniqueId value for each signal must be unique
+                              across all signals sent to a particular wait condition. The UniqueId is an arbitrary
+                              alphanumerical string.
+                           </p>
+                           
+                           <p>A Curl command is one way to send a signal. The following example shows
+                              a Curl command line that signals success to a wait condition.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">
+curl -T /tmp/a &quot;https://cloudformation-waitcondition-test.s3.amazonaws.com/arn%3Aaws%3Acloudformation%3A<span><code class="code" copy="true">us-east-2</code></span>%3A034017226601%3Astack%2Fstack-gosar-20110427004224-test-stack-with-WaitCondition--VEYW%2Fe498ce60-70a1-11e0-81a7-5081d0136786%2FmyWaitConditionHandle?Expires=1303976584&amp;AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&amp;Signature=ik1twT6hpS4cgNAw7wyOoRejVoo%3D&quot;
+            </code></pre>
+                           <p>where the file /tmp/a contains the following JSON structure:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">
+{
+   &quot;Status&quot; : &quot;SUCCESS&quot;,
+   &quot;Reason&quot; : &quot;Configuration Complete&quot;,
+   &quot;UniqueId&quot; : &quot;ID1234&quot;,
+   &quot;Data&quot; : &quot;Application has completed configuration.&quot;
+}</code></pre>
+                           <p>This example shows a Curl command line that sends the same success
+                              signal except it sends the JSON structure as a parameter on the command
+                              line.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">curl -X PUT -H &apos;Content-Type:&apos; --data-binary &apos;{&quot;Status&quot; : &quot;SUCCESS&quot;,&quot;Reason&quot; : &quot;Configuration Complete&quot;,&quot;UniqueId&quot; : &quot;ID1234&quot;,&quot;Data&quot; : &quot;Application has completed configuration.&quot;}&apos; &quot;https://cloudformation-waitcondition-test.s3.amazonaws.com/arn%3Aaws%3Acloudformation%3A<span><code class="code" copy="true">us-east-2</code></span>%3A034017226601%3Astack%2Fstack-gosar-20110427004224-test-stack-with-WaitCondition--VEYW%2Fe498ce60-70a1-11e0-81a7-5081d0136786%2FmyWaitConditionHandle?Expires=1303976584&amp;AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&amp;Signature=ik1twT6hpS4cgNAw7wyOoRejVoo%3D&quot;
+            </code></pre>
+                           </li>
+                     </ol>
+                     
+                     <h3 id="using-cfn-waitcondition-signaljson">Wait Condition Signal JSON
+                        Format
+                     </h3>
+                     
+                     
+                     <p>When you signal a wait condition, you must use the following JSON
+                        format:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{
+  &quot;Status&quot; : &quot;StatusValue&quot;,
+  &quot;UniqueId&quot; : &quot;Some UniqueId&quot;,
+  &quot;Data&quot; : &quot;Some Data&quot;,
+  &quot;Reason&quot; : &quot;Some Reason&quot;
+  }</code></pre>
+                     <p>Where:</p>
+                     
+                     <p><em>StatusValue</em> must be one of the following values:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><em>SUCCESS</em> indicates a success signal.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><em>FAILURE</em> indicates a failure signal and triggers a
+                                 failed wait condition and a stack rollback.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p><em>UniqueId</em> identifies the signal to AWS CloudFormation. If the Count
+                        property of the wait condition is greater than 1, the UniqueId value must be
+                        unique across all signals sent for a particular wait condition; otherwise, AWS CloudFormation
+                        will consider the signal a retransmission of the previously sent signal with the
+                        same UniqueId, and it will ignore the signal.
+                     </p>
+                     
+                     <p><em>Data</em> is any information that you want to send back with
+                        the signal. The Data value can be accessed by calling the <a href="intrinsic-function-reference-getatt.html">Fn::GetAtt function</a>
+                        within the template. For example, if you create the following output value for
+                        the wait condition mywaitcondition, you can use the
+                        <code class="code">aws cloudformation describe-stacks</code> command, <a href="./AWSCloudFormation/latest/APIReference/API_DescribeStacks.html" target="_blank">DescribeStacks action</a>, or Outputs tab of the CloudFormation console
+                        to view the Data sent by valid signals sent to AWS CloudFormation: 
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">
+        &quot;WaitConditionData&quot; : {
+            &quot;Value&quot; : { &quot;Fn::GetAtt&quot; : [ &quot;mywaitcondition&quot;, &quot;Data&quot; ]},
+            &quot;Description&quot; : &quot;The data passed back as part of signalling the WaitCondition&quot;
+        },
+            </code></pre>
+                     <p>The Fn::GetAtt function returns the UniqueId and Data as a name/value pair
+                        within a JSON structure. The following is an example of the Data attribute
+                        returned by the WaitConditionData output value defined above:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">{&quot;Signal1&quot;:&quot;Application has completed configuration.&quot;}</code></pre>
+                     <p><em>Reason</em> is a string with no other restrictions on its
+                        content besides JSON compliance.
+                     </p>
+                     
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="deploying.applications.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="CHAP_TemplateQuickRef.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Using a Wait Condition Handle"><a class="pagetoc" href="#using-cfn-waitconditionhandle">Using a Wait Condition Handle</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS CloudFormation';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

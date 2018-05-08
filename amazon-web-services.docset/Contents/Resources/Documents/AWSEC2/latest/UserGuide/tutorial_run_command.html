@@ -1,0 +1,476 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Tutorial: Remotely Manage Your Amazon EC2 Instances - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="ec2-tutorials.html" title="Tutorials for Amazon EC2 Instances Running Linux">
+      <link rel="prev" href="ec2-increase-availability.html" title="Tutorial: Increase the Availability of Your
+			Application on Amazon EC2">
+      <link rel="next" href="AMIs.html" title="Amazon Machine Images (AMI)">
+      <meta name="description" content="Learn how to quickly execute a command using Amazon EC2 Run Command.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/tutorial_run_command.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="ec2-tutorials.html">Tutorials for Amazon EC2 Instances Running Linux</a> &#xBB; <span class="breadcrumb">Tutorial: Remotely Manage Your Amazon EC2 Instances</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="tutorial_run_command">Tutorial: Remotely Manage Your Amazon EC2 Instances</h1>
+                     <p>This tutorial shows you how to remotely manage an Amazon EC2 instance using Systems
+                        Manager Run Command
+                        		from your local machine. This tutorial includes procedures for executing commands
+                        using the
+                        		Amazon EC2 console, AWS Tools for Windows PowerShell, and the AWS Command Line Interface.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>With Run Command, you can also manage your servers and virtual machines (VMs) in your
+                           			on-premises environment or in an environment provided by other cloud providers.
+                           For more
+                           			information, see <a href="./systems-manager/latest/userguide/systems-manager-managedinstances.html" target="_blank">Setting Up Systems Manager in Hybrid Environments</a>.
+                        </p>
+                     </div>
+                     		
+                     <p class="title"><b>Before you Begin</b></p>
+                     		
+                     <p>You must configure an AWS Identity and Access Management (IAM) instance profile role
+                        for Systems Manager. Attach an IAM role
+                        			with the <b>AmazonEC2RoleforSSM</b> managed policy to an Amazon EC2 instance.
+                        			This role enables the instance to communicate with the Systems Manager API. For
+                        more
+                        			information about how to attach the role to an existing instance, see <a href="iam-roles-for-amazon-ec2.html#attach-iam-role">Attaching an IAM Role to an Instance</a>.
+                     </p>
+                     	
+                     <p>You must also configure your IAM user account for Systems Manager, as described in
+                        the next
+                        		section.
+                     </p>
+                     		
+                     <h2 id="tutorial-iam-rc">Grant Your User Account Access to Systems Manager</h2>
+                     		
+                     		
+                     <p>Your user account must be configured to communicate with the SSM API. Use the
+                        			following procedure to attach a managed AWS Identity and Access Management (IAM)
+                        policy to your user account
+                        			that grants you full access to SSM API actions.
+                     </p>
+                     		
+                     <p class="title"><b>To create the IAM policy for your user account</b></p>
+                     <ol>
+                        <li> 
+                           <p>Open the IAM console at
+                              <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                           </p> 
+                        </li>
+                        <li>
+                           				
+                           <p>In the navigation pane, choose <b>Policies</b>. (If this is your
+                              					first time using IAM, choose <b>Get Started</b>, and then choose
+                              						<b>Create Policy</b>.)
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>In the <b>Filter</b> field, type
+                              						<strong class="userinput"><code>AmazonSSMFullAccess</code></strong> and press Enter.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Select the check box next to <b>AmazonSSMFullAccess</b> and then
+                              					choose <b>Policy Actions</b>, <b>Attach</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>On the <b>Attach Policy</b> page, choose your user account and
+                              					then choose <b>Attach Policy</b>.
+                           </p>
+                           			
+                        </li>
+                     </ol>
+                     	
+                     		
+                     <h2 id="tutorial-agent-install">Install the SSM Agent</h2>
+                     
+                     		
+                     <p>SSM Agent processes Run Command requests and configures the instances that are
+                        			specified in the request. The agent is installed by default on Windows AMIs starting
+                        			in November 2016 and later and Amazon Linux AMIs starting with 2017.09.
+                     </p>
+                     		
+                     <p>To install the agent on Linux, see <a href="./systems-manager/latest/userguide/sysman-install-ssm-agent.html" target="_blank">Installing and Configuring SSM Agent on Linux Instances</a> in the 
+                        			<em>AWS Systems Manager User Guide</em>.
+                     </p>
+                     		
+                     <p>To install the agent on Windows, see <a href="./systems-manager/latest/userguide/sysman-install-ssm-win.html" target="_blank">Installing and Configuring SSM Agent on Windows Instances</a> in the 
+                        			<em>AWS Systems Manager User Guide</em>.
+                     </p>
+                     		
+                     	
+                     		
+                     <h2 id="rc-tutorial-ui">Send a Command Using the EC2 Console</h2>
+                     		
+                     		
+                     <p>Use the following procedure to list all services running on the instance by using
+                        Run
+                        			Command from the Amazon EC2 console.
+                     </p>
+                     		
+                     <p class="title"><b>To execute a command using Run Command from the console</b></p>
+                     <ol>
+                        <li> 
+                           <p>Open the Amazon EC2 console at
+                              <a href="https://console.aws.amazon.com/ec2/" target="_blank">https://console.aws.amazon.com/ec2/</a>.
+                           </p> 
+                        </li>
+                        <li>
+                           				
+                           <p>In the navigation pane, choose <b>Run Command</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Choose <b>Run a command</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>For <b>Command document</b>, choose
+                              						<b>AWS-RunPowerShellScript</b> for Windows instances, and
+                              						<b>AWS-RunShellScript</b> for Linux instances.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>For <b>Target instances</b>, choose the instance you created. If
+                              					you don&apos;t see the instance, verify that you are currently in the same region
+                              as
+                              					the instance you created. Also verify that you configured the IAM role and
+                              					trust policies as described earlier.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>For <b>Commands</b>, type <strong class="userinput"><code>Get-Service</code></strong> for Windows, or
+                              <strong class="userinput"><code>ps aux</code></strong> for Linux.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>(Optional) For <b>Working Directory</b>, specify a path to the
+                              					folder on your EC2 instances where you want to run the command.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>(Optional) For <b>Execution Timeout</b>, specify the number of
+                              					seconds the EC2Config service or SSM agent will attempt to run the command
+                              					before it times out and fails.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>For <b>Comment</b>, we recommend providing information that will
+                              					help you identify this command in your list of commands.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>For <b>Timeout (seconds)</b>, type the number of seconds that
+                              					Run Command should attempt to reach an instance before it is considered
+                              					unreachable and the command execution fails.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Choose <b>Run</b> to execute the command. Run Command displays a
+                              					status screen. Choose <b>View result</b>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>To view the output, choose the command invocation for the command, choose the
+                              						<b>Output</b> tab, and then choose <b>View
+                                 						Output</b>.
+                           </p>
+                           
+                           				
+                           <div class="mediaobject">
+                              					
+                              						<img src="../../..//img/run-command-walkthrough-7.png" alt="
+						List of commands executed using Run Command
+					">
+                              					
+                              					
+                              				
+                           </div>
+                           			
+                        </li>
+                     </ol>
+                     		
+                     <p>For more examples of how to execute commands using Run Command, see <a href="./systems-manager/latest/userguide/run-command.html" target="_blank">Executing Commands Using Systems Manager Run
+                           				Command</a>.
+                     </p>
+                     	
+                     <h2 id="tutorial-powershell">Send a Command Using AWS Tools for Windows PowerShell</h2>
+                     		
+                     		
+                     <p>Use the following procedure to list all services running on the instance by using
+                        Run
+                        			Command from AWS Tools for Windows PowerShell.
+                     </p>
+                     		
+                     <p class="title"><b>To execute a command</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>On your local computer, download the latest version of <a href="https://aws.amazon.com/powershell/" target="_blank">AWS Tools for Windows PowerShell</a>.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Open <b>AWS Tools for Windows PowerShell</b> on your local computer and
+                              					execute the following command to specify your credentials. 
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Set-AWSCredentials &#x2013;AccessKey <em class="replaceable"><code>key</code></em> &#x2013;SecretKey <em class="replaceable"><code>key</code></em></code></pre>
+                           			</li>
+                        <li>
+                           				
+                           <p>Execute the following command to set the region for your PowerShell session.
+                              					Specify the region where you created the instance in the previous procedure.
+                              					This example uses the us-west-2 region.
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">Set-DefaultAWSRegion -Region us-west-2</code></pre>
+                           			</li>
+                        <li>
+                           				
+                           <p>Execute the following command to retrieve the services running on the
+                              					instance. 
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Send-SSMCommand -InstanceId &apos;<em class="replaceable"><code>Instance-ID</code></em>&apos; -DocumentName AWS-RunPowerShellScript -Comment &apos;listing services on the instance&apos; -Parameter @{&apos;commands&apos;=@(&apos;Get-Service&apos;)}</code></pre>
+                           				<p>The command returns a command ID, which you will use to view the
+                              					results.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>The following command returns the output of the original Send-SSMCommand. The
+                              					output is truncated after 2500 characters. To view the full list of services,
+                              					specify an Amazon S3 bucket in the command using the -OutputS3BucketName
+                              						<em class="replaceable"><code>bucket_name</code></em> parameter.
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Get-SSMCommandInvocation -CommandId <em class="replaceable"><code>Command-ID</code></em> -Details $true | select -ExpandProperty CommandPlugins</code></pre>
+                           			</li>
+                     </ol>
+                     		
+                     <p>For more examples of how to execute commands using Run Command with Tools for Windows
+                        PowerShell, see <a href="./systems-manager/latest/userguide/walkthrough-powershell.html" target="_blank">Systems Manager Run Command Walkthough Using
+                           				the AWS Tools for Windows PowerShell</a>.
+                     </p>
+                     	
+                     <h2 id="tutorial-cli">Send a Command Using the AWS CLI</h2>
+                     		
+                     		
+                     <p>Use the following procedure to list all services running on the instance by using
+                        Run
+                        			Command in the AWS CLI.
+                     </p>
+                     		
+                     <p class="title"><b>To execute a command</b></p>
+                     <ol>
+                        <li>
+                           				
+                           <p>On your local computer, download the latest version of the <a href="./cli/latest/userguide/installing.html" target="_blank">AWS Command Line Interface</a> (AWS CLI).
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Open the AWS CLI on your local computer and execute the following command to
+                              					specify your credentials and the region.
+                           </p>
+                           
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">aws configure</code></pre>
+                           			</li>
+                        <li>
+                           				
+                           <p>The system prompts you to specify the following.</p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">AWS Access Key ID [None]: <em class="replaceable"><code>key</code></em>
+AWS Secret Access Key [None]: <em class="replaceable"><code>key</code></em>
+Default region name [None]: <em class="replaceable"><code>region, for example us-east-1</code></em>
+Default output format [None]: ENTER</code></pre>
+                           			</li>
+                        <li>
+                           				
+                           <p>Execute the following command to retrieve the services running on the
+                              					instance. 
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws ssm send-command --document-name &quot;AWS-RunShellScript&quot; --comment &quot;listing services&quot; --instance-ids &quot;<em class="replaceable"><code>Instance-ID</code></em>&quot; --parameters commands=&quot;service --status-all&quot; --region us-west-2 --output text</code></pre>
+                           				<p>The command returns a command ID, which you will use to view the
+                              					results.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>The following command returns the output of the original Send-SSMCommand. The
+                              					output is truncated after 2500 characters. To view the full list of services,
+                              					you would need to specify an Amazon S3 bucket in the command using the
+                              					--output-s3-bucket-name <em class="replaceable"><code>bucket_name</code></em> parameter.
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws ssm list-command-invocations --command-id &quot;<em class="replaceable"><code>command ID</code></em>&quot; --details</code></pre>
+                           			</li>
+                     </ol>
+                     		
+                     <p>For more examples of how to execute commands using Run Command using the AWS CLI,
+                        see
+                        				<a href="./systems-manager/latest/userguide/walkthrough-cli.html" target="_blank">Systems Manager Run Command Walkthought Using
+                           				the AWS CLI</a>.
+                     </p>
+                     	
+                     <h2 id="w2ab1c13c17c21">Related Content</h2>
+                     		
+                     		
+                     <p>For more information about Run Command and Systems Manager, see the following topics
+                        and
+                        			references.
+                     </p>
+                     		
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p><a href="./systems-manager/latest/userguide/" target="_blank">AWS Systems Manager User Guide</a></p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><a href="./ssm/latest/APIReference/" target="_blank">Amazon EC2 Systems Manager API Reference</a></p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><a href="./powershell/latest/reference/items/Amazon_Simple_Systems_Management_cmdlets.html" target="_blank">Systems Manager AWS Tools for PowerShell Cmdlet Reference</a></p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><a href="./cli/latest/reference/ssm/index.html" target="_blank">Systems Manager AWS CLI Command Reference</a></p>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p>
+                                 					<a href="https://aws.amazon.com/tools/#SDKs" target="_blank">AWS SDKs</a></p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     	
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ec2-increase-availability.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="AMIs.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Grant Your User Account Access to Systems Manager"><a class="pagetoc" href="#tutorial-iam-rc">Grant Your User Account Access to Systems Manager</a></li>
+                        <li class="pagetoc" name="Install the SSM Agent"><a class="pagetoc" href="#tutorial-agent-install">Install the SSM Agent</a></li>
+                        <li class="pagetoc" name="Send a Command Using the EC2 Console"><a class="pagetoc" href="#rc-tutorial-ui">Send a Command Using the EC2 Console</a></li>
+                        <li class="pagetoc" name="Send a Command Using AWS Tools for Windows PowerShell"><a class="pagetoc" href="#tutorial-powershell">Send a Command Using AWS Tools for Windows PowerShell</a></li>
+                        <li class="pagetoc" name="Send a Command Using the AWS CLI"><a class="pagetoc" href="#tutorial-cli">Send a Command Using the AWS CLI</a></li>
+                        <li class="pagetoc" name="Related Content"><a class="pagetoc" href="#w2ab1c13c17c21">Related Content</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

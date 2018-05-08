@@ -1,0 +1,233 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Using AWS Lambda with Amazon S3 - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="use-cases.html" title="Examples of How to Use AWS Lambda">
+      <link rel="prev" href="use-cases.html" title="Examples of How to Use AWS Lambda">
+      <link rel="next" href="with-s3-example.html" title="Tutorial: Using AWS Lambda with Amazon S3">
+      <meta name="description" content="How to set up and start using the AWS Lambda Service.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/with-s3.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="use-cases.html">Examples of How to Use AWS Lambda</a> &#xBB; <span class="breadcrumb">Using AWS Lambda with Amazon S3</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <div id="language-filter" class="page-header" style="display:none">
+                        <form> Filter View: 
+                           <select name="filter-select" id="filter-select">
+                              <option selected="1">All</option>
+                              <option value="Node.js" selected>Node.js</option>
+                              <option value="Java" selected>Java</option>
+                              <option value="Python" selected>Python</option></select></form>
+                     </div>
+                     <h1 class="topictitle" id="with-s3">Using AWS Lambda with Amazon S3</h1>
+                     <p>Amazon S3 can publish events (for example, when an object is created in a bucket)
+                        to AWS Lambda and
+                        			invoke your Lambda function by passing the event data as a parameter. This integration
+                        			enables you to write Lambda functions that process Amazon S3 events. In Amazon
+                        S3, you add bucket
+                        			notification configuration that identifies the type of event that you want Amazon
+                        S3 to publish and
+                        			the Lambda function that you want to invoke. 
+                     </p>
+                     <p>Note the following about how the Amazon S3 and AWS Lambda integration works:</p>
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><b>Non-stream based (async) model</b> &#x2013; This is a model (see
+                                 							<a href="invocation-options.html#intro-invocation-modes">Event Source Mapping</a>), where Amazon S3 monitors a
+                                 						bucket and invokes the Lambda function by passing the event data as
+                                 						a parameter. In a push model, you maintain event source mapping within Amazon
+                                 S3 using the
+                                 						bucket notification configuration. In the configuration, you specify the
+                                 						event types that you want Amazon S3 to monitor and which AWS Lambda function
+                                 you want Amazon S3
+                                 						to invoke. For more information, see <a href="./AmazonS3/latest/dev/NotificationHowTo.html" target="_blank">Configuring Amazon S3 Event Notifications</a> in the
+                                 						<em>Amazon Simple Storage Service Developer Guide</em>.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><b>Asynchronous invocation</b> &#x2013; 
+                                 						AWS Lambda invokes a Lambda function using the <code class="code">Event</code> invocation type
+                                 						(asynchronous invocation). For more information about invocation types, see
+                                 <a href="invocation-options.html">Invocation Types</a>. 
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><b>Event structure</b> &#x2013; The event your Lambda function
+                                 						receives is for a single object and it provides information, such as the bucket
+                                 						name and object key name. 
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     <p>Note that there are two types of permissions policies that you work with when you
+                        set up the
+                        			end-to-end experience:
+                     </p>
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p><b>Permissions for your Lambda
+                                    						function</b> &#x2013;  Regardless of what invokes a Lambda function,
+                                 						AWS Lambda executes the function by assuming the IAM role (execution role)
+                                 						that you specify at the time you create the Lambda function. Using the
+                                 						permissions policy associated with this role, you grant your Lambda function
+                                 						the permissions that it needs. For example, if your Lambda function needs to
+                                 read an object, 
+                                 						you grant permissions for the relevant Amazon S3 actions in the permissions
+                                 policy. For more
+                                 						information, see <a href="intro-permission-model.html#lambda-intro-execution-role">Manage Permissions: Using an IAM Role
+                                    (Execution Role)</a>.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p><b>Permissions for Amazon S3 to invoke your Lambda
+                                    							function</b> &#x2013; Amazon S3 cannot invoke your Lambda function
+                                 						without your permission. You grant this permission via the permissions policy
+                                 
+                                 						associated with the Lambda function.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     <p>The following diagram summarizes the flow: </p>
+                     <div class="mediaobject">
+                        						
+                        							<img src="../../..//img/push-s3-example-10.png">
+                        						
+                        					
+                     </div>
+                     <div class="orderedlist">
+                        				
+                        				
+                        				
+                        				
+                        				
+                        			
+                        <ol>
+                           <li>
+                              					
+                              <p>User uploads an object to an S3 bucket (object-created event).</p>
+                              				
+                           </li>
+                           <li>
+                              					
+                              <p>Amazon S3 detects the object-created event. </p>
+                              				
+                           </li>
+                           <li>
+                              					
+                              <p>Amazon S3 invokes a Lambda function that is specified in the bucket
+                                 						notification configuration. 
+                              </p>
+                              				
+                           </li>
+                           <li>
+                              					
+                              <p>AWS Lambda executes the Lambda function by assuming the execution role that you specified
+                                 at
+                                 						the time you created the Lambda function.
+                              </p>
+                              				
+                           </li>
+                           <li>
+                              					
+                              <p>The Lambda function executes.</p>
+                              				
+                           </li>
+                        </ol>
+                     </div>
+                     <p>For a tutorial that walks you through an example setup, see <a href="with-s3-example.html">Tutorial: Using AWS Lambda with Amazon S3</a>.
+                     </p>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="use-cases.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="with-s3-example.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

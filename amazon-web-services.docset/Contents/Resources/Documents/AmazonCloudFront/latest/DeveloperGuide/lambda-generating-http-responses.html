@@ -1,0 +1,421 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Generating HTTP Responses in Request Triggers - Amazon CloudFront</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="lambda-at-the-edge.html" title="Using CloudFront with Lambda@Edge">
+      <link rel="prev" href="lambda-event-structure.html" title="Lambda@Edge Event Structure">
+      <link rel="next" href="lambda-updating-http-responses.html" title="Updating HTTP Responses in Origin-Response Triggers">
+      <meta name="description" content="This feature allows you to use Lambda@Edge functions associated with CloudFront viewer request events to generate HTTP responses.">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-generating-http-responses.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-at-the-edge.html">Using CloudFront with Lambda@Edge</a> &#xBB; <span class="breadcrumb">Generating HTTP Responses in Request Triggers</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="lambda-generating-http-responses">Generating HTTP Responses in Request Triggers</h1>
+                     <p>When CloudFront receives a request, you can use a Lambda function to generate an HTTP
+                        response that CloudFront returns directly to the viewer without
+                        			forwarding the response to the origin. Generating HTTP responses reduces the load
+                        on the origin, and typically also reduces latency for the viewer.
+                     </p>
+                     <p>Some common scenarios for generating HTTP responses include the following:</p>
+                     <div class="itemizedlist">
+                        			
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>Returning a small web page to the viewer</p>
+                           </li>
+                           <li class="listitem">
+                              <p>Returning an HTTP 301 or 302 status code to redirect the user to another web page</p>
+                           </li>
+                           <li class="listitem">
+                              <p>Returning an HTTP 401 status code to the viewer when the user hasn&apos;t authenticated</p>
+                           </li>
+                        </ul>
+                     </div>
+                     <p>A Lambda@Edge function can generate an HTTP response when the following CloudFront
+                        events occur:
+                     </p>
+                     <div class="variablelist">
+                        			
+                        			
+                        		
+                        <dl>
+                           				
+                           <dt><b><span class="term">Viewer request events</span></b></dt>
+                           				
+                           <dd>
+                              <p>When a function is triggered by a viewer request event, CloudFront returns the response
+                                 to the viewer
+                                 					and doesn&apos;t cache it.
+                              </p>
+                              				
+                           </dd>
+                           			
+                           				
+                           <dt><b><span class="term">Origin request events</span></b></dt>
+                           				
+                           <dd>
+                              <p>When a function is triggered by an origin request event, CloudFront checks the edge
+                                 cache for a
+                                 					response that was previously generated by the function.  
+                              </p>
+                              					
+                              <div class="itemizedlist">
+                                 						
+                                 						
+                                 					
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p>If the response is in the cache, the function isn&apos;t executed and CloudFront returns
+                                          the cached response to the viewer.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>If the response isn&apos;t in the cache, the function is executed, CloudFront returns the
+                                          response to the viewer, and also 
+                                          							caches it.
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              				
+                           </dd>
+                           			
+                        </dl>
+                     </div>
+                     <p>To see some sample code for generating HTTP responses, see <a href="./AmazonCloudFront/latest/DeveloperGuide/lambda-examples.html#lambda-examples-generated-response-examples" target="_blank">
+                           			field-level encryption</a>. You can also replace the HTTP responses in response triggers. For more information,
+                        see 
+                        			<a href="lambda-updating-http-responses.html">Updating HTTP Responses in Origin-Response Triggers</a>.
+                     </p>
+                     			
+                     			
+                     			
+                     <h2 id="lambda-generating-http-responses-programming-model">Programming Model</h2>
+                     			
+                     <p>This section describes the programming model for using Lambda@Edge to generate HTTP
+                        				responses.
+                     </p>
+                     			
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#lambda-generating-http-responses-object">Response Object</a></li>
+                           <li><a href="#lambda-generating-http-responses-errors">Errors</a></li>
+                           <li><a href="#lambda-generating-http-responses-required-fields">Required Fields</a></li>
+                        </ul>
+                     </div>
+                     			
+                     			
+                     <h3 id="lambda-generating-http-responses-object">Response Object</h3>
+                     				
+                     				
+                     <p>The response you return as the <code class="code">result</code> parameter of the <code class="code">callback</code> method should have the following
+                        					structure (note that only the <code class="code">status</code> field is required).
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="javascript ">
+const response = {
+    body: &apos;content&apos;,
+    bodyEncoding: &apos;text&apos; | &apos;base64&apos;,
+    headers: {
+        &apos;header name in lowercase&apos;: [{
+            key: &apos;header name in standard case&apos;,
+            value: &apos;header value&apos;
+         }],
+         ...
+    },
+    status: &apos;HTTP status code&apos;,
+    statusDescription: &apos;status description&apos;
+};</code></pre>
+                     				<p>The response object can include the following values:</p>
+                     				
+                     <div class="variablelist">
+                        					
+                        					
+                        					
+                        					
+                        					
+                        				
+                        <dl>
+                           						
+                           <dt><b><span class="term">body</span></b></dt>
+                           						
+                           <dd>
+                              <p>The body, if any, that you want CloudFront to return in the generated response.</p>
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">bodyEncoding</span></b></dt>
+                           						
+                           <dd>
+                              <p>The encoding for the value that you specified in the <code class="code">body</code>. The only valid encodings are
+                                 							<code class="code">text</code> and <code class="code">base64</code>. If you include <code class="code">body</code> in the <code class="code">response</code> object but omit <code class="code">bodyEncoding</code>,
+                                 							CloudFront treats the body as text.
+                              </p>
+                              							
+                              <p>If you specify <code class="code">bodyEncoding</code> as <code class="code">base64</code> but the body is not valid base64, CloudFront returns an error.
+                              </p>
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">headers</span></b></dt>
+                           						
+                           <dd>
+                              <p>Headers that you want CloudFront to return in the generated response. Note the following:</p>
+                              							
+                              <div class="itemizedlist">
+                                 								
+                                 								
+                                 								
+                                 								
+                                 							
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p>The keys in the <code class="code">headers</code> object are lowercase versions of standard HTTP header names. Using lowercase keys
+                                          gives you
+                                          									case-insensitive access to the header values.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Each header (for example, <code class="code">headers[&quot;accept&quot;]</code> or <code class="code">headers[&quot;host&quot;]</code>) is an array of key-value pairs.
+                                          									For a given header, the array contains one key-value pair for each value
+                                          in the generated response. For example, if you want to include
+                                          									3 values in the host header, the <code class="code">headers[&quot;host&quot;]</code> array will contain 3 key-value pairs.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p><code class="code">key</code> is the case-sensitive name of the header as it appears in an HTTP request; for example,
+                                          <code class="code">accept</code> 
+                                          									or <code class="code">host</code>.
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p><code class="code">value</code> is a header value.
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              							
+                              <p>For information about restrictions on header usage, see <a href="lambda-requirements-limits.html#lambda-header-restrictions">Headers</a>.
+                                 							
+                              </p>
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">status</span></b></dt>
+                           						
+                           <dd>
+                              <p>The HTTP status code that you want CloudFront to use for the following:</p>
+                              							
+                              <div class="itemizedlist">
+                                 								
+                                 								
+                                 								
+                                 							
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p>Return in the response</p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Cache in the CloudFront edge cache, when the response was generated by a function
+                                          that was triggered by an origin request 
+                                          									event
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>Log in CloudFront <a href="AccessLogs.html">Access Logs</a></p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              							
+                              <p>If the <code class="code">status</code> value isn&apos;t between 200 and 599, CloudFront returns an error to the viewer.
+                              </p>
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">statusDescription</span></b></dt>
+                           						
+                           <dd>
+                              <p>The description that you want CloudFront to return in the response, to accompany the
+                                 HTTP status
+                                 							code. You don&apos;t need to use standard descriptions, such as <code class="code">OK</code> for an HTTP status code of 200.
+                              </p>
+                           </dd>
+                           					
+                        </dl>
+                     </div>
+                     			
+                     			
+                     			
+                     <h3 id="lambda-generating-http-responses-errors">Errors</h3>
+                     				
+                     				
+                     <p>The following are possible errors for generated HTTP responses.</p>
+                     				
+                     				
+                     <div class="variablelist">
+                        					
+                        					
+                        				
+                        <dl>
+                           						
+                           <dt><b><span class="term">Response Contains a Body and Specifies 204 (No Content) for Status</span></b></dt>
+                           						
+                           <dd>
+                              <p>When a function is triggered by a viewer request, CloudFront returns an HTTP 502 status
+                                 code (Bad Gateway) to the viewer when both
+                                 							of the following are true:
+                              </p>
+                              							
+                              <div class="itemizedlist">
+                                 								
+                                 								
+                                 							
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p>The value of <code class="code">status</code> is 204 (No Content)
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p>The response includes a value for <code class="code">body</code></p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              							
+                              <p>This is because Lambda@Edge imposes the optional restriction found in RFC 2616, which
+                                 states that an <code class="code">HTTP 204</code> 
+                                 								response does not need to contain a message body.
+                              </p>
+                           </dd>
+                           					
+                           						
+                           <dt><b><span class="term">Limits on the Size of the Generated Response</span></b></dt>
+                           						
+                           <dd>
+                              <p>The maximum size of a response that is generated by a Lambda function (including the
+                                 headers and body) 
+                                 							depends on the event that triggered the function:
+                              </p>
+                              							
+                              <div class="itemizedlist">
+                                 								
+                                 								
+                                 							
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       <p><b>Viewer request events</b> &#x2013; 40 KB
+                                       </p>
+                                    </li>
+                                    <li class="listitem">
+                                       <p><b>Origin request events</b> &#x2013; 1 MB
+                                       </p>
+                                    </li>
+                                 </ul>
+                              </div>
+                              							
+                              <p>If the response is larger than the allowed size, CloudFront returns an HTTP 502 status
+                                 code (Bad Gateway) to the viewer.
+                              </p>
+                           </dd>
+                           					
+                        </dl>
+                     </div>
+                     			
+                     			
+                     			
+                     <h3 id="lambda-generating-http-responses-required-fields">Required Fields</h3>
+                     				
+                     				
+                     <p>The <code class="code">status</code> field is required. 
+                     </p>
+                     				
+                     <p>All other fields are optional.</p>
+                     			
+                     			
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="lambda-event-structure.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="lambda-updating-http-responses.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Programming Model"><a class="pagetoc" href="#lambda-generating-http-responses-programming-model">Programming Model</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

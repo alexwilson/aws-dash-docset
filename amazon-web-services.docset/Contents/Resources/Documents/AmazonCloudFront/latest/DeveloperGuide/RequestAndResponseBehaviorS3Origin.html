@@ -1,0 +1,827 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Request and Response Behavior for Amazon S3 Origins - Amazon CloudFront</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="RequestAndResponseBehavior.html" title="Request and Response Behavior">
+      <link rel="prev" href="RequestAndResponseBehavior.html" title="Request and Response Behavior">
+      <link rel="next" href="RequestAndResponseBehaviorCustomOrigin.html" title="Request and Response Behavior for Custom Origins">
+      <meta name="description" content="Describes how CloudFront processes requests and responses when you&apos;re using Amazon S3 as your origin server.">
+      <meta name="keywords" content="Amazon CloudFront,CloudFront,cache,distribution,edge,geo,HTTP,HTTPS,media,origin,RTMP,streaming">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon CloudFront">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/RequestAndResponseBehaviorS3Origin.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/cloudfront">Amazon CloudFront</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="RequestAndResponseBehavior.html">Request and Response Behavior</a> &#xBB; <span class="breadcrumb">Request and Response Behavior for Amazon S3 Origins</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="RequestAndResponseBehaviorS3Origin">Request and Response Behavior for Amazon S3 Origins</h1>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#RequestBehaviorS3Origin">How CloudFront Processes and Forwards Requests to Your Amazon S3 Origin Server</a></li>
+                           <li><a href="#ResponseBehaviorS3Origin">How CloudFront Processes Responses from Your Amazon S3 Origin Server</a></li>
+                        </ul>
+                     </div>
+                     			
+                     <h2 id="RequestBehaviorS3Origin">How CloudFront Processes and Forwards Requests to Your Amazon S3 Origin Server</h2>
+                     			
+                     			
+                     <p>This topic contains information about how CloudFront processes viewer requests and
+                        forwards the requests to
+                        				your Amazon S3 origin.
+                     </p>
+                     
+                     			
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#RequestS3Caching">Caching Duration and Minimum TTL</a></li>
+                           <li><a href="#RequestS3IPAddresses">Client IP Addresses</a></li>
+                           <li><a href="#RequestS3ConditionalGETs">Conditional GETs</a></li>
+                           <li><a href="#RequestS3Cookies">Cookies</a></li>
+                           <li><a href="#RequestS3-cors">Cross-Origin Resource Sharing (CORS)</a></li>
+                           <li><a href="#RequestS3-get-body">GET Requests That Include a Body</a></li>
+                           <li><a href="#RequestS3HTTPMethods">HTTP Methods</a></li>
+                           <li><a href="#request-s3-removed-headers">HTTP Request Headers That CloudFront Removes or Updates</a></li>
+                           <li><a href="#RequestS3MaxRequestStringLength">Maximum Length of a Request and Maximum Length of a URL</a></li>
+                           <li><a href="#request-s3-ocsp-stapling">OCSP Stapling</a></li>
+                           <li><a href="#RequestS3Protocol">Protocols</a></li>
+                           <li><a href="#RequestS3QueryStrings">Query Strings</a></li>
+                           <li><a href="#RequestS3RequestTimeout">Origin Response Timeout</a></li>
+                           <li><a href="#request-s3-traffic-spikes">Simultaneous Requests for the Same Object (Traffic Spikes)</a></li>
+                        </ul>
+                     </div>
+                     
+                     			
+                     			
+                     <h3 id="RequestS3Caching">Caching Duration and Minimum TTL</h3>
+                     				
+                     				
+                     <p>For web distributions, to control how long your objects stay in a CloudFront cache
+                        before
+                        					CloudFront forwards another request to your origin, you can:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        						
+                        						
+                        						
+                        					
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              							
+                              <p>Configure your origin to add a <code class="code">Cache-Control</code> or an
+                                 									<code class="code">Expires</code> header field to each object.
+                              </p>
+                              						
+                           </li>
+                           <li class="listitem">
+                              							
+                              <p>Specify a value for Minimum TTL in CloudFront cache behaviors.</p>
+                              						
+                           </li>
+                           <li class="listitem">
+                              							
+                              <p>Use the default value of 24 hours.</p>
+                              						
+                           </li>
+                        </ul>
+                     </div> 
+                     				
+                     <p>For more information, see <a href="Expiration.html">Specifying How Long Objects Stay in a CloudFront Edge Cache (Expiration)</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestS3IPAddresses">Client IP Addresses</h3>
+                     				
+                     				
+                     <p>If a viewer sends a request to CloudFront and does not include an
+                        						<code class="code">X-Forwarded-For</code> request header, CloudFront gets the IP address of the viewer from
+                        					the TCP connection, adds an <code class="code">X-Forwarded-For</code> header that includes the IP
+                        					address, and forwards the request to the origin. For example, if CloudFront gets
+                        the IP address
+                        						<code class="code">192.0.2.2</code> from the TCP connection, it forwards the following header to the
+                        					origin:
+                     </p>
+                     				
+                     <p><code class="code">X-Forwarded-For: 192.0.2.2</code></p>
+                     				
+                     <p>If a viewer sends a request to CloudFront and includes an <code class="code">X-Forwarded-For</code>
+                        					request header, CloudFront gets the IP address of the viewer from the TCP connection,
+                        appends it
+                        					to the end of the <code class="code">X-Forwarded-For</code> header, and forwards the request to the
+                        					origin. For example, if the viewer request includes <code class="code">X-Forwarded-For:
+                           						192.0.2.4,192.0.2.3</code> and CloudFront gets the IP address <code class="code">192.0.2.2</code> from the
+                        					TCP connection, it forwards the following header to the origin:
+                     </p>
+                     				
+                     <p><code class="code">X-Forwarded-For: 192.0.2.4,192.0.2.3,192.0.2.2</code></p>
+                     				
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>The <code class="code">X-Forwarded-For</code> header contains IPv4 addresses (such as 192.0.2.44)
+                           						and IPv6 addresses (such as 2001:0db8:85a3:0000:0000:8a2e:0370:7334), as
+                           						applicable.
+                        </p>
+                     </div>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestS3ConditionalGETs">Conditional GETs</h3>
+                     				
+                     				
+                     <p>When CloudFront receives a request for an object that has expired from an edge cache,
+                        it
+                        					forwards the request to the Amazon S3 origin either to get the latest version
+                        of the object or
+                        					to get confirmation from Amazon S3 that the CloudFront edge cache already has
+                        the latest version.
+                        					When Amazon S3 originally sent the object to CloudFront, it included an <code class="code">ETag</code> value and a
+                        						<code class="code">LastModified</code> value in the response. In the new request that CloudFront forwards
+                        					to Amazon S3, CloudFront adds one or both of the following:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>An <code class="code">If-Match</code> or <code class="code">If-None-Match</code> header that contains the
+                                 								<code class="code">ETag</code> value for the expired version of the object.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>An <code class="code">If-Modified-Since</code> header that contains the
+                                 								<code class="code">LastModified</code> value for the expired version of the object.
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>Amazon S3 uses this information to determine whether the object has been updated and,
+                        					therefore, whether to return the entire object to CloudFront or to return only
+                        an HTTP 304
+                        					status code (not modified).
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestS3Cookies">Cookies</h3>
+                     				
+                     				
+                     <p>Amazon S3 doesn&apos;t process cookies. If you configure a cache behavior to forward cookies
+                        to
+                        					an Amazon S3 origin, CloudFront forwards the cookies, but Amazon S3 ignores them.
+                        All future requests for
+                        					the same object, regardless if you vary the cookie, are served from the
+                        					existing object in the cache.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestS3-cors">Cross-Origin Resource Sharing (CORS)</h3>
+                     				
+                     <p>If you want CloudFront to respect Amazon S3 cross-origin resource sharing settings,
+                        configure CloudFront to forward selected headers to Amazon S3. 
+                        					For more information, see <a href="header-caching.html">Configuring CloudFront to Cache Objects Based on Request Headers</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestS3-get-body">GET Requests That Include a Body</h3>
+                     				
+                     <p>If a viewer <code class="code">GET</code> request includes a body, CloudFront returns an HTTP status code 403 (Forbidden) to
+                        the viewer.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestS3HTTPMethods">HTTP Methods</h3>
+                     				
+                     				
+                     <p>If you configure CloudFront to process all of the HTTP methods that it supports, CloudFront
+                        					accepts the following requests from viewers and forwards them to your Amazon
+                        S3 origin:
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p><code class="code">DELETE</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">GET</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">HEAD</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">OPTIONS</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">PATCH</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">POST</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">PUT</code></p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>CloudFront always caches responses to <code class="code">GET</code> and <code class="code">HEAD</code> requests. You
+                        					can also configure CloudFront to cache responses to <code class="code">OPTIONS</code> requests. CloudFront does not
+                        					cache responses to requests that use the other methods.
+                     </p>
+                     				
+                     <p>If you use an Amazon S3 bucket as the origin for your distribution and if you use
+                        CloudFront
+                        					origin access identities, <code class="code">POST</code> requests aren&apos;t supported in some Amazon S3 regions
+                        					and <code class="code">PUT</code> requests in those regions require an additional header. For more
+                        					information, see <a href="private-content-restricting-access-to-s3.html#private-content-origin-access-identity-signature-version-4">Using an Origin Access Identity in Amazon S3 Regions that 
+                           					Support Only Signature Version 4 Authentication</a>.
+                     </p>
+                     				
+                     <p>If you want to use multi-part uploads to add objects to an Amazon S3 bucket, you must
+                        add a
+                        					CloudFront origin access identity to your distribution and grant the origin access
+                        identity the
+                        					applicable permissions. For more information, see <a href="private-content-restricting-access-to-s3.html">Using an Origin Access Identity to Restrict Access to Your Amazon S3 Content</a>.
+                     </p>
+                     				
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>If you configure CloudFront to accept and forward to Amazon S3 all of the HTTP methods
+                           that
+                           						CloudFront supports, you must create a CloudFront origin access identity to
+                           restrict access to your
+                           						Amazon S3 content and grant the origin access identity the applicable permissions.
+                           For
+                           						example, if you configure CloudFront to accept and forward these methods because
+                           you want to
+                           						use <code class="code">PUT</code>, you must configure Amazon S3 bucket policies or ACLs to handle
+                           							<code class="code">DELETE</code> requests appropriately so viewers can&apos;t delete resources that you
+                           						don&apos;t want them to. For more information, see <a href="private-content-restricting-access-to-s3.html">Using an Origin Access Identity to Restrict Access to Your Amazon S3 Content</a>.
+                        </p>
+                     </div>
+                     				
+                     <p>For information about the operations supported by Amazon S3, see the <a href="http://aws.amazon.com/documentation/s3/" target="_blank">Amazon S3 documentation</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="request-s3-removed-headers">HTTP Request Headers That CloudFront Removes or Updates</h3>
+                     				
+                     				
+                     <p>CloudFront removes or updates some headers before forwarding requests to your Amazon
+                        S3 origin. For most
+                        					headers this behavior is the same as for custom origins. For a full list of HTTP
+                        request headers 
+                        					and how CloudFront processes them, see 
+                        					<a href="RequestAndResponseBehaviorCustomOrigin.html#request-custom-headers-behavior">HTTP Request Headers and CloudFront Behavior 
+                           						(Custom and S3 Origins)</a>.
+                     </p>
+                     
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestS3MaxRequestStringLength">Maximum Length of a Request and Maximum Length of a URL</h3>
+                     				
+                     				
+                     <p>The maximum length of a request, including the path, the query string (if any), and
+                        					headers, is 20,480 bytes. 
+                     </p>
+                     				
+                     <p>CloudFront constructs a URL from the request. The maximum length of this URL is 8192
+                        bytes. 
+                     </p>
+                     				
+                     <p>If a request or a URL exceeds these limits, CloudFront returns HTTP status code 413,
+                        Request
+                        					Header Fields Too Large, to the viewer, and then terminates the TCP connection
+                        to the
+                        					viewer.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="request-s3-ocsp-stapling">OCSP Stapling</h3>
+                     				
+                     				
+                     <p>When a viewer submits an HTTPS request for an object, either CloudFront or the viewer
+                        must
+                        					confirm with the certificate authority (CA) that the SSL certificate for the
+                        domain has
+                        					not been revoked. OCSP stapling speeds up certificate validation by allowing
+                        CloudFront to
+                        					validate the certificate and to cache the response from the CA, so the client
+                        doesn&apos;t need
+                        					to validate the certificate directly with the CA.
+                     </p>
+                     				
+                     <p>The performance improvement of OCSP stapling is more pronounced when CloudFront receives
+                        a
+                        					lot of HTTPS requests for objects in the same domain. Each server in a CloudFront
+                        edge location
+                        					must submit a separate validation request. When CloudFront receives a lot of
+                        HTTPS requests for
+                        					the same domain, every server in the edge location soon has a response from the
+                        CA that it
+                        					can &quot;staple&quot; to a packet in the SSL handshake; when the viewer is satisfied that
+                        the
+                        					certificate is valid, CloudFront can serve the requested object. If your distribution
+                        doesn&apos;t
+                        					get much traffic in a CloudFront edge location, new requests are more likely
+                        to be directed to a
+                        					server that hasn&apos;t validated the certificate with the CA yet. In that case, the
+                        viewer
+                        					separately performs the validation step and the CloudFront server serves the
+                        object. That CloudFront
+                        					server also submits a validation request to the CA, so the next time it receives
+                        a request
+                        					that includes the same domain name, it has a validation response from the CA.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestS3Protocol">Protocols</h3>
+                     				
+                     				
+                     <p>CloudFront forwards HTTP or HTTPS requests to the origin server based on the protocol
+                        of the
+                        					viewer request, either HTTP or HTTPS.
+                     </p>
+                     				
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>If your Amazon S3 bucket is configured as a website endpoint, you cannot configure
+                           CloudFront
+                           						to use HTTPS to communicate with your origin because Amazon S3 doesn&apos;t support
+                           HTTPS
+                           						connections in that configuration.
+                        </p>
+                     </div>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestS3QueryStrings">Query Strings</h3>
+                     				
+                     				
+                     <p>For web distributions, you can configure whether CloudFront forwards query string
+                        parameters
+                        					to your Amazon S3 origin. For RTMP distributions, CloudFront does not forward
+                        query string
+                        					parameters. For more information, see <a href="QueryStringParameters.html">Configuring CloudFront to Cache Based on Query String Parameters</a>.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="RequestS3RequestTimeout">Origin Response Timeout</h3>
+                     				
+                     				
+                     <p>The origin response timeout, also known as the origin read timeout or origin request
+                        timeout, applies to both of the following values:
+                     </p>
+                     					
+                     <div class="itemizedlist">
+                        						
+                        						
+                        					
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              <p>The amount of time, in seconds, that CloudFront waits for a response after forwarding
+                                 a request to Amazon S3
+                              </p>
+                           </li>
+                           <li class="listitem">
+                              <p>The amount of time, in seconds, that CloudFront waits after receiving a packet of
+                                 a response from S3 
+                                 							and before receiving the next packet
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>CloudFront behavior depends on the HTTP method:</p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p><code class="code">GET</code> and <code class="code">HEAD</code> requests &#x2013; If Amazon S3 doesn&apos;t respond within 30 seconds or stops responding 
+                                 							for 30 seconds, CloudFront drops the connection and makes two additional attempts
+                                 to contact the origin. If the origin doesn&apos;t reply 
+                                 							during the third attempt, CloudFront doesn&apos;t try again until it receives another
+                                 request for content on the same 
+                                 							CloudFront origin.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">DELETE</code>, <code class="code">OPTIONS</code>, <code class="code">PATCH</code>, <code class="code">PUT</code>, and <code class="code">POST</code> requests &#x2013; 
+                                 							If Amazon S3 doesn&apos;t respond within 30 seconds, CloudFront drops the connection
+                                 and doesn&apos;t try again to contact the origin. The client 
+                                 							can resubmit the request if necessary.
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p>For all requests, CloudFront attempts to establish a connection with S3. If the connection
+                        fails within 10 seconds, CloudFront 
+                        					drops the connection and makes two additional attempts to contact S3. If the
+                        origin doesn&apos;t reply during the third attempt, CloudFront 
+                        					doesn&apos;t try again until it receives another request for content on the same origin.
+                     </p>
+                     				
+                     <p>The response timeout for S3 can&apos;t be changed.</p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="request-s3-traffic-spikes">Simultaneous Requests for the Same Object (Traffic Spikes)</h3>
+                     				
+                     				
+                     <p>When a CloudFront edge location receives a request for an object and either the object
+                        isn&apos;t
+                        					currently in the cache or the object has expired, CloudFront immediately sends
+                        the request to
+                        					your Amazon S3 origin. If there&apos;s a traffic spike&#x2014;if additional requests for
+                        the same
+                        					object arrive at the edge location before Amazon S3 responds to the first request&#x2014;CloudFront
+                        					pauses briefly before forwarding additional requests for the object to your origin.
+                        					Typically, the response to the first request will arrive at the CloudFront edge
+                        location before
+                        					the response to subsequent requests. This brief pause helps to reduce unnecessary
+                        load on
+                        					Amazon S3. If additional requests are not identical because, for example, you
+                        configured CloudFront
+                        					to cache based on request headers or query strings, CloudFront forwards all of
+                        the unique
+                        					requests to your origin.
+                     </p>
+                     				
+                     <p>When the response from the origin includes a <code class="code">Cache-Control: no-cache</code>
+                        					header, CloudFront typically forwards the next request for the same object to
+                        the origin to
+                        					determine whether the object has been updated. However, when there&apos;s a traffic
+                        spike and
+                        					CloudFront pauses after forwarding the first request to your origin, multiple
+                        viewer requests
+                        					might arrive before CloudFront receives a response from the origin. When CloudFront
+                        receives a
+                        					response that contains a <code class="code">Cache-Control: no-cache</code> header, it sends the object
+                        					in the response to the viewer that made the original request and to all of the
+                        viewers
+                        					that requested the object during the pause. After the response arrives from the
+                        origin,
+                        					CloudFront forwards the next viewer request for the same object to the origin.
+                        In CloudFront access
+                        					logs, the first request is identified as a <code class="code">Miss</code> in the
+                        						<code class="code">x-edge-result-type</code> column, and all subsequent requests that CloudFront received
+                        					during the pause are identified as a <code class="code">Hit</code>. For more information about access
+                        					log file format, see <a href="AccessLogs.html#BasicDistributionFileFormat">Web Distribution Log File Format</a>.
+                     </p>
+                     			
+                     
+                     
+                     		
+                     			
+                     <h2 id="ResponseBehaviorS3Origin">How CloudFront Processes Responses from Your Amazon S3 Origin Server</h2>
+                     			
+                     			
+                     <p>This topic contains information about how CloudFront processes responses from your
+                        Amazon S3 origin.
+                     </p>
+                     			
+                     			
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Topics</strong></p>
+                        <ul>
+                           <li><a href="#response-s3-canceled-requests">Canceled Requests</a></li>
+                           <li><a href="#response-s3-removed-headers">HTTP Response Headers That CloudFront Removes or Updates</a></li>
+                           <li><a href="#ResponseS3MaxFileSize">Maximum File Size</a></li>
+                           <li><a href="#ResponseS3Redirects">Redirects</a></li>
+                        </ul>
+                     </div>
+                     
+                     			
+                     				
+                     <h3 id="response-s3-canceled-requests">Canceled Requests</h3>
+                     				
+                     				
+                     <p>If an object is not in the edge cache, and if a viewer terminates a session (for
+                        					example, closes a browser) after CloudFront gets the object from your origin
+                        but before it can
+                        					deliver the requested object, CloudFront does not cache the object in the edge
+                        location.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="response-s3-removed-headers">HTTP Response Headers That CloudFront Removes or Updates</h3>
+                     				
+                     				
+                     <p>CloudFront removes or updates the following header fields before forwarding the response
+                        					from your Amazon S3 origin to the viewer: 
+                     </p>
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p><code class="code">Set-Cookie</code> &#x2013; If you configure CloudFront to forward cookies, it will
+                                 							forward the <code class="code">Set-Cookie</code> header field to clients. For more information, see
+                                 								<a href="Cookies.html">Configuring CloudFront to Cache Objects Based on Cookies</a>.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">Trailer</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">Transfer-Encoding</code> &#x2013; If your Amazon S3 origin returns this header
+                                 							field, CloudFront sets the value to <code class="code">chunked</code> before returning the response to
+                                 							the viewer.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">Upgrade</code></p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p><code class="code">Via</code> &#x2013; CloudFront sets the value to:
+                              </p>
+                              						
+                              <p><code class="code">Via: 1.1
+                                    								</code><em class="replaceable"><code>alphanumeric-string</code></em><code class="code">.cloudfront.net
+                                    								(CloudFront)</code></p>
+                              						
+                              <p>before returning the response to the viewer. For example:</p>
+                              						
+                              <p><code class="code">Via: 1.1 1026589cc7887e7a0dc7827b4example.cloudfront.net
+                                    							(CloudFront)</code></p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="ResponseS3MaxFileSize">Maximum File Size</h3>
+                     				
+                     				
+                     <p>The maximum size of a response body that CloudFront will return to the viewer is 20
+                        GB. This
+                        					includes chunked transfer responses that don&apos;t specify the <code class="code">Content-Length</code>
+                        					header value.
+                     </p>
+                     			
+                     
+                     			
+                     				
+                     <h3 id="ResponseS3Redirects">Redirects</h3>
+                     				
+                     				
+                     <p>You can configure an Amazon S3 bucket to redirect all requests to another host name;
+                        this
+                        					can be another Amazon S3 bucket or an HTTP server. If you configure a bucket
+                        to redirect all
+                        					requests and if the bucket is the origin for a CloudFront distribution, we recommend
+                        that you
+                        					configure the bucket to redirect all requests to a CloudFront distribution using
+                        either the
+                        					domain name for the distribution (for example, d111111abcdef8.cloudfront.net)
+                        or an
+                        					alternate domain name (a CNAME) that is associated with a distribution (for example,
+                        					example.com). Otherwise, viewer requests bypass CloudFront, and the objects are
+                        served directly
+                        					from the new origin.
+                     </p>
+                     
+                     				
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>If you redirect requests to an alternate domain name, you must also update the DNS
+                           						service for your domain by adding a CNAME record. For more information, see
+                           <a href="CNAMEs.html">Adding and Moving Alternate Domain Names (CNAMEs)</a>.
+                        </p>
+                     </div>
+                     
+                     				
+                     <p>Here&apos;s what happens when you configure a bucket to redirect all requests:</p>
+                     				
+                     <ol>
+                        <li>
+                           						
+                           <p>A viewer (for example, a browser) requests an object from CloudFront.</p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>CloudFront forwards the request to the Amazon S3 bucket that is the origin for your
+                              							distribution.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>Amazon S3 returns an HTTP status code 301 (Moved Permanently) as well as the new
+                              							location.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>CloudFront caches the redirect status code and the new location, and returns the values
+                              							to the viewer. CloudFront does not follow the redirect to get the object from
+                              the new
+                              							location.
+                           </p>
+                           					
+                        </li>
+                        <li>
+                           						
+                           <p>The viewer sends another request for the object, but this time the viewer
+                              							specifies the new location that it got from CloudFront:
+                           </p>
+                           						
+                           <div class="itemizedlist">
+                              							
+                              							
+                              						
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    								
+                                    <p>If the Amazon S3 bucket is redirecting all requests to a CloudFront distribution,
+                                       using
+                                       									either the domain name for the distribution or an alternate domain name,
+                                       CloudFront
+                                       									requests the object from the Amazon S3 bucket or the HTTP server in the new
+                                       location.
+                                       									When the new location returns the object, CloudFront returns it to the viewer
+                                       and caches
+                                       									it in an edge location.
+                                    </p>
+                                    							
+                                 </li>
+                                 <li class="listitem">
+                                    								
+                                    <p>If the Amazon S3 bucket is redirecting requests to another location, the second
+                                       									request bypasses CloudFront. The Amazon S3 bucket or the HTTP server in the
+                                       new location
+                                       									returns the object directly to the viewer, so the object is never cached
+                                       in a CloudFront
+                                       									edge cache.
+                                    </p>
+                                    							
+                                 </li>
+                              </ul>
+                           </div>
+                           					
+                        </li>
+                     </ol>
+                     			
+                     
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="RequestAndResponseBehavior.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="RequestAndResponseBehaviorCustomOrigin.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="How CloudFront Processes and Forwards Requests to Your Amazon S3 Origin Server"><a class="pagetoc" href="#RequestBehaviorS3Origin">How CloudFront Processes and Forwards Requests to Your Amazon S3 Origin Server</a></li>
+                        <li class="pagetoc" name="How CloudFront Processes Responses from Your Amazon S3 Origin Server"><a class="pagetoc" href="#ResponseBehaviorS3Origin">How CloudFront Processes Responses from Your Amazon S3 Origin Server</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon CloudFront';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

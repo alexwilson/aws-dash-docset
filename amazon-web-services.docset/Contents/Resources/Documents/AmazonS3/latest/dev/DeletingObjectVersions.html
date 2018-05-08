@@ -1,0 +1,273 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Deleting Object Versions - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="manage-objects-versioned-bucket.html" title="Managing Objects in a Versioning-Enabled
+			Bucket">
+      <link rel="prev" href="RetMetaOfObjVersion.html" title="Retrieving the Metadata of an Object
+					Version">
+      <link rel="next" href="UsingMFADelete.html" title="Using MFA Delete">
+      <meta name="description" content="Delete an object in a versioning-enabled bucket by including the specific version ID of the object.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/DeletingObjectVersions.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="DataDurability.html">Protecting Data in Amazon S3</a> &#xBB; <a href="Versioning.html">Using Versioning</a> &#xBB; <a href="manage-objects-versioned-bucket.html">Managing Objects in a Versioning-Enabled
+                                    			Bucket</a> &#xBB; <span class="breadcrumb">Deleting Object Versions</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="DeletingObjectVersions">Deleting Object Versions</h1>
+                     <p>You can delete object versions whenever you want. In addition, you can also define
+                        				lifecycle configuration rules for objects that have a well-defined lifecycle to
+                        				request Amazon S3 to expire current object versions or permanently remove noncurrent
+                        				object versions. When your bucket is version-enabled or versioning is suspended,
+                        the
+                        				lifecycle configuration actions work as follows:
+                     </p>
+                     <div class="itemizedlist">
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>The <code class="code">Expiration</code> action applies to the current object
+                                 						version and instead of deleting the current object version, Amazon S3 retains
+                                 the
+                                 						current version as a noncurrent version by adding a delete marker, which
+                                 						then becomes the current version.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>The <code class="code">NoncurrentVersionExpiration</code> action applies to
+                                 						noncurrent object versions, and Amazon S3 permanently removes these object
+                                 						versions. You cannot recover permanently removed objects.
+                              </p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     <p>For more information, see <a href="object-lifecycle-mgmt.html">Object Lifecycle Management</a>.
+                     </p>
+                     <p>A <code class="code">DELETE</code> request has the following use cases:
+                     </p>
+                     <div class="itemizedlist">
+                        				
+                        				
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>When versioning is enabled, a simple <code class="code">DELETE</code> cannot
+                                 						permanently delete an object. 
+                              </p>
+                              					
+                              <p>Instead, Amazon S3 inserts a delete marker in the bucket, and that marker
+                                 						becomes the current version of the object with a new ID. When you try to
+                                 							<code class="code">GET</code> an object whose current version is a delete
+                                 						marker, Amazon S3 behaves as though the object has been deleted (even though
+                                 it
+                                 						has not been erased) and returns a 404 error. 
+                              </p>
+                              					
+                              <p>The following figure shows that a simple <code class="code">DELETE</code> does
+                                 						not actually remove the specified object. Instead, Amazon S3 inserts a delete
+                                 						marker.
+                              </p>
+                              					
+                              						
+                              <div class="mediaobject">
+                                 							
+                                 								<img src="../../..//img/versioning_DELETE_versioningEnabled.png">
+                                 							
+                                 							
+                                 							
+                                 						
+                              </div>
+                              					
+                              		    	
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>To permanently delete versioned objects, you must use <code class="code">DELETE
+                                    							Object versionId</code>.
+                              </p>
+                              					
+                              <p>The following figure shows that deleting a specified object version
+                                 						permanently removes that object.
+                              </p>
+                              				
+                              						
+                              <div class="mediaobject">
+                                 							
+                                 								<img src="../../..//img/versioning_DELETE_versioningEnabled2.png">
+                                 							
+                                 							
+                                 							
+                                 						
+                              </div>
+                              					
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     <h2 id="delete-obj-version-version-enabled-console">Using the Console</h2>
+                     			
+                     			
+                     <p>For instructions see, <a href="./AmazonS3/latest/user-guide/view-object-versions.html" target="_blank">How Do I See the Versions of an S3 Object?</a> in the Amazon Simple Storage Service Console User Guide. 
+                     </p>
+                     		
+                     <h2 id="delete-obj-version-version-enabled-bucket-sdks">Using the AWS SDKs</h2>
+                     			
+                     			
+                     <p>For examples of uploading objects using the AWS SDKs for Java, .NET, and PHP, see
+                        				<a href="DeletingObjects.html">Deleting Objects</a>. The
+                        				examples for uploading objects in nonversioned and versioning-enabled buckets
+                        				are the same, although in the case of versioning-enabled buckets, Amazon S3 assigns
+                        a version
+                        				number. Otherwise, the version number is null. 
+                     </p>
+                     			
+                     <p>For information about using other AWS SDKs, see <a href="https://aws.amazon.com/code/" target="_blank">Sample Code and Libraries</a>. 
+                     </p>
+                     		
+                     <h2 id="delete-obj-version-enabled-bucket-rest">Using REST</h2>
+                     			
+                     		
+                     		
+                     <div class="itemizedlist">
+                        			
+                        <p class="title"><b>To a delete a specific version of an object</b></p>
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p>In a <code class="code">DELETE</code>, specify a version ID.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                     <div class="example">
+                        <p class="title"><b>Example Deleting a Specific Version</b></p>
+                        <div class="example-contents">
+                           <p>The following example shows how to delete version UIORUnfnd89493jJFJ of <code>photo.gif</code>.
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">DELETE /photo.gif?versionId=UIORUnfnd89493jJFJ HTTP/1.1 
+
+Host: bucket.s3.amazonaws.com
+Date: Wed, 12 Oct 2009 17:50:00 GMT
+Authorization: AWS AKIAIOSFODNN7EXAMPLE:xQE0diMbLRepdf3YB+FIEXAMPLE=
+Content-Type: text/plain
+Content-Length: 0</code></pre></div>
+                     </div>
+                     			
+                     <h2 id="delete-obj-version-enabled-related-topics">Related Topics</h2>
+                     				
+                     				
+                     <p>
+                        					<a href="UsingMFADelete.html">Using MFA Delete</a>
+                        				
+                     </p>
+                     				
+                     <p>
+                        					<a href="DeleteMarker.html">Working with Delete Markers</a>
+                        				
+                     </p>
+                     				
+                     <p>
+                        					<a href="RemDelMarker.html">Removing Delete Markers</a>
+                        				
+                     </p>
+                     				
+                     <p>
+                        					<a href="Versioning.html">Using Versioning</a>
+                        				
+                     </p>
+                     			
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="RetMetaOfObjVersion.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="UsingMFADelete.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Using the Console"><a class="pagetoc" href="#delete-obj-version-version-enabled-console">Using the Console</a></li>
+                        <li class="pagetoc" name="Using the AWS SDKs"><a class="pagetoc" href="#delete-obj-version-version-enabled-bucket-sdks">Using the AWS SDKs</a></li>
+                        <li class="pagetoc" name="Using REST"><a class="pagetoc" href="#delete-obj-version-enabled-bucket-rest">Using REST</a></li>
+                        <li class="pagetoc" name="Related Topics"><a class="pagetoc" href="#delete-obj-version-enabled-related-topics">Related Topics</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

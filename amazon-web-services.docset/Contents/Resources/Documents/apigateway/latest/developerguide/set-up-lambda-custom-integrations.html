@@ -1,0 +1,343 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>
+         Set up Lambda Custom Integrations in API Gateway
+          - Amazon API Gateway
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="set-up-lambda-integrations.html" title="
+            Set up Lambda Integrations in API Gateway
+        ">
+      <link rel="prev" href="set-up-lambda-proxy-integrations.html" title="
+                Set up Lambda Proxy Integrations in API Gateway
+            ">
+      <link rel="next" href="handle-errors-in-lambda-integration.html" title="Handle Lambda Errors in API Gateway">
+      <meta name="description" content="Learn how to configure a Lambda custom integration request and integration response in API Gateway.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon API Gateway">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-custom-integrations.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/apigateway">Amazon API Gateway</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="how-to-create-api.html">Creating an API in Amazon API Gateway</a> &#xBB; <a href="how-to-integration-settings.html">Set up API Integrations in API Gateway</a> &#xBB; <a href="set-up-lambda-integrations.html">
+                                    Set up Lambda Integrations in API Gateway
+                                    </a> &#xBB; <span class="breadcrumb">
+                                    Set up Lambda Custom Integrations in API Gateway
+                                    </span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="set-up-lambda-custom-integrations">
+                        Set up Lambda Custom Integrations in API Gateway
+                        
+                     </h1>
+                     <p> To show how to set up the Lambda custom integration, we create an API Gateway API
+                        to expose
+                        the <code class="code">GET /greeting?greeter={name}</code> method to invoke a Lambda function. The
+                        function responds with a message of <code class="code">&quot;Hello, {name}!&quot;</code> if the
+                        <code class="code">greeter</code> parameter value is a non-empty string. It returns a message of
+                        <code class="code">&quot;Hello, World!&quot;</code> if the <code class="code">greeter</code> value is an empty string.
+                        The function returns an error message of <code class="code">&quot;Missing the required greeter
+                           parameter.&quot;</code> if the greeter parameter is not set in the incoming request. We
+                        name the function <code class="code">HelloWorld</code>.
+                     </p>
+                     <p>For reference, a Node.js version of the Lambda function is shown as follows:</p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">exports.handler = function(event, context, callback) {
+    var res ={
+        &quot;statusCode&quot;: 200,
+        &quot;headers&quot;: {
+            &quot;Content-Type&quot;: &quot;*/*&quot;
+        }
+    };
+    if (event.greeter==null) {
+        callback(new Error(&apos;Missing the required greeter parameter.&apos;));
+    } else if (event.greeter === &quot;&quot;) {
+        res.body = &quot;Hello, World&quot;;
+        callback(null, res);
+    } else {
+        res.body = &quot;Hello, &quot; + event.greeter +&quot;!&quot;;
+        callback(null, res);
+    }
+};</code></pre><p>You can create it in the Lambda console or by using the AWS CLI. In this section,
+                        we
+                        reference this function using the following ARN:
+                     </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">arn:aws:lambda:us-east-1:123456789012:function:HelloWorld</code></pre><p>With the Lambda function set in the backend, proceed to set up the API.</p><a id="set-up-lambda-custom-integration-using-cli"></a><p class="title"><b>To set up the Lambda custom
+                           integration using the AWS CLI</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p> Call the <code class="code">create-rest-api</code> command to create an API:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway create-rest-api --name &apos;HelloWorld (AWS CLI)&apos; --region us-west-2</code></pre>
+                           <p>Note the resulting API&apos;s <code class="code">id</code> value (<code class="code">te6si5ach7</code>) in
+                              the response:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;name&quot;: &quot;HelloWorld (AWS CLI)&quot;, 
+    &quot;id&quot;: &quot;te6si5ach7&quot;, 
+    &quot;createdDate&quot;: 1508461860
+}</code></pre>
+                           <p>You need the API <code class="code">id</code> throughout this section.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Call the <code class="code">get-resources</code> command to get the root resource
+                              <code class="code">id</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway get-resources --rest-api-id te6si5ach7 --region us-west-2</code></pre>
+                           <p>The successful response is as follows:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;items&quot;: [
+        {
+            &quot;path&quot;: &quot;/&quot;, 
+            &quot;id&quot;: &quot;krznpq9xpg&quot;
+        }
+    ]
+}</code></pre>
+                           <p>Note the root resource <code class="code">id</code> value (<code class="code">krznpq9xpg</code>). You
+                              need it in the next step and later.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Call <code class="code">create-resource</code> to create an API Gateway <a href="./apigateway/api-reference/resource/resource/" target="_blank">Resource</a> of
+                              <code class="code">/greeting</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway create-resource --rest-api-id te6si5ach7 \
+      --region us-west-2 \
+      --parent-id krznpq9xpg \
+      --path-part greeting</code></pre>
+                           <p>The successful response is similar to the following:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;path&quot;: &quot;/greeting&quot;, 
+    &quot;pathPart&quot;: &quot;greeting&quot;, 
+    &quot;id&quot;: &quot;2jf6xt&quot;, 
+    &quot;parentId&quot;: &quot;krznpq9xpg&quot;
+}</code></pre>
+                           <p>Note the resulting <code class="code">greeting</code> resource&apos;s <code class="code">id</code> value
+                              (<code class="code">2jf6xt</code>). You need it to create a method on the
+                              <code class="code">/greeting</code> resource in the next step.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Call <code class="code">put-method</code> to create an API method request of <code class="code">GET
+                                 /greeting?greeter={name}</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway put-method --rest-api-id te6si5ach7 \
+       --region us-west-2 \
+       --resource-id 2jf6xt \
+       --http-method GET \
+       --authorization-type &quot;NONE&quot; \
+       --request-parameters method.request.querystring.greeter=false</code></pre>
+                           <p>The successful response is similar to the following:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;apiKeyRequired&quot;: false, 
+    &quot;httpMethod&quot;: &quot;GET&quot;, 
+    &quot;authorizationType&quot;: &quot;NONE&quot;, 
+    &quot;requestParameters&quot;: {
+        &quot;method.request.querystring.greeter&quot;: false
+    }
+}</code></pre>
+                           <p>This API method allows the client to receive a greeting from the Lambda
+                              function at the backend. The <code class="code">greeter</code> parameter is optional because
+                              the backend should handle either an anonymous caller or a self-identified
+                              caller.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p> Call <code class="code">put-method-response</code> to set up the <code class="code">200 OK</code>
+                              response to the method request of <code class="code">GET
+                                 /greeting?greeter={name}</code>:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway put-method-response \
+        --region us-west-2
+        --rest-api-id te6si5ach7 \ 
+        --resource-id 2jf6xt 
+        --http-method GET \
+        --status-code 200</code></pre>
+                           
+                           </li>
+                        <li>
+                           
+                           <p> Call <code class="code">put-integration</code> to set up the integration of the <code class="code">GET
+                                 /greeting?greeter={name}</code> method with a Lambda function, named
+                              <code class="code">HelloWorld</code>. The function responds to the request with a message
+                              of <code class="code">&quot;Hello, {name}!&quot;</code>, if the <code class="code">greeter</code> parameter is
+                              provided, or <code class="code">&quot;Hello, World!&quot;</code>, if the query string parameter is not
+                              set.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway put-integration \
+        --region us-west-2
+        --rest-api-id vaz7da96z6 \
+        --resource-id 2jf6xt \
+        --http-method GET \
+        --type AWS \
+        --integration-http-method POST \
+        --uri arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:HelloWorld/invocations \
+        --request-templates file://path/to/integration-request-template.json \
+        --credentials arn:aws:iam::123456789012:role/apigAwsProxyRole</code></pre>
+                           <p>Here, the <code class="code">request-template</code> parameter value,
+                              <code class="code">file://path/to/integration-request-template.json</code>, points to a
+                              JSON file, named <code class="code">integration-request-template.json</code> in the
+                              <code class="code">path/to</code> directory, which contains a key-value map as a JSON
+                              object. The key is a media type of the request payload and the value is a
+                              mapping template for the body of the specified content type. In this example,
+                              the JSON file contains the following JSON object:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{&quot;application/json&quot;:&quot;{\&quot;greeter\&quot;:\&quot;$input.params(&apos;greeter&apos;)\&quot;}&quot;}</code></pre>
+                           <p>The mapping template supplied here translates the <code class="code">greeter</code> query
+                              string parameter to the <code class="code">greeter</code> property of the JSON payload. This
+                              is necessary because input to a Lambda function in the Lambda function must be
+                              expressed in the body. You could use JSON string of the map (for example,
+                              <code class="code">&quot;{\&quot;greeter&quot;\: \&quot;&apos;john&apos;\&quot;}&quot;</code>) as the
+                              <code class="code">request-template</code> input value to the
+                              <code class="code">put-integration</code> command. However, using the file input avoids
+                              the difficult, and sometimes impossible, quote-escaping that is required to
+                              stringify a JSON object.
+                           </p>
+                           
+                           <p>For Lambda integrations, you must use the HTTP method of <code class="code">POST</code> for
+                              the integration request, according to the specification of the Lambda service
+                              action for function invocations. The  <code class="code">uri</code> parameter is the ARN of
+                              the function-invoking action.
+                           </p>
+                           
+                           <p>The successful output is similar to the following:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">{
+    &quot;passthroughBehavior&quot;: &quot;WHEN_NO_MATCH&quot;, 
+    &quot;cacheKeyParameters&quot;: [], 
+    &quot;uri&quot;: &quot;arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:HelloWorld/invocations&quot;, 
+    &quot;httpMethod&quot;: &quot;POST&quot;, 
+    &quot;requestTemplates&quot;: {
+        &quot;application/json&quot;: &quot;{\&quot;greeter\&quot;:\&quot;$input.params(&apos;greeter&apos;)\&quot;}&quot;
+    }, 
+    &quot;cacheNamespace&quot;: &quot;krznpq9xpg&quot;, 
+    &quot;credentials&quot;: &quot;arn:aws:iam::123456789012:role/apigAwsProxyRole&quot;, 
+    &quot;type&quot;: &quot;AWS&quot;
+}</code></pre>
+                           <p>The IAM role of <code class="code">apigAwsProxyRole</code> must have policies that allow
+                              the <code class="code">apigateway</code> service to invoke Lambda functions. Instead of
+                              supplying an IAM role for <code class="code">credentials</code>, you can call the <a href="./cli/latest/reference/lambda/add-permission.html" target="_blank">add-permission</a> command
+                              to add resource-based permissions. This is how the API Gateway console adds these
+                              permissions. 
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Call <code class="code">put-integration-response</code> to set up the integration response
+                              to pass the Lambda function output to the client as the <code class="code">200 OK</code>
+                              method response.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"> aws apigateway put-integration-response \
+        --region us-west-2 \
+        --rest-api-id te6si5ach7 \
+        --resource-id 2jf6xt \
+        --http-method GET \
+        --status-code 200 \
+        --selection-pattern &quot;&quot;  
+        </code></pre>
+                           <p>By setting the selection-pattern to an empty string, the <code class="code">200 OK</code>
+                              response is the default. 
+                           </p>
+                           
+                           <p>The successful response should be similar to the following:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"> {
+    &quot;selectionPattern&quot;: &quot;&quot;, 
+    &quot;statusCode&quot;: &quot;200&quot;
+}</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p> Call  <code class="code">create-deployment</code> to deploy the API to a <code class="code">test</code>
+                              stage:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">aws apigateway create-deployment --rest-api-id te6si5ach7 --stage-name test</code></pre>
+                           </li>
+                        <li>
+                           
+                           <p> Test the API using the following cURL command in a terminal:</p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">curl -X GET &apos;https://te6si5ach7.execute-api.us-west-2.amazonaws.com/test/greeting?greeter=me&apos; \
+  -H &apos;authorization: AWS4-HMAC-SHA256 Credential={access_key}/20171020/us-west-2/execute-api/aws4_request, SignedHeaders=content-type;host;x-amz-date, Signature=f327...5751&apos; </code></pre>
+                           </li>
+                     </ol>
+                     <p>Compared to <a href="set-up-lambda-proxy-integrations.html#set-up-lambda-proxy-integration-using-cli">the setup for
+                           the Lambda proxy integration</a>, it is much more involved to set up a Lambda
+                        custom integration.
+                     </p>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="set-up-lambda-proxy-integrations.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="handle-errors-in-lambda-integration.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon API Gateway';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

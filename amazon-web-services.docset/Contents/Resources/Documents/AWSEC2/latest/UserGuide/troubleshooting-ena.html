@@ -1,0 +1,955 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Troubleshooting the Elastic Network Adapter (ENA) - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="enhanced-networking.html" title="Enhanced Networking on Linux">
+      <link rel="prev" href="enhanced-networking-ena.html" title="Enabling Enhanced Networking with the Elastic
+            Network Adapter (ENA) on Linux Instances in a VPC">
+      <link rel="next" href="Storage.html" title="Storage">
+      <meta name="description" content="Troubleshoot the Elastic Network Adapter (ENA) on supported Linux instances in a VPC.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/troubleshooting-ena.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="EC2_Network_and_Security.html">Network and Security</a> &#xBB; <a href="enhanced-networking.html">Enhanced Networking on Linux</a> &#xBB; <span class="breadcrumb">Troubleshooting the Elastic Network Adapter (ENA)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="troubleshooting-ena">Troubleshooting the Elastic Network Adapter (ENA)</h1>
+                     <p>The Elastic Network Adapter (ENA) is designed to improve operating system health and
+                        reduce the chances of long-term disruption because of unexpected hardware behavior
+                        and or
+                        failures. The ENA architecture keeps device or driver failures as transparent to the
+                        system
+                        as possible. This topic provides troubleshooting information for ENA.
+                     </p>
+                     <p>If you are unable to connect to your instance, start with the <a href="troubleshooting-ena.html#ena-connectivity-issues">Troubleshooting Connectivity Issues</a> section. 
+                     </p>
+                     <p>If you are able to connect to your instance, you can gather diagnostic information
+                        by
+                        using the failure detection and recovery mechanisms that are covered in the later
+                        sections
+                        of this topic.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#ena-connectivity-issues">Troubleshooting Connectivity Issues</a></li>
+                           <li><a href="#ena-keep-alive">Keep-Alive Mechanism</a></li>
+                           <li><a href="#register-read-timeout-ena">Register Read Timeout</a></li>
+                           <li><a href="#statistics-ena">Statistics</a></li>
+                           <li><a href="#driver-error-logs-ena">Driver Error Logs in
+                                 syslog</a></li>
+                        </ul>
+                     </div>
+                     <h2 id="ena-connectivity-issues">Troubleshooting Connectivity Issues</h2>
+                     
+                     
+                     <p>If you lose connectivity while enabling enhanced networking, the
+                        <code>ena</code> module might be incompatible with your instance&apos;s current
+                        running kernel. This can happen if you install the module for a specific kernel version
+                        (without <b>dkms</b>, or with an improperly configured
+                        <b>dkms.conf</b> file) and then your instance kernel is updated. If the
+                        instance kernel that is loaded at boot time does not have the <code>ena</code>
+                        module properly installed, your instance will not recognize the network adapter and
+                        your
+                        instance becomes unreachable.
+                     </p>
+                     
+                     <p>If you enable enhanced networking for a PV instance or AMI, this can also
+                        make your instance unreachable.
+                     </p>
+                     
+                     <p>If your instance becomes unreachable after enabling enhanced networking with ENA,
+                        you
+                        can disable the <code class="code">enaSupport</code> attribute for your instance and it will
+                        fall back to the stock network adapter.
+                     </p>
+                     
+                     <p class="title"><b>To disable enhanced networking with ENA (EBS-backed instances)</b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>From your local computer, stop the instance using the Amazon EC2 console or one of
+                              the following commands: <a href="./cli/latest/reference/ec2/stop-instances.html" target="_blank">stop-instances</a> (AWS CLI), <a href="./powershell/latest/reference/items/Stop-EC2Instance.html" target="_blank">Stop-EC2Instance</a>
+                              (AWS Tools for Windows PowerShell). If your instance is managed by AWS OpsWorks, you
+                              should stop the instance
+                              in the AWS OpsWorks console so that the instance state remains in sync.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>If you are using an instance store-backed instance, you can&apos;t stop the
+                                 instance. Instead, proceed to <a href="troubleshooting-ena.html#disable-enhanced-networking-ena-instance-store">To disable enhanced
+                                    networking with ENA (instance store-backed instances)</a>.
+                              </p>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, disable the enhanced networking attribute using the
+                              following command.
+                           </p>
+                           
+                           <div class="itemizedlist">
+                              
+                              
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    
+                                    <p><a href="./cli/latest/reference/ec2/modify-instance-attribute.html" target="_blank">modify-instance-attribute</a> (AWS CLI)
+                                    </p>
+                                    <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><span><code class="prompt" copy="false">$ </code></span><strong class="userinput"><code><b>aws ec2 modify-instance-attribute</b> --instance-id <em class="replaceable"><code>instance_id</code></em> --no-ena-support</code></strong></code></pre>
+                                    </li>
+                              </ul>
+                           </div>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>From your local computer, start the instance using the Amazon EC2 console or one of
+                              the following commands: <a href="./cli/latest/reference/ec2/start-instances.html" target="_blank">start-instances</a> (AWS CLI), <a href="./powershell/latest/reference/items/Start-EC2Instance.html" target="_blank">Start-EC2Instance</a>
+                              (AWS Tools for Windows PowerShell). If your instance is managed by AWS OpsWorks, you
+                              should start the instance
+                              in the AWS OpsWorks console so that the instance state remains in sync.
+                           </p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>(Optional) Connect to your instance and try reinstalling the
+                              <code>ena</code> module with your current kernel version by following
+                              the steps in <a href="enhanced-networking-ena.html">Enabling Enhanced Networking with the Elastic
+                                 Network Adapter (ENA) on <span>Linux</span> Instances in a VPC</a>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                     
+                     <p class="title"><b>To disable enhanced
+                           networking with ENA (instance store-backed instances)</b></p>
+                     
+                     <p>If your instance is an instance store-backed instance, create a new AMI as
+                        described in <a href="creating-an-ami-instance-store.html">Creating an Instance Store-Backed Linux AMI</a>. Be sure to disable the
+                        enhanced networking <code class="code">enaSupport</code> attribute when you register the
+                        AMI.
+                     </p>
+                     
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><a href="./cli/latest/reference/ec2/register-image.html" target="_blank">register-image</a>
+                                 (AWS CLI)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><span><code class="prompt" copy="false">$ </code></span><strong class="userinput"><code><b>aws ec2 register-image --no-ena-support ...</b></code></strong></code></pre>
+                              </li>
+                           <li class="listitem">
+                              
+                              <p><a href="./powershell/latest/reference/items/Register-EC2Image.html" target="_blank">Register-EC2Image</a> (AWS Tools for Windows PowerShell)
+                              </p>
+                              <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">C:\&gt; </code><strong class="userinput"><code><b>Register-EC2Image</b> -EnaSupport $false ...</code></strong></code></pre>
+                              </li>
+                        </ul>
+                     </div>
+                     
+                     <h2 id="ena-keep-alive">Keep-Alive Mechanism</h2>
+                     
+                     
+                     <p>The ENA device posts keep-alive events at a fixed rate (usually once every second).
+                        The ENA driver implements a watchdog mechanism, which checks for the presence of
+                        these keep-alive messages. If a message or messages are present, the watchdog is
+                        rearmed, otherwise the driver concludes that the device experienced a failure and
+                        then
+                        does the following:
+                     </p>
+                     
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Dumps its current statistics to syslog</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Resets the ENA device</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Resets the ENA driver state</p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     
+                     <p>The above reset procedure may result in some traffic loss for a short
+                        period of time (TCP connections should be able to recover), but should not otherwise
+                        affect the user.
+                     </p>
+                     
+                     <p>The ENA device may also indirectly request a device reset procedure, by not sending
+                        a
+                        keep-alive notification, for example, if the ENA device reaches an unknown state after
+                        loading an irrecoverable configuration.
+                     </p>
+                     
+                     <p>Below is an example of the reset procedure:</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">[18509.800135] ena 0000:00:07.0 eth1: Keep alive watchdog timeout. <em class="replaceable"><code>// The watchdog process initiates a reset</code></em>
+[18509.815244] ena 0000:00:07.0 eth1: Trigger reset is on		
+[18509.825589] ena 0000:00:07.0 eth1: tx_timeout: 0 <em class="replaceable"><code>// The driver logs the current statistics</code></em>
+[18509.834253] ena 0000:00:07.0 eth1: io_suspend: 0
+[18509.842674] ena 0000:00:07.0 eth1: io_resume: 0
+[18509.850275] ena 0000:00:07.0 eth1: wd_expired: 1
+[18509.857855] ena 0000:00:07.0 eth1: interface_up: 1
+[18509.865415] ena 0000:00:07.0 eth1: interface_down: 0
+[18509.873468] ena 0000:00:07.0 eth1: admin_q_pause: 0
+[18509.881075] ena 0000:00:07.0 eth1: queue_0_tx_cnt: 0
+[18509.888629] ena 0000:00:07.0 eth1: queue_0_tx_bytes: 0
+[18509.895286] ena 0000:00:07.0 eth1: queue_0_tx_queue_stop: 0
+.......
+........
+[18511.280972] ena 0000:00:07.0 eth1: free uncompleted tx skb qid 3 idx 0x7 <em class="replaceable"><code>// At the end of the down process, the driver discards incomplete packets.</code></em>
+[18511.420112] [ENA_COM: ena_com_validate_version] ena device version: 0.10 <em class="replaceable"><code>//The driver begins its up process</code></em>
+[18511.420119] [ENA_COM: ena_com_validate_version] ena controller version: 0.0.1 implementation version 1
+[18511.420127] [ENA_COM: ena_com_admin_init] ena_defs : Version:[b9692e8] Build date [Wed Apr  6 09:54:21 IDT 2016]
+[18512.252108] ena 0000:00:07.0: Device watchdog is Enabled
+[18512.674877] ena 0000:00:07.0: irq 46 for MSI/MSI-X
+[18512.674933] ena 0000:00:07.0: irq 47 for MSI/MSI-X
+[18512.674990] ena 0000:00:07.0: irq 48 for MSI/MSI-X
+[18512.675037] ena 0000:00:07.0: irq 49 for MSI/MSI-X
+[18512.675085] ena 0000:00:07.0: irq 50 for MSI/MSI-X
+[18512.675141] ena 0000:00:07.0: irq 51 for MSI/MSI-X
+[18512.675188] ena 0000:00:07.0: irq 52 for MSI/MSI-X
+[18512.675233] ena 0000:00:07.0: irq 53 for MSI/MSI-X
+[18512.675279] ena 0000:00:07.0: irq 54 for MSI/MSI-X
+[18512.772641] [ENA_COM: ena_com_set_hash_function] Feature 10 isn&apos;t supported
+[18512.772647] [ENA_COM: ena_com_set_hash_ctrl] Feature 18 isn&apos;t supported
+[18512.775945] ena 0000:00:07.0: Device reset completed successfully <em class="replaceable"><code>// The reset process is complete</code></em></code></pre>
+                     <h2 id="register-read-timeout-ena">Register Read Timeout</h2>
+                     
+                     
+                     <p>The ENA architecture suggests a limited usage of memory mapped I/O (MMIO) read
+                        operations. MMIO registers are accessed by the ENA device driver only during its
+                        initialization procedure. 
+                     </p>
+                     
+                     <p>If the driver logs (available in <b>dmesg</b> output) indicate failures of
+                        read operations, this may be caused by an incompatible or incorrectly compiled driver,
+                        a
+                        busy hardware device, or hardware failure.
+                     </p>
+                     
+                     <p>Intermittent log entries that indicate failures on read operations should not be
+                        considered an issue; the driver will retry them in this case. However, a sequence
+                        of log
+                        entries containing read failures indicate a driver or hardware problem.
+                     </p>
+                     
+                     <p>Below is an example of driver log entry indicating a read operation failure due to
+                        a
+                        timeout:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">[ 47.113698] [ENA_COM: ena_com_reg_bar_read32] reading reg failed for timeout. expected: req id[1] offset[88] actual: req id[57006] offset[0]&#xA0;
+[ 47.333715] [ENA_COM: ena_com_reg_bar_read32] reading reg failed for timeout. expected: req id[2] offset[8] actual: req id[57007] offset[0]&#xA0;
+[ 47.346221] [ENA_COM: ena_com_dev_reset] Reg read32 timeout occurred</code></pre>
+                     <h2 id="statistics-ena">Statistics</h2>
+                     
+                     
+                     <p>If you experience insufficient network performance or latency issues, you should
+                        retrieve the device statistics and examine them. These statistics can be obtained
+                        using
+                        <b>ethtool</b>, as shown below:
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>ethtool &#x2013;S eth<em class="replaceable"><code>N</code></em></code></strong><code class="computeroutput" copy="false">
+NIC statistics:
+     tx_timeout: 0
+     io_suspend: 0
+     io_resume: 0
+     wd_expired: 0
+     interface_up: 1
+     interface_down: 0
+     admin_q_pause: 0
+     queue_0_tx_cnt: 4329
+     queue_0_tx_bytes: 1075749
+     queue_0_tx_queue_stop: 0
+...</code></code></pre>
+                     <p>The following command output parameters are described below:</p>
+                     
+                     <div class="variablelist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <dl>
+                           
+                           <dt><span class="term"><code class="code">tx_timeout: <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times that the Netdev watchdog was
+                                 activated.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">io_suspend: <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>Unsupported. This value should always be zero.</p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">io_resume: <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>Unsupported. This value should always be zero.</p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">wd_expired: <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times that the driver did not receive the keep-alive
+                                 event in the preceding 3 seconds.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">interface_up: <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times that the ENA interface was brought up.</p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">interface_down: <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times that the ENA interface was brought down.</p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">admin_q_pause: <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The admin queue is in an unstable state. This value should always be
+                                 zero.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_tx_cnt:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of transmitted packets for queue
+                                 <em class="replaceable"><code>N</code></em>.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_tx_bytes:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of transmitted bytes for queue
+                                 <em class="replaceable"><code>N</code></em>.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_tx_queue_stop:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times that queue <em class="replaceable"><code>N</code></em> was full
+                                 and stopped.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_tx_queue_wakeup:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times that queue <em class="replaceable"><code>N</code></em> resumed
+                                 after being stopped.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_tx_dma_mapping_err:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>Direct memory access error count. If this value is not 0, it indicates
+                                 low system resources.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_tx_napi_comp:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times the <code class="code">napi</code> handler called
+                                 <code class="code">napi_complete</code> for queue
+                                 <em class="replaceable"><code>N</code></em>.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_tx_poll:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times the <code class="code">napi</code> handler was scheduled
+                                 for queue <em class="replaceable"><code>N</code></em>.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_tx_doorbells:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of transmission doorbells for queue
+                                 <em class="replaceable"><code>N</code></em>.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_tx_linearize:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times SKB linearization was attempted for queue
+                                 <em class="replaceable"><code>N</code></em>.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_tx_linearize_failed:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times SKB linearization failed for queue
+                                 <em class="replaceable"><code>N</code></em>.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_tx_prepare_ctx_err:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times <code class="code">ena_com_prepare_tx</code> failed for
+                                 queue <em class="replaceable"><code>N</code></em>. This value should always be zero; if
+                                 not, see the driver logs.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_tx_missing_tx_comp:
+                                    code<em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of packets that were left uncompleted for queue
+                                 <em class="replaceable"><code>N</code></em>. This value should always be
+                                 zero.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_tx_bad_req_id:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>Invalid <code class="code">req_id</code> for queue
+                                 <em class="replaceable"><code>N</code></em>. The valid <code class="code">req_id</code> is
+                                 zero, minus the <code class="code">queue_size</code>, minus 1. 
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_rx_cnt:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of received packets for queue
+                                 <em class="replaceable"><code>N</code></em>.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_rx_bytes:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of received bytes for queue
+                                 <em class="replaceable"><code>N</code></em>.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_rx_refil_partial:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times the driver did not succeed in refilling the empty
+                                 portion of the <code class="code">rx</code> queue with the buffers for queue
+                                 <em class="replaceable"><code>N</code></em>. If this value is not zero, it
+                                 indicates low memory resources.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_rx_bad_csum:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times the <code class="code">rx</code> queue had a bad checksum
+                                 for queue <em class="replaceable"><code>N</code></em> (only if <code class="code">rx</code>
+                                 checksum offload is supported).
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_rx_page_alloc_fail:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of time that page allocation failed for queue
+                                 <em class="replaceable"><code>N</code></em>. If this value is not zero, it
+                                 indicates low memory resources.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_rx_skb_alloc_fail:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of time that SKB allocation failed for queue
+                                 <em class="replaceable"><code>N</code></em>. If this value is not zero, it
+                                 indicates low system resources.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_rx_dma_mapping_err:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>Direct memory access error count. If this value is not 0, it indicates
+                                 low system resources.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_rx_bad_desc_num:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>Too many buffers per packet. If this value is not 0, it indicates
+                                 usage of very small buffers.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">queue_<em class="replaceable"><code>N</code></em>_rx_small_copy_len_pkt:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>Optimization: For packets smaller that this threshold, which is set by
+                                 <code class="code">sysfs</code>, the packet is copied directly to the stack
+                                 to avoid allocation of a new page.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">ena_admin_q_aborted_cmd:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of admin commands that were aborted. This usually happens
+                                 during the auto-recovery procedure.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">ena_admin_q_submitted_cmd: <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of admin queue doorbells.</p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">ena_admin_q_completed_cmd:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of admin queue completions.</p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">ena_admin_q_out_of_space:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times that the driver tried to submit new admin command,
+                                 but the queue was full.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><code class="code">ena_admin_q_no_completion:
+                                    <em class="replaceable"><code>N</code></em></code></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The number of times that the driver did not get an admin completion
+                                 for a command.
+                              </p>
+                              
+                           </dd>
+                           
+                        </dl>
+                     </div>
+                     
+                     <h2 id="driver-error-logs-ena">Driver Error Logs in
+                        syslog
+                     </h2>
+                     
+                     
+                     <p>The ENA driver writes log messages to <b>syslog</b> during system boot.
+                        You can examine these logs to look for errors if you are experiencing issues. Below
+                        is
+                        an example of information logged by the ENA driver in <b>syslog</b> during
+                        system boot, along with some annotations for select messages.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">Jun  3 22:37:46 ip-172-31-2-186 kernel: [  478.416939] [ENA_COM: ena_com_validate_version] ena device version: 0.10
+Jun  3 22:37:46 ip-172-31-2-186 kernel: [  478.420915] [ENA_COM: ena_com_validate_version] ena controller version: 0.0.1 implementation version 1
+Jun  3 22:37:46 ip-172-31-2-186 kernel: [  479.256831] ena 0000:00:03.0: Device watchdog is Enabled
+Jun  3 22:37:46 ip-172-31-2-186 kernel: [  479.672947] ena 0000:00:03.0: creating 8 io queues. queue size: 1024
+Jun  3 22:37:46 ip-172-31-2-186 kernel: [  479.680885] [ENA_COM: ena_com_init_interrupt_moderation] Feature 20 isn&apos;t supported  <em class="replaceable"><code>// Interrupt moderation is not supported by the device</code></em>
+Jun  3 22:37:46 ip-172-31-2-186 kernel: [  479.691609] [ENA_COM: ena_com_get_feature_ex] Feature 10 isn&apos;t supported <em class="replaceable"><code>// RSS HASH function configuration is not supported by the device
+</code></em>Jun  3 22:37:46 ip-172-31-2-186 kernel: [  479.694583] [ENA_COM: ena_com_get_feature_ex] Feature 18 isn&apos;t supported <em class="replaceable"><code>//RSS HASH input source configuration is not supported by the device</code></em> 
+Jun  3 22:37:46 ip-172-31-2-186 kernel: [  479.697433] [ENA_COM: ena_com_set_host_attributes] Set host attribute isn&apos;t supported
+Jun  3 22:37:46 ip-172-31-2-186 kernel: [  479.701064] ena 0000:00:03.0 (unnamed net_device) (uninitialized): Cannot set host attributes
+Jun  3 22:37:46 ip-172-31-2-186 kernel: [  479.704917] ena 0000:00:03.0: Elastic Network Adapter (ENA) found at mem f3000000, mac addr 02:8a:3c:1e:13:b5 Queues 8
+Jun  3 22:37:46 ip-172-31-2-186 kernel: [  480.805037] EXT4-fs (xvda1): re-mounted. Opts: (null)
+Jun  3 22:37:46 ip-172-31-2-186 kernel: [  481.025842] NET: Registered protocol family 10</code></pre>
+                     
+                     <p class="title"><b>Which errors can I ignore?</b></p>
+                     
+                     <p>The following warnings that may appear in your system&apos;s error logs can be ignored
+                        for the Elastic Network Adapter:
+                     </p>
+                     
+                     
+                     <div class="variablelist">
+                        
+                        
+                        
+                        
+                        
+                        
+                        <dl>
+                           
+                           <dt><span class="term"><strong class="errortext"><code>Set host attribute isn&apos;t supported</code></strong></span></dt>
+                           
+                           <dd>
+                              
+                              <p>Host attributes are not supported for this device.</p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><strong class="errortext"><code>failed to alloc buffer for rx queue</code></strong></span></dt>
+                           
+                           <dd>
+                              
+                              <p>This is a recoverable error, and it indicates that there may have
+                                 been a memory pressure issue when the error was thrown.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><strong class="errortext"><code>Feature <em class="replaceable"><code>X</code></em> isn&apos;t
+                                       supported</code></strong></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The referenced feature is not supported by the Elastic Network
+                                 Adapter. Possible values for <em class="replaceable"><code>X</code></em> include:
+                              </p>
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       
+                                       <p><strong class="userinput"><code>10</code></strong>: RSS Hash function configuration
+                                          is not supported for this device.
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><strong class="userinput"><code>12</code></strong>: RSS Indirection table
+                                          configuration is not supported for this device.
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><strong class="userinput"><code>18</code></strong>: RSS Hash Input configuration is
+                                          not supported for this device.
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><strong class="userinput"><code>20</code></strong>: Interrupt moderation is not
+                                          supported for this device.
+                                       </p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><strong class="userinput"><code>27</code></strong>: The Elastic Network Adapter driver 
+                                          does not support polling the Ethernet capabilities from snmpd.
+                                       </p>
+                                       
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><strong class="errortext"><code>Failed to config AENQ</code></strong></span></dt>
+                           
+                           <dd>
+                              
+                              <p>The Elastic Network Adapter does not support AENQ
+                                 configuration.
+                              </p>
+                              
+                           </dd>
+                           
+                           
+                           <dt><span class="term"><strong class="errortext"><code>Trying to set unsupported AENQ events</code></strong></span></dt>
+                           
+                           <dd>
+                              
+                              <p>This error indicates an attempt to set an AENQ events group that
+                                 is not supported by the Elastic Network Adapter.
+                              </p>
+                              
+                           </dd>
+                           
+                        </dl>
+                     </div>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="enhanced-networking-ena.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="Storage.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Troubleshooting Connectivity Issues"><a class="pagetoc" href="#ena-connectivity-issues">Troubleshooting Connectivity Issues</a></li>
+                        <li class="pagetoc" name="Keep-Alive Mechanism"><a class="pagetoc" href="#ena-keep-alive">Keep-Alive Mechanism</a></li>
+                        <li class="pagetoc" name="Register Read Timeout"><a class="pagetoc" href="#register-read-timeout-ena">Register Read Timeout</a></li>
+                        <li class="pagetoc" name="Statistics"><a class="pagetoc" href="#statistics-ena">Statistics</a></li>
+                        <li class="pagetoc" name="Driver Error Logs in
+            syslog"><a class="pagetoc" href="#driver-error-logs-ena">Driver Error Logs in
+                              syslog</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

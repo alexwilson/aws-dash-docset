@@ -1,0 +1,272 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Managing ACLs Using the AWS SDK for Java - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="managing-acls.html" title="Managing ACLs">
+      <link rel="prev" href="manage-acls-using-console.html" title="Managing ACLs in the AWS Management Console">
+      <link rel="next" href="acl-using-dot-net-sdk.html" title="Managing ACLs Using the AWS SDK for .NET ">
+      <meta name="description" content="In Amazon S3, add permission grants to a new resource ACL using the AWS SDK for Java.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-using-java-sdk.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="s3-access-control.html">Managing Access Permissions to Your Amazon S3 Resources</a> &#xBB; <a href="S3_ACLs_UsingACLs.html">Managing Access with ACLs</a> &#xBB; <a href="managing-acls.html">Managing ACLs</a> &#xBB; <span class="breadcrumb">Managing ACLs Using the AWS SDK for Java</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="acl-using-java-sdk">Managing ACLs Using the AWS SDK for Java</h1>
+                     <p>This section provides examples of how to configure access control list (ACL) grants
+                        on
+                        				buckets and objects. The first example creates a bucket with a canned ACL (see
+                        <a href="acl-overview.html#canned-acl">Canned ACL</a>), creates a list of custom
+                        				permission grants, and then replaces the canned ACL with an ACL containing the
+                        				custom grants. The second example shows how to modify an ACL using the <code class="code">AccessControlList.grantPermission()</code> method.
+                     </p>
+                     <h2 id="set-acl-java-create-resource">Setting ACL Grants</h2>
+                     				
+                     <div class="example">
+                        <div class="example-contents">
+                           <p>This example creates a bucket. In the request, the example specifies a canned ACL
+                              that
+                              						grants the Log Delivery group permission to write logs to the bucket. 
+                           </p><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="java ">import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.AccessControlList;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.CanonicalGrantee;
+import com.amazonaws.services.s3.model.CreateBucketRequest;
+import com.amazonaws.services.s3.model.Grant;
+import com.amazonaws.services.s3.model.GroupGrantee;
+import com.amazonaws.services.s3.model.Permission;
+
+public class CreateBucketWithACL {
+
+    public static void main(String[] args) throws IOException {
+        String clientRegion = &quot;*** Client region ***&quot;;
+        String bucketName = &quot;*** Bucket name ***&quot;;
+
+        try {
+            AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
+                    .withCredentials(new ProfileCredentialsProvider())
+                    .withRegion(clientRegion)
+                    .build();
+
+            // Create a bucket with a canned ACL. This ACL will be deleted by the
+            // getGrantsAsList().clear() call below. It is here for demonstration
+            // purposes.
+            CreateBucketRequest createBucketRequest = new CreateBucketRequest(bucketName, clientRegion)
+                    .withCannedAcl(CannedAccessControlList.LogDeliveryWrite);
+            s3Client.createBucket(createBucketRequest);
+    
+            // Create a collection of grants to add to the bucket.
+            Collection&lt;Grant&gt; grantCollection = new ArrayList&lt;Grant&gt;();
+            
+            // Grant the account owner full control.
+            Grant grant1 = new Grant(new CanonicalGrantee(s3Client.getS3AccountOwner().getId()), Permission.FullControl);
+            grantCollection.add(grant1);
+    
+            // Grant the LogDelivery group permission to write to the bucket.
+            Grant grant2 = new Grant(GroupGrantee.LogDelivery, Permission.Write);
+            grantCollection.add(grant2);
+    
+            // Save (replace) grants by deleting all current ACL grants and replacing
+            // them with the two we just created.
+            AccessControlList bucketAcl = s3Client.getBucketAcl(bucketName);
+            bucketAcl.getGrantsAsList().clear();
+            bucketAcl.getGrantsAsList().addAll(grantCollection);
+            s3Client.setBucketAcl(bucketName, bucketAcl);
+        }
+        catch(AmazonServiceException e) {
+            // The call was transmitted successfully, but Amazon S3 couldn&apos;t process 
+            // it and returned an error response.
+            e.printStackTrace();
+        }
+        catch(SdkClientException e) {
+            // Amazon S3 couldn&apos;t be contacted for a response, or the client
+            // couldn&apos;t parse the response from Amazon S3.
+            e.printStackTrace();
+        }
+    }
+}
+					</code></pre></div>
+                     </div>
+                     			
+                     				
+                     <h2 id="set-acl-java-existing-resource-example">Configuring ACL Grants on an Existing Object</h2>
+                     				
+                     <div class="example">
+                        <div class="example-contents">
+                           <p>This example updates the ACL on an object. The example performs the following tasks:
+                              
+                           </p>
+                           <div class="itemizedlist">
+                              						
+                              						
+                              						
+                              						
+                              					
+                              <ul class="itemizedlist" type="disc">
+                                 <li class="listitem">
+                                    							
+                                    <p>Retrieves an object&apos;s ACL</p>
+                                    						
+                                 </li>
+                                 <li class="listitem">
+                                    							
+                                    <p>Clears the ACL by removing all existing permissions</p>
+                                    						
+                                 </li>
+                                 <li class="listitem">
+                                    							
+                                    <p>Adds two permissions: full access to the owner, and WRITE_ACP (see <a href="acl-overview.html#permissions">What Permissions Can I Grant?</a>) to a user
+                                       								identified by an email address
+                                    </p>
+                                    						
+                                 </li>
+                                 <li class="listitem">
+                                    							
+                                    <p>Saves the ACL to the object</p>
+                                    						
+                                 </li>
+                              </ul>
+                           </div><pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="java ">import java.io.IOException;
+
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.AccessControlList;
+import com.amazonaws.services.s3.model.CanonicalGrantee;
+import com.amazonaws.services.s3.model.EmailAddressGrantee;
+import com.amazonaws.services.s3.model.Permission;
+
+public class ModifyACLExistingObject {
+
+    public static void main(String[] args) throws IOException {
+        String clientRegion = &quot;*** Client region ***&quot;;
+        String bucketName = &quot;*** Bucket name ***&quot;;
+        String keyName = &quot;*** Key name ***&quot;;
+        String emailGrantee = &quot;*** user@example.com ***&quot;;
+
+        try {
+            AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
+                    .withCredentials(new ProfileCredentialsProvider())
+                    .withRegion(clientRegion)
+                    .build();
+
+            // Get the existing object ACL that we want to modify.
+            AccessControlList acl = s3Client.getObjectAcl(bucketName, keyName);
+            
+            // Clear the existing list of grants.
+            acl.getGrantsAsList().clear();
+            
+            // Grant a sample set of permissions, using the existing ACL owner for Full Control permissions.
+            acl.grantPermission(new CanonicalGrantee(acl.getOwner().getId()), Permission.FullControl);
+            acl.grantPermission(new EmailAddressGrantee(emailGrantee), Permission.WriteAcp);
+    
+            // Save the modified ACL back to the object.
+            s3Client.setObjectAcl(bucketName, keyName, acl);
+        }
+        catch(AmazonServiceException e) {
+            // The call was transmitted successfully, but Amazon S3 couldn&apos;t process 
+            // it, so it returned an error response.
+            e.printStackTrace();
+        }
+        catch(SdkClientException e) {
+            // Amazon S3 couldn&apos;t be contacted for a response, or the client
+            // couldn&apos;t parse the response from Amazon S3.
+            e.printStackTrace();
+        }
+    }
+}
+					</code></pre></div>
+                     </div>
+                     			
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="manage-acls-using-console.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="acl-using-dot-net-sdk.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Setting ACL Grants"><a class="pagetoc" href="#set-acl-java-create-resource">Setting ACL Grants</a></li>
+                        <li class="pagetoc" name="Configuring ACL Grants on an Existing Object"><a class="pagetoc" href="#set-acl-java-existing-resource-example">Configuring ACL Grants on an Existing Object</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

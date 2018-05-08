@@ -1,0 +1,290 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Managing ACLs Using the AWS SDK for .NET  - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="managing-acls.html" title="Managing ACLs">
+      <link rel="prev" href="acl-using-java-sdk.html" title="Managing ACLs Using the AWS SDK for Java Configuring ACL Grants on an Existing Object">
+      <link rel="next" href="acl-using-rest-api.html" title="Managing ACLs Using the REST API">
+      <meta name="description" content="In Amazon S3, see an example of adding permission grants to your resource ACLs using the AWS SDK for .NET.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-using-dot-net-sdk.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="s3-access-control.html">Managing Access Permissions to Your Amazon S3 Resources</a> &#xBB; <a href="S3_ACLs_UsingACLs.html">Managing Access with ACLs</a> &#xBB; <a href="managing-acls.html">Managing ACLs</a> &#xBB; <span class="breadcrumb">Managing ACLs Using the AWS SDK for .NET </span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="acl-using-dot-net-sdk">Managing ACLs Using the AWS SDK for .NET </h1>
+                     <p>This section provides examples of configuring ACL grants on Amazon S3 buckets and
+                        				objects.
+                     </p>
+                     				
+                     <h2 id="set-acl-dot-net-create-resource-example1">Example 1: Creating a Bucket and
+                        						Using a Canned ACL to Set Permissions
+                     </h2>
+                     				
+                     <p>This C# example creates a bucket. In the request, the code also specifies a canned
+                        ACL
+                        					that grants the Log Delivery group permissions to write the logs to the
+                        					bucket.
+                     </p>
+                     				
+                     <p> For instructions on creating and testing a working example, see <a href="UsingTheMPDotNetAPI.html#TestingDotNetApiSamples">Running the Amazon S3 .NET Code Examples</a>. 
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="cs ">using Amazon.S3;
+using Amazon.S3.Model;
+using System;
+using System.Threading.Tasks;
+
+namespace Amazon.DocSamples.S3
+{
+    class ManagingBucketACLTest
+    {
+        private const string newBucketName = &quot;*** bucket name ***&quot;; 
+        // Specify your bucket region (an example region is shown).
+        private static readonly RegionEndpoint bucketRegion = RegionEndpoint.USWest2;
+        private static IAmazonS3 client;
+
+        public static void Main()
+        {
+            client = new AmazonS3Client(bucketRegion);
+            CreateBucketUseCannedACLAsync().Wait();
+        }
+
+        private static async Task CreateBucketUseCannedACLAsync()
+        {
+            try
+            {
+                // Add bucket (specify canned ACL).
+                PutBucketRequest putBucketRequest = new PutBucketRequest()
+                {
+                    BucketName = newBucketName,
+                    BucketRegion = S3Region.EUW1, // S3Region.US,
+                                                  // Add canned ACL.
+                    CannedACL = S3CannedACL.LogDeliveryWrite
+                };
+                PutBucketResponse putBucketResponse = await client.PutBucketAsync(putBucketRequest);
+
+                // Retrieve bucket ACL.
+                GetACLResponse getACLResponse = await client.GetACLAsync(new GetACLRequest
+                {
+                    BucketName = newBucketName
+                });
+            }
+            catch (AmazonS3Exception amazonS3Exception)
+            {
+                Console.WriteLine(&quot;S3 error occurred. Exception: &quot; + amazonS3Exception.ToString());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(&quot;Exception: &quot; + e.ToString());
+            }
+        }
+    }
+}</code></pre>
+                     			<h2 id="set-acl-dot-net-create-resource-example">Example 2: Configure ACL Grants on an
+                        						Existing Object
+                     </h2>
+                     				
+                     				
+                     <p>This C# example updates the ACL on an existing object. The example performs the following
+                        					tasks:
+                     </p> 
+                     				
+                     <div class="itemizedlist">
+                        					
+                        					
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>Retrieves an object&apos;s ACL.</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>Clears the ACL by removing all existing permissions.</p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>Adds two permissions: full access to the owner, and WRITE_ACP to a user identified
+                                 by
+                                 							email address.
+                              </p>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>Saves the ACL by sending a <code class="code">PutAcl</code> request.
+                              </p>
+                              					
+                           </li>
+                        </ul>
+                     </div>
+                     				
+                     <p> For instructions on creating and testing a working example, see <a href="UsingTheMPDotNetAPI.html#TestingDotNetApiSamples">Running the Amazon S3 .NET Code Examples</a>. 
+                     </p>
+                     				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="cs ">using Amazon.S3;
+using Amazon.S3.Model;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace Amazon.DocSamples.S3
+{
+    class ManagingObjectACLTest
+    {
+        private const string bucketName = &quot;*** bucket name ***&quot;; 
+        private const string keyName = &quot;*** object key name ***&quot;; 
+        private const string emailAddress = &quot;*** email address ***&quot;;
+        // Specify your bucket region (an example region is shown).
+        private static readonly RegionEndpoint bucketRegion = RegionEndpoint.USWest2;
+        private static IAmazonS3 client;
+        public static void Main()
+        {
+            client = new AmazonS3Client(bucketRegion);
+            TestObjectACLTestAsync().Wait();
+        }
+
+        private static async Task TestObjectACLTestAsync()
+        {
+            try
+            {
+                    // Retrieve the ACL for the object.
+                    GetACLResponse aclResponse = await client.GetACLAsync(new GetACLRequest
+                    {
+                        BucketName = bucketName,
+                        Key = keyName
+                    });
+
+                    S3AccessControlList acl = aclResponse.AccessControlList;
+
+                    // Retrieve the owner (we use this to re-add permissions after we clear the ACL).
+                    Owner owner = acl.Owner;
+
+                    // Clear existing grants.
+                    acl.Grants.Clear();
+
+                    // Add a grant to reset the owner&apos;s full permission (the previous clear statement removed all permissions).
+                    S3Grant fullControlGrant = new S3Grant
+                    {
+                        Grantee = new S3Grantee { CanonicalUser = owner.Id },
+                        Permission = S3Permission.FULL_CONTROL
+                        
+                    };
+
+                    // Describe the grant for the permission using an email address.
+                    S3Grant grantUsingEmail = new S3Grant
+                    {
+                        Grantee = new S3Grantee { EmailAddress = emailAddress },
+                        Permission = S3Permission.WRITE_ACP
+                    };
+                    acl.Grants.AddRange(new List&lt;S3Grant&gt; { fullControlGrant, grantUsingEmail });
+ 
+                    // Set a new ACL.
+                    PutACLResponse response = await client.PutACLAsync(new PutACLRequest
+                    {
+                        BucketName = bucketName,
+                        Key = keyName,
+                        AccessControlList = acl
+                    });
+            }
+            catch (AmazonS3Exception amazonS3Exception)
+            {
+                Console.WriteLine(&quot;An AmazonS3Exception was thrown. Exception: &quot; + amazonS3Exception.ToString());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(&quot;Exception: &quot; + e.ToString());
+            }
+        }
+    }
+}
+</code></pre>
+                     			</div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="acl-using-java-sdk.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="acl-using-rest-api.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Example 1: Creating a Bucket and
+						Using a Canned ACL to Set Permissions"><a class="pagetoc" href="#set-acl-dot-net-create-resource-example1">Example 1: Creating a Bucket and
+                              						Using a Canned ACL to Set Permissions</a></li>
+                        <li class="pagetoc" name="Example 2: Configure ACL Grants on an
+						Existing Object"><a class="pagetoc" href="#set-acl-dot-net-create-resource-example">Example 2: Configure ACL Grants on an
+                              						Existing Object</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

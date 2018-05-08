@@ -1,0 +1,199 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Understanding Retry Behavior - AWS Lambda</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="invoking-lambda-functions.html" title="Invoking Lambda Functions">
+      <link rel="prev" href="invocation-options.html" title="Invocation Types">
+      <link rel="next" href="scaling.html" title="Understanding Scaling Behavior">
+      <meta name="description" content="A Lambda function can fail for any of the following reasons:">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/retries-on-errors.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="invoking-lambda-functions.html">Invoking Lambda Functions</a> &#xBB; <span class="breadcrumb">Understanding Retry Behavior</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="retries-on-errors">Understanding Retry Behavior</h1>
+                     <p>A Lambda function can fail for any of the following reasons:</p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>The function times out while trying to reach an endpoint.</p>
+                              
+                              <p>&#xA0;</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The function fails to successfully parse input data.</p>
+                              
+                              <p>&#xA0;</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>The function experiences resource constraints, such as out-of-memory
+                                 errors or other timeouts.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <p>If any of these failures occur, your function will throw an exception. How the
+                        exception is handled depends upon how the Lambda function was invoked:
+                     </p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p><b>Event sources that aren&apos;t stream-based</b> &#x2013;  
+                                 Some of these event sources are set up to
+                                 invoke a Lambda function synchronously and others invoke it asynchronously.
+                                 Accordingly, exceptions are handled as follows:
+                              </p>
+                              
+                              <p>&#xA0;</p>
+                              
+                              <div class="itemizedlist">
+                                 
+                                 
+                                 
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       
+                                       <p><b>Synchronous invocation</b> &#x2013; 
+                                          The invoking application receives a 429 error and is responsible for retries. For
+                                          a list of
+                                          supported event sources and the invocation types they use, see
+                                          <a href="./lambda/latest/dg/invoking-lambda-function.html" target="_blank">Supported Event Sources</a>. These event sources may have
+                                          additional retries built into the integration. 
+                                       </p>
+                                       
+                                       <p>If you invoked the Lambda function directly through AWS SDKs, your client receives
+                                          the error and can choose to
+                                          retry.
+                                       </p>
+                                       
+                                       <p>&#xA0;</p>
+                                       
+                                    </li>
+                                    <li class="listitem">
+                                       
+                                       <p><b>Asynchronous invocation</b> &#x2013;  
+                                          Asynchronous events are queued before being used to invoke the Lambda function. If
+                                          AWS Lambda is unable to fully
+                                          process the event, it will automatically retry the invocation twice, with delays between
+                                          retries. If you have specified a Dead Letter Queue for your function, then the failed
+                                          event is sent 
+                                          to the specified Amazon SQS queue or Amazon SNS topic. If you don&apos;t specify a Dead
+                                          Letter Queue (DLQ), which is not required and is the default setting, 
+                                          then the event will be discarded. For more information, see <a href="dlq.html">Dead Letter Queues</a>. 
+                                       </p>
+                                       
+                                       <p>&#xA0;</p>
+                                       
+                                    </li>
+                                 </ul>
+                              </div>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p><b>Stream-based event sources</b> &#x2013; 
+                                 For stream-based event sources (Amazon Kinesis Data Streams and DynamoDB streams),
+                                 AWS Lambda polls your stream and invokes your
+                                 Lambda function. Therefore, if a Lambda function fails, AWS Lambda attempts
+                                 to process the erring batch of records until the time the data expires,
+                                 which can be up to seven days for Amazon Kinesis Data Streams. The exception is treated
+                                 as blocking, and
+                                 AWS Lambda will not read any new records from the stream until the failed
+                                 batch of records either expires or processed successfully. This ensures that AWS Lambda
+                                 processes the stream events in order.
+                              </p>
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <p>For more information about invocation modes, see <a href="invocation-options.html#intro-invocation-modes">Event Source Mapping</a>.
+                     </p>
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="invocation-options.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="scaling.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper"></div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

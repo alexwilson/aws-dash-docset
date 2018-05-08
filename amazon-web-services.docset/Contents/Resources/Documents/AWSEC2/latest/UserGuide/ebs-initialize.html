@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Initializing Amazon EBS Volumes - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="EBSPerformance.html" title="Amazon EBS Volume Performance on Linux Instances">
+      <link rel="prev" href="ebs-io-characteristics.html" title="I/O Characteristics and Monitoring">
+      <link rel="next" href="raid-config.html" title="RAID Configuration on Linux">
+      <meta name="description" content="Avoid increased first-touch latency on EBS volumes restored from snapshots with a process called initialization.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-initialize.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Storage.html">Storage</a> &#xBB; <a href="AmazonEBS.html">Amazon Elastic Block Store (Amazon EBS)</a> &#xBB; <a href="EBSPerformance.html">Amazon EBS Volume Performance on Linux Instances</a> &#xBB; <span class="breadcrumb">Initializing Amazon EBS Volumes</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="ebs-initialize">Initializing Amazon EBS Volumes</h1>
+                     <p>New EBS volumes receive their maximum performance the moment that they are available
+                        and
+                        do not require initialization (formerly known as pre-warming). However, storage blocks
+                        on
+                        volumes that were restored from snapshots must be initialized (pulled down from Amazon
+                        S3 and
+                        written to the volume) before you can access the block. This preliminary action takes
+                        time and
+                        can cause a significant increase in the latency of an I/O operation the first time
+                        each block
+                        is accessed. For most applications, amortizing this cost over the lifetime of the
+                        volume is
+                        acceptable. Performance is restored after the data is accessed once.
+                     </p>
+                     <p>You can avoid this performance hit in a production environment by reading from all
+                        of the
+                        blocks on your volume before you use it; this process is called
+                        <em>initialization</em>. For a new volume created from a snapshot, you should
+                        read all the blocks that have data before using the volume.
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>While initializing <code class="code">io1</code> volumes that were restored from snapshots, the performance of
+                           the volume may drop below 50 percent of its expected level, which causes the volume
+                           to
+                           display a <code class="code">warning</code> state in the <b>I/O Performance</b>
+                           status check. This is expected, and you can ignore the <code class="code">warning</code> state on
+                           <code class="code">io1</code> volumes while you are initializing them. For more information, see <a href="monitoring-volume-status.html#monitoring-volume-checks">Monitoring Volumes with Status Checks</a>.
+                        </p>
+                     </div>
+                     <h2 id="ebs-initialize-linux">Initializing Amazon EBS Volumes on Linux</h2>
+                     
+                     
+                     <p>New EBS volumes receive their maximum performance the moment that they are available
+                        and
+                        do not require initialization (formerly known as pre-warming). For volumes that have
+                        been
+                        restored from snapshots, use the <b>dd</b> or <b>fio</b> utilities
+                        to read from all of the blocks on a volume. All existing data on the volume will be
+                        preserved.
+                     </p>
+                     
+                     <p class="title"><b>To initialize a volume restored from a snapshot on Linux </b></p>
+                     <ol>
+                        <li>
+                           
+                           <p>Attach the newly-restored volume to your Linux instance.</p>
+                           
+                        </li>
+                        <li>
+                           
+                           <p>Use the <b>lsblk</b> command to list the block devices on your
+                              instance.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>lsblk</code></strong><code class="computeroutput" copy="false">
+NAME  MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+xvdf  202:80   0  30G  0 disk
+xvda1 202:1    0   8G  0 disk /</code></code></pre>
+                           <p>Here you can see that the new volume, <code>/dev/xvdf</code>, is attached, but not
+                              mounted (because there is no path listed under the <code class="code">MOUNTPOINT</code>
+                              column).
+                           </p>
+                           
+                        </li>
+                        <li><a id="initialize-snapshot-step"></a>
+                           
+                           <p>Use the <b>dd</b> or <b>fio</b> utilities to read all of the
+                              blocks on the device. The <b>dd</b> command is installed by default on Linux
+                              systems, but <b>fio</b> is considerably faster because it allows
+                              multi-threaded reads.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>This step may take several minutes up to several hours, depending on your EC2
+                                 instance bandwidth, the IOPS provisioned for the volume, and the size of the
+                                 volume.
+                              </p>
+                           </div>
+                           
+                           <p>[<b>dd</b>] The <code class="code">if</code> (input file) parameter should be set to
+                              the drive you wish to initialize. The <code class="code">of</code> (output file) parameter should be
+                              set to the Linux null virtual device, <code>/dev/null</code>. The
+                              <code class="code">bs</code> parameter sets the block size of the read operation; for optimal
+                              performance, this should be set to 1 MB.
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>Incorrect use of <b>dd</b> can easily destroy a volume&apos;s data. Be sure
+                                 to follow precisely the example command below. Only the
+                                 <code class="code">if=/dev/<em class="replaceable"><code>xvdf</code></em></code> parameter will vary depending
+                                 on the name of the device you are reading.
+                              </p>
+                           </div>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo dd if=/dev/<em class="replaceable"><code>xvdf</code></em> of=/dev/null bs=1M</code></strong></code></pre>
+                           <p>[<b>fio</b>] If you have <b>fio</b> installed on your
+                              system, use the following command initialize your volume. The <code class="code">--filename</code>
+                              (input file) parameter should be set to the drive you wish to initialize.
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><code class="prompt" copy="false">[ec2-user ~]$ </code><strong class="userinput"><code>sudo fio --filename=/dev/<em class="replaceable"><code>xvdf</code></em> --rw=read --bs=128k --iodepth=32 --ioengine=libaio --direct=1 --name=volume-initialize</code></strong></code></pre>
+                           <p>To install <b>fio</b> on Amazon Linux, use the following command:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">sudo yum install -y fio</code></pre>
+                           <p>To install <b>fio</b> on Ubuntu, use the following command:
+                           </p>
+                           <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">sudo apt-get install -y fio</code></pre>
+                           <p>When the operation is finished, you will see a report of the read operation. Your
+                              volume is now ready for use. For more information, see <a href="ebs-using-volumes.html">Making an Amazon EBS Volume Available for Use on <span>Linux</span></a>.
+                           </p>
+                           
+                        </li>
+                     </ol>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="ebs-io-characteristics.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="raid-config.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Initializing Amazon EBS Volumes on Linux"><a class="pagetoc" href="#ebs-initialize-linux">Initializing Amazon EBS Volumes on Linux</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

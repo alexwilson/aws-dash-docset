@@ -1,0 +1,267 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>How Spot Instances Work - Amazon Elastic Compute Cloud</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="using-spot-instances.html" title="Spot Instances">
+      <link rel="prev" href="using-spot-instances.html" title="Spot Instances">
+      <link rel="next" href="spot-fleet.html" title="How Spot Fleet Works">
+      <meta name="description" content="Learn how Spot Instances work.">
+      <meta name="keywords" content="EC2,Amazon EC2,EC2 instance,instance,VM,virtual machine">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Elastic Compute Cloud">
+      <meta name="guide" content="User Guide for Linux Instances">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/how-spot-instances-work.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/ec2">Amazon EC2</a> &#xBB; <a href="index.html">User Guide for Linux Instances</a> &#xBB; <a href="Instances.html">Amazon EC2 Instances</a> &#xBB; <a href="instance-purchasing-options.html">Instance Purchasing Options</a> &#xBB; <a href="using-spot-instances.html">Spot Instances</a> &#xBB; <span class="breadcrumb">How Spot Instances Work</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="how-spot-instances-work">How Spot Instances Work</h1>
+                     <p>To use Spot Instances, create a <em>Spot Instance request</em> or a
+                        			<em>Spot Fleet request</em>. The request can include the maximum price that
+                        			you are willing to pay per hour per instance (the default is the On-Demand price),
+                        and other constraints
+                        			such as the instance type and Availability Zone. If your maximum price exceeds
+                        the
+                        			current Spot price for the specified instance, and capacity is available,
+                        			your request is fulfilled immediately. Otherwise, the request is fulfilled whenever
+                        the
+                        			maximum price exceeds the Spot price and the capacity is available. Spot
+                        			Instances run until you terminate them or until Amazon EC2 must interrupt them
+                        (known as a 
+                        			<em>Spot Instance interruption</em>).
+                     </p>
+                     <p>When you use Spot Instances, you must be prepared for interruptions. Amazon EC2 can
+                        interrupt
+                        			your Spot Instance when the Spot price exceeds your maximum price, when the demand
+                        for
+                        			Spot Instances rises, or when the supply of Spot Instances decreases. When Amazon
+                        EC2
+                        			interrupts a Spot Instance, it provides a Spot Instance interruption notice, which
+                        gives
+                        			the instance a two-minute warning before Amazon EC2 interrupts it. You can&apos;t enable
+                        			termination protection for Spot Instances. For more information, see <a href="spot-interruptions.html">Spot Instance Interruptions</a>.
+                     </p>
+                     <p>You can&apos;t stop and start an Amazon EBS-backed instance if it is a Spot Instance (only
+                        the 
+                        			Spot service can stop and start a Spot Instance), but you can reboot or terminate
+                        a
+                        			Spot Instance.
+                     </p>
+                     <div class="highlights" id="inline-topiclist">
+                        <p><strong>Contents</strong></p>
+                        <ul>
+                           <li><a href="#spot-launch-group">Launching Spot Instances in a Launch Group</a></li>
+                           <li><a href="#spot-az-group">Launching Spot Instances in an Availability Zone Group</a></li>
+                           <li><a href="#concepts-spot-instances-vpcs">Launching Spot Instances in a VPC</a></li>
+                        </ul>
+                     </div>
+                     			
+                     <h2 id="spot-launch-group">Launching Spot Instances in a Launch Group</h2>
+                     			
+                     <p>Specify a launch group in your Spot Instance request to tell Amazon EC2 to launch
+                        a set of Spot
+                        				Instances only if it can launch them all. In addition, if the Spot service must
+                        				terminate one of the instances in a launch group (for example, if the Spot price
+                        				exceeds your maximum price), it must terminate them all. However, if you terminate
+                        				one or more of the instances in a launch group, Amazon EC2 does not terminate
+                        the
+                        				remaining instances in the launch group.
+                     </p>
+                     			
+                     <p>Although this option can be useful, adding this constraint can lower the chances that
+                        your
+                        				Spot Instance request is fulfilled. It can also increase the chance that your
+                        Spot Instances will be terminated.
+                     </p>
+                     			
+                     <p>If you create another successful Spot Instance request that specifies the same (existing)
+                        				launch group as an earlier successful request, then the new instances are added
+                        to
+                        				the launch group. Subsequently, if an instance in this launch group is terminated,
+                        				all instances in the launch group are terminated, which includes instances launched
+                        				by the first and second requests.
+                     </p>
+                     		
+                     			
+                     <h2 id="spot-az-group">Launching Spot Instances in an Availability Zone Group</h2>
+                     			
+                     <p>Specify an Availability Zone group in your Spot Instance request to tell the Spot
+                        service
+                        				to launch a set of Spot Instances in the same Availability Zone. Amazon EC2 need
+                        not
+                        				interrupt all instances in an Availability Zone group at the same time. If Amazon
+                        EC2
+                        				must interrupt one of the instances in an Availability Zone group, the others
+                        remain
+                        				running.
+                     </p>
+                     			
+                     <p>Although this option can be useful, adding this constraint can lower the chances that
+                        your
+                        				Spot Instance request is fulfilled.
+                     </p>
+                     			
+                     <p>If you specify an Availability Zone group but don&apos;t specify an Availability Zone in
+                        the
+                        				Spot Instance request, the result depends on whether you specified the EC2-Classic
+                        				network, a default VPC, or a nondefault VPC. For more information, see <a href="ec2-supported-platforms.html">Supported Platforms</a>.
+                     </p>
+                     			
+                     				
+                     <p class="title"><b>EC2-Classic</b></p>
+                     				
+                     <p>Amazon EC2 finds the lowest-priced Availability Zone in the region and launches your
+                        Spot Instances in that Availability Zone if the lowest price for the group is higher
+                        					than the current Spot price in that Availability Zone. Amazon EC2 waits until
+                        there
+                        					is enough capacity to launch your Spot Instances together, as long as the Spot
+                        					price remains lower than the lowest price for the group.
+                     </p>
+                     			
+                     			
+                     				
+                     <p class="title"><b>Default VPC</b></p>
+                     				
+                     <p>Amazon EC2 uses the Availability Zone for the specified subnet, or if
+                        					you don&apos;t specify a subnet, it selects an Availability Zone and its default
+                        					subnet, but it might not be the lowest-priced Availability Zone. If you deleted
+                        					the default subnet for an Availability Zone, then you must specify a different
+                        					subnet.
+                     </p>
+                     			
+                     			
+                     				
+                     <p class="title"><b>Nondefault VPC</b></p>
+                     				
+                     <p>Amazon EC2 uses the Availability Zone for the specified subnet.</p>
+                     			
+                     		
+                     			
+                     <h2 id="concepts-spot-instances-vpcs">Launching Spot Instances in a VPC</h2>
+                     			
+                     <p>To take advantage of the features of EC2-VPC when you use Spot Instances, specify
+                        in your
+                        				Spot request that your Spot Instances are to be launched in a VPC. You specify
+                        a
+                        				subnet for your Spot Instances the same way that you specify a subnet for your
+                        				On-Demand Instances.
+                     </p>
+                     			
+                     <p>The process for making a Spot Instance request that launches Spot Instances in a VPC
+                        is the
+                        				same as the process for making a Spot Instance request that launches Spot Instances
+                        				in EC2-Classic&#x2014;except for the following differences: 
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        				
+                        				
+                        				
+                        			
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              					
+                              <p>You should use the default maximum price (the On-Demand price), or base your 
+                                 						maximum price on the Spot price history of Spot Instances in a VPC.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>[Default VPC] If you want your Spot Instance launched in a specific low-priced
+                                 						Availability Zone, you must specify the corresponding subnet in your Spot Instance
+                                 request. If you do not specify a subnet, Amazon EC2 selects one for you,
+                                 						and the Availability Zone for this subnet might not have the lowest Spot
+                                 						price.
+                              </p>
+                              				
+                           </li>
+                           <li class="listitem">
+                              					
+                              <p>[Nondefault VPC] You must specify the subnet for your Spot Instance.</p>
+                              				
+                           </li>
+                        </ul>
+                     </div>
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="using-spot-instances.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="spot-fleet.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Launching Spot Instances in a Launch Group"><a class="pagetoc" href="#spot-launch-group">Launching Spot Instances in a Launch Group</a></li>
+                        <li class="pagetoc" name="Launching Spot Instances in an Availability Zone Group"><a class="pagetoc" href="#spot-az-group">Launching Spot Instances in an Availability Zone Group</a></li>
+                        <li class="pagetoc" name="Launching Spot Instances in a VPC"><a class="pagetoc" href="#concepts-spot-instances-vpcs">Launching Spot Instances in a VPC</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Elastic Compute Cloud';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='User Guide for Linux Instances';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

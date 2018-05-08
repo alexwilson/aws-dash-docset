@@ -1,0 +1,326 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Creating a Deployment Package
+         			(Python) - AWS Lambda
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="deployment-package-v2.html" title="Creating a Deployment Package">
+      <link rel="prev" href="java-author-using-eclipse-sdk-plugin.html" title="Authoring Lambda Functions Using Eclipse IDE and
+        AWS SDK Plugin (Java)">
+      <link rel="next" href="test-sam-local.html" title="Test Your Serverless Applications Locally Using SAM Local (Public Beta)">
+      <meta name="description" content="To create a Lambda function you first create a Lambda function deployment package, a .zip file consisting of your code and any dependencies. You will then need to set the appropriate security permissions for the zip package. For more information, see">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/lambda-python-how-to-create-deployment-package.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="lambda-introduction-function.html">Lambda Functions</a> &#xBB; <a href="lambda-app.html">Building Lambda Functions</a> &#xBB; <a href="deployment-package-v2.html">Creating a Deployment Package</a> &#xBB; <span class="breadcrumb">Creating a Deployment Package
+                                    			(Python)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="lambda-python-how-to-create-deployment-package">Creating a Deployment Package
+                        			(Python)
+                     </h1>
+                     <p>To create a Lambda function you first create a Lambda function deployment package,
+                        a
+                        			.zip file consisting of your code and any dependencies. You will then need to
+                        			set the appropriate security permissions for the zip package. For more information,
+                        see <a href="lambda-auth-and-access-control.html">Authentication and Access Control for
+                           AWS Lambda</a> policies.
+                     </p>
+                     <p>You can create a deployment package yourself or write your code directly in the Lambda
+                        			console, in which case the console creates the deployment package for you and uploads
+                        			it, creating your Lambda function. Note the following to determine if you can use
+                        the
+                        			console to create your Lambda function:
+                     </p>
+                     <div class="itemizedlist">
+                        			
+                        			
+                        		
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              				
+                              <p><b>Simple scenario</b> &#x2013; 
+                                 					If your custom code requires only the AWS SDK library,
+                                 					then you can use the inline editor in the AWS Lambda console. Using the console,
+                                 					you can edit and upload your code to AWS Lambda. The console will zip up your
+                                 					code with the relevant configuration information into a deployment package that
+                                 					the Lambda service can run. 
+                              </p>
+                              				
+                              <p>You can also test your code in the console by manually invoking it using
+                                 					sample event data. 
+                              </p>
+                              				
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>The Lambda service has preinstalled the AWS SDK for Python.</p>
+                              </div>
+                              			
+                           </li>
+                           <li class="listitem">
+                              				
+                              <p><b>Advanced scenario</b> &#x2013; 
+                                 					If you are writing code that uses other resources,
+                                 					such as a graphics library for image processing, or you want to use the AWS CLI
+                                 					instead of the console, you need to first create the Lambda function deployment
+                                 					package, and then use the console or the CLI to upload the package.
+                              </p>
+                              			
+                           </li>
+                        </ul>
+                     </div>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>After you create a deployment package, you may either upload it directly or
+                           					upload the .zip file first to an Amazon S3 bucket in the same AWS region where
+                           					you want to create the Lambda function, and then specify the bucket name and
+                           					object key name when you create the Lambda function using the console or the
+                           AWS
+                           					CLI.
+                        </p>
+                     </div>
+                     <p>The following is an example procedure to create a deployment package (outside the
+                        console). 
+                     </p>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>This should work for most standard installations of Python and pip when using pure
+                           Python
+                           					modules in your Lambda function. If you are including modules that have native
+                           					dependencies or have Python installed with Homebrew on OS X, you should see the
+                           					next section which provides instructions to create a deployment package when
+                           					using Virtualenv. For more information, see <a href="lambda-python-how-to-create-deployment-package.html#deployment-pkg-for-virtualenv">Create Deployment Package Using a Python
+                              				Environment Created with Virtualenv</a> and the <a href="http://virtualenv.readthedocs.io/en/latest/" target="_blank">Virtualenv</a> website.
+                        </p>
+                     </div>
+                     <p>You will use <code class="code">pip</code> to install dependencies/libraries. For information to install
+                        				<code class="code">pip</code>, go to <a href="https://pip.pypa.io/en/stable/installing/" target="_blank">Installation</a>. 
+                     </p>
+                     <ol>
+                        <li>
+                           				
+                           <p>You create a directory, for example <code>project-dir</code>. 
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           				
+                           <p>Save all of your Python source files (the .py files) at the root level of this
+                              					directory.
+                           </p>
+                           			
+                        </li>
+                        <li>
+                           <p>Install any libraries using <b>pip</b>. Again, you install these libraries at the root level of
+                              				the directory.
+                           </p>
+                           				
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">pip install <em class="replaceable"><code>module-name</code></em> -t <em class="replaceable"><code>/path/to</code></em>/project-dir</code></pre>
+                           				<p>For example, the following command installs the <code class="code">requests</code> HTTP library in the
+                              						<code>project-dir</code> directory.
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">pip install requests -t <em class="replaceable"><code>/path/to</code></em>/project-dir</code></pre>
+                           				<p>If using Mac OS X and you have Python installed using Homebrew (see <a href="http://brew.sh/" target="_blank">Homebrew</a>), the preceding command will not
+                              					work. A simple workaround is to add a <code>setup.cfg</code> file in
+                              					your <code class="code"><em class="replaceable"><code>/path/to</code></em>/project-dir</code> with the
+                              					following content.
+                           </p>
+                           				<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">[install]
+prefix= </code></pre>
+                           			</li>
+                        <li>
+                           <p>Zip the content of the <code>project-dir</code> directory, which is your deployment
+                              					package. 
+                           </p>
+                           				
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>Zip the directory <em>content</em>, not the directory. The contents of the Zip file are available as the current
+                                 					working directory of the Lambda function. For example: <em>/project-dir/codefile.py/lib/yourlibraries</em></p>
+                           </div>
+                        </li>
+                     </ol>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>AWS Lambda includes the AWS SDK for Python (Boto 3), so you don&apos;t need to
+                           				include it in your deployment package. However, if you want to use a version of
+                           				Boto3 other than the one included by default, you can include it in your deployment
+                           				package.
+                        </p>
+                     </div>
+                     <h2 id="deployment-pkg-for-virtualenv">Create Deployment Package Using a Python
+                        				Environment Created with Virtualenv
+                     </h2>
+                     			
+                     			
+                     <p>This section explains how to create a deployment package if you are using a Python
+                        				environment that you created with the Virtualenv tool. Consider the following
+                        example: 
+                     </p>
+                     			
+                     <div class="itemizedlist">
+                        					
+                        					
+                        				
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              						
+                              <p>Created the following isolated Python environment using the Virtualenv
+                                 							tool and activated the environment:
+                              </p>
+                              						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">virtualenv <em class="replaceable"><code>path/to/my/virtual-env</code></em></code></pre>
+                              						<p>You can activate the environment on Windows, OS X, and Linux as
+                                 							follows:
+                              </p>
+                              						
+                              <div class="itemizedlist">
+                                 								
+                                 								
+                                 							
+                                 <ul class="itemizedlist" type="disc">
+                                    <li class="listitem">
+                                       									
+                                       <p>On Windows, you activate using the
+                                          										<code class="code">activate.bat</code>:
+                                       </p>
+                                       									<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight"><em class="replaceable"><code>path\to\my\virtual-env</code></em>\Scripts\activate.bat  </code></pre>
+                                       								</li>
+                                    <li class="listitem">
+                                       									
+                                       <p>On OS X and Linux, you source the <code class="code">activate</code>
+                                          										script:
+                                       </p>
+                                       									<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">source <em class="replaceable"><code>path/to/my/virtual-env</code></em>/bin/activate</code></pre>
+                                       									
+                                       								</li>
+                                 </ul>
+                              </div>
+                              					
+                           </li>
+                           <li class="listitem">
+                              						
+                              <p>Also, to install the <b>requests</b> package in the activated environment, do the following: :
+                              </p>
+                              						<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">pip install requests  </code></pre>
+                              					</li>
+                        </ul>
+                     </div>
+                     			
+                     <p>Now, to create a deployment package you do the following:</p>
+                     			
+                     <ol>
+                        <li>
+                           <p>First, create .zip file with your Python code you want to upload to AWS Lambda. </p>
+                        </li>
+                        <li>
+                           					
+                           <p>Add the libraries from preceding activated virtual environment to the .zip
+                              						file. That is, you add the content of the following directory to the .zip
+                              						file (note again that you add the content of the directory and not the
+                              						directory itself).
+                           </p>
+                           					
+                           <p>For Windows the directory is:</p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">%VIRTUAL_ENV%\Lib\site-packages </code></pre>
+                           					<p>For OS X, Linux, the directory is:</p>
+                           					<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight ">$VIRTUAL_ENV/lib/python3.6/site-packages</code></pre>
+                           					<div class="aws-note">
+                              <p class="aws-note">Note</p>
+                              <p>If you don&apos;t find the packages in the
+                                 								<code>site-packages</code> directory in your virtual
+                                 								environment, you might find it in the
+                                 								<code>dist-packages</code> directory.
+                              </p>
+                           </div>
+                           				
+                        </li>
+                     </ol>
+                     			
+                     <p>For an example of creating a Python deployment package, see <a href="with-s3-example-deployment-pkg.html#with-s3-example-deployment-pkg-python">Python</a>.
+                        				
+                     </p>
+                     			
+                     		
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="java-author-using-eclipse-sdk-plugin.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="test-sam-local.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Create Deployment Package Using a Python
+				Environment Created with Virtualenv"><a class="pagetoc" href="#deployment-pkg-for-virtualenv">Create Deployment Package Using a Python
+                              				Environment Created with Virtualenv</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

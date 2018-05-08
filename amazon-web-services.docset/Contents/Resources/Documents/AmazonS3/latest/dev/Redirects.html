@@ -1,0 +1,362 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Request Redirection and the REST API - Amazon Simple Storage Service</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="UsingRouting.html" title="Request Routing">
+      <link rel="prev" href="UsingRouting.html" title="Request Routing">
+      <link rel="next" href="DNSConsiderations.html" title="DNS Considerations">
+      <meta name="description" content="Handle redirect responses through temporary redirects for requests arriving at the wrong location, or permanent redirects for incorrectly formed requests.">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="Amazon Simple Storage Service">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/Redirects.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/s3">Amazon Simple Storage Service (S3)</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="UsingRouting.html">Request Routing</a> &#xBB; <span class="breadcrumb">Request Redirection and the REST API</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="Redirects">Request Redirection and the REST API</h1>
+                     <h2 id="RedirectsOverview">Overview</h2>
+                     		
+                     		
+                     <p>Amazon S3 uses the Domain Name System (DNS) to route requests to facilities that can
+                        			process them. This system works very effectively. However, temporary routing errors
+                        can
+                        			occur. 
+                     </p>
+                     		
+                     <p> If a request arrives at the wrong Amazon S3 location, Amazon S3 responds with a temporary
+                        			redirect that tells the requester to resend the request to a new endpoint. 
+                     </p>
+                     		
+                     <p> If a request is incorrectly formed, Amazon S3 uses permanent redirects to provide
+                        			direction on how to perform the request correctly. 
+                     </p>
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p> Every Amazon S3 program must be designed to handle redirect responses. The only
+                           				exception is for programs that work exclusively with buckets that were created
+                           				without <code class="code">&lt;CreateBucketConfiguration&gt;</code>. For more information on
+                           				location constraints, see <a href="UsingBucket.html#access-bucket-intro">Accessing a Bucket</a>. 
+                        </p>
+                     </div>
+                     	
+                     <h2 id="DNSRouting">DNS Routing</h2>
+                     		
+                     		
+                     		
+                     		
+                     <p>DNS routing routes requests to appropriate Amazon S3 facilities. </p>
+                     		
+                     <p>The following figure shows an example of DNS routing.</p>
+                     		
+                     <div class="mediaobject">
+                        			<img src="../../..//img/DNS_virthost.png">
+                        			
+                        		
+                     </div>
+                     		
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac41b9b5b8">
+                              					
+                              <tbody><tr>
+                                 						
+                                 <td>1</td>
+                                 						
+                                 <td>The client makes a DNS request to get an object stored on Amazon S3.
+                                    						
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>2</td>
+                                 						
+                                 <td>The client receives one or more IP addresses for facilities that can
+                                    							process the request.
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>3</td>
+                                 						
+                                 <td>The client makes a request to Amazon S3 Facility B. </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>4</td>
+                                 						
+                                 <td>Facility B returns a copy of the object.</td>
+                                 					
+                              </tr>
+                              				
+                           </tbody></table>
+                        </div>
+                     </div>
+                     	
+                     <h2 id="TemporaryRedirection">Temporary Request Redirection</h2>
+                     		
+                     		
+                     		
+                     		
+                     <p>A temporary redirect is a type of error response that signals to the requester that
+                        he
+                        			should resend his request to a different endpoint.
+                     </p>
+                     		
+                     <p>Due to the distributed nature of Amazon S3, requests can be temporarily routed to
+                        the wrong
+                        			facility. This is most likely to occur immediately after buckets are created or
+                        deleted.
+                        			For example, if you create a new bucket and immediately make a request to the bucket,
+                        			you might receive a temporary redirect, depending on the location constraint of
+                        the
+                        			bucket. If you created the bucket in the US East (N. Virginia) region (s3.amazonaws.com
+                        			endpoint) you will not see the redirect because this is also the default endpoint.
+                        			However, if the bucket is created in any other region, any requests for the bucket
+                        will go
+                        			to the default endpoint while the bucket&apos;s DNS entry is propagated. The default
+                        endpoint
+                        			will redirect the request to the correct endpoint with a HTTP 302 response.
+                     </p>
+                     		
+                     <p>Temporary redirects contain a URI to the correct facility which you can use to
+                        			immediately resend the request.
+                     </p>
+                     		
+                     <div class="aws-note">
+                        <p class="aws-note">Important</p>
+                        <p>Do not reuse an endpoint provided by a previous redirect response. It might appear
+                           				to work (even for long periods of time), but might provide unpredictable results
+                           and
+                           				will eventually fail without notice.
+                        </p>
+                     </div>
+                     		
+                     <p>The following figure shows an example of a temporary redirect.</p>
+                     		
+                     <div class="mediaobject">
+                        			<img src="../../..//img/DNS_virthost_redirect.png">
+                        			
+                        		
+                     </div>
+                     		
+                     <div class="table">
+                        <div class="table-contents">
+                           <table id="w70aac41b9b7c14">
+                              					
+                              <tbody><tr>
+                                 						
+                                 <td>1</td>
+                                 						
+                                 <td>The client makes a DNS request to get an object stored on Amazon S3.
+                                    						
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>2</td>
+                                 						
+                                 <td>The client receives one or more IP addresses for facilities that can
+                                    							process the request.
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>3</td>
+                                 						
+                                 <td>The client makes a request to Amazon S3 Facility B. </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>4</td>
+                                 						
+                                 <td>Facility B returns a redirect indicating the object is available from
+                                    							Location C. 
+                                 </td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>5</td>
+                                 						
+                                 <td>The client resends the request to Facility C.</td>
+                                 					
+                              </tr>
+                              					
+                              <tr>
+                                 						
+                                 <td>6</td>
+                                 						
+                                 <td>Facility C returns a copy of the object. </td>
+                                 					
+                              </tr>
+                              				
+                           </tbody></table>
+                        </div>
+                     </div>
+                     	
+                     <h2 id="RedirectsPermanentRedirection">Permanent Request Redirection</h2>
+                     		
+                     		
+                     		
+                     		
+                     <p>A permanent redirect indicates that your request addressed a resource inappropriately.
+                        			For example, permanent redirects occur if you use a path-style request to access
+                        a
+                        			bucket that was created using <code class="code">&lt;CreateBucketConfiguration&gt;</code>. For more
+                        			information, see <a href="UsingBucket.html#access-bucket-intro">Accessing a Bucket</a>.
+                     </p>
+                     		
+                     <p>To help you find these errors during development, this type of redirect does not
+                        			contain a Location HTTP header that allows you to automatically follow the request
+                        to
+                        			the correct location. Consult the resulting XML error document for help using the
+                        			correct Amazon S3 endpoint.
+                     </p>
+                     		
+                     			
+                     <h3 id="RedirectsPermanentRedirection-ex1">REST API Redirect</h3>
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">
+HTTP/1.1 307 Temporary Redirect
+Location: http://johnsmith.s3-gztb4pa9sq.amazonaws.com/photos/puppy.jpg?rk=e2c69a31
+Content-Type: application/xml
+Transfer-Encoding: chunked
+Date: Fri, 12 Oct 2007 01:12:56 GMT
+Server: AmazonS3
+
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;Error&gt;
+  &lt;Code&gt;TemporaryRedirect&lt;/Code&gt;
+  &lt;Message&gt;Please re-send this request to the specified temporary endpoint.
+  Continue to use the original request endpoint for future requests.&lt;/Message&gt;
+  &lt;Endpoint&gt;johnsmith.s3-gztb4pa9sq.amazonaws.com&lt;/Endpoint&gt;
+&lt;/Error&gt;
+</code></pre>
+                     	
+                     		
+                     		
+                     			<h3 id="RedirectsPermanentRedirection-ex2">SOAP API Redirect</h3>
+                     			
+                     
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p>
+                           SOAP support over HTTP is deprecated, but it is still available over HTTPS. 
+                           New Amazon S3 features will not be supported for SOAP. We recommend that you use 
+                           either the REST API or the AWS SDKs.
+                           
+                        </p>
+                     </div>
+                     
+                     			<pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="">&lt;soapenv:Body&gt;
+  &lt;soapenv:Fault&gt;
+    &lt;Faultcode&gt;soapenv:Client.TemporaryRedirect&lt;/Faultcode&gt;
+    &lt;Faultstring&gt;Please re-send this request to the specified temporary endpoint.
+    Continue to use the original request endpoint for future requests.&lt;/Faultstring&gt;
+    &lt;Detail&gt;
+      &lt;Bucket&gt;images&lt;/Bucket&gt;
+      &lt;Endpoint&gt;s3-gztb4pa9sq.amazonaws.com&lt;/Endpoint&gt;
+    &lt;/Detail&gt;
+  &lt;/soapenv:Fault&gt;
+&lt;/soapenv:Body&gt;
+</code></pre>
+                     			
+                     		
+                     		
+                     		
+                     	</div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="UsingRouting.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="DNSConsiderations.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Overview"><a class="pagetoc" href="#RedirectsOverview">Overview</a></li>
+                        <li class="pagetoc" name="DNS Routing"><a class="pagetoc" href="#DNSRouting">DNS Routing</a></li>
+                        <li class="pagetoc" name="Temporary Request Redirection"><a class="pagetoc" href="#TemporaryRedirection">Temporary Request Redirection</a></li>
+                        <li class="pagetoc" name="Permanent Request Redirection"><a class="pagetoc" href="#RedirectsPermanentRedirection">Permanent Request Redirection</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='Amazon Simple Storage Service';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>

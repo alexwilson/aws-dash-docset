@@ -1,0 +1,378 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Step 3: Add an Event Source
+         		(Create a DynamoDB Stream and Associate It with Your Lambda Function) - AWS Lambda
+      </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="home" href="#top">
+      <link rel="up" href="with-ddb-example.html" title="Tutorial: Using AWS Lambda with Amazon DynamoDB">
+      <link rel="prev" href="with-dynamodb-create-function.html" title="Step 2.3: Create the Lambda Function and Test It Manually">
+      <link rel="next" href="with-ddb-example-use-app-spec.html" title="Step 4: Deploy With AWS SAM and AWS CloudFormation">
+      <meta name="description" content="In this section, you do the following:">
+      <meta name="deployment_region" content="IAD">
+      <meta name="product" content="AWS Lambda">
+      <meta name="guide" content="Developer Guide">
+      <meta name="guide-locale" content="en_us">
+      <link rel="icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="shortcut icon" type="image/ico" href="/images/favicon.ico">
+      <link rel="canonical" href="https://docs.aws.amazon.com/lambda/latest/dg/with-ddb-configure-ddb.html">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/font-awesome.min.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/google-font.css">
+      <link id="code-style" rel="stylesheet" type="text/css" href="../../../css/light.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/jquery-ui.theme.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/colorbox.css">
+      <link rel="stylesheet" type="text/css" href="../../../css/awsdocs.css"><script type="text/javascript" src="/js/highlight.pack.js"></script><script type="text/javascript" src="/js/jquery.min.js"></script><script type="text/javascript" src="/js/jquery-ui.min.js"></script><script type="text/javascript" src="/js/handlebars.js"></script><script type="text/javascript" src="/js/jquery.colorbox.js"></script><script type="text/javascript" src="/js/awsdocs.min.js?v=20170615"></script></head>
+   <body id="top">
+      
+      <div id="content-container">
+         
+         <div id="main-column">
+            <div id="main">
+               <div id="main-content">
+                  <div id="main-col-body">
+                     <table summary="Breadcrumbs">
+                        <tbody><tr>
+                           <td>
+                              <div class="breadcrumb"><a href="http://aws.amazon.com/documentation">AWS Documentation</a> &#xBB; <a href="http://aws.amazon.com/documentation/lambda">AWS Lambda</a> &#xBB; <a href="index.html">Developer Guide</a> &#xBB; <a href="use-cases.html">Examples of How to Use AWS Lambda</a> &#xBB; <a href="with-ddb.html">Using AWS Lambda with Amazon DynamoDB</a> &#xBB; <a href="with-ddb-example.html">Tutorial: Using AWS Lambda with Amazon DynamoDB</a> &#xBB; <span class="breadcrumb">Step 3: Add an Event Source
+                                    		(Create a DynamoDB Stream and Associate It with Your Lambda Function)</span></div>
+                           </td>
+                        </tr>
+                     </tbody></table>
+                     <div></div>
+                     <h1 class="topictitle" id="with-ddb-configure-ddb">Step 3: Add an Event Source
+                        		(Create a DynamoDB Stream and Associate It with Your Lambda Function)
+                     </h1>
+                     <p>In this section, you do the following:</p>
+                     <div class="itemizedlist">
+                        
+                        
+                        
+                        
+                        <ul class="itemizedlist" type="disc">
+                           <li class="listitem">
+                              
+                              <p>Create an Amazon DynamoDB table with a stream enabled.</p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Create an event source mapping in AWS Lambda. This event source mapping associates
+                                 
+                                 	the DynamoDB stream with your Lambda function. After you create this event source
+                                 mapping, AWS Lambda 
+                                 starts polling the stream.
+                              </p>
+                              
+                           </li>
+                           <li class="listitem">
+                              
+                              <p>Test the end-to-end experience. As you perform table updates, DynamoDB writes event
+                                 records to the
+                                 stream. As AWS Lambda polls the stream, it detects new records in the
+                                 stream and executes your Lambda function on your behalf by passing events to
+                                 the function. 
+                              </p>
+                              	
+                              	
+                              <div class="aws-note">
+                                 <p class="aws-note">Note</p>
+                                 <p>The following example assumes you have a user
+                                    		(<code class="code">adminuser</code>) with administrator privileges. When you follow the procedure, create a
+                                    		user with name <code class="code">adminuser</code>.
+                                 </p>
+                              </div>
+                              	
+                              	
+                              	
+                              
+                              <p class="title"><b>To create an IAM user for yourself and add the user to an Administrators group</b></p>
+                              <ol>
+                                 <li>
+                                    
+                                    <p>Use your AWS account email address and password to sign in as the <em><a href="./IAM/latest/UserGuide/id_root-user.html" target="_blank">AWS account root user</a></em> to the
+                                       IAM console at <a href="https://console.aws.amazon.com/iam/" target="_blank">https://console.aws.amazon.com/iam/</a>.
+                                    </p>
+                                    
+                                    
+                                    <div class="aws-note">
+                                       <p class="aws-note">Note</p>
+                                       <p>We strongly recommend that you adhere to the best practice of using the <strong class="userinput"><code>Administrator</code></strong> IAM user below and securely lock away the root user credentials. Sign in as the root
+                                          user only to perform a few <a href="./general/latest/gr/aws_tasks-that-require-root.html" target="_blank">account and service management tasks</a>.
+                                       </p>
+                                    </div>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>In the navigation pane of the console, choose <b>Users</b>, and then choose <b>Add 
+                                          user</b>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>For <b>User name</b>, type <strong class="userinput"><code>Administrator</code></strong>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Select the check box next to <b>AWS Management Console access</b>, select <b>Custom 
+                                          password</b>, and then type the new user&apos;s password in the text box. You can 
+                                       optionally select <b>Require password reset</b> to force the user to create a new
+                                       password the next time the user signs in.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Choose <b>Next: Permissions</b>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>On the <b>Set permissions for user</b> page, choose <b>Add user to 
+                                          group</b>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Choose <b>Create group</b>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>In the <b>Create group</b> dialog box, type <strong class="userinput"><code>Administrators</code></strong>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>For <b>Filter</b>, choose <b>Job function</b>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>In the policy list, select the check box for <b>AdministratorAccess</b>. Then choose <b>Create group</b>.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Back in the list of groups, select the check box for your new group. Choose <b>Refresh</b> if necessary to see the group in the list.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                    
+                                    <p>Choose <b>Next: Review</b> to see the list of group memberships to be added to the new user. When you are ready
+                                       to proceed, choose <b>Create user</b>.
+                                    </p>
+                                    
+                                 </li>
+                              </ol>
+                              
+                              <p>You can use this same process 
+                                 to create more groups and users, and to give your users access to your AWS account
+                                 resources. 
+                                 To learn about using policies to restrict users&apos; permissions to specific AWS resources,
+                                 go 
+                                 to <a href="./IAM/latest/UserGuide/access.html" target="_blank">Access Management</a> and 
+                                 <a href="./IAM/latest/UserGuide/access_policies_examples.html" target="_blank">Example Policies</a>.
+                              </p>
+                              		
+                              
+                           </li>
+                        </ul>
+                     </div>
+                     <h2 id="with-ddb-create-buckets">Step 3.1: Create a DynamoDB Table with a Stream
+                        Enabled
+                     </h2>
+                     
+                     
+                     <p>Follow the procedure to create a table with a stream:</p>
+                     
+                     <ol>
+                        <li>
+                           		
+                           <p>Sign in to the AWS Management Console and open the DynamoDB console at
+                              <a href="https://console.aws.amazon.com/dynamodb/" target="_blank">https://console.aws.amazon.com/dynamodb/</a>.
+                           </p>
+                           	
+                        </li>
+                        <li>
+                           <p>In the DynamoDB console, create a table with streams enabled. For more information
+                              on enabling streams, see <a href="./amazondynamodb/latest/developerguide/Streams.html" target="_blank">Capturing Table Activity with DynamoDB Streams</a>. 
+                           </p>
+                           
+                           <div class="aws-note">
+                              <p class="aws-note">Important</p>
+                              <p>You must create a DynamoDB table in the same region where you 
+                                 created the Lambda function. This tutorial assumes the
+                                 US East (N. Virginia) region. In addition, both the table and the
+                                 Lambda functions must belong to the same AWS account.
+                              </p>
+                           </div>
+                        </li>
+                        <li>
+                           <p>Write down the stream ARN. You need this in the next step when you associate the
+                              stream with your Lambda function.
+                           </p>
+                        </li>
+                     </ol>
+                     
+                     
+                     
+                     
+                     <h2 id="with-ddb-attach-notification-configuration">Step 3.2: Add an Event Source
+                        in AWS Lambda
+                     </h2>
+                     
+                     
+                     
+                     
+                     
+                     <p>Run the following AWS CLI <code class="code">create-event-source-mapping</code> command. After
+                        the command executes, note down the UUID. You&apos;ll need this UUID to refer to the
+                        event source mapping in any commands, for example, when deleting the event source
+                        mapping.
+                     </p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">$ aws lambda create-event-source-mapping \
+--region us-east-1 \
+--function-name ProcessDynamoDBStream \
+--event-source <em class="replaceable"><code>DynamoDB-stream-arn</code></em> \
+--batch-size 100 \
+--starting-position TRIM_HORIZON \
+--profile adminuser</code></pre>
+                     <div class="aws-note">
+                        <p class="aws-note">Note</p>
+                        <p> This creates a mapping between the specified DynamoDB stream and the Lambda
+                           	function. You can associate a DynamoDB stream with multiple Lambda functions,
+                           and associate the same Lambda function with multiple streams. However, the
+                           Lambda functions will share the read throughput for the stream they share. 
+                        </p>
+                     </div>
+                     
+                     <p>You can get the list of event source mappings by running the following command.</p>
+                     <pre class="programlisting"><div class="code-btn-container"><div class="btn-copy-code" title="Copy"></div><div class="btn-dark-theme" title="Dark theme" title-dark="Dark theme" title-light="Light theme"></div></div><code class="nohighlight">$ aws lambda list-event-source-mappings \
+--region us-east-1 \
+--function-name ProcessDynamoDBStream \
+--event-source <em class="replaceable"><code>DynamoDB-stream-arn</code></em> \
+--profile adminuser</code></pre>
+                     <p>The list returns all of the event source mappings you created, and for each mapping
+                        	it shows the <code class="code">LastProcessingResult</code>, among other things. This field is
+                        used to provide an informative message if there are any problems. Values such as <code class="code">No
+                           records processed</code> (indicates that AWS Lambda has not started polling or that there
+                        are no records in the stream) and  <code class="code">OK</code> (indicates AWS Lambda successfully read
+                        records from the stream and invoked your Lambda function) indicate that there no issues.
+                        If there are issues, you receive an error message.
+                     </p>
+                     
+                     <h2 id="with-ddb-final-integration-test-no-iam">Step 3.3: Test the Setup</h2>
+                     
+                     	
+                     <p>You&apos;re all done! Now <b>adminuser</b> can test the setup as
+                        follows:
+                     </p>
+                     
+                     
+                     <div class="orderedlist">
+                        
+                        
+                        
+                        
+                        
+                        <ol>
+                           <li>
+                              
+                              <p>In the DynamoDB console, add, update, delete items to the table. DynamoDB
+                                 writes records of these actions to the stream.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>AWS Lambda polls the stream and when it detects updates to the stream, it
+                                 invokes your Lambda function by passing in the event data it finds in the
+                                 stream.
+                              </p>
+                              
+                           </li>
+                           <li>
+                              
+                              <p>Your function executes and creates logs in Amazon CloudWatch. The
+                                 	<b>adminuser</b> can also verify the logs reported in
+                                 the Amazon CloudWatch console.
+                              </p>
+                              
+                           </li>
+                        </ol>
+                     </div>
+                     
+                  </div>
+                  <noscript>
+                     <div>
+                        <div>
+                           <div>
+                              <div id="js_error_message">
+                                 <p><img src="https://d1ge0kk1l5kms0.cloudfront.net/images/G/01/webservices/console/warning.png" alt="Warning" /> <strong>Javascript is disabled or is unavailable in your browser.</strong></p>
+                                 <p>To use the AWS Documentation, Javascript must be enabled. Please refer to your browser's
+                                    Help pages for instructions.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </noscript>
+                  <div id="main-col-footer">
+                     <div id="doc-conventions"><a target="_top" href="/general/latest/gr/docconventions.html">Document Conventions</a></div>
+                     <div id="next"><a class="awstoc" accesskey="p" href="with-dynamodb-create-function.html">&#xAB; Previous </a><a class="awstoc" accesskey="n" href="with-ddb-example-use-app-spec.html">Next &#xBB;</a></div>
+                     <div id="copyright-main-footer">&#xA9; 2018, Amazon Web Services, Inc. or its affiliates. All rights reserved.</div>
+                  </div>
+               </div>
+            </div>
+            <div id="right-expanded">
+               <div id="right-content-wrapper">
+                  <div id="pagetoc">
+                     <p>On this page:</p>
+                     <ul class="pagetoc">
+                        <li class="pagetoc" name="Step 3.1: Create a DynamoDB Table with a Stream
+                Enabled"><a class="pagetoc" href="#with-ddb-create-buckets">Step 3.1: Create a DynamoDB Table with a Stream
+                              Enabled</a></li>
+                        <li class="pagetoc" name="Step 3.2: Add an Event Source
+                 in AWS Lambda"><a class="pagetoc" href="#with-ddb-attach-notification-configuration">Step 3.2: Add an Event Source
+                              in AWS Lambda</a></li>
+                        <li class="pagetoc" name="Step 3.3: Test the Setup"><a class="pagetoc" href="#with-ddb-final-integration-test-no-iam">Step 3.3: Test the Setup</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <!-- SiteCatalyst code version: H.25.2.
+            Copyright 1996-2012 Adobe, Inc. All Rights Reserved
+            More info available at http://www.omniture.com --><script language="JavaScript" type="text/javascript" src="https://a0.awsstatic.com/s_code/js/1.0/awshome_s_code.js"></script><script language="JavaScript" type="text/javascript">
+         <!--
+
+            // Documentation Service Name
+            s.prop66='AWS Lambda';
+            s.eVar66='D=c66';
+  
+            // Documentation Guide Name                                                                 
+            s.prop65='Developer Guide';
+            s.eVar65='D=c65';
+
+            var s_code=s.t();if(s_code)document.write(s_code)//--></script><script language="JavaScript" type="text/javascript">
+         <!--
+                if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+                //--></script><noscript><img src="https://amazonwebservices.d2.sc.omtrdc.net/b/ss/awsamazondev/1/H.25.2--NS/0" height="1" width="1" border="0" alt="" /></noscript>
+      <!--/DO NOT REMOVE/-->
+      <!-- End SiteCatalyst code version: H.25.2. -->
+   
+</body></html>
