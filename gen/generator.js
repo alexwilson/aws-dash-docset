@@ -15,7 +15,7 @@ const db = new Sequelize('database', 'username', 'password', {
         storage: path.resolve(root, 'Contents/Resources/docSet.dsidx')
 })
 const SearchIndex = db.define('searchIndex', {
-    id: { 
+    id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
         autoIncrement: true
@@ -37,6 +37,27 @@ const SearchIndex = db.define('searchIndex', {
 const baseUrl = new URL('https://docs.aws.amazon.com/')
 const documentRoot = path.resolve(root, 'Contents/Resources/Documents')
 const downloadedFiles = new Set()
+
+// override missing URLs by skipping past them
+const missingUrls = {
+    "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-codepipeline-customactiontype-artifactdetails.html":
+    "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-codepipeline-pipeline.html",
+
+    "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-opsworks-instance-ebsblockdevice.html":
+    "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-opsworks-instance-timebasedautoscaling.html",
+
+    "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-opsworks-layer-volumeconfiguration.html":
+    "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opsworks-stack.html",
+
+    "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ssm-association-target.html":
+    "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ssm-document.html"
+}
+
+// URLs which if we're redirected we want to keep the original page name
+const keepOriginalPageName = new Set([
+    "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/glossary.html"
+])
+
 
 function withImages(document) {
     return new Promise(resolve => {
@@ -101,9 +122,39 @@ const withoutNavigation = document => new Promise(resolve => {
 })
 
 const docSet = new Array()
-const downloadDocPage = (service, section, url) => {
-    const fullUrl = new URL(`${baseUrl.href}/${service}/latest/${section}/${url}`)
+const downloadDocPage = (service, section, page) => {
+    let fullUrl = new URL(`${baseUrl.href}${service}/latest/${section}/${page}`)
+    if (missingUrls.hasOwnProperty(fullUrl.href)) {
+        fullUrl = new URL(missingUrls[fullUrl.href])
+    }
+    console.log(` - Fetching ${fullUrl.href}`)
+    // console.log(`   service:"${service}" section:"${section}" page:"${page}"`)
     return fetch(fullUrl.href)
+        .then(res => {
+            // handle redirects which change the page name
+            if (res.url !== fullUrl.href) {
+                console.log(`   Redirect ${res.url}`)
+                if (keepOriginalPageName.has(fullUrl.href)) {
+                    fullUrl = new URL(res.url)
+                } else {
+                    fullUrl = new URL(res.url)
+                    const path_parts = fullUrl.pathname.split("/")
+                    if (path_parts.length != 5) {
+                        throw new Error("Unexpected redirect")
+                    }
+                    page = path_parts[path_parts.length - 1]
+                    if (!page) {
+                        throw new Error("Unexpected redirect")
+                    }
+                    // ensure only the page has changed during the redirect
+                    const expectedUrl = new URL(`${baseUrl.href}${service}/latest/${section}/${page}`)
+                    if (fullUrl.href !== expectedUrl.href) {
+                        throw new Error("Unexpected redirect")
+                    }
+                }
+            }
+            return res
+        })
         .then(res => res.text())
         .then(cheerio.load)
         .then(withoutNavigation)
@@ -112,9 +163,9 @@ const downloadDocPage = (service, section, url) => {
         .then(withStylesheets.bind({url: fullUrl}))
         .then(document => {
             const title = document('title').text().replace(/[\n\r]+/g, '').replace(/\t/g, ' ').replace(/(\s\s+)/g, ' ').trim()
-            console.log(` - Saving "${title}" (${url})`)
+            console.log(`   Saving "${title} (${page})"`)
 
-            const documentPath = path.resolve(documentRoot, service, 'latest', section, url)
+            const documentPath = path.resolve(documentRoot, service, 'latest', section, page)
 
             const segmentedDocumentPath = path.relative(process.cwd(), path.dirname(documentPath)).split('/')
             for (let i = 1; i <= segmentedDocumentPath.length; i++) {
@@ -124,14 +175,18 @@ const downloadDocPage = (service, section, url) => {
 
             return writeFilePromise(documentPath, document.root().html())
                 .then(_ => {
-                    docSet.push({ 
+                    docSet.push({
                         name: title,
                         type: 'Guide',
                         path: documentPath.replace(documentRoot, '')
                     })
                 })
                 .then(doc => {
-                    const nextPage = document('link[rel="next"]').attr('href')
+                    let nextPage = document('link[rel="next"]').attr('href')
+                    if (nextPage) {
+                        return downloadDocPage(service, section, nextPage)
+                    }
+                    nextPage = document('a.awstoc[accesskey="n"]').attr('href')
                     return (nextPage) ? downloadDocPage(service, section, nextPage) : doc
                 })
         })
